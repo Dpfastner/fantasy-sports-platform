@@ -11,6 +11,7 @@ export default function SignUpPage() {
   const [confirmPassword, setConfirmPassword] = useState('')
   const [displayName, setDisplayName] = useState('')
   const [error, setError] = useState<string | null>(null)
+  const [success, setSuccess] = useState(false)
   const [loading, setLoading] = useState(false)
   const router = useRouter()
   const supabase = createClient()
@@ -47,9 +48,8 @@ export default function SignUpPage() {
         return
       }
 
-      // Redirect to dashboard after successful signup
-      router.push('/dashboard')
-      router.refresh()
+      // Show success message - user needs to confirm email
+      setSuccess(true)
     } catch {
       setError('An unexpected error occurred')
     } finally {
@@ -67,6 +67,22 @@ export default function SignUpPage() {
           <p className="text-gray-400 mt-2">Create your account</p>
         </div>
 
+        {success ? (
+          <div className="bg-gray-800 rounded-lg p-8 shadow-lg text-center">
+            <div className="text-green-400 text-5xl mb-4">✓</div>
+            <h2 className="text-2xl font-bold text-white mb-4">Check your email</h2>
+            <p className="text-gray-400 mb-6">
+              We sent a confirmation link to <span className="text-white">{email}</span>.
+              Click the link to activate your account.
+            </p>
+            <Link
+              href="/login"
+              className="text-blue-400 hover:text-blue-300"
+            >
+              Go to login
+            </Link>
+          </div>
+        ) : (
         <form onSubmit={handleSignUp} className="bg-gray-800 rounded-lg p-8 shadow-lg">
           {error && (
             <div className="bg-red-500/10 border border-red-500 text-red-500 px-4 py-3 rounded-lg mb-6">
@@ -148,6 +164,7 @@ export default function SignUpPage() {
             </Link>
           </p>
         </form>
+        )}
       </div>
     </div>
   )
