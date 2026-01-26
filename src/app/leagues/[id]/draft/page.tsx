@@ -393,12 +393,47 @@ export default function DraftRoomPage() {
         hasSkipped = true
         console.log('Timer expired, auto-skipping pick')
 
-        // Advance to next pick directly
-        const nextPickNumber = draft.current_pick + 1
-        const totalPicks = teams.length * (settings?.schools_per_team || 12)
+        // Get the current team being skipped
+        const currentOrder = draftOrder.find(o => o.pick_number === draft.current_pick)
+        const skippedTeamId = currentOrder?.fantasy_team_id || draft.current_team_id
 
-        if (nextPickNumber > totalPicks) {
-          // Draft complete
+        // Find the highest pick number in draft_order to add makeup pick at the end
+        const maxPickNumber = Math.max(...draftOrder.map(o => o.pick_number))
+        const makeupPickNumber = maxPickNumber + 1
+        const makeupRound = Math.ceil(makeupPickNumber / teams.length)
+
+        // Add the skipped pick to the end of the draft order
+        if (skippedTeamId) {
+          console.log(`Adding makeup pick #${makeupPickNumber} for skipped team`)
+          const { error: insertError } = await supabase
+            .from('draft_order')
+            .insert({
+              draft_id: draft.id,
+              fantasy_team_id: skippedTeamId,
+              pick_number: makeupPickNumber,
+              round: makeupRound
+            })
+
+          if (!insertError) {
+            // Update local draft order state
+            setDraftOrder(prev => [...prev, {
+              fantasy_team_id: skippedTeamId,
+              pick_number: makeupPickNumber,
+              round: makeupRound
+            }])
+          } else {
+            console.error('Error adding makeup pick:', insertError)
+          }
+        }
+
+        // Now advance to the next pick in the CURRENT order
+        const nextPickNumber = draft.current_pick + 1
+
+        // Check if there's a next pick in the order (could be regular or makeup)
+        const nextOrder = draftOrder.find(o => o.pick_number === nextPickNumber)
+
+        if (!nextOrder) {
+          // No more picks in the original order - draft complete
           const { error } = await supabase
             .from('drafts')
             .update({
@@ -410,36 +445,31 @@ export default function DraftRoomPage() {
             .eq('id', draft.id)
 
           if (!error) {
-            // Force local state update
             setDraft(prev => prev ? { ...prev, status: 'completed', current_team_id: null, pick_deadline: null } : null)
           }
         } else {
-          // Get next team from draft order
-          const nextOrder = draftOrder.find(o => o.pick_number === nextPickNumber)
-          if (nextOrder) {
-            const nextRound = Math.ceil(nextPickNumber / teams.length)
-            const newDeadline = new Date(Date.now() + (settings?.draft_timer_seconds || 60) * 1000)
+          // Move to next pick
+          const nextRound = nextOrder.round
+          const newDeadline = new Date(Date.now() + (settings?.draft_timer_seconds || 60) * 1000)
 
-            const { error } = await supabase
-              .from('drafts')
-              .update({
-                current_round: nextRound,
-                current_pick: nextPickNumber,
-                current_team_id: nextOrder.fantasy_team_id,
-                pick_deadline: newDeadline.toISOString()
-              })
-              .eq('id', draft.id)
+          const { error } = await supabase
+            .from('drafts')
+            .update({
+              current_round: nextRound,
+              current_pick: nextPickNumber,
+              current_team_id: nextOrder.fantasy_team_id,
+              pick_deadline: newDeadline.toISOString()
+            })
+            .eq('id', draft.id)
 
-            if (!error) {
-              // Force local state update
-              setDraft(prev => prev ? {
-                ...prev,
-                current_round: nextRound,
-                current_pick: nextPickNumber,
-                current_team_id: nextOrder.fantasy_team_id,
-                pick_deadline: newDeadline.toISOString()
-              } : null)
-            }
+          if (!error) {
+            setDraft(prev => prev ? {
+              ...prev,
+              current_round: nextRound,
+              current_pick: nextPickNumber,
+              current_team_id: nextOrder.fantasy_team_id,
+              pick_deadline: newDeadline.toISOString()
+            } : null)
           }
         }
       }
@@ -817,13 +847,15 @@ export default function DraftRoomPage() {
     if (!draft || !settings) return
 
     const nextPickNumber = draft.current_pick + 1
-    const totalPicks = teams.length * settings.schools_per_team
 
-    console.log('advanceToNextPick: next pick', nextPickNumber, 'of', totalPicks)
+    // Get next team from draft order (includes makeup picks from skips)
+    const nextOrder = draftOrder.find(o => o.pick_number === nextPickNumber)
 
-    if (nextPickNumber > totalPicks) {
-      // Draft complete
-      console.log('Draft complete!')
+    console.log('advanceToNextPick: next pick', nextPickNumber, 'nextOrder:', nextOrder)
+
+    if (!nextOrder) {
+      // No more picks in the order - draft complete
+      console.log('Draft complete! No more picks in order.')
       const { error } = await supabase
         .from('drafts')
         .update({
@@ -843,14 +875,8 @@ export default function DraftRoomPage() {
       return
     }
 
-    // Get next team
-    const nextOrder = draftOrder.find(o => o.pick_number === nextPickNumber)
-    if (!nextOrder) {
-      console.error('No draft order found for pick', nextPickNumber)
-      return
-    }
-
-    const nextRound = Math.ceil(nextPickNumber / teams.length)
+    // Use the round from the draft order entry (handles makeup picks correctly)
+    const nextRound = nextOrder.round
     const deadline = new Date(Date.now() + (settings.draft_timer_seconds || 60) * 1000)
 
     console.log('Advancing to pick', nextPickNumber, 'round', nextRound, 'team', nextOrder.fantasy_team_id)
