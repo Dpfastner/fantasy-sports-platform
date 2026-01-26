@@ -1,7 +1,7 @@
 import { redirect, notFound } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
-import DraftStatusChecker from '@/components/DraftStatusChecker'
+import DraftStatusSection from '@/components/DraftStatusSection'
 
 interface PageProps {
   params: Promise<{ id: string }>
@@ -26,7 +26,7 @@ interface LeagueData {
   } | null
   drafts: {
     status: string
-  } | null
+  }[] | { status: string } | null
 }
 
 interface TeamData {
@@ -99,7 +99,8 @@ export default async function LeaguePage({ params }: PageProps) {
   const userTeam = teams?.find(t => t.user_id === user.id)
 
   const settings = league.league_settings
-  const draft = league.drafts
+  // Handle both array and single object responses from Supabase
+  const draft = Array.isArray(league.drafts) ? league.drafts[0] : league.drafts
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-900 to-gray-800">
@@ -158,74 +159,14 @@ export default async function LeaguePage({ params }: PageProps) {
         <div className="grid lg:grid-cols-3 gap-8">
           {/* Main Content */}
           <div className="lg:col-span-2 space-y-8">
-            {/* Draft Status Checker - polls for updates */}
-            <DraftStatusChecker leagueId={id} initialStatus={draft?.status || 'not_started'} />
-
-            {/* Draft Status */}
-            <div className="bg-gray-800 rounded-lg p-6">
-              <h2 className="text-xl font-semibold text-white mb-4">Draft Status</h2>
-
-              {draft?.status === 'not_started' && (
-                <div>
-                  <div className="flex items-center gap-3 mb-4">
-                    <span className="w-3 h-3 bg-yellow-500 rounded-full"></span>
-                    <span className="text-yellow-400">Draft Not Started</span>
-                  </div>
-                  {settings?.draft_date && (
-                    <p className="text-gray-400 mb-4">
-                      Scheduled: {new Date(settings.draft_date).toLocaleDateString('en-US', {
-                        weekday: 'long',
-                        year: 'numeric',
-                        month: 'long',
-                        day: 'numeric',
-                        hour: 'numeric',
-                        minute: '2-digit',
-                      })}
-                    </p>
-                  )}
-                  {isCommissioner && (teams?.length || 0) >= 2 && (
-                    <Link
-                      href={`/leagues/${id}/draft`}
-                      className="inline-block bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors"
-                    >
-                      Start Draft
-                    </Link>
-                  )}
-                  {isCommissioner && (teams?.length || 0) < 2 && (
-                    <p className="text-gray-500">
-                      Need at least 2 teams to start the draft
-                    </p>
-                  )}
-                </div>
-              )}
-
-              {draft?.status === 'in_progress' && (
-                <div>
-                  <div className="flex items-center gap-3 mb-4">
-                    <span className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></span>
-                    <span className="text-green-400">Draft In Progress</span>
-                  </div>
-                  <Link
-                    href={`/leagues/${id}/draft`}
-                    className="inline-block bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors"
-                  >
-                    Go to Draft Room
-                  </Link>
-                </div>
-              )}
-
-              {draft?.status === 'completed' && (
-                <div>
-                  <div className="flex items-center gap-3 mb-4">
-                    <span className="w-3 h-3 bg-blue-500 rounded-full"></span>
-                    <span className="text-blue-400">Draft Completed</span>
-                  </div>
-                  <p className="text-gray-400">
-                    The draft has been completed. Good luck this season!
-                  </p>
-                </div>
-              )}
-            </div>
+            {/* Draft Status Section - polls for updates */}
+            <DraftStatusSection
+              leagueId={id}
+              initialStatus={draft?.status || 'not_started'}
+              isCommissioner={isCommissioner}
+              teamCount={teams?.length || 0}
+              draftDate={settings?.draft_date || null}
+            />
 
             {/* Standings */}
             <div className="bg-gray-800 rounded-lg p-6">

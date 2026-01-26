@@ -49,6 +49,7 @@ interface LeagueSettings {
   draft_timer_seconds: number
   schools_per_team: number
   max_school_selections_total: number
+  max_school_selections_per_team: number
 }
 
 export default function DraftRoomPage() {
@@ -77,26 +78,32 @@ export default function DraftRoomPage() {
   const [timeRemaining, setTimeRemaining] = useState<number | null>(null)
   const [actionError, setActionError] = useState<string | null>(null)
   const [viewingTeamId, setViewingTeamId] = useState<string | null>(null) // For viewing other teams' rosters
+  const [pendingPick, setPendingPick] = useState<School | null>(null) // School selected, awaiting confirmation
+  const [isSubmittingPick, setIsSubmittingPick] = useState(false)
 
   // Get unique conferences from schools
   const conferences = [...new Set(schools.map(s => s.conference))].sort()
 
-  // Count how many times each school has been picked
+  // Count how many times each school has been picked (globally and per team)
   const schoolPickCounts: Record<string, number> = {}
+  const myTeamSchoolPickCounts: Record<string, number> = {}
+  const myTeamId = teams.find(t => t.user_id === user?.id)?.id
+
   picks.forEach(pick => {
+    // Global count
     schoolPickCounts[pick.school_id] = (schoolPickCounts[pick.school_id] || 0) + 1
+    // Per-team count (for current user's team)
+    if (pick.fantasy_team_id === myTeamId) {
+      myTeamSchoolPickCounts[pick.school_id] = (myTeamSchoolPickCounts[pick.school_id] || 0) + 1
+    }
   })
 
-  // Max selections allowed (default to 3 if not set)
-  const maxSelections = settings?.max_school_selections_total || 3
+  // Max selections allowed
+  const maxSelectionsTotal = settings?.max_school_selections_total || 3
+  const maxSelectionsPerTeam = settings?.max_school_selections_per_team || 1
 
-  // Filter schools based on search, conference, and availability
-  const availableSchools = schools.filter(school => {
-    // Check if max selections reached
-    const pickCount = schoolPickCounts[school.id] || 0
-    if (pickCount >= maxSelections) return false
-
-    // Check search query
+  // Helper to check if school matches search/filter criteria
+  const schoolMatchesFilters = (school: School) => {
     if (searchQuery) {
       const query = searchQuery.toLowerCase()
       if (!school.name.toLowerCase().includes(query) &&
@@ -104,17 +111,44 @@ export default function DraftRoomPage() {
         return false
       }
     }
-
-    // Check conference filter
     if (selectedConference !== 'all' && school.conference !== selectedConference) {
       return false
     }
+    return true
+  }
 
+  // Helper to check if school is maxed out (globally)
+  const isSchoolMaxedOut = (school: School) => {
+    const globalPickCount = schoolPickCounts[school.id] || 0
+    return globalPickCount >= maxSelectionsTotal
+  }
+
+  // Helper to check if school is already on my team (when per-team limit is reached)
+  const isSchoolOnMyTeam = (school: School) => {
+    if (!myTeamId) return false
+    const myTeamPickCount = myTeamSchoolPickCounts[school.id] || 0
+    return myTeamPickCount >= maxSelectionsPerTeam
+  }
+
+  // Filter schools into available and maxed-out categories
+  const availableSchools = schools.filter(school => {
+    if (!schoolMatchesFilters(school)) return false
+    if (isSchoolMaxedOut(school)) return false
+    if (isSchoolOnMyTeam(school)) return false
     return true
   })
 
-  // Get current team on the clock
-  const currentTeam = teams.find(t => t.id === draft?.current_team_id)
+  // Schools that are maxed out globally (show at bottom with strikethrough)
+  const maxedOutSchools = schools.filter(school => {
+    if (!schoolMatchesFilters(school)) return false
+    return isSchoolMaxedOut(school)
+  }).sort((a, b) => a.name.localeCompare(b.name))
+
+  // Get current team on the clock - derive from draftOrder for consistency with ticker
+  const currentPickFromOrder = draftOrder.find(o => o.pick_number === draft?.current_pick)
+  const currentTeam = currentPickFromOrder
+    ? teams.find(t => t.id === currentPickFromOrder.fantasy_team_id)
+    : teams.find(t => t.id === draft?.current_team_id) // Fallback to database value
   const isMyPick = user && currentTeam?.user_id === user.id
 
   // Get user's team
@@ -154,7 +188,7 @@ export default function DraftRoomPage() {
         // Get league settings
         const { data: settingsData } = await supabase
           .from('league_settings')
-          .select('draft_type, draft_order_type, draft_timer_seconds, schools_per_team, max_school_selections_total')
+          .select('draft_type, draft_order_type, draft_timer_seconds, schools_per_team, max_school_selections_total, max_school_selections_per_team')
           .eq('league_id', leagueId)
           .single()
 
@@ -305,6 +339,20 @@ export default function DraftRoomPage() {
         }
       }
 
+      // Refresh draft order if we don't have it yet (e.g., user joined after draft started)
+      if (draftOrder.length === 0) {
+        const { data: orderData } = await supabase
+          .from('draft_order')
+          .select('fantasy_team_id, pick_number, round')
+          .eq('draft_id', draft.id)
+          .order('pick_number')
+
+        if (orderData && orderData.length > 0) {
+          console.log('Polling: loaded draft order', orderData.length, 'entries')
+          setDraftOrder(orderData)
+        }
+      }
+
       // Also check for new picks
       const { data: picksData } = await supabase
         .from('draft_picks')
@@ -323,7 +371,7 @@ export default function DraftRoomPage() {
     }, 5000) // Poll every 5 seconds
 
     return () => clearInterval(pollInterval)
-  }, [draft?.id, draft?.status, draft?.current_pick, draft?.current_team_id, picks.length, supabase])
+  }, [draft?.id, draft?.status, draft?.current_pick, draft?.current_team_id, picks.length, draftOrder.length, supabase])
 
   // Timer countdown
   useEffect(() => {
@@ -528,7 +576,7 @@ export default function DraftRoomPage() {
       const deadline = new Date(Date.now() + (settings.draft_timer_seconds || 60) * 1000)
       console.log('Updating draft status to in_progress')
 
-      const { error: updateError } = await supabase
+      const { error: updateError, data: updateData, count } = await supabase
         .from('drafts')
         .update({
           status: 'in_progress',
@@ -539,6 +587,9 @@ export default function DraftRoomPage() {
           started_at: new Date().toISOString()
         })
         .eq('id', draft.id)
+        .select()
+
+      console.log('Draft update result:', { updateError, updateData, count })
 
       if (updateError) {
         console.error('Error updating draft status:', updateError)
@@ -546,9 +597,27 @@ export default function DraftRoomPage() {
         return
       }
 
-      console.log('Draft started successfully!')
-      // Force local state update in case realtime isn't working
-      setDraft(prev => prev ? { ...prev, status: 'in_progress', current_round: 1, current_pick: 1, current_team_id: firstTeamId, pick_deadline: deadline.toISOString() } : null)
+      if (!updateData || updateData.length === 0) {
+        console.error('Draft update returned no data - RLS policy may be blocking')
+        setActionError('Failed to start draft - you may not have permission. Please check that you are the commissioner.')
+        return
+      }
+
+      console.log('Draft started successfully!', updateData[0])
+      // Force local state update
+      setDraft(updateData[0] as DraftState)
+
+      // Reload draft order from database to ensure consistency
+      const { data: freshOrderData } = await supabase
+        .from('draft_order')
+        .select('fantasy_team_id, pick_number, round')
+        .eq('draft_id', draft.id)
+        .order('pick_number')
+
+      if (freshOrderData) {
+        console.log('Reloaded draft order:', freshOrderData.length, 'entries')
+        setDraftOrder(freshOrderData)
+      }
 
     } catch (err) {
       console.error('Error starting draft:', err)
@@ -600,6 +669,30 @@ export default function DraftRoomPage() {
     })))
   }
 
+  // Show pick confirmation modal
+  const handleSelectSchool = (school: School) => {
+    console.log('>>> handleSelectSchool called <<<', school.name)
+    console.log('Draft status:', draft?.status, 'isMyPick:', isMyPick)
+    if (!draft || !isMyPick || draft.status !== 'in_progress') {
+      console.log('Blocked from showing modal:', { hasDraft: !!draft, isMyPick, status: draft?.status })
+      return
+    }
+    console.log('Opening confirmation modal for:', school.name)
+    setPendingPick(school)
+  }
+
+  // Cancel the pending pick
+  const handleCancelPick = () => {
+    setPendingPick(null)
+  }
+
+  // Confirm and make the pick
+  const handleConfirmPick = async () => {
+    if (!pendingPick) return
+    await handleMakePick(pendingPick.id)
+    setPendingPick(null)
+  }
+
   // Make a pick
   const handleMakePick = async (schoolId: string) => {
     console.log('handleMakePick called', { schoolId, isMyPick, draftStatus: draft?.status })
@@ -608,10 +701,13 @@ export default function DraftRoomPage() {
       return
     }
 
+    setIsSubmittingPick(true)
+
     try {
       const myTeam = teams.find(t => t.user_id === user?.id)
       if (!myTeam) {
         console.log('No team found for user')
+        setIsSubmittingPick(false)
         return
       }
 
@@ -629,7 +725,24 @@ export default function DraftRoomPage() {
       if (pickError) {
         console.error('Error inserting pick:', pickError)
         setActionError('Failed to make pick: ' + pickError.message)
+        setIsSubmittingPick(false)
         return
+      }
+
+      // Immediately update local picks state so the school is filtered out
+      const selectedSchool = schools.find(s => s.id === schoolId)
+      if (selectedSchool) {
+        const newPick: DraftPick = {
+          id: `temp-${Date.now()}`, // Temporary ID until realtime updates
+          round: draft.current_round,
+          pick_number: draft.current_pick,
+          fantasy_team_id: myTeam.id,
+          school_id: schoolId,
+          picked_at: new Date().toISOString(),
+          schools: selectedSchool,
+          fantasy_teams: { name: myTeam.name }
+        }
+        setPicks(prev => [...prev, newPick])
       }
 
       console.log('Pick inserted, adding to roster')
@@ -654,6 +767,8 @@ export default function DraftRoomPage() {
     } catch (err) {
       console.error('Error making pick:', err)
       setActionError('Failed to make pick: ' + (err instanceof Error ? err.message : String(err)))
+    } finally {
+      setIsSubmittingPick(false)
     }
   }
 
@@ -811,9 +926,28 @@ export default function DraftRoomPage() {
   const generateDraftBoard = () => {
     if (!settings || teams.length === 0) return []
 
+    const board: { pickNumber: number; round: number; team: Team; pick?: DraftPick }[] = []
+
+    // If draft order exists in database, use it (this is the authoritative source)
+    if (draftOrder.length > 0) {
+      for (const orderEntry of draftOrder) {
+        const team = teams.find(t => t.id === orderEntry.fantasy_team_id)
+        if (team) {
+          const existingPick = picks.find(p => p.pick_number === orderEntry.pick_number)
+          board.push({
+            pickNumber: orderEntry.pick_number,
+            round: orderEntry.round,
+            team,
+            pick: existingPick
+          })
+        }
+      }
+      return board
+    }
+
+    // Otherwise, calculate from team positions (for pre-draft display)
     const totalRounds = settings.schools_per_team
     const sortedTeams = [...teams].sort((a, b) => (a.draft_position || 999) - (b.draft_position || 999))
-    const board: { pickNumber: number; round: number; team: Team; pick?: DraftPick }[] = []
 
     let pickNumber = 1
     for (let round = 1; round <= totalRounds; round++) {
@@ -1002,12 +1136,12 @@ export default function DraftRoomPage() {
           <div className="flex-1 overflow-y-auto p-2">
             <div className="space-y-1">
               {availableSchools.map(school => {
-                const pickCount = schoolPickCounts[school.id] || 0
+                const globalPickCount = schoolPickCounts[school.id] || 0
 
                 return (
                   <button
                     key={school.id}
-                    onClick={() => handleMakePick(school.id)}
+                    onClick={() => handleSelectSchool(school)}
                     disabled={!isMyPick || draft?.status !== 'in_progress'}
                     className={`w-full p-2 rounded text-left transition-colors ${
                       isMyPick && draft?.status === 'in_progress'
@@ -1035,19 +1169,48 @@ export default function DraftRoomPage() {
                         </div>
                       )}
                       <div className="flex-1 min-w-0">
-                        <div className="font-medium text-sm truncate">{school.name}</div>
-                        <div className="text-xs opacity-75">{getConferenceAbbr(school.conference)}</div>
+                        <div className="font-bold text-sm truncate">{school.name}</div>
+                        <div className="text-xs opacity-75">{school.conference}</div>
                       </div>
                       <div
                         className="text-xs px-1.5 py-0.5 rounded"
                         style={{ backgroundColor: school.secondary_color, color: school.primary_color }}
                       >
-                        {pickCount}/{maxSelections}
+                        {globalPickCount}/{maxSelectionsTotal}
                       </div>
                     </div>
                   </button>
                 )
               })}
+
+              {/* Maxed out schools - shown at bottom with grey strikethrough */}
+              {maxedOutSchools.map(school => (
+                <div
+                  key={school.id}
+                  className="w-full p-2 rounded text-left bg-gray-700 cursor-not-allowed"
+                >
+                  <div className="flex items-center gap-2">
+                    {school.logo_url ? (
+                      <img
+                        src={school.logo_url}
+                        alt={school.name}
+                        className="w-8 h-8 rounded-full bg-white p-0.5 opacity-50 grayscale"
+                      />
+                    ) : (
+                      <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold bg-gray-600 text-gray-400">
+                        {school.abbreviation?.slice(0, 2) || school.name.slice(0, 2)}
+                      </div>
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <div className="font-bold text-sm truncate text-gray-500 line-through">{school.name}</div>
+                      <div className="text-xs text-gray-600">{school.conference}</div>
+                    </div>
+                    <div className="text-xs px-1.5 py-0.5 rounded bg-gray-600 text-gray-400">
+                      {maxSelectionsTotal}/{maxSelectionsTotal}
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         </div>
@@ -1174,7 +1337,7 @@ export default function DraftRoomPage() {
                         {pick.schools.abbreviation?.slice(0, 2) || pick.schools.name.slice(0, 2)}
                       </div>
                     )}
-                    <span className="font-medium flex-1">{pick.schools.name}</span>
+                    <span className="font-bold flex-1">{pick.schools.name}</span>
                     <span className="text-xs opacity-75">{pick.fantasy_teams.name}</span>
                   </div>
                 ))}
@@ -1242,10 +1405,11 @@ export default function DraftRoomPage() {
                         </div>
                       )}
                       <div className="flex-1 min-w-0">
-                        <div className="font-medium truncate">{pick.schools.name}</div>
-                        <div className="text-[10px] opacity-75">
-                          R{pick.round} • {getConferenceAbbr(pick.schools.conference)}
-                        </div>
+                        <div className="font-bold truncate">{pick.schools.name}</div>
+                        <div className="text-[10px] opacity-75">R{pick.round}</div>
+                      </div>
+                      <div className="text-xs opacity-75">
+                        {getConferenceAbbr(pick.schools.conference)}
                       </div>
                     </div>
                   ))
@@ -1257,6 +1421,65 @@ export default function DraftRoomPage() {
           </div>
         </div>
       </div>
+
+      {/* Pick Confirmation Modal */}
+      {pendingPick && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
+          <div className="bg-gray-800 rounded-lg p-6 max-w-md w-full mx-4 shadow-xl">
+            <h3 className="text-xl font-bold text-white mb-4">Confirm Pick</h3>
+
+            <div
+              className="p-4 rounded-lg mb-6 flex items-center gap-4"
+              style={{
+                backgroundColor: pendingPick.primary_color,
+                color: pendingPick.secondary_color
+              }}
+            >
+              {pendingPick.logo_url ? (
+                <img
+                  src={pendingPick.logo_url}
+                  alt={pendingPick.name}
+                  className="w-16 h-16 rounded-full bg-white p-1"
+                />
+              ) : (
+                <div
+                  className="w-16 h-16 rounded-full flex items-center justify-center text-xl font-bold"
+                  style={{ backgroundColor: pendingPick.secondary_color, color: pendingPick.primary_color }}
+                >
+                  {pendingPick.abbreviation?.slice(0, 3) || pendingPick.name.slice(0, 3)}
+                </div>
+              )}
+              <div>
+                <div className="text-xl font-bold">{pendingPick.name}</div>
+                <div className="text-sm opacity-75">{pendingPick.conference}</div>
+              </div>
+            </div>
+
+            <p className="text-gray-300 mb-6">
+              Are you sure you want to draft <strong>{pendingPick.name}</strong>?
+              <br />
+              <span className="text-gray-500 text-sm">Round {draft?.current_round}, Pick {draft?.current_pick}</span>
+            </p>
+
+            <div className="flex gap-3">
+              <button
+                onClick={handleCancelPick}
+                disabled={isSubmittingPick}
+                className="flex-1 px-4 py-3 bg-gray-700 hover:bg-gray-600 text-white rounded-lg font-medium transition-colors disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleConfirmPick}
+                disabled={isSubmittingPick}
+                className="flex-1 px-4 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg font-semibold transition-colors disabled:opacity-50"
+              >
+                {isSubmittingPick ? 'Drafting...' : 'Confirm Pick'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
