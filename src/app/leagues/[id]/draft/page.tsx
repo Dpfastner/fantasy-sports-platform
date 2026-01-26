@@ -709,6 +709,8 @@ export default function DraftRoomPage() {
   // Confirm and make the pick
   const handleConfirmPick = async () => {
     if (!pendingPick) return
+    // Reset timer expired flag immediately when user confirms their pick
+    setTimerExpired(false)
     await handleMakePick(pendingPick.id)
     setPendingPick(null)
   }
