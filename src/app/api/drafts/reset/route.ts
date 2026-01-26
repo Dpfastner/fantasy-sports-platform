@@ -1,9 +1,23 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { createClient as createAdminClient } from '@supabase/supabase-js'
+
+// Create admin client that bypasses RLS for delete operations
+function getSupabaseAdmin() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY
+
+  if (!url || !key) {
+    throw new Error('Missing Supabase configuration for admin operations')
+  }
+
+  return createAdminClient(url, key)
+}
 
 export async function POST(request: Request) {
   try {
     const supabase = await createClient()
+    const supabaseAdmin = getSupabaseAdmin()
 
     // Get current user
     const { data: { user } } = await supabase.auth.getUser()
@@ -47,40 +61,47 @@ export async function POST(request: Request) {
 
     const teamIds = teams?.map(t => t.id) || []
 
+    // Use admin client for delete operations (bypasses RLS)
     // Delete draft picks
-    const { error: picksError } = await supabase
+    const { error: picksError, count: picksDeleted } = await supabaseAdmin
       .from('draft_picks')
       .delete()
       .eq('draft_id', draft.id)
 
     if (picksError) {
       console.error('Error deleting draft picks:', picksError)
+    } else {
+      console.log('Deleted draft picks:', picksDeleted)
     }
 
     // Delete draft order
-    const { error: orderError } = await supabase
+    const { error: orderError, count: orderDeleted } = await supabaseAdmin
       .from('draft_order')
       .delete()
       .eq('draft_id', draft.id)
 
     if (orderError) {
       console.error('Error deleting draft order:', orderError)
+    } else {
+      console.log('Deleted draft order entries:', orderDeleted)
     }
 
     // Delete roster periods for all teams in the league
     if (teamIds.length > 0) {
-      const { error: rosterError } = await supabase
+      const { error: rosterError, count: rostersDeleted } = await supabaseAdmin
         .from('roster_periods')
         .delete()
         .in('fantasy_team_id', teamIds)
 
       if (rosterError) {
         console.error('Error deleting roster periods:', rosterError)
+      } else {
+        console.log('Deleted roster periods:', rostersDeleted)
       }
     }
 
-    // Reset draft state
-    const { error: draftError } = await supabase
+    // Reset draft state (use admin client to ensure it works)
+    const { error: draftError } = await supabaseAdmin
       .from('drafts')
       .update({
         status: 'not_started',
