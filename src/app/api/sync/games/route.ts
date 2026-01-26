@@ -2,11 +2,17 @@ import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { fetchScoreboard, ESPNGame } from '@/lib/api/espn'
 
-// Use service role for database updates
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+// Create admin client lazily at runtime (not build time)
+function getSupabaseAdmin() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY
+
+  if (!url || !key) {
+    throw new Error('Missing Supabase configuration. Set NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY.')
+  }
+
+  return createClient(url, key)
+}
 
 interface SyncGameRequest {
   year?: number
@@ -39,7 +45,7 @@ export async function POST(request: Request) {
     console.log(`Found ${games.length} games`)
 
     // Get season ID from our database
-    const { data: season } = await supabaseAdmin
+    const { data: season } = await getSupabaseAdmin()
       .from('seasons')
       .select('id')
       .eq('year', year)
@@ -53,7 +59,7 @@ export async function POST(request: Request) {
     }
 
     // Get school mappings (ESPN ID -> our school ID)
-    const { data: schools } = await supabaseAdmin
+    const { data: schools } = await getSupabaseAdmin()
       .from('schools')
       .select('id, external_api_id')
       .not('external_api_id', 'is', null)
@@ -110,7 +116,7 @@ export async function POST(request: Request) {
       const gameTimeStr = gameDate.toTimeString().slice(0, 8)
 
       // Upsert the game (using correct column names from schema)
-      const { error: upsertError } = await supabaseAdmin
+      const { error: upsertError } = await getSupabaseAdmin()
         .from('games')
         .upsert(
           {
