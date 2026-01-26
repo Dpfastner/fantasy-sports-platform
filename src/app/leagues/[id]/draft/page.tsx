@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
@@ -83,10 +83,6 @@ export default function DraftRoomPage() {
 
   // Track if timer has expired (for showing warning)
   const [timerExpired, setTimerExpired] = useState(false)
-
-  // Use a ref to track the latest pick number we've advanced to locally
-  // This prevents stale polling responses from reverting state
-  const latestLocalPickRef = useRef<number>(0)
 
   // Get unique conferences from schools
   const conferences = [...new Set(schools.map(s => s.conference))].sort()
@@ -309,18 +305,11 @@ export default function DraftRoomPage() {
           }
         }
 
-        // Only accept realtime updates that are forward progress (or status changes)
-        // This prevents a race where realtime returns stale data after we made a pick
-        if (newDraft.current_pick >= latestLocalPickRef.current || newDraft.status !== draft.status) {
-          setDraft(newDraft)
-          // Sync ref to server state
-          latestLocalPickRef.current = newDraft.current_pick
-          // Reset timer when pick changes
-          if (newDraft.current_pick !== draft.current_pick) {
-            setTimerExpired(false)
-          }
-        } else {
-          console.log('Realtime: ignoring stale update (server pick', newDraft.current_pick, '< local ref', latestLocalPickRef.current, ')')
+        // Accept all realtime updates from the server - it's the source of truth
+        setDraft(newDraft)
+        // Reset timer when pick changes
+        if (newDraft.current_pick !== draft.current_pick) {
+          setTimerExpired(false)
         }
       })
       .on('postgres_changes', {
@@ -384,26 +373,15 @@ export default function DraftRoomPage() {
             setDraftOrder(orderData)
           }
           setDraft(draftData as DraftState)
-          latestLocalPickRef.current = draftData.current_pick // Sync ref
           return
         }
 
-        // Only ignore stale data if it's BEHIND our ref AND our ref is non-zero
-        // (ref is only set when WE make a pick, so other browsers have ref=0)
-        if (latestLocalPickRef.current > 0 && draftData.current_pick < latestLocalPickRef.current) {
-          console.log('Polling: ignoring stale data (server pick', draftData.current_pick, '< local ref', latestLocalPickRef.current, ')')
-          return
-        }
-
-        // Accept server updates that are ahead of or equal to our ref
-        // This allows other browsers to receive updates
+        // Accept server updates - the server is the source of truth
         if (draftData.current_pick !== draft.current_pick ||
             draftData.status !== draft.status ||
             draftData.current_team_id !== draft.current_team_id) {
           console.log('Polling: accepting draft update (pick', draftData.current_pick, ')')
           setDraft(draftData as DraftState)
-          // Sync our ref to the server state (important for non-picking browsers)
-          latestLocalPickRef.current = draftData.current_pick
           // Reset timer expired flag when pick changes
           if (draftData.current_pick !== draft.current_pick) {
             setTimerExpired(false)
@@ -863,9 +841,6 @@ export default function DraftRoomPage() {
     const deadline = new Date(Date.now() + (settings.draft_timer_seconds || 60) * 1000)
 
     console.log('Advancing to pick', nextPickNumber, 'round', nextRound, 'team', nextOrder.fantasy_team_id)
-
-    // Track this locally BEFORE the DB update so polling won't revert our state
-    latestLocalPickRef.current = nextPickNumber
 
     // Reset timer expired flag for the next pick
     setTimerExpired(false)
