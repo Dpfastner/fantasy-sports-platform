@@ -285,7 +285,22 @@ export default function DraftRoomPage() {
 
   // Commissioner: Start draft
   const handleStartDraft = async () => {
-    if (!isCommissioner || !draft || !settings) return
+    if (!isCommissioner) {
+      setError('Only the commissioner can start the draft')
+      return
+    }
+    if (!draft) {
+      setError('Draft not found')
+      return
+    }
+    if (!settings) {
+      setError('League settings not found')
+      return
+    }
+    if (teams.length < 2) {
+      setError('Need at least 2 teams to start')
+      return
+    }
 
     try {
       let firstTeamId: string | null = null
