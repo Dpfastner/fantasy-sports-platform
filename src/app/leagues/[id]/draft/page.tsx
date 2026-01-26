@@ -309,7 +309,19 @@ export default function DraftRoomPage() {
           }
         }
 
-        setDraft(newDraft)
+        // Only accept realtime updates that are forward progress (or status changes)
+        // This prevents a race where realtime returns stale data after we made a pick
+        if (newDraft.current_pick >= latestLocalPickRef.current || newDraft.status !== draft.status) {
+          setDraft(newDraft)
+          // Sync ref to server state
+          latestLocalPickRef.current = newDraft.current_pick
+          // Reset timer when pick changes
+          if (newDraft.current_pick !== draft.current_pick) {
+            setTimerExpired(false)
+          }
+        } else {
+          console.log('Realtime: ignoring stale update (server pick', newDraft.current_pick, '< local ref', latestLocalPickRef.current, ')')
+        }
       })
       .on('postgres_changes', {
         event: 'INSERT',
@@ -372,22 +384,26 @@ export default function DraftRoomPage() {
             setDraftOrder(orderData)
           }
           setDraft(draftData as DraftState)
+          latestLocalPickRef.current = draftData.current_pick // Sync ref
           return
         }
 
-        // CRITICAL: Ignore stale polling data that's behind our local state
-        // This happens when we advance the pick locally but polling returns old data
-        if (draftData.current_pick < latestLocalPickRef.current) {
-          console.log('Polling: ignoring stale data (server pick', draftData.current_pick, '< local', latestLocalPickRef.current, ')')
+        // Only ignore stale data if it's BEHIND our ref AND our ref is non-zero
+        // (ref is only set when WE make a pick, so other browsers have ref=0)
+        if (latestLocalPickRef.current > 0 && draftData.current_pick < latestLocalPickRef.current) {
+          console.log('Polling: ignoring stale data (server pick', draftData.current_pick, '< local ref', latestLocalPickRef.current, ')')
           return
         }
 
-        // Only update if something changed AND it's not behind our local state
+        // Accept server updates that are ahead of or equal to our ref
+        // This allows other browsers to receive updates
         if (draftData.current_pick !== draft.current_pick ||
             draftData.status !== draft.status ||
             draftData.current_team_id !== draft.current_team_id) {
           console.log('Polling: accepting draft update (pick', draftData.current_pick, ')')
           setDraft(draftData as DraftState)
+          // Sync our ref to the server state (important for non-picking browsers)
+          latestLocalPickRef.current = draftData.current_pick
           // Reset timer expired flag when pick changes
           if (draftData.current_pick !== draft.current_pick) {
             setTimerExpired(false)
