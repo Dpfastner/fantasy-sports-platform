@@ -581,9 +581,12 @@ export default function DraftRoomPage() {
     const nextPickNumber = draft.current_pick + 1
     const totalPicks = teams.length * settings.schools_per_team
 
+    console.log('advanceToNextPick: next pick', nextPickNumber, 'of', totalPicks)
+
     if (nextPickNumber > totalPicks) {
       // Draft complete
-      await supabase
+      console.log('Draft complete!')
+      const { error } = await supabase
         .from('drafts')
         .update({
           status: 'completed',
@@ -592,17 +595,29 @@ export default function DraftRoomPage() {
           completed_at: new Date().toISOString()
         })
         .eq('id', draft.id)
+
+      if (error) {
+        console.error('Error completing draft:', error)
+      } else {
+        // Force local state update
+        setDraft(prev => prev ? { ...prev, status: 'completed', current_team_id: null, pick_deadline: null } : null)
+      }
       return
     }
 
     // Get next team
     const nextOrder = draftOrder.find(o => o.pick_number === nextPickNumber)
-    if (!nextOrder) return
+    if (!nextOrder) {
+      console.error('No draft order found for pick', nextPickNumber)
+      return
+    }
 
     const nextRound = Math.ceil(nextPickNumber / teams.length)
     const deadline = new Date(Date.now() + (settings.draft_timer_seconds || 60) * 1000)
 
-    await supabase
+    console.log('Advancing to pick', nextPickNumber, 'round', nextRound, 'team', nextOrder.fantasy_team_id)
+
+    const { error } = await supabase
       .from('drafts')
       .update({
         current_round: nextRound,
@@ -611,6 +626,19 @@ export default function DraftRoomPage() {
         pick_deadline: deadline.toISOString()
       })
       .eq('id', draft.id)
+
+    if (error) {
+      console.error('Error advancing pick:', error)
+    } else {
+      // Force local state update
+      setDraft(prev => prev ? {
+        ...prev,
+        current_round: nextRound,
+        current_pick: nextPickNumber,
+        current_team_id: nextOrder.fantasy_team_id,
+        pick_deadline: deadline.toISOString()
+      } : null)
+    }
   }
 
   // Pause/Resume draft
@@ -618,16 +646,27 @@ export default function DraftRoomPage() {
     if (!isCommissioner || !draft) return
 
     const newStatus = draft.status === 'paused' ? 'in_progress' : 'paused'
-    const updates: Partial<DraftState> = { status: newStatus }
+    const newDeadline = newStatus === 'in_progress'
+      ? new Date(Date.now() + (settings?.draft_timer_seconds || 60) * 1000).toISOString()
+      : null
 
-    if (newStatus === 'in_progress') {
-      // Reset timer when resuming
-      updates.pick_deadline = new Date(Date.now() + (settings?.draft_timer_seconds || 60) * 1000).toISOString()
+    console.log('Toggling pause:', newStatus)
+
+    const { error } = await supabase
+      .from('drafts')
+      .update({
+        status: newStatus,
+        pick_deadline: newDeadline
+      })
+      .eq('id', draft.id)
+
+    if (error) {
+      console.error('Error toggling pause:', error)
+      setActionError('Failed to pause/resume: ' + error.message)
     } else {
-      updates.pick_deadline = null
+      // Force local state update
+      setDraft(prev => prev ? { ...prev, status: newStatus, pick_deadline: newDeadline } : null)
     }
-
-    await supabase.from('drafts').update(updates).eq('id', draft.id)
   }
 
   if (loading) {
