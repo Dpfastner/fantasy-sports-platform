@@ -9,6 +9,7 @@ interface LeagueSettings {
   id: string
   draft_date: string | null
   draft_type: 'snake' | 'linear'
+  draft_order_type: 'random' | 'manual'
   draft_timer_seconds: number
   schools_per_team: number
   max_add_drops_per_season: number
@@ -110,6 +111,7 @@ export default function LeagueSettingsPage() {
         .update({
           draft_date: settings.draft_date,
           draft_type: settings.draft_type,
+          draft_order_type: settings.draft_order_type,
           draft_timer_seconds: settings.draft_timer_seconds,
           schools_per_team: settings.schools_per_team,
           max_add_drops_per_season: settings.max_add_drops_per_season,
@@ -217,6 +219,24 @@ export default function LeagueSettingsPage() {
                       <option value="snake">Snake (reverses each round)</option>
                       <option value="linear">Linear (same order each round)</option>
                     </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-gray-300 mb-2">Draft Order</label>
+                    <select
+                      value={settings.draft_order_type || 'random'}
+                      onChange={(e) => setSettings({ ...settings, draft_order_type: e.target.value as 'random' | 'manual' })}
+                      disabled={isDraftStarted}
+                      className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white disabled:opacity-50"
+                    >
+                      <option value="random">Random (shuffled when draft starts)</option>
+                      <option value="manual">Manual (set order below)</option>
+                    </select>
+                    <p className="text-gray-500 text-sm mt-1">
+                      {settings.draft_order_type === 'manual'
+                        ? 'Set the draft order on the draft page before starting'
+                        : 'Teams will be randomly ordered when the draft begins'}
+                    </p>
                   </div>
 
                   <div>

@@ -44,6 +44,7 @@ interface DraftState {
 
 interface LeagueSettings {
   draft_type: 'snake' | 'linear'
+  draft_order_type: 'random' | 'manual'
   draft_timer_seconds: number
   schools_per_team: number
 }
@@ -134,7 +135,7 @@ export default function DraftRoomPage() {
         // Get league settings
         const { data: settingsData } = await supabase
           .from('league_settings')
-          .select('draft_type, draft_timer_seconds, schools_per_team')
+          .select('draft_type, draft_order_type, draft_timer_seconds, schools_per_team')
           .eq('league_id', leagueId)
           .single()
 
@@ -350,18 +351,22 @@ export default function DraftRoomPage() {
 
       // Generate draft order if not exists
       if (draftOrder.length === 0) {
-        // Generate order and get first team
-        const shuffledTeams = [...teams].sort(() => Math.random() - 0.5)
+        // Generate order based on draft_order_type setting
+        const isManualOrder = settings.draft_order_type === 'manual'
+        const orderedTeams = isManualOrder
+          ? [...teams].sort((a, b) => (a.draft_position || 999) - (b.draft_position || 999))
+          : [...teams].sort(() => Math.random() - 0.5)
+
         const totalRounds = settings.schools_per_team
-        console.log('Generating draft order for', totalRounds, 'rounds with', shuffledTeams.length, 'teams')
+        console.log('Generating draft order for', totalRounds, 'rounds with', orderedTeams.length, 'teams', isManualOrder ? '(manual order)' : '(random order)')
 
         const orderEntries = []
         let pickNumber = 1
 
         for (let round = 1; round <= totalRounds; round++) {
           const roundOrder = settings.draft_type === 'snake' && round % 2 === 0
-            ? [...shuffledTeams].reverse()
-            : shuffledTeams
+            ? [...orderedTeams].reverse()
+            : orderedTeams
 
           for (let pos = 0; pos < roundOrder.length; pos++) {
             orderEntries.push({
@@ -377,17 +382,21 @@ export default function DraftRoomPage() {
 
         console.log('Generated', orderEntries.length, 'order entries')
 
-        // Update team draft positions
-        for (let i = 0; i < shuffledTeams.length; i++) {
-          const { error: posError } = await supabase
-            .from('fantasy_teams')
-            .update({ draft_position: i + 1 })
-            .eq('id', shuffledTeams[i].id)
-          if (posError) {
-            console.error('Error updating team draft position:', posError)
+        // Update team draft positions (only for random order, preserve manual)
+        if (!isManualOrder) {
+          for (let i = 0; i < orderedTeams.length; i++) {
+            const { error: posError } = await supabase
+              .from('fantasy_teams')
+              .update({ draft_position: i + 1 })
+              .eq('id', orderedTeams[i].id)
+            if (posError) {
+              console.error('Error updating team draft position:', posError)
+            }
           }
+          console.log('Updated team draft positions (random)')
+        } else {
+          console.log('Using existing draft positions (manual)')
         }
-        console.log('Updated team draft positions')
 
         // Insert all order entries
         const { error: orderError } = await supabase.from('draft_order').insert(orderEntries)
@@ -405,8 +414,8 @@ export default function DraftRoomPage() {
           round: e.round
         })))
 
-        // First team is first in shuffled order
-        firstTeamId = shuffledTeams[0].id
+        // First team is first in ordered teams
+        firstTeamId = orderedTeams[0].id
       } else {
         console.log('Draft order already exists, fetching first pick')
         // Draft order already exists, get first pick
@@ -641,6 +650,39 @@ export default function DraftRoomPage() {
     }
   }
 
+  // Move team up or down in manual draft order
+  const handleMoveTeam = async (teamId: string, direction: 'up' | 'down') => {
+    const sortedTeams = [...teams].sort((a, b) => (a.draft_position || 999) - (b.draft_position || 999))
+    const currentIndex = sortedTeams.findIndex(t => t.id === teamId)
+    const newIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1
+
+    if (newIndex < 0 || newIndex >= sortedTeams.length) return
+
+    // Swap positions
+    const teamA = sortedTeams[currentIndex]
+    const teamB = sortedTeams[newIndex]
+    const posA = teamA.draft_position || currentIndex + 1
+    const posB = teamB.draft_position || newIndex + 1
+
+    // Update in database
+    await supabase
+      .from('fantasy_teams')
+      .update({ draft_position: posB })
+      .eq('id', teamA.id)
+
+    await supabase
+      .from('fantasy_teams')
+      .update({ draft_position: posA })
+      .eq('id', teamB.id)
+
+    // Update local state
+    setTeams(prevTeams => prevTeams.map(t => {
+      if (t.id === teamA.id) return { ...t, draft_position: posB }
+      if (t.id === teamB.id) return { ...t, draft_position: posA }
+      return t
+    }))
+  }
+
   // Pause/Resume draft
   const handleTogglePause = async () => {
     if (!isCommissioner || !draft) return
@@ -831,13 +873,66 @@ export default function DraftRoomPage() {
 
           {/* Draft Status Messages */}
           {draft?.status === 'not_started' && (
-            <div className="p-6 text-center text-gray-400">
-              <p className="text-xl mb-2">Draft has not started yet</p>
-              {teams.length < 2 && (
-                <p>Need at least 2 teams to start the draft</p>
+            <div className="p-6">
+              <div className="text-center text-gray-400 mb-6">
+                <p className="text-xl mb-2">Draft has not started yet</p>
+                {teams.length < 2 && (
+                  <p>Need at least 2 teams to start the draft</p>
+                )}
+                {isCommissioner && teams.length >= 2 && (
+                  <p>Click &quot;Start Draft&quot; when everyone is ready</p>
+                )}
+              </div>
+
+              {/* Manual Draft Order Setup */}
+              {isCommissioner && settings?.draft_order_type === 'manual' && teams.length >= 2 && (
+                <div className="max-w-md mx-auto bg-gray-800 rounded-lg p-4">
+                  <h3 className="text-white font-semibold mb-3">Set Draft Order</h3>
+                  <p className="text-gray-400 text-sm mb-4">
+                    Drag teams to reorder, or use the arrows. Order will be saved when you rearrange.
+                  </p>
+                  <div className="space-y-2">
+                    {[...teams]
+                      .sort((a, b) => (a.draft_position || 999) - (b.draft_position || 999))
+                      .map((team, index) => (
+                        <div
+                          key={team.id}
+                          className="flex items-center gap-3 bg-gray-700 p-3 rounded"
+                        >
+                          <span className="text-gray-400 font-mono w-6">{index + 1}.</span>
+                          <span className="text-white flex-1">{team.name}</span>
+                          <div className="flex gap-1">
+                            <button
+                              onClick={() => handleMoveTeam(team.id, 'up')}
+                              disabled={index === 0}
+                              className="text-gray-400 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed p-1"
+                            >
+                              ▲
+                            </button>
+                            <button
+                              onClick={() => handleMoveTeam(team.id, 'down')}
+                              disabled={index === teams.length - 1}
+                              className="text-gray-400 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed p-1"
+                            >
+                              ▼
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                  </div>
+                </div>
               )}
-              {isCommissioner && teams.length >= 2 && (
-                <p>Click &quot;Start Draft&quot; when everyone is ready</p>
+
+              {/* Random Order Info */}
+              {isCommissioner && settings?.draft_order_type === 'random' && teams.length >= 2 && (
+                <div className="max-w-md mx-auto text-center">
+                  <p className="text-gray-500 text-sm">
+                    Draft order is set to <strong className="text-gray-400">Random</strong>. Teams will be shuffled when the draft starts.
+                  </p>
+                  <p className="text-gray-600 text-xs mt-2">
+                    Change this in <Link href={`/leagues/${leagueId}/settings`} className="text-blue-400 hover:text-blue-300">League Settings</Link>
+                  </p>
+                </div>
               )}
             </div>
           )}
