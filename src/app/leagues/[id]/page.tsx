@@ -147,7 +147,7 @@ export default async function LeaguePage({ params }: PageProps) {
               href={`/leagues/${id}/settings`}
               className="bg-gray-700 hover:bg-gray-600 text-white font-semibold py-2 px-4 rounded-lg transition-colors"
             >
-              League Settings
+              Commissioner Tools
             </Link>
           )}
         </div>
