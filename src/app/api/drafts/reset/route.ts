@@ -1,0 +1,121 @@
+import { NextResponse } from 'next/server'
+import { createClient } from '@/lib/supabase/server'
+
+export async function POST(request: Request) {
+  try {
+    const supabase = await createClient()
+
+    // Get current user
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const { leagueId } = await request.json()
+    if (!leagueId) {
+      return NextResponse.json({ error: 'League ID required' }, { status: 400 })
+    }
+
+    // Verify user is commissioner
+    const { data: membership } = await supabase
+      .from('league_members')
+      .select('role')
+      .eq('league_id', leagueId)
+      .eq('user_id', user.id)
+      .single()
+
+    if (!membership || membership.role !== 'commissioner') {
+      return NextResponse.json({ error: 'Only commissioners can reset the draft' }, { status: 403 })
+    }
+
+    // Get the draft ID
+    const { data: draft } = await supabase
+      .from('drafts')
+      .select('id')
+      .eq('league_id', leagueId)
+      .single()
+
+    if (!draft) {
+      return NextResponse.json({ error: 'Draft not found' }, { status: 404 })
+    }
+
+    // Get all team IDs in the league (for clearing rosters)
+    const { data: teams } = await supabase
+      .from('fantasy_teams')
+      .select('id')
+      .eq('league_id', leagueId)
+
+    const teamIds = teams?.map(t => t.id) || []
+
+    // Delete draft picks
+    const { error: picksError } = await supabase
+      .from('draft_picks')
+      .delete()
+      .eq('draft_id', draft.id)
+
+    if (picksError) {
+      console.error('Error deleting draft picks:', picksError)
+    }
+
+    // Delete draft order
+    const { error: orderError } = await supabase
+      .from('draft_order')
+      .delete()
+      .eq('draft_id', draft.id)
+
+    if (orderError) {
+      console.error('Error deleting draft order:', orderError)
+    }
+
+    // Delete roster periods for all teams in the league
+    if (teamIds.length > 0) {
+      const { error: rosterError } = await supabase
+        .from('roster_periods')
+        .delete()
+        .in('fantasy_team_id', teamIds)
+
+      if (rosterError) {
+        console.error('Error deleting roster periods:', rosterError)
+      }
+    }
+
+    // Reset draft state
+    const { error: draftError } = await supabase
+      .from('drafts')
+      .update({
+        status: 'not_started',
+        current_round: 1,
+        current_pick: 1,
+        current_team_id: null,
+        pick_deadline: null,
+        started_at: null,
+        completed_at: null
+      })
+      .eq('id', draft.id)
+
+    if (draftError) {
+      console.error('Error resetting draft state:', draftError)
+      return NextResponse.json({ error: 'Failed to reset draft: ' + draftError.message }, { status: 500 })
+    }
+
+    // Reset team draft positions (optional - they can re-randomize)
+    // We'll leave draft_position intact so manual order is preserved
+
+    return NextResponse.json({
+      success: true,
+      message: 'Draft reset successfully',
+      cleared: {
+        picks: true,
+        order: true,
+        rosters: teamIds.length
+      }
+    })
+
+  } catch (error) {
+    console.error('Reset draft error:', error)
+    return NextResponse.json(
+      { error: 'Failed to reset draft', details: String(error) },
+      { status: 500 }
+    )
+  }
+}

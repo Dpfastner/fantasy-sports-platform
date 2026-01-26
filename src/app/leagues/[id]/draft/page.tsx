@@ -80,6 +80,8 @@ export default function DraftRoomPage() {
   const [viewingTeamId, setViewingTeamId] = useState<string | null>(null) // For viewing other teams' rosters
   const [pendingPick, setPendingPick] = useState<School | null>(null) // School selected, awaiting confirmation
   const [isSubmittingPick, setIsSubmittingPick] = useState(false)
+  const [isResettingDraft, setIsResettingDraft] = useState(false)
+  const [showResetConfirm, setShowResetConfirm] = useState(false)
 
   // Track if timer has expired (for showing warning)
   const [timerExpired, setTimerExpired] = useState(false)
@@ -930,6 +932,50 @@ export default function DraftRoomPage() {
     }
   }
 
+  // Reset draft (commissioner only)
+  const handleResetDraft = async () => {
+    if (!isCommissioner) return
+
+    setIsResettingDraft(true)
+    setActionError(null)
+
+    try {
+      const response = await fetch('/api/drafts/reset', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ leagueId })
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to reset draft')
+      }
+
+      console.log('Draft reset successfully:', data)
+
+      // Reset local state
+      setDraft(prev => prev ? {
+        ...prev,
+        status: 'not_started',
+        current_round: 1,
+        current_pick: 1,
+        current_team_id: null,
+        pick_deadline: null
+      } : null)
+      setPicks([])
+      setDraftOrder([])
+      setShowResetConfirm(false)
+      setTimerExpired(false)
+
+    } catch (err) {
+      console.error('Error resetting draft:', err)
+      setActionError('Failed to reset draft: ' + (err instanceof Error ? err.message : String(err)))
+    } finally {
+      setIsResettingDraft(false)
+    }
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-900 flex items-center justify-center">
@@ -1088,6 +1134,16 @@ export default function DraftRoomPage() {
                 } text-white px-4 py-1.5 rounded text-sm font-medium`}
               >
                 {draft.status === 'paused' ? 'Resume' : 'Pause'}
+              </button>
+            )}
+
+            {/* Reset Draft button - commissioners only, when draft has started or completed */}
+            {isCommissioner && (draft?.status === 'in_progress' || draft?.status === 'paused' || draft?.status === 'completed' || picks.length > 0) && (
+              <button
+                onClick={() => setShowResetConfirm(true)}
+                className="bg-red-600 hover:bg-red-700 text-white px-4 py-1.5 rounded text-sm font-medium"
+              >
+                Reset Draft
               </button>
             )}
           </div>
@@ -1514,6 +1570,44 @@ export default function DraftRoomPage() {
                 className="flex-1 px-4 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg font-semibold transition-colors disabled:opacity-50"
               >
                 {isSubmittingPick ? 'Drafting...' : 'Confirm Pick'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Reset Draft Confirmation Modal */}
+      {showResetConfirm && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
+          <div className="bg-gray-800 rounded-lg p-6 max-w-md w-full mx-4 shadow-xl">
+            <h3 className="text-xl font-bold text-white mb-4">Reset Draft?</h3>
+
+            <div className="bg-red-900/30 border border-red-700 rounded-lg p-4 mb-6">
+              <p className="text-red-300 font-medium mb-2">Warning: This action cannot be undone!</p>
+              <p className="text-red-200 text-sm">
+                This will delete all draft picks, clear the draft order, and remove all schools from team rosters.
+                The draft will return to &quot;Not Started&quot; status.
+              </p>
+            </div>
+
+            <p className="text-gray-300 mb-6">
+              Are you sure you want to reset the draft for <strong>{leagueName}</strong>?
+            </p>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowResetConfirm(false)}
+                disabled={isResettingDraft}
+                className="flex-1 px-4 py-3 bg-gray-700 hover:bg-gray-600 text-white rounded-lg font-medium transition-colors disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleResetDraft}
+                disabled={isResettingDraft}
+                className="flex-1 px-4 py-3 bg-red-600 hover:bg-red-700 text-white rounded-lg font-semibold transition-colors disabled:opacity-50"
+              >
+                {isResettingDraft ? 'Resetting...' : 'Reset Draft'}
               </button>
             </div>
           </div>
