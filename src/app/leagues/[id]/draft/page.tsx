@@ -450,6 +450,23 @@ export default function DraftRoomPage() {
     return () => clearInterval(interval)
   }, [draft?.pick_deadline, draft?.status, draft?.current_pick, draft?.id, isCommissioner, teams.length, settings?.schools_per_team, settings?.draft_timer_seconds, draftOrder, supabase])
 
+  // Close confirmation modal if timer expires or it's no longer my turn
+  useEffect(() => {
+    if (pendingPick) {
+      // Close if timer expired
+      if (timeRemaining !== null && timeRemaining <= 0) {
+        console.log('Closing modal - timer expired')
+        setPendingPick(null)
+        setActionError('Time expired! Your pick was skipped.')
+      }
+      // Close if it's no longer my turn (draft advanced)
+      if (!isMyPick) {
+        console.log('Closing modal - no longer my turn')
+        setPendingPick(null)
+      }
+    }
+  }, [timeRemaining, isMyPick, pendingPick])
+
   // Commissioner: Start draft
   const handleStartDraft = async () => {
     console.log('handleStartDraft called', { isCommissioner, draft, settings, teamsLength: teams.length })
@@ -672,9 +689,15 @@ export default function DraftRoomPage() {
   // Show pick confirmation modal
   const handleSelectSchool = (school: School) => {
     console.log('>>> handleSelectSchool called <<<', school.name)
-    console.log('Draft status:', draft?.status, 'isMyPick:', isMyPick)
+    console.log('Draft status:', draft?.status, 'isMyPick:', isMyPick, 'timeRemaining:', timeRemaining)
     if (!draft || !isMyPick || draft.status !== 'in_progress') {
       console.log('Blocked from showing modal:', { hasDraft: !!draft, isMyPick, status: draft?.status })
+      return
+    }
+    // Don't allow picks if timer has expired
+    if (timeRemaining !== null && timeRemaining <= 0) {
+      console.log('Blocked - timer expired')
+      setActionError('Time expired! The pick is being skipped.')
       return
     }
     console.log('Opening confirmation modal for:', school.name)
@@ -695,10 +718,21 @@ export default function DraftRoomPage() {
 
   // Make a pick
   const handleMakePick = async (schoolId: string) => {
-    console.log('handleMakePick called', { schoolId, isMyPick, draftStatus: draft?.status })
+    console.log('handleMakePick called', { schoolId, isMyPick, draftStatus: draft?.status, timeRemaining })
     if (!draft || !isMyPick || draft.status !== 'in_progress') {
       console.log('Pick rejected - not my turn or draft not in progress')
       return
+    }
+
+    // Double-check timer hasn't expired (race condition protection)
+    if (draft.pick_deadline) {
+      const deadline = new Date(draft.pick_deadline).getTime()
+      if (Date.now() > deadline) {
+        console.log('Pick rejected - timer expired')
+        setActionError('Time expired! Your pick was skipped.')
+        setPendingPick(null)
+        return
+      }
     }
 
     setIsSubmittingPick(true)
