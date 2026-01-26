@@ -1,0 +1,737 @@
+'use client'
+
+import { useState, useEffect, useCallback } from 'react'
+import { useParams, useRouter } from 'next/navigation'
+import Link from 'next/link'
+import { createClient } from '@/lib/supabase/client'
+
+interface School {
+  id: string
+  name: string
+  abbreviation: string | null
+  conference: string
+  primary_color: string
+  secondary_color: string
+}
+
+interface Team {
+  id: string
+  name: string
+  user_id: string
+  draft_position: number | null
+  profiles: { display_name: string | null; email: string } | null
+}
+
+interface DraftPick {
+  id: string
+  round: number
+  pick_number: number
+  fantasy_team_id: string
+  school_id: string
+  picked_at: string
+  schools: School
+  fantasy_teams: { name: string }
+}
+
+interface DraftState {
+  id: string
+  status: 'not_started' | 'in_progress' | 'paused' | 'completed'
+  current_round: number
+  current_pick: number
+  current_team_id: string | null
+  pick_deadline: string | null
+}
+
+interface LeagueSettings {
+  draft_type: 'snake' | 'linear'
+  draft_timer_seconds: number
+  schools_per_team: number
+}
+
+export default function DraftRoomPage() {
+  const params = useParams()
+  const router = useRouter()
+  const leagueId = params.id as string
+  const supabase = createClient()
+
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [user, setUser] = useState<{ id: string } | null>(null)
+  const [isCommissioner, setIsCommissioner] = useState(false)
+  const [leagueName, setLeagueName] = useState('')
+
+  // Draft state
+  const [draft, setDraft] = useState<DraftState | null>(null)
+  const [settings, setSettings] = useState<LeagueSettings | null>(null)
+  const [teams, setTeams] = useState<Team[]>([])
+  const [schools, setSchools] = useState<School[]>([])
+  const [picks, setPicks] = useState<DraftPick[]>([])
+  const [draftOrder, setDraftOrder] = useState<{ fantasy_team_id: string; pick_number: number; round: number }[]>([])
+
+  // UI state
+  const [searchQuery, setSearchQuery] = useState('')
+  const [selectedConference, setSelectedConference] = useState<string>('all')
+  const [timeRemaining, setTimeRemaining] = useState<number | null>(null)
+
+  // Get unique conferences from schools
+  const conferences = [...new Set(schools.map(s => s.conference))].sort()
+
+  // Filter schools based on search and conference
+  const availableSchools = schools.filter(school => {
+    // Check if already picked
+    const isPicked = picks.some(p => p.school_id === school.id)
+    if (isPicked) return false
+
+    // Check search query
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase()
+      if (!school.name.toLowerCase().includes(query) &&
+          !school.abbreviation?.toLowerCase().includes(query)) {
+        return false
+      }
+    }
+
+    // Check conference filter
+    if (selectedConference !== 'all' && school.conference !== selectedConference) {
+      return false
+    }
+
+    return true
+  })
+
+  // Get current team on the clock
+  const currentTeam = teams.find(t => t.id === draft?.current_team_id)
+  const isMyPick = user && currentTeam?.user_id === user.id
+
+  // Load initial data
+  useEffect(() => {
+    async function loadData() {
+      try {
+        // Get current user
+        const { data: { user: authUser } } = await supabase.auth.getUser()
+        if (!authUser) {
+          router.push('/login')
+          return
+        }
+        setUser({ id: authUser.id })
+
+        // Get league info
+        const { data: league } = await supabase
+          .from('leagues')
+          .select('name, created_by, sport_id')
+          .eq('id', leagueId)
+          .single()
+
+        if (!league) {
+          setError('League not found')
+          return
+        }
+
+        setLeagueName(league.name)
+        setIsCommissioner(league.created_by === authUser.id)
+
+        // Get league settings
+        const { data: settingsData } = await supabase
+          .from('league_settings')
+          .select('draft_type, draft_timer_seconds, schools_per_team')
+          .eq('league_id', leagueId)
+          .single()
+
+        if (settingsData) {
+          setSettings(settingsData as LeagueSettings)
+        }
+
+        // Get draft state
+        const { data: draftData } = await supabase
+          .from('drafts')
+          .select('*')
+          .eq('league_id', leagueId)
+          .single()
+
+        if (draftData) {
+          setDraft(draftData as DraftState)
+        }
+
+        // Get teams
+        const { data: teamsData } = await supabase
+          .from('fantasy_teams')
+          .select('id, name, user_id, draft_position, profiles (display_name, email)')
+          .eq('league_id', leagueId)
+          .order('draft_position')
+
+        if (teamsData) {
+          setTeams(teamsData as unknown as Team[])
+        }
+
+        // Get schools for this sport
+        const { data: schoolsData } = await supabase
+          .from('schools')
+          .select('id, name, abbreviation, conference, primary_color, secondary_color')
+          .eq('sport_id', league.sport_id)
+          .eq('is_active', true)
+          .order('name')
+
+        if (schoolsData) {
+          setSchools(schoolsData as School[])
+        }
+
+        // Get draft order
+        if (draftData) {
+          const { data: orderData } = await supabase
+            .from('draft_order')
+            .select('fantasy_team_id, pick_number, round')
+            .eq('draft_id', draftData.id)
+            .order('pick_number')
+
+          if (orderData) {
+            setDraftOrder(orderData)
+          }
+        }
+
+        // Get existing picks
+        if (draftData) {
+          const { data: picksData } = await supabase
+            .from('draft_picks')
+            .select(`
+              id, round, pick_number, fantasy_team_id, school_id, picked_at,
+              schools (id, name, abbreviation, conference, primary_color, secondary_color),
+              fantasy_teams (name)
+            `)
+            .eq('draft_id', draftData.id)
+            .order('pick_number')
+
+          if (picksData) {
+            setPicks(picksData as unknown as DraftPick[])
+          }
+        }
+
+      } catch (err) {
+        console.error('Error loading draft data:', err)
+        setError('Failed to load draft data')
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    loadData()
+  }, [leagueId, router, supabase])
+
+  // Subscribe to real-time updates
+  useEffect(() => {
+    if (!draft?.id) return
+
+    // Subscribe to draft state changes
+    const draftChannel = supabase
+      .channel(`draft:${draft.id}`)
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'drafts',
+        filter: `id=eq.${draft.id}`
+      }, (payload) => {
+        setDraft(payload.new as DraftState)
+      })
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'draft_picks',
+        filter: `draft_id=eq.${draft.id}`
+      }, async (payload) => {
+        // Fetch the full pick with joins
+        const { data: newPick } = await supabase
+          .from('draft_picks')
+          .select(`
+            id, round, pick_number, fantasy_team_id, school_id, picked_at,
+            schools (id, name, abbreviation, conference, primary_color, secondary_color),
+            fantasy_teams (name)
+          `)
+          .eq('id', payload.new.id)
+          .single()
+
+        if (newPick) {
+          setPicks(prev => [...prev, newPick as unknown as DraftPick])
+        }
+      })
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(draftChannel)
+    }
+  }, [draft?.id, supabase])
+
+  // Timer countdown
+  useEffect(() => {
+    if (!draft?.pick_deadline || draft.status !== 'in_progress') {
+      setTimeRemaining(null)
+      return
+    }
+
+    const updateTimer = () => {
+      const deadline = new Date(draft.pick_deadline!).getTime()
+      const now = Date.now()
+      const remaining = Math.max(0, Math.floor((deadline - now) / 1000))
+      setTimeRemaining(remaining)
+
+      if (remaining === 0 && isCommissioner) {
+        // Auto-skip when timer expires (commissioner handles this)
+        handleSkipPick()
+      }
+    }
+
+    updateTimer()
+    const interval = setInterval(updateTimer, 1000)
+    return () => clearInterval(interval)
+  }, [draft?.pick_deadline, draft?.status, isCommissioner])
+
+  // Commissioner: Start draft
+  const handleStartDraft = async () => {
+    if (!isCommissioner || !draft) return
+
+    try {
+      // Generate draft order if not exists
+      if (draftOrder.length === 0) {
+        await generateDraftOrder()
+      }
+
+      // Get first team in order
+      const { data: firstPick } = await supabase
+        .from('draft_order')
+        .select('fantasy_team_id')
+        .eq('draft_id', draft.id)
+        .eq('pick_number', 1)
+        .single()
+
+      if (!firstPick) {
+        setError('No draft order found')
+        return
+      }
+
+      // Update draft state
+      const deadline = new Date(Date.now() + (settings?.draft_timer_seconds || 60) * 1000)
+
+      await supabase
+        .from('drafts')
+        .update({
+          status: 'in_progress',
+          current_round: 1,
+          current_pick: 1,
+          current_team_id: firstPick.fantasy_team_id,
+          pick_deadline: deadline.toISOString(),
+          started_at: new Date().toISOString()
+        })
+        .eq('id', draft.id)
+
+    } catch (err) {
+      console.error('Error starting draft:', err)
+      setError('Failed to start draft')
+    }
+  }
+
+  // Generate draft order
+  const generateDraftOrder = async () => {
+    if (!draft || !settings) return
+
+    const shuffledTeams = [...teams].sort(() => Math.random() - 0.5)
+    const totalRounds = settings.schools_per_team
+    const numTeams = shuffledTeams.length
+
+    const orderEntries = []
+    let pickNumber = 1
+
+    for (let round = 1; round <= totalRounds; round++) {
+      const roundOrder = settings.draft_type === 'snake' && round % 2 === 0
+        ? [...shuffledTeams].reverse()
+        : shuffledTeams
+
+      for (let pos = 0; pos < roundOrder.length; pos++) {
+        orderEntries.push({
+          draft_id: draft.id,
+          fantasy_team_id: roundOrder[pos].id,
+          round,
+          pick_number: pickNumber,
+          position_in_round: pos + 1
+        })
+        pickNumber++
+      }
+    }
+
+    // Also update team draft positions
+    for (let i = 0; i < shuffledTeams.length; i++) {
+      await supabase
+        .from('fantasy_teams')
+        .update({ draft_position: i + 1 })
+        .eq('id', shuffledTeams[i].id)
+    }
+
+    await supabase.from('draft_order').insert(orderEntries)
+    setDraftOrder(orderEntries.map(e => ({
+      fantasy_team_id: e.fantasy_team_id,
+      pick_number: e.pick_number,
+      round: e.round
+    })))
+  }
+
+  // Make a pick
+  const handleMakePick = async (schoolId: string) => {
+    if (!draft || !isMyPick || draft.status !== 'in_progress') return
+
+    try {
+      const myTeam = teams.find(t => t.user_id === user?.id)
+      if (!myTeam) return
+
+      // Insert the pick
+      await supabase.from('draft_picks').insert({
+        draft_id: draft.id,
+        fantasy_team_id: myTeam.id,
+        school_id: schoolId,
+        round: draft.current_round,
+        pick_number: draft.current_pick
+      })
+
+      // Also add to roster
+      await supabase.from('roster_periods').insert({
+        fantasy_team_id: myTeam.id,
+        school_id: schoolId,
+        slot_number: draft.current_pick,
+        start_week: 1
+      })
+
+      // Advance to next pick
+      await advanceToNextPick()
+
+    } catch (err) {
+      console.error('Error making pick:', err)
+      setError('Failed to make pick')
+    }
+  }
+
+  // Skip current pick (commissioner or timeout)
+  const handleSkipPick = useCallback(async () => {
+    if (!draft || draft.status !== 'in_progress') return
+    await advanceToNextPick()
+  }, [draft])
+
+  // Advance to next pick
+  const advanceToNextPick = async () => {
+    if (!draft || !settings) return
+
+    const nextPickNumber = draft.current_pick + 1
+    const totalPicks = teams.length * settings.schools_per_team
+
+    if (nextPickNumber > totalPicks) {
+      // Draft complete
+      await supabase
+        .from('drafts')
+        .update({
+          status: 'completed',
+          current_team_id: null,
+          pick_deadline: null,
+          completed_at: new Date().toISOString()
+        })
+        .eq('id', draft.id)
+      return
+    }
+
+    // Get next team
+    const nextOrder = draftOrder.find(o => o.pick_number === nextPickNumber)
+    if (!nextOrder) return
+
+    const nextRound = Math.ceil(nextPickNumber / teams.length)
+    const deadline = new Date(Date.now() + (settings.draft_timer_seconds || 60) * 1000)
+
+    await supabase
+      .from('drafts')
+      .update({
+        current_round: nextRound,
+        current_pick: nextPickNumber,
+        current_team_id: nextOrder.fantasy_team_id,
+        pick_deadline: deadline.toISOString()
+      })
+      .eq('id', draft.id)
+  }
+
+  // Pause/Resume draft
+  const handleTogglePause = async () => {
+    if (!isCommissioner || !draft) return
+
+    const newStatus = draft.status === 'paused' ? 'in_progress' : 'paused'
+    const updates: Partial<DraftState> = { status: newStatus }
+
+    if (newStatus === 'in_progress') {
+      // Reset timer when resuming
+      updates.pick_deadline = new Date(Date.now() + (settings?.draft_timer_seconds || 60) * 1000).toISOString()
+    } else {
+      updates.pick_deadline = null
+    }
+
+    await supabase.from('drafts').update(updates).eq('id', draft.id)
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
+        <div className="text-white text-xl">Loading draft room...</div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
+        <div className="text-red-500 text-xl">{error}</div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-900">
+      {/* Header */}
+      <header className="bg-gray-800 border-b border-gray-700 px-4 py-3">
+        <div className="flex justify-between items-center">
+          <div className="flex items-center gap-4">
+            <Link href={`/leagues/${leagueId}`} className="text-gray-400 hover:text-white">
+              &larr; Back to League
+            </Link>
+            <h1 className="text-xl font-bold text-white">{leagueName} Draft</h1>
+          </div>
+
+          <div className="flex items-center gap-4">
+            {/* Draft Status */}
+            <span className={`px-3 py-1 rounded text-sm font-medium ${
+              draft?.status === 'in_progress' ? 'bg-green-600 text-white' :
+              draft?.status === 'paused' ? 'bg-yellow-600 text-white' :
+              draft?.status === 'completed' ? 'bg-blue-600 text-white' :
+              'bg-gray-600 text-white'
+            }`}>
+              {draft?.status === 'in_progress' ? 'Live' :
+               draft?.status === 'paused' ? 'Paused' :
+               draft?.status === 'completed' ? 'Completed' :
+               'Not Started'}
+            </span>
+
+            {/* Commissioner Controls */}
+            {isCommissioner && draft?.status === 'not_started' && teams.length >= 2 && (
+              <button
+                onClick={handleStartDraft}
+                className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded font-medium"
+              >
+                Start Draft
+              </button>
+            )}
+
+            {isCommissioner && (draft?.status === 'in_progress' || draft?.status === 'paused') && (
+              <button
+                onClick={handleTogglePause}
+                className={`${
+                  draft.status === 'paused' ? 'bg-green-600 hover:bg-green-700' : 'bg-yellow-600 hover:bg-yellow-700'
+                } text-white px-4 py-2 rounded font-medium`}
+              >
+                {draft.status === 'paused' ? 'Resume' : 'Pause'}
+              </button>
+            )}
+          </div>
+        </div>
+      </header>
+
+      <div className="flex h-[calc(100vh-60px)]">
+        {/* Left Panel - Available Schools */}
+        <div className="w-1/3 border-r border-gray-700 flex flex-col">
+          <div className="p-4 border-b border-gray-700">
+            <h2 className="text-lg font-semibold text-white mb-3">Available Schools</h2>
+
+            {/* Search */}
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search schools..."
+              className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded text-white placeholder-gray-400 mb-3"
+            />
+
+            {/* Conference Filter */}
+            <select
+              value={selectedConference}
+              onChange={(e) => setSelectedConference(e.target.value)}
+              className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded text-white"
+            >
+              <option value="all">All Conferences</option>
+              {conferences.map(conf => (
+                <option key={conf} value={conf}>{conf}</option>
+              ))}
+            </select>
+          </div>
+
+          <div className="flex-1 overflow-y-auto p-4">
+            <div className="space-y-2">
+              {availableSchools.map(school => (
+                <button
+                  key={school.id}
+                  onClick={() => handleMakePick(school.id)}
+                  disabled={!isMyPick || draft?.status !== 'in_progress'}
+                  className={`w-full p-3 rounded-lg text-left transition-colors ${
+                    isMyPick && draft?.status === 'in_progress'
+                      ? 'bg-gray-800 hover:bg-gray-700 cursor-pointer'
+                      : 'bg-gray-800/50 cursor-not-allowed'
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <div
+                      className="w-8 h-8 rounded-full"
+                      style={{ backgroundColor: school.primary_color }}
+                    />
+                    <div>
+                      <div className="text-white font-medium">{school.name}</div>
+                      <div className="text-gray-400 text-sm">{school.conference}</div>
+                    </div>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Center Panel - Draft Board */}
+        <div className="flex-1 flex flex-col">
+          {/* On the Clock */}
+          {draft?.status === 'in_progress' && currentTeam && (
+            <div className={`p-6 border-b border-gray-700 ${isMyPick ? 'bg-green-900/30' : 'bg-gray-800'}`}>
+              <div className="text-center">
+                <div className="text-gray-400 text-sm mb-1">ON THE CLOCK</div>
+                <div className="text-2xl font-bold text-white mb-2">
+                  {currentTeam.name}
+                </div>
+                <div className="text-gray-400">
+                  Round {draft.current_round}, Pick {draft.current_pick}
+                </div>
+
+                {/* Timer */}
+                {timeRemaining !== null && (
+                  <div className={`text-4xl font-mono mt-4 ${
+                    timeRemaining <= 10 ? 'text-red-500' :
+                    timeRemaining <= 30 ? 'text-yellow-500' :
+                    'text-white'
+                  }`}>
+                    {Math.floor(timeRemaining / 60)}:{(timeRemaining % 60).toString().padStart(2, '0')}
+                  </div>
+                )}
+
+                {isMyPick && (
+                  <div className="text-green-400 font-semibold mt-2">
+                    It&apos;s your turn! Select a school from the left panel.
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Draft Status Messages */}
+          {draft?.status === 'not_started' && (
+            <div className="p-6 text-center text-gray-400">
+              <p className="text-xl mb-2">Draft has not started yet</p>
+              {teams.length < 2 && (
+                <p>Need at least 2 teams to start the draft</p>
+              )}
+              {isCommissioner && teams.length >= 2 && (
+                <p>Click &quot;Start Draft&quot; when everyone is ready</p>
+              )}
+            </div>
+          )}
+
+          {draft?.status === 'paused' && (
+            <div className="p-6 text-center">
+              <div className="text-yellow-500 text-xl">Draft is paused</div>
+              {isCommissioner && (
+                <p className="text-gray-400 mt-2">Click &quot;Resume&quot; to continue</p>
+              )}
+            </div>
+          )}
+
+          {draft?.status === 'completed' && (
+            <div className="p-6 text-center">
+              <div className="text-blue-400 text-xl">Draft Complete!</div>
+              <Link
+                href={`/leagues/${leagueId}`}
+                className="text-blue-400 hover:text-blue-300 mt-2 inline-block"
+              >
+                Return to League
+              </Link>
+            </div>
+          )}
+
+          {/* Recent Picks */}
+          <div className="flex-1 overflow-y-auto p-4">
+            <h3 className="text-lg font-semibold text-white mb-4">Draft History</h3>
+            {picks.length === 0 ? (
+              <p className="text-gray-400">No picks yet</p>
+            ) : (
+              <div className="space-y-2">
+                {[...picks].reverse().map(pick => (
+                  <div key={pick.id} className="bg-gray-800 p-3 rounded-lg flex items-center gap-4">
+                    <div className="text-gray-400 text-sm w-20">
+                      R{pick.round} P{pick.pick_number}
+                    </div>
+                    <div
+                      className="w-8 h-8 rounded-full"
+                      style={{ backgroundColor: pick.schools.primary_color }}
+                    />
+                    <div className="flex-1">
+                      <div className="text-white font-medium">{pick.schools.name}</div>
+                      <div className="text-gray-400 text-sm">{pick.fantasy_teams.name}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Right Panel - Teams & Rosters */}
+        <div className="w-1/4 border-l border-gray-700 overflow-y-auto">
+          <div className="p-4">
+            <h2 className="text-lg font-semibold text-white mb-4">Teams</h2>
+
+            <div className="space-y-4">
+              {teams.map(team => {
+                const teamPicks = picks.filter(p => p.fantasy_team_id === team.id)
+                const isOnClock = team.id === draft?.current_team_id
+
+                return (
+                  <div
+                    key={team.id}
+                    className={`bg-gray-800 rounded-lg p-3 ${
+                      isOnClock ? 'ring-2 ring-green-500' : ''
+                    }`}
+                  >
+                    <div className="flex justify-between items-center mb-2">
+                      <div className="text-white font-medium">{team.name}</div>
+                      <div className="text-gray-400 text-sm">
+                        {teamPicks.length}/{settings?.schools_per_team || 12}
+                      </div>
+                    </div>
+                    <div className="text-gray-400 text-sm mb-2">
+                      {team.profiles?.display_name || team.profiles?.email?.split('@')[0]}
+                    </div>
+
+                    {teamPicks.length > 0 && (
+                      <div className="space-y-1 mt-2 pt-2 border-t border-gray-700">
+                        {teamPicks.map(pick => (
+                          <div key={pick.id} className="flex items-center gap-2 text-sm">
+                            <div
+                              className="w-4 h-4 rounded-full"
+                              style={{ backgroundColor: pick.schools.primary_color }}
+                            />
+                            <span className="text-gray-300">{pick.schools.name}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
