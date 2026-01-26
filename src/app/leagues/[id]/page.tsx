@@ -83,6 +83,12 @@ export default async function LeaguePage({ params }: PageProps) {
 
   const isCommissioner = membership?.role === 'commissioner'
 
+  // Get all members count
+  const { count: memberCount } = await supabase
+    .from('league_members')
+    .select('*', { count: 'exact', head: true })
+    .eq('league_id', id)
+
   // Get all teams in the league
   const { data: teamsData } = await supabase
     .from('fantasy_teams')
@@ -165,6 +171,7 @@ export default async function LeaguePage({ params }: PageProps) {
               initialStatus={draft?.status || 'not_started'}
               isCommissioner={isCommissioner}
               teamCount={teams?.length || 0}
+              memberCount={memberCount || 0}
               draftDate={settings?.draft_date || null}
             />
 

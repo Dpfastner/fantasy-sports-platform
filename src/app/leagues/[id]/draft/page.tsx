@@ -71,6 +71,7 @@ export default function DraftRoomPage() {
   const [schools, setSchools] = useState<School[]>([])
   const [picks, setPicks] = useState<DraftPick[]>([])
   const [draftOrder, setDraftOrder] = useState<{ fantasy_team_id: string; pick_number: number; round: number }[]>([])
+  const [memberCount, setMemberCount] = useState(0)
 
   // UI state
   const [searchQuery, setSearchQuery] = useState('')
@@ -103,9 +104,10 @@ export default function DraftRoomPage() {
     }
   })
 
-  // Max selections allowed
+  // Max selections allowed (0 means unlimited)
   const maxSelectionsTotal = settings?.max_school_selections_total || 3
   const maxSelectionsPerTeam = settings?.max_school_selections_per_team || 1
+  const isUnlimitedTotal = maxSelectionsTotal === 0
 
   // Helper to check if school matches search/filter criteria
   const schoolMatchesFilters = (school: School) => {
@@ -124,6 +126,7 @@ export default function DraftRoomPage() {
 
   // Helper to check if school is maxed out (globally)
   const isSchoolMaxedOut = (school: School) => {
+    if (isUnlimitedTotal) return false // 0 means unlimited
     const globalPickCount = schoolPickCounts[school.id] || 0
     return globalPickCount >= maxSelectionsTotal
   }
@@ -189,6 +192,14 @@ export default function DraftRoomPage() {
 
         setLeagueName(league.name)
         setIsCommissioner(league.created_by === authUser.id)
+
+        // Get member count
+        const { count } = await supabase
+          .from('league_members')
+          .select('*', { count: 'exact', head: true })
+          .eq('league_id', leagueId)
+
+        setMemberCount(count || 0)
 
         // Get league settings
         const { data: settingsData } = await supabase
@@ -487,7 +498,11 @@ export default function DraftRoomPage() {
       return
     }
     if (teams.length < 2) {
-      setActionError('Need at least 2 teams to start')
+      setActionError('Need at least 2 teams to start the draft')
+      return
+    }
+    if (teams.length < memberCount) {
+      setActionError(`All league members must create a team before the draft can start (${teams.length}/${memberCount} teams created)`)
       return
     }
 
@@ -1136,13 +1151,18 @@ export default function DraftRoomPage() {
                'Not Started'}
             </span>
 
-            {isCommissioner && draft?.status === 'not_started' && teams.length >= 2 && (
+            {isCommissioner && draft?.status === 'not_started' && teams.length >= 2 && teams.length >= memberCount && (
               <button
                 onClick={handleStartDraft}
                 className="bg-green-600 hover:bg-green-700 text-white px-4 py-1.5 rounded text-sm font-medium"
               >
                 Start Draft
               </button>
+            )}
+            {isCommissioner && draft?.status === 'not_started' && teams.length >= 2 && teams.length < memberCount && (
+              <span className="text-yellow-400 text-sm">
+                Waiting for teams ({teams.length}/{memberCount})
+              </span>
             )}
 
             {isCommissioner && (draft?.status === 'in_progress' || draft?.status === 'paused') && (

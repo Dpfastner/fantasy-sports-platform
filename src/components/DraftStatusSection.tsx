@@ -9,6 +9,7 @@ interface DraftStatusSectionProps {
   initialStatus: string
   isCommissioner: boolean
   teamCount: number
+  memberCount: number
   draftDate: string | null
 }
 
@@ -17,8 +18,11 @@ export default function DraftStatusSection({
   initialStatus,
   isCommissioner,
   teamCount,
+  memberCount,
   draftDate
 }: DraftStatusSectionProps) {
+  // Check if all members have created teams
+  const allMembersHaveTeams = teamCount >= memberCount
   const [status, setStatus] = useState(initialStatus)
   const [showNotification, setShowNotification] = useState(false)
   const supabase = createClient()
@@ -84,13 +88,26 @@ export default function DraftStatusSection({
                 })}
               </p>
             )}
-            {isCommissioner && teamCount >= 2 && (
+            {isCommissioner && teamCount >= 2 && allMembersHaveTeams && (
               <Link
                 href={`/leagues/${leagueId}/draft`}
                 className="inline-block bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors"
               >
                 Start Draft
               </Link>
+            )}
+            {isCommissioner && teamCount >= 2 && !allMembersHaveTeams && (
+              <div>
+                <p className="text-yellow-500 mb-2">
+                  Waiting for all members to create teams ({teamCount}/{memberCount})
+                </p>
+                <Link
+                  href={`/leagues/${leagueId}/draft`}
+                  className="inline-block bg-gray-600 hover:bg-gray-500 text-white font-semibold py-2 px-4 rounded-lg transition-colors"
+                >
+                  Go to Draft Room
+                </Link>
+              </div>
             )}
             {isCommissioner && teamCount < 2 && (
               <p className="text-gray-500">
