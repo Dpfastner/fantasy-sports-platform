@@ -307,11 +307,17 @@ export default function DraftRoomPage() {
           }
         }
 
-        // Accept all realtime updates from the server - it's the source of truth
-        setDraft(newDraft)
-        // Reset timer when pick changes
-        if (newDraft.current_pick !== draft.current_pick) {
-          setTimerExpired(false)
+        // Only accept realtime updates that are at or ahead of our current pick
+        // This prevents race conditions where realtime returns stale data before our DB write completes
+        if (newDraft.current_pick >= draft.current_pick) {
+          console.log('Realtime: accepting draft update (pick', newDraft.current_pick, ')')
+          setDraft(newDraft)
+          // Reset timer when pick changes
+          if (newDraft.current_pick !== draft.current_pick) {
+            setTimerExpired(false)
+          }
+        } else {
+          console.log('Realtime: ignoring stale update (server pick', newDraft.current_pick, '< local pick', draft.current_pick, ')')
         }
       })
       .on('postgres_changes', {
@@ -378,16 +384,21 @@ export default function DraftRoomPage() {
           return
         }
 
-        // Accept server updates - the server is the source of truth
-        if (draftData.current_pick !== draft.current_pick ||
-            draftData.status !== draft.status ||
-            draftData.current_team_id !== draft.current_team_id) {
-          console.log('Polling: accepting draft update (pick', draftData.current_pick, ')')
-          setDraft(draftData as DraftState)
-          // Reset timer expired flag when pick changes
-          if (draftData.current_pick !== draft.current_pick) {
-            setTimerExpired(false)
+        // Only accept server updates that are at or ahead of our current pick
+        // This prevents race conditions where polling returns stale data before our DB write completes
+        if (draftData.current_pick >= draft.current_pick) {
+          if (draftData.current_pick !== draft.current_pick ||
+              draftData.status !== draft.status ||
+              draftData.current_team_id !== draft.current_team_id) {
+            console.log('Polling: accepting draft update (pick', draftData.current_pick, ')')
+            setDraft(draftData as DraftState)
+            // Reset timer expired flag when pick changes
+            if (draftData.current_pick !== draft.current_pick) {
+              setTimerExpired(false)
+            }
           }
+        } else {
+          console.log('Polling: ignoring stale data (server pick', draftData.current_pick, '< local pick', draft.current_pick, ')')
         }
       }
 
