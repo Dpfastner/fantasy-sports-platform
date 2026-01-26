@@ -267,22 +267,59 @@ export default function DraftRoomPage() {
       return
     }
 
-    const updateTimer = () => {
+    let hasSkipped = false
+
+    const updateTimer = async () => {
       const deadline = new Date(draft.pick_deadline!).getTime()
       const now = Date.now()
       const remaining = Math.max(0, Math.floor((deadline - now) / 1000))
       setTimeRemaining(remaining)
 
-      if (remaining === 0 && isCommissioner) {
+      if (remaining === 0 && isCommissioner && !hasSkipped) {
         // Auto-skip when timer expires (commissioner handles this)
-        handleSkipPick()
+        hasSkipped = true
+        console.log('Timer expired, auto-skipping pick')
+
+        // Advance to next pick directly
+        const nextPickNumber = draft.current_pick + 1
+        const totalPicks = teams.length * (settings?.schools_per_team || 12)
+
+        if (nextPickNumber > totalPicks) {
+          // Draft complete
+          await supabase
+            .from('drafts')
+            .update({
+              status: 'completed',
+              current_team_id: null,
+              pick_deadline: null,
+              completed_at: new Date().toISOString()
+            })
+            .eq('id', draft.id)
+        } else {
+          // Get next team from draft order
+          const nextOrder = draftOrder.find(o => o.pick_number === nextPickNumber)
+          if (nextOrder) {
+            const nextRound = Math.ceil(nextPickNumber / teams.length)
+            const newDeadline = new Date(Date.now() + (settings?.draft_timer_seconds || 60) * 1000)
+
+            await supabase
+              .from('drafts')
+              .update({
+                current_round: nextRound,
+                current_pick: nextPickNumber,
+                current_team_id: nextOrder.fantasy_team_id,
+                pick_deadline: newDeadline.toISOString()
+              })
+              .eq('id', draft.id)
+          }
+        }
       }
     }
 
     updateTimer()
     const interval = setInterval(updateTimer, 1000)
     return () => clearInterval(interval)
-  }, [draft?.pick_deadline, draft?.status, isCommissioner])
+  }, [draft?.pick_deadline, draft?.status, draft?.current_pick, draft?.id, isCommissioner, teams.length, settings?.schools_per_team, settings?.draft_timer_seconds, draftOrder, supabase])
 
   // Commissioner: Start draft
   const handleStartDraft = async () => {
@@ -476,14 +513,23 @@ export default function DraftRoomPage() {
 
   // Make a pick
   const handleMakePick = async (schoolId: string) => {
-    if (!draft || !isMyPick || draft.status !== 'in_progress') return
+    console.log('handleMakePick called', { schoolId, isMyPick, draftStatus: draft?.status })
+    if (!draft || !isMyPick || draft.status !== 'in_progress') {
+      console.log('Pick rejected - not my turn or draft not in progress')
+      return
+    }
 
     try {
       const myTeam = teams.find(t => t.user_id === user?.id)
-      if (!myTeam) return
+      if (!myTeam) {
+        console.log('No team found for user')
+        return
+      }
+
+      console.log('Inserting pick for team', myTeam.id, 'school', schoolId)
 
       // Insert the pick
-      await supabase.from('draft_picks').insert({
+      const { error: pickError } = await supabase.from('draft_picks').insert({
         draft_id: draft.id,
         fantasy_team_id: myTeam.id,
         school_id: schoolId,
@@ -491,20 +537,34 @@ export default function DraftRoomPage() {
         pick_number: draft.current_pick
       })
 
+      if (pickError) {
+        console.error('Error inserting pick:', pickError)
+        setActionError('Failed to make pick: ' + pickError.message)
+        return
+      }
+
+      console.log('Pick inserted, adding to roster')
+
       // Also add to roster
-      await supabase.from('roster_periods').insert({
+      const { error: rosterError } = await supabase.from('roster_periods').insert({
         fantasy_team_id: myTeam.id,
         school_id: schoolId,
         slot_number: draft.current_pick,
         start_week: 1
       })
 
+      if (rosterError) {
+        console.error('Error adding to roster:', rosterError)
+        // Don't return - pick was made, roster is secondary
+      }
+
+      console.log('Advancing to next pick')
       // Advance to next pick
       await advanceToNextPick()
 
     } catch (err) {
       console.error('Error making pick:', err)
-      setError('Failed to make pick')
+      setActionError('Failed to make pick: ' + (err instanceof Error ? err.message : String(err)))
     }
   }
 
