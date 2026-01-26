@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
@@ -83,6 +83,10 @@ export default function DraftRoomPage() {
 
   // Track if timer has expired (for showing warning)
   const [timerExpired, setTimerExpired] = useState(false)
+
+  // Use a ref to track the latest pick number we've advanced to locally
+  // This prevents stale polling responses from reverting state
+  const latestLocalPickRef = useRef<number>(0)
 
   // Get unique conferences from schools
   const conferences = [...new Set(schools.map(s => s.conference))].sort()
@@ -286,9 +290,26 @@ export default function DraftRoomPage() {
         schema: 'public',
         table: 'drafts',
         filter: `id=eq.${draft.id}`
-      }, (payload) => {
-        console.log('Realtime: draft update received', payload.new)
-        setDraft(payload.new as DraftState)
+      }, async (payload) => {
+        const newDraft = payload.new as DraftState
+        console.log('Realtime: draft update received', newDraft)
+
+        // If draft just started, also load the draft order
+        if (newDraft.status === 'in_progress' && draft.status === 'not_started') {
+          console.log('Realtime: draft started, loading draft order')
+          const { data: orderData } = await supabase
+            .from('draft_order')
+            .select('fantasy_team_id, pick_number, round')
+            .eq('draft_id', draft.id)
+            .order('pick_number')
+
+          if (orderData && orderData.length > 0) {
+            console.log('Realtime: loaded draft order', orderData.length, 'entries')
+            setDraftOrder(orderData)
+          }
+        }
+
+        setDraft(newDraft)
       })
       .on('postgres_changes', {
         event: 'INSERT',
@@ -319,11 +340,12 @@ export default function DraftRoomPage() {
     return () => {
       supabase.removeChannel(draftChannel)
     }
-  }, [draft?.id, supabase])
+  }, [draft?.id, draft?.status, supabase])
 
-  // Polling fallback for real-time - refresh draft state every 5 seconds if draft is in progress
+  // Polling fallback for real-time - refresh draft state every 5 seconds
+  // Polls when not_started (to detect when commissioner starts) and in_progress
   useEffect(() => {
-    if (!draft?.id || draft.status === 'completed' || draft.status === 'not_started') return
+    if (!draft?.id || draft.status === 'completed') return
 
     const pollInterval = setInterval(async () => {
       const { data: draftData } = await supabase
@@ -333,11 +355,38 @@ export default function DraftRoomPage() {
         .single()
 
       if (draftData) {
-        // Only update if something changed
+        // Check if draft just started (status changed from not_started to in_progress)
+        const draftJustStarted = draftData.status === 'in_progress' && draft.status === 'not_started'
+
+        if (draftJustStarted) {
+          console.log('Polling: draft just started! Loading draft order...')
+          // Load draft order immediately
+          const { data: orderData } = await supabase
+            .from('draft_order')
+            .select('fantasy_team_id, pick_number, round')
+            .eq('draft_id', draft.id)
+            .order('pick_number')
+
+          if (orderData && orderData.length > 0) {
+            console.log('Polling: loaded draft order', orderData.length, 'entries')
+            setDraftOrder(orderData)
+          }
+          setDraft(draftData as DraftState)
+          return
+        }
+
+        // CRITICAL: Ignore stale polling data that's behind our local state
+        // This happens when we advance the pick locally but polling returns old data
+        if (draftData.current_pick < latestLocalPickRef.current) {
+          console.log('Polling: ignoring stale data (server pick', draftData.current_pick, '< local', latestLocalPickRef.current, ')')
+          return
+        }
+
+        // Only update if something changed AND it's not behind our local state
         if (draftData.current_pick !== draft.current_pick ||
             draftData.status !== draft.status ||
             draftData.current_team_id !== draft.current_team_id) {
-          console.log('Polling: draft state changed', draftData)
+          console.log('Polling: accepting draft update (pick', draftData.current_pick, ')')
           setDraft(draftData as DraftState)
           // Reset timer expired flag when pick changes
           if (draftData.current_pick !== draft.current_pick) {
@@ -361,10 +410,24 @@ export default function DraftRoomPage() {
         console.log('Polling: new picks found', picksData.length - picks.length)
         setPicks(picksData as unknown as DraftPick[])
       }
+
+      // Also refresh draft order if needed (for when commissioner starts draft)
+      if (draftOrder.length === 0 && draftData?.status === 'in_progress') {
+        const { data: orderData } = await supabase
+          .from('draft_order')
+          .select('fantasy_team_id, pick_number, round')
+          .eq('draft_id', draft.id)
+          .order('pick_number')
+
+        if (orderData && orderData.length > 0) {
+          console.log('Polling: loaded draft order', orderData.length, 'entries')
+          setDraftOrder(orderData)
+        }
+      }
     }, 5000) // Poll every 5 seconds
 
     return () => clearInterval(pollInterval)
-  }, [draft?.id, draft?.status, draft?.current_pick, draft?.current_team_id, picks.length, supabase])
+  }, [draft?.id, draft?.status, draft?.current_pick, draft?.current_team_id, picks.length, draftOrder.length, supabase])
 
   // Timer countdown - just tracks time, no auto-skip
   useEffect(() => {
@@ -784,6 +847,9 @@ export default function DraftRoomPage() {
     const deadline = new Date(Date.now() + (settings.draft_timer_seconds || 60) * 1000)
 
     console.log('Advancing to pick', nextPickNumber, 'round', nextRound, 'team', nextOrder.fantasy_team_id)
+
+    // Track this locally BEFORE the DB update so polling won't revert our state
+    latestLocalPickRef.current = nextPickNumber
 
     // Reset timer expired flag for the next pick
     setTimerExpired(false)
