@@ -339,18 +339,16 @@ export default function DraftRoomPage() {
         }
       }
 
-      // Refresh draft order if we don't have it yet (e.g., user joined after draft started)
-      if (draftOrder.length === 0) {
-        const { data: orderData } = await supabase
-          .from('draft_order')
-          .select('fantasy_team_id, pick_number, round')
-          .eq('draft_id', draft.id)
-          .order('pick_number')
+      // Always refresh draft order (might have new makeup picks from skips)
+      const { data: orderData } = await supabase
+        .from('draft_order')
+        .select('fantasy_team_id, pick_number, round')
+        .eq('draft_id', draft.id)
+        .order('pick_number')
 
-        if (orderData && orderData.length > 0) {
-          console.log('Polling: loaded draft order', orderData.length, 'entries')
-          setDraftOrder(orderData)
-        }
+      if (orderData && orderData.length !== draftOrder.length) {
+        console.log('Polling: draft order updated', orderData.length, 'entries (was', draftOrder.length, ')')
+        setDraftOrder(orderData)
       }
 
       // Also check for new picks
@@ -749,8 +747,32 @@ export default function DraftRoomPage() {
   // Make a pick
   const handleMakePick = async (schoolId: string) => {
     console.log('handleMakePick called', { schoolId, isMyPick, draftStatus: draft?.status, timeRemaining })
-    if (!draft || !isMyPick || draft.status !== 'in_progress') {
-      console.log('Pick rejected - not my turn or draft not in progress')
+    if (!draft || draft.status !== 'in_progress') {
+      console.log('Pick rejected - draft not in progress')
+      return
+    }
+
+    const myTeam = teams.find(t => t.user_id === user?.id)
+    if (!myTeam) {
+      console.log('No team found for user')
+      return
+    }
+
+    // Verify it's actually this team's turn by checking draft_order
+    const currentOrderEntry = draftOrder.find(o => o.pick_number === draft.current_pick)
+    const isActuallyMyTurn = currentOrderEntry?.fantasy_team_id === myTeam.id
+
+    console.log('Turn verification:', {
+      currentPick: draft.current_pick,
+      expectedTeam: currentOrderEntry?.fantasy_team_id,
+      myTeam: myTeam.id,
+      isActuallyMyTurn
+    })
+
+    if (!isActuallyMyTurn) {
+      console.log('Pick rejected - not actually my turn (state out of sync)')
+      setActionError('It\'s not your turn. The draft has moved on.')
+      setPendingPick(null)
       return
     }
 
@@ -768,13 +790,6 @@ export default function DraftRoomPage() {
     setIsSubmittingPick(true)
 
     try {
-      const myTeam = teams.find(t => t.user_id === user?.id)
-      if (!myTeam) {
-        console.log('No team found for user')
-        setIsSubmittingPick(false)
-        return
-      }
-
       console.log('Inserting pick for team', myTeam.id, 'school', schoolId)
 
       // Insert the pick
