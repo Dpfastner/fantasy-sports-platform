@@ -1,6 +1,7 @@
 import { redirect, notFound } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
+import DraftStatusChecker from '@/components/DraftStatusChecker'
 
 interface PageProps {
   params: Promise<{ id: string }>
@@ -157,6 +158,9 @@ export default async function LeaguePage({ params }: PageProps) {
         <div className="grid lg:grid-cols-3 gap-8">
           {/* Main Content */}
           <div className="lg:col-span-2 space-y-8">
+            {/* Draft Status Checker - polls for updates */}
+            <DraftStatusChecker leagueId={id} initialStatus={draft?.status || 'not_started'} />
+
             {/* Draft Status */}
             <div className="bg-gray-800 rounded-lg p-6">
               <h2 className="text-xl font-semibold text-white mb-4">Draft Status</h2>

@@ -12,6 +12,7 @@ interface School {
   conference: string
   primary_color: string
   secondary_color: string
+  logo_url: string | null
 }
 
 interface Team {
@@ -47,6 +48,7 @@ interface LeagueSettings {
   draft_order_type: 'random' | 'manual'
   draft_timer_seconds: number
   schools_per_team: number
+  max_school_selections_total: number
 }
 
 export default function DraftRoomPage() {
@@ -74,15 +76,25 @@ export default function DraftRoomPage() {
   const [selectedConference, setSelectedConference] = useState<string>('all')
   const [timeRemaining, setTimeRemaining] = useState<number | null>(null)
   const [actionError, setActionError] = useState<string | null>(null)
+  const [viewingTeamId, setViewingTeamId] = useState<string | null>(null) // For viewing other teams' rosters
 
   // Get unique conferences from schools
   const conferences = [...new Set(schools.map(s => s.conference))].sort()
 
-  // Filter schools based on search and conference
+  // Count how many times each school has been picked
+  const schoolPickCounts: Record<string, number> = {}
+  picks.forEach(pick => {
+    schoolPickCounts[pick.school_id] = (schoolPickCounts[pick.school_id] || 0) + 1
+  })
+
+  // Max selections allowed (default to 3 if not set)
+  const maxSelections = settings?.max_school_selections_total || 3
+
+  // Filter schools based on search, conference, and availability
   const availableSchools = schools.filter(school => {
-    // Check if already picked
-    const isPicked = picks.some(p => p.school_id === school.id)
-    if (isPicked) return false
+    // Check if max selections reached
+    const pickCount = schoolPickCounts[school.id] || 0
+    if (pickCount >= maxSelections) return false
 
     // Check search query
     if (searchQuery) {
@@ -104,6 +116,13 @@ export default function DraftRoomPage() {
   // Get current team on the clock
   const currentTeam = teams.find(t => t.id === draft?.current_team_id)
   const isMyPick = user && currentTeam?.user_id === user.id
+
+  // Get user's team
+  const myTeam = teams.find(t => t.user_id === user?.id)
+
+  // Get team to view (default to user's team)
+  const viewingTeam = viewingTeamId ? teams.find(t => t.id === viewingTeamId) : myTeam
+  const viewingTeamPicks = picks.filter(p => p.fantasy_team_id === viewingTeam?.id)
 
   // Load initial data
   useEffect(() => {
@@ -135,7 +154,7 @@ export default function DraftRoomPage() {
         // Get league settings
         const { data: settingsData } = await supabase
           .from('league_settings')
-          .select('draft_type, draft_order_type, draft_timer_seconds, schools_per_team')
+          .select('draft_type, draft_order_type, draft_timer_seconds, schools_per_team, max_school_selections_total')
           .eq('league_id', leagueId)
           .single()
 
@@ -168,7 +187,7 @@ export default function DraftRoomPage() {
         // Get schools for this sport
         const { data: schoolsData } = await supabase
           .from('schools')
-          .select('id, name, abbreviation, conference, primary_color, secondary_color')
+          .select('id, name, abbreviation, conference, primary_color, secondary_color, logo_url')
           .eq('sport_id', league.sport_id)
           .eq('is_active', true)
           .order('name')
@@ -788,20 +807,99 @@ export default function DraftRoomPage() {
     )
   }
 
+  // Generate full draft board (all picks in order)
+  const generateDraftBoard = () => {
+    if (!settings || teams.length === 0) return []
+
+    const totalRounds = settings.schools_per_team
+    const sortedTeams = [...teams].sort((a, b) => (a.draft_position || 999) - (b.draft_position || 999))
+    const board: { pickNumber: number; round: number; team: Team; pick?: DraftPick }[] = []
+
+    let pickNumber = 1
+    for (let round = 1; round <= totalRounds; round++) {
+      const roundOrder = settings.draft_type === 'snake' && round % 2 === 0
+        ? [...sortedTeams].reverse()
+        : sortedTeams
+
+      for (const team of roundOrder) {
+        const existingPick = picks.find(p => p.pick_number === pickNumber)
+        board.push({
+          pickNumber,
+          round,
+          team,
+          pick: existingPick
+        })
+        pickNumber++
+      }
+    }
+
+    return board
+  }
+
+  const draftBoard = generateDraftBoard()
+
+  // Get conference abbreviation
+  const getConferenceAbbr = (conference: string) => {
+    const abbrs: Record<string, string> = {
+      'SEC': 'SEC',
+      'Big Ten': 'B1G',
+      'Big 12': 'B12',
+      'ACC': 'ACC',
+      'Pac-12': 'P12',
+      'Big East': 'BE',
+      'AAC': 'AAC',
+      'Mountain West': 'MW',
+      'Sun Belt': 'SB',
+      'MAC': 'MAC',
+      'Conference USA': 'CUSA',
+      'Independent': 'IND'
+    }
+    return abbrs[conference] || conference.slice(0, 3).toUpperCase()
+  }
+
   return (
-    <div className="min-h-screen bg-gray-900">
-      {/* Header */}
-      <header className="bg-gray-800 border-b border-gray-700 px-4 py-3">
+    <div className="min-h-screen bg-gray-900 flex flex-col">
+      {/* Header with Timer and On the Clock */}
+      <header className="bg-gray-800 border-b border-gray-700 px-4 py-2">
         <div className="flex justify-between items-center">
           <div className="flex items-center gap-4">
-            <Link href={`/leagues/${leagueId}`} className="text-gray-400 hover:text-white">
-              &larr; Back to League
+            <Link href={`/leagues/${leagueId}`} className="text-gray-400 hover:text-white text-sm">
+              &larr; Back
             </Link>
-            <h1 className="text-xl font-bold text-white">{leagueName} Draft</h1>
+            <h1 className="text-lg font-bold text-white">{leagueName} Draft</h1>
           </div>
 
-          <div className="flex items-center gap-4">
-            {/* Draft Status */}
+          {/* Center: On the Clock + Timer */}
+          <div className="flex items-center gap-6">
+            {draft?.status === 'in_progress' && currentTeam && (
+              <>
+                <div className="flex items-center gap-3">
+                  <span className="text-gray-400 text-sm">ON THE CLOCK:</span>
+                  <span className={`text-lg font-bold ${isMyPick ? 'text-green-400' : 'text-white'}`}>
+                    {currentTeam.name}
+                  </span>
+                  <span className="text-gray-500 text-sm">
+                    (R{draft.current_round} P{draft.current_pick})
+                  </span>
+                </div>
+                {timeRemaining !== null && (
+                  <div className={`text-2xl font-mono font-bold ${
+                    timeRemaining <= 10 ? 'text-red-500 animate-pulse' :
+                    timeRemaining <= 30 ? 'text-yellow-500' :
+                    'text-white'
+                  }`}>
+                    {Math.floor(timeRemaining / 60)}:{(timeRemaining % 60).toString().padStart(2, '0')}
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+
+          {/* Right: Status + Controls */}
+          <div className="flex items-center gap-3">
+            {actionError && (
+              <span className="text-red-400 text-sm">{actionError}</span>
+            )}
             <span className={`px-3 py-1 rounded text-sm font-medium ${
               draft?.status === 'in_progress' ? 'bg-green-600 text-white' :
               draft?.status === 'paused' ? 'bg-yellow-600 text-white' :
@@ -814,14 +912,10 @@ export default function DraftRoomPage() {
                'Not Started'}
             </span>
 
-            {/* Commissioner Controls */}
-            {actionError && (
-              <span className="text-red-400 text-sm">{actionError}</span>
-            )}
             {isCommissioner && draft?.status === 'not_started' && teams.length >= 2 && (
               <button
                 onClick={handleStartDraft}
-                className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded font-medium"
+                className="bg-green-600 hover:bg-green-700 text-white px-4 py-1.5 rounded text-sm font-medium"
               >
                 Start Draft
               </button>
@@ -832,7 +926,7 @@ export default function DraftRoomPage() {
                 onClick={handleTogglePause}
                 className={`${
                   draft.status === 'paused' ? 'bg-green-600 hover:bg-green-700' : 'bg-yellow-600 hover:bg-yellow-700'
-                } text-white px-4 py-2 rounded font-medium`}
+                } text-white px-4 py-1.5 rounded text-sm font-medium`}
               >
                 {draft.status === 'paused' ? 'Resume' : 'Pause'}
               </button>
@@ -841,97 +935,125 @@ export default function DraftRoomPage() {
         </div>
       </header>
 
-      <div className="flex h-[calc(100vh-60px)]">
-        {/* Left Panel - Available Schools */}
-        <div className="w-1/3 border-r border-gray-700 flex flex-col">
-          <div className="p-4 border-b border-gray-700">
-            <h2 className="text-lg font-semibold text-white mb-3">Available Schools</h2>
+      {/* Draft Ticker - Horizontal scrolling pick order */}
+      {(draft?.status === 'in_progress' || draft?.status === 'paused' || picks.length > 0) && (
+        <div className="bg-gray-800/50 border-b border-gray-700 px-4 py-2">
+          <div className="flex items-center gap-2 overflow-x-auto pb-1" style={{ scrollbarWidth: 'thin' }}>
+            {draftBoard.map((slot, idx) => {
+              const isCurrent = slot.pickNumber === draft?.current_pick
+              const isPicked = !!slot.pick
+              const isPast = slot.pickNumber < (draft?.current_pick || 1)
 
-            {/* Search */}
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search schools..."
-              className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded text-white placeholder-gray-400 mb-3"
-            />
+              if (isPicked && !isCurrent) return null // Hide completed picks
 
-            {/* Conference Filter */}
-            <select
-              value={selectedConference}
-              onChange={(e) => setSelectedConference(e.target.value)}
-              className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded text-white"
-            >
-              <option value="all">All Conferences</option>
-              {conferences.map(conf => (
-                <option key={conf} value={conf}>{conf}</option>
-              ))}
-            </select>
-          </div>
-
-          <div className="flex-1 overflow-y-auto p-4">
-            <div className="space-y-2">
-              {availableSchools.map(school => (
-                <button
-                  key={school.id}
-                  onClick={() => handleMakePick(school.id)}
-                  disabled={!isMyPick || draft?.status !== 'in_progress'}
-                  className={`w-full p-3 rounded-lg text-left transition-colors ${
-                    isMyPick && draft?.status === 'in_progress'
-                      ? 'bg-gray-800 hover:bg-gray-700 cursor-pointer'
-                      : 'bg-gray-800/50 cursor-not-allowed'
+              return (
+                <div
+                  key={slot.pickNumber}
+                  className={`flex-shrink-0 px-3 py-1.5 rounded text-xs ${
+                    isCurrent
+                      ? 'bg-green-600 text-white ring-2 ring-green-400'
+                      : isPast
+                      ? 'bg-gray-700/50 text-gray-500'
+                      : 'bg-gray-700 text-gray-300'
                   }`}
                 >
-                  <div className="flex items-center gap-3">
-                    <div
-                      className="w-8 h-8 rounded-full"
-                      style={{ backgroundColor: school.primary_color }}
-                    />
-                    <div>
-                      <div className="text-white font-medium">{school.name}</div>
-                      <div className="text-gray-400 text-sm">{school.conference}</div>
+                  <div className="font-medium">{slot.team.name}</div>
+                  <div className="text-[10px] opacity-75">R{slot.round} P{slot.pickNumber}</div>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Your Turn Notification */}
+      {isMyPick && draft?.status === 'in_progress' && (
+        <div className="bg-green-600 text-white text-center py-2 font-semibold animate-pulse">
+          It&apos;s your turn! Select a school from the left panel.
+        </div>
+      )}
+
+      <div className="flex flex-1 overflow-hidden">
+        {/* Left Panel - Available Schools */}
+        <div className="w-1/3 border-r border-gray-700 flex flex-col">
+          <div className="p-3 border-b border-gray-700">
+            <h2 className="text-sm font-semibold text-white mb-2">Available Schools</h2>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search..."
+                className="flex-1 px-2 py-1.5 bg-gray-800 border border-gray-600 rounded text-sm text-white placeholder-gray-400"
+              />
+              <select
+                value={selectedConference}
+                onChange={(e) => setSelectedConference(e.target.value)}
+                className="px-2 py-1.5 bg-gray-800 border border-gray-600 rounded text-sm text-white"
+              >
+                <option value="all">All</option>
+                {conferences.map(conf => (
+                  <option key={conf} value={conf}>{getConferenceAbbr(conf)}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <div className="flex-1 overflow-y-auto p-2">
+            <div className="space-y-1">
+              {availableSchools.map(school => {
+                const pickCount = schoolPickCounts[school.id] || 0
+
+                return (
+                  <button
+                    key={school.id}
+                    onClick={() => handleMakePick(school.id)}
+                    disabled={!isMyPick || draft?.status !== 'in_progress'}
+                    className={`w-full p-2 rounded text-left transition-colors ${
+                      isMyPick && draft?.status === 'in_progress'
+                        ? 'hover:ring-2 hover:ring-blue-500 cursor-pointer'
+                        : 'cursor-not-allowed opacity-60'
+                    }`}
+                    style={{
+                      backgroundColor: school.primary_color,
+                      color: school.secondary_color
+                    }}
+                  >
+                    <div className="flex items-center gap-2">
+                      {school.logo_url ? (
+                        <img
+                          src={school.logo_url}
+                          alt={school.name}
+                          className="w-8 h-8 rounded-full bg-white p-0.5"
+                        />
+                      ) : (
+                        <div
+                          className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold"
+                          style={{ backgroundColor: school.secondary_color, color: school.primary_color }}
+                        >
+                          {school.abbreviation?.slice(0, 2) || school.name.slice(0, 2)}
+                        </div>
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <div className="font-medium text-sm truncate">{school.name}</div>
+                        <div className="text-xs opacity-75">{getConferenceAbbr(school.conference)}</div>
+                      </div>
+                      <div
+                        className="text-xs px-1.5 py-0.5 rounded"
+                        style={{ backgroundColor: school.secondary_color, color: school.primary_color }}
+                      >
+                        {pickCount}/{maxSelections}
+                      </div>
                     </div>
-                  </div>
-                </button>
-              ))}
+                  </button>
+                )
+              })}
             </div>
           </div>
         </div>
 
-        {/* Center Panel - Draft Board */}
-        <div className="flex-1 flex flex-col">
-          {/* On the Clock */}
-          {draft?.status === 'in_progress' && currentTeam && (
-            <div className={`p-6 border-b border-gray-700 ${isMyPick ? 'bg-green-900/30' : 'bg-gray-800'}`}>
-              <div className="text-center">
-                <div className="text-gray-400 text-sm mb-1">ON THE CLOCK</div>
-                <div className="text-2xl font-bold text-white mb-2">
-                  {currentTeam.name}
-                </div>
-                <div className="text-gray-400">
-                  Round {draft.current_round}, Pick {draft.current_pick}
-                </div>
-
-                {/* Timer */}
-                {timeRemaining !== null && (
-                  <div className={`text-4xl font-mono mt-4 ${
-                    timeRemaining <= 10 ? 'text-red-500' :
-                    timeRemaining <= 30 ? 'text-yellow-500' :
-                    'text-white'
-                  }`}>
-                    {Math.floor(timeRemaining / 60)}:{(timeRemaining % 60).toString().padStart(2, '0')}
-                  </div>
-                )}
-
-                {isMyPick && (
-                  <div className="text-green-400 font-semibold mt-2">
-                    It&apos;s your turn! Select a school from the left panel.
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-
+        {/* Center Panel - Draft History */}
+        <div className="flex-1 flex flex-col border-r border-gray-700">
           {/* Draft Status Messages */}
           {draft?.status === 'not_started' && (
             <div className="p-6">
@@ -950,7 +1072,7 @@ export default function DraftRoomPage() {
                 <div className="max-w-md mx-auto bg-gray-800 rounded-lg p-4">
                   <h3 className="text-white font-semibold mb-3">Set Draft Order</h3>
                   <p className="text-gray-400 text-sm mb-4">
-                    Drag teams to reorder, or use the arrows. Order will be saved when you rearrange.
+                    Use the arrows to reorder teams.
                   </p>
                   <div className="space-y-2">
                     {[...teams]
@@ -988,7 +1110,7 @@ export default function DraftRoomPage() {
               {isCommissioner && settings?.draft_order_type === 'random' && teams.length >= 2 && (
                 <div className="max-w-md mx-auto text-center">
                   <p className="text-gray-500 text-sm">
-                    Draft order is set to <strong className="text-gray-400">Random</strong>. Teams will be shuffled when the draft starts.
+                    Draft order is set to <strong className="text-gray-400">Random</strong>.
                   </p>
                   <p className="text-gray-600 text-xs mt-2">
                     Change this in <Link href={`/leagues/${leagueId}/settings`} className="text-blue-400 hover:text-blue-300">League Settings</Link>
@@ -1019,26 +1141,41 @@ export default function DraftRoomPage() {
             </div>
           )}
 
-          {/* Recent Picks */}
-          <div className="flex-1 overflow-y-auto p-4">
-            <h3 className="text-lg font-semibold text-white mb-4">Draft History</h3>
+          {/* Draft History - All picks in order */}
+          <div className="flex-1 overflow-y-auto p-3">
+            <h3 className="text-sm font-semibold text-white mb-3">Draft History</h3>
             {picks.length === 0 ? (
-              <p className="text-gray-400">No picks yet</p>
+              <p className="text-gray-500 text-sm">No picks yet</p>
             ) : (
-              <div className="space-y-2">
-                {[...picks].reverse().map(pick => (
-                  <div key={pick.id} className="bg-gray-800 p-3 rounded-lg flex items-center gap-4">
-                    <div className="text-gray-400 text-sm w-20">
+              <div className="space-y-1">
+                {picks.map(pick => (
+                  <div
+                    key={pick.id}
+                    className="flex items-center gap-2 p-2 rounded text-sm"
+                    style={{
+                      backgroundColor: pick.schools.primary_color,
+                      color: pick.schools.secondary_color
+                    }}
+                  >
+                    <span className="w-14 text-xs opacity-75">
                       R{pick.round} P{pick.pick_number}
-                    </div>
-                    <div
-                      className="w-8 h-8 rounded-full"
-                      style={{ backgroundColor: pick.schools.primary_color }}
-                    />
-                    <div className="flex-1">
-                      <div className="text-white font-medium">{pick.schools.name}</div>
-                      <div className="text-gray-400 text-sm">{pick.fantasy_teams.name}</div>
-                    </div>
+                    </span>
+                    {pick.schools.logo_url ? (
+                      <img
+                        src={pick.schools.logo_url}
+                        alt={pick.schools.name}
+                        className="w-6 h-6 rounded-full bg-white p-0.5"
+                      />
+                    ) : (
+                      <div
+                        className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold"
+                        style={{ backgroundColor: pick.schools.secondary_color, color: pick.schools.primary_color }}
+                      >
+                        {pick.schools.abbreviation?.slice(0, 2) || pick.schools.name.slice(0, 2)}
+                      </div>
+                    )}
+                    <span className="font-medium flex-1">{pick.schools.name}</span>
+                    <span className="text-xs opacity-75">{pick.fantasy_teams.name}</span>
                   </div>
                 ))}
               </div>
@@ -1046,59 +1183,80 @@ export default function DraftRoomPage() {
           </div>
         </div>
 
-        {/* Right Panel - Teams & Rosters */}
-        <div className="w-1/4 border-l border-gray-700 overflow-y-auto">
-          <div className="p-4">
-            <h2 className="text-lg font-semibold text-white mb-4">Draft Order</h2>
-
-            <div className="space-y-4">
-              {[...teams]
-                .sort((a, b) => (a.draft_position || 999) - (b.draft_position || 999))
-                .map((team, index) => {
-                const teamPicks = picks.filter(p => p.fantasy_team_id === team.id)
-                const isOnClock = team.id === draft?.current_team_id
-
-                return (
-                  <div
-                    key={team.id}
-                    className={`bg-gray-800 rounded-lg p-3 ${
-                      isOnClock ? 'ring-2 ring-green-500' : ''
-                    }`}
-                  >
-                    <div className="flex justify-between items-center mb-2">
-                      <div className="flex items-center gap-2">
-                        <span className="text-gray-500 text-sm">{index + 1}.</span>
-                        <span className="text-white font-medium">{team.name}</span>
-                      </div>
-                      <div className="text-gray-400 text-sm">
-                        {teamPicks.length}/{settings?.schools_per_team || 12}
-                      </div>
-                    </div>
-                    <div className="text-gray-400 text-sm mb-2">
-                      {team.profiles?.display_name || team.profiles?.email?.split('@')[0]}
-                    </div>
-
-                    {teamPicks.length > 0 && (
-                      <div className="space-y-1 mt-2 pt-2 border-t border-gray-700">
-                        {teamPicks.map(pick => (
-                          <div key={pick.id} className="flex items-center gap-2 text-sm">
-                            <div
-                              className="w-4 h-4 rounded-full"
-                              style={{ backgroundColor: pick.schools.primary_color }}
-                            />
-                            <span className="text-gray-300">{pick.schools.name}</span>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                )
-              })}
+        {/* Right Panel - My Team / View Teams */}
+        <div className="w-1/4 flex flex-col">
+          <div className="p-3 border-b border-gray-700">
+            <div className="flex items-center justify-between mb-2">
+              <h2 className="text-sm font-semibold text-white">Team Roster</h2>
+              <select
+                value={viewingTeamId || myTeam?.id || ''}
+                onChange={(e) => setViewingTeamId(e.target.value || null)}
+                className="px-2 py-1 bg-gray-800 border border-gray-600 rounded text-xs text-white"
+              >
+                {myTeam && (
+                  <option value={myTeam.id}>My Team: {myTeam.name}</option>
+                )}
+                {teams
+                  .filter(t => t.id !== myTeam?.id)
+                  .sort((a, b) => (a.draft_position || 999) - (b.draft_position || 999))
+                  .map(team => (
+                    <option key={team.id} value={team.id}>{team.name}</option>
+                  ))}
+              </select>
             </div>
+            {viewingTeam && (
+              <div className="text-gray-400 text-xs">
+                {viewingTeamPicks.length}/{settings?.schools_per_team || 12} schools drafted
+              </div>
+            )}
+          </div>
+
+          <div className="flex-1 overflow-y-auto p-3">
+            {viewingTeam ? (
+              <div className="space-y-1">
+                {viewingTeamPicks.length === 0 ? (
+                  <p className="text-gray-500 text-sm">No picks yet</p>
+                ) : (
+                  viewingTeamPicks.map((pick, idx) => (
+                    <div
+                      key={pick.id}
+                      className="flex items-center gap-2 p-2 rounded text-sm"
+                      style={{
+                        backgroundColor: pick.schools.primary_color,
+                        color: pick.schools.secondary_color
+                      }}
+                    >
+                      <span className="w-5 text-xs opacity-75">{idx + 1}.</span>
+                      {pick.schools.logo_url ? (
+                        <img
+                          src={pick.schools.logo_url}
+                          alt={pick.schools.name}
+                          className="w-6 h-6 rounded-full bg-white p-0.5"
+                        />
+                      ) : (
+                        <div
+                          className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold"
+                          style={{ backgroundColor: pick.schools.secondary_color, color: pick.schools.primary_color }}
+                        >
+                          {pick.schools.abbreviation?.slice(0, 2) || pick.schools.name.slice(0, 2)}
+                        </div>
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <div className="font-medium truncate">{pick.schools.name}</div>
+                        <div className="text-[10px] opacity-75">
+                          R{pick.round} • {getConferenceAbbr(pick.schools.conference)}
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            ) : (
+              <p className="text-gray-500 text-sm">No team selected</p>
+            )}
           </div>
         </div>
       </div>
     </div>
   )
 }
-// Trigger redeploy Sun Jan 25 20:12:58 EST 2026
