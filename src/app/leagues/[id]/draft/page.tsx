@@ -72,6 +72,7 @@ export default function DraftRoomPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedConference, setSelectedConference] = useState<string>('all')
   const [timeRemaining, setTimeRemaining] = useState<number | null>(null)
+  const [actionError, setActionError] = useState<string | null>(null)
 
   // Get unique conferences from schools
   const conferences = [...new Set(schools.map(s => s.conference))].sort()
@@ -285,20 +286,23 @@ export default function DraftRoomPage() {
 
   // Commissioner: Start draft
   const handleStartDraft = async () => {
+    console.log('handleStartDraft called', { isCommissioner, draft, settings, teamsLength: teams.length })
+    setActionError(null)
+
     if (!isCommissioner) {
-      setError('Only the commissioner can start the draft')
+      setActionError('Only the commissioner can start the draft')
       return
     }
     if (!draft) {
-      setError('Draft not found')
+      setActionError('Draft not found')
       return
     }
     if (!settings) {
-      setError('League settings not found')
+      setActionError('League settings not found')
       return
     }
     if (teams.length < 2) {
-      setError('Need at least 2 teams to start')
+      setActionError('Need at least 2 teams to start')
       return
     }
 
@@ -343,7 +347,7 @@ export default function DraftRoomPage() {
         const { error: orderError } = await supabase.from('draft_order').insert(orderEntries)
         if (orderError) {
           console.error('Error inserting draft order:', orderError)
-          setError('Failed to create draft order')
+          setActionError('Failed to create draft order: ' + orderError.message)
           return
         }
 
@@ -366,14 +370,14 @@ export default function DraftRoomPage() {
           .single()
 
         if (!firstPick) {
-          setError('No draft order found')
+          setActionError('No draft order found')
           return
         }
         firstTeamId = firstPick.fantasy_team_id
       }
 
       if (!firstTeamId) {
-        setError('Could not determine first team')
+        setActionError('Could not determine first team')
         return
       }
 
@@ -394,7 +398,7 @@ export default function DraftRoomPage() {
 
     } catch (err) {
       console.error('Error starting draft:', err)
-      setError('Failed to start draft')
+      setActionError('Failed to start draft: ' + (err instanceof Error ? err.message : String(err)))
     }
   }
 
@@ -581,6 +585,9 @@ export default function DraftRoomPage() {
             </span>
 
             {/* Commissioner Controls */}
+            {actionError && (
+              <span className="text-red-400 text-sm">{actionError}</span>
+            )}
             {isCommissioner && draft?.status === 'not_started' && teams.length >= 2 && (
               <button
                 onClick={handleStartDraft}
