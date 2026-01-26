@@ -97,6 +97,19 @@ export default function DraftStatusSection({
                 Need at least 2 teams to start the draft
               </p>
             )}
+            {!isCommissioner && teamCount >= 2 && (
+              <div>
+                <p className="text-gray-400 mb-3">
+                  Waiting for commissioner to start the draft...
+                </p>
+                <Link
+                  href={`/leagues/${leagueId}/draft`}
+                  className="inline-block bg-gray-600 hover:bg-gray-500 text-white font-semibold py-2 px-4 rounded-lg transition-colors"
+                >
+                  Go to Draft Room
+                </Link>
+              </div>
+            )}
           </div>
         )}
 

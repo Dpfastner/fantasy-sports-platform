@@ -81,6 +81,9 @@ export default function DraftRoomPage() {
   const [pendingPick, setPendingPick] = useState<School | null>(null) // School selected, awaiting confirmation
   const [isSubmittingPick, setIsSubmittingPick] = useState(false)
 
+  // Track the last pick we made to prevent polling from reverting state
+  const [lastLocalPickNumber, setLastLocalPickNumber] = useState<number>(0)
+
   // Get unique conferences from schools
   const conferences = [...new Set(schools.map(s => s.conference))].sort()
 
@@ -330,11 +333,28 @@ export default function DraftRoomPage() {
         .single()
 
       if (draftData) {
-        // Only update if something changed
+        // CRITICAL: Only accept server updates that represent FORWARD progress
+        // This prevents stale polling responses from reverting state after we make a pick
+        const serverPick = draftData.current_pick
+        const localPick = draft.current_pick
+
+        // If server is behind our local state, ignore this update (stale response)
+        if (serverPick < localPick) {
+          console.log('Polling: ignoring stale server data (server pick', serverPick, '< local pick', localPick, ')')
+          return
+        }
+
+        // If server is behind the last pick we made locally, ignore (race condition)
+        if (serverPick < lastLocalPickNumber) {
+          console.log('Polling: ignoring data behind our last local pick (server', serverPick, '< lastLocal', lastLocalPickNumber, ')')
+          return
+        }
+
+        // Only update if something actually changed AND it's forward progress
         if (draftData.current_pick !== draft.current_pick ||
             draftData.status !== draft.status ||
             draftData.current_team_id !== draft.current_team_id) {
-          console.log('Polling: draft state changed', draftData)
+          console.log('Polling: accepting draft update (pick', serverPick, ')')
           setDraft(draftData as DraftState)
         }
       }
@@ -369,7 +389,7 @@ export default function DraftRoomPage() {
     }, 5000) // Poll every 5 seconds
 
     return () => clearInterval(pollInterval)
-  }, [draft?.id, draft?.status, draft?.current_pick, draft?.current_team_id, picks.length, draftOrder.length, supabase])
+  }, [draft?.id, draft?.status, draft?.current_pick, draft?.current_team_id, picks.length, draftOrder.length, lastLocalPickNumber, supabase])
 
   // Timer countdown
   useEffect(() => {
@@ -895,6 +915,9 @@ export default function DraftRoomPage() {
     const deadline = new Date(Date.now() + (settings.draft_timer_seconds || 60) * 1000)
 
     console.log('Advancing to pick', nextPickNumber, 'round', nextRound, 'team', nextOrder.fantasy_team_id)
+
+    // Track this pick number to prevent stale polling from reverting our state
+    setLastLocalPickNumber(nextPickNumber)
 
     const { error } = await supabase
       .from('drafts')
