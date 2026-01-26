@@ -858,7 +858,7 @@ export default function DraftRoomPage() {
     // Reset timer expired flag for the next pick
     setTimerExpired(false)
 
-    const { error } = await supabase
+    const { error, data } = await supabase
       .from('drafts')
       .update({
         current_round: nextRound,
@@ -867,10 +867,16 @@ export default function DraftRoomPage() {
         pick_deadline: deadline.toISOString()
       })
       .eq('id', draft.id)
+      .select()
 
     if (error) {
       console.error('Error advancing pick:', error)
+      setActionError('Failed to advance pick: ' + error.message)
+    } else if (!data || data.length === 0) {
+      console.error('advanceToNextPick: No rows updated - RLS policy may be blocking the update')
+      setActionError('Failed to advance pick - permission denied. Please refresh.')
     } else {
+      console.log('advanceToNextPick: DB update successful, pick now', nextPickNumber)
       // Force local state update
       setDraft(prev => prev ? {
         ...prev,
