@@ -285,29 +285,85 @@ export default function DraftRoomPage() {
 
   // Commissioner: Start draft
   const handleStartDraft = async () => {
-    if (!isCommissioner || !draft) return
+    if (!isCommissioner || !draft || !settings) return
 
     try {
+      let firstTeamId: string | null = null
+
       // Generate draft order if not exists
       if (draftOrder.length === 0) {
-        await generateDraftOrder()
+        // Generate order and get first team
+        const shuffledTeams = [...teams].sort(() => Math.random() - 0.5)
+        const totalRounds = settings.schools_per_team
+
+        const orderEntries = []
+        let pickNumber = 1
+
+        for (let round = 1; round <= totalRounds; round++) {
+          const roundOrder = settings.draft_type === 'snake' && round % 2 === 0
+            ? [...shuffledTeams].reverse()
+            : shuffledTeams
+
+          for (let pos = 0; pos < roundOrder.length; pos++) {
+            orderEntries.push({
+              draft_id: draft.id,
+              fantasy_team_id: roundOrder[pos].id,
+              round,
+              pick_number: pickNumber,
+              position_in_round: pos + 1
+            })
+            pickNumber++
+          }
+        }
+
+        // Update team draft positions
+        for (let i = 0; i < shuffledTeams.length; i++) {
+          await supabase
+            .from('fantasy_teams')
+            .update({ draft_position: i + 1 })
+            .eq('id', shuffledTeams[i].id)
+        }
+
+        // Insert all order entries
+        const { error: orderError } = await supabase.from('draft_order').insert(orderEntries)
+        if (orderError) {
+          console.error('Error inserting draft order:', orderError)
+          setError('Failed to create draft order')
+          return
+        }
+
+        // Update local state
+        setDraftOrder(orderEntries.map(e => ({
+          fantasy_team_id: e.fantasy_team_id,
+          pick_number: e.pick_number,
+          round: e.round
+        })))
+
+        // First team is first in shuffled order
+        firstTeamId = shuffledTeams[0].id
+      } else {
+        // Draft order already exists, get first pick
+        const { data: firstPick } = await supabase
+          .from('draft_order')
+          .select('fantasy_team_id')
+          .eq('draft_id', draft.id)
+          .eq('pick_number', 1)
+          .single()
+
+        if (!firstPick) {
+          setError('No draft order found')
+          return
+        }
+        firstTeamId = firstPick.fantasy_team_id
       }
 
-      // Get first team in order
-      const { data: firstPick } = await supabase
-        .from('draft_order')
-        .select('fantasy_team_id')
-        .eq('draft_id', draft.id)
-        .eq('pick_number', 1)
-        .single()
-
-      if (!firstPick) {
-        setError('No draft order found')
+      if (!firstTeamId) {
+        setError('Could not determine first team')
         return
       }
 
       // Update draft state
-      const deadline = new Date(Date.now() + (settings?.draft_timer_seconds || 60) * 1000)
+      const deadline = new Date(Date.now() + (settings.draft_timer_seconds || 60) * 1000)
 
       await supabase
         .from('drafts')
@@ -315,7 +371,7 @@ export default function DraftRoomPage() {
           status: 'in_progress',
           current_round: 1,
           current_pick: 1,
-          current_team_id: firstPick.fantasy_team_id,
+          current_team_id: firstTeamId,
           pick_deadline: deadline.toISOString(),
           started_at: new Date().toISOString()
         })
