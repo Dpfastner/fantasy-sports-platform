@@ -22,6 +22,7 @@ interface Season {
 export default function CreateLeaguePage() {
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
+  const [teamName, setTeamName] = useState('')
   const [sportId, setSportId] = useState('')
   const [seasonId, setSeasonId] = useState('')
   const [maxTeams, setMaxTeams] = useState(12)
@@ -103,6 +104,11 @@ export default function CreateLeaguePage() {
       return
     }
 
+    if (!teamName.trim()) {
+      setError('Your team name is required')
+      return
+    }
+
     setLoading(true)
 
     try {
@@ -130,6 +136,20 @@ export default function CreateLeaguePage() {
       if (createError) {
         setError(createError.message)
         return
+      }
+
+      // Create commissioner's fantasy team
+      const { error: teamError } = await supabase
+        .from('fantasy_teams')
+        .insert({
+          name: teamName.trim(),
+          league_id: league.id,
+          user_id: user.id,
+        })
+
+      if (teamError) {
+        // League was created but team failed - show error but still redirect
+        console.error('Failed to create team:', teamError)
       }
 
       // Redirect to the new league page
@@ -198,6 +218,25 @@ export default function CreateLeaguePage() {
                 className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-500 resize-none"
                 placeholder="Tell your friends what this league is about..."
               />
+            </div>
+
+            <div className="mb-6">
+              <label htmlFor="teamName" className="block text-gray-300 mb-2">
+                Your Team Name *
+              </label>
+              <input
+                type="text"
+                id="teamName"
+                value={teamName}
+                onChange={(e) => setTeamName(e.target.value)}
+                required
+                maxLength={100}
+                className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-500"
+                placeholder="e.g., The Gridiron Gang"
+              />
+              <p className="text-gray-500 text-sm mt-1">
+                As the commissioner, you'll need a team to participate in the draft
+              </p>
             </div>
 
             <div className="grid md:grid-cols-2 gap-6 mb-6">
