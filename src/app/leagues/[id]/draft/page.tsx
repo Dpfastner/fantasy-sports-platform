@@ -231,6 +231,7 @@ export default function DraftRoomPage() {
         table: 'drafts',
         filter: `id=eq.${draft.id}`
       }, (payload) => {
+        console.log('Realtime: draft update received', payload.new)
         setDraft(payload.new as DraftState)
       })
       .on('postgres_changes', {
@@ -239,6 +240,7 @@ export default function DraftRoomPage() {
         table: 'draft_picks',
         filter: `draft_id=eq.${draft.id}`
       }, async (payload) => {
+        console.log('Realtime: new pick received', payload.new)
         // Fetch the full pick with joins
         const { data: newPick } = await supabase
           .from('draft_picks')
@@ -254,12 +256,55 @@ export default function DraftRoomPage() {
           setPicks(prev => [...prev, newPick as unknown as DraftPick])
         }
       })
-      .subscribe()
+      .subscribe((status) => {
+        console.log('Realtime subscription status:', status)
+      })
 
     return () => {
       supabase.removeChannel(draftChannel)
     }
   }, [draft?.id, supabase])
+
+  // Polling fallback for real-time - refresh draft state every 5 seconds if draft is in progress
+  useEffect(() => {
+    if (!draft?.id || draft.status === 'completed' || draft.status === 'not_started') return
+
+    const pollInterval = setInterval(async () => {
+      const { data: draftData } = await supabase
+        .from('drafts')
+        .select('*')
+        .eq('id', draft.id)
+        .single()
+
+      if (draftData) {
+        // Only update if something changed
+        if (draftData.current_pick !== draft.current_pick ||
+            draftData.status !== draft.status ||
+            draftData.current_team_id !== draft.current_team_id) {
+          console.log('Polling: draft state changed', draftData)
+          setDraft(draftData as DraftState)
+        }
+      }
+
+      // Also check for new picks
+      const { data: picksData } = await supabase
+        .from('draft_picks')
+        .select(`
+          id, round, pick_number, fantasy_team_id, school_id, picked_at,
+          schools (id, name, abbreviation, conference, primary_color, secondary_color),
+          fantasy_teams (name)
+        `)
+        .eq('draft_id', draft.id)
+        .order('pick_number')
+
+      if (picksData && picksData.length > picks.length) {
+        console.log('Polling: new picks found', picksData.length - picks.length)
+        setPicks(picksData as unknown as DraftPick[])
+      }
+    }, 5000) // Poll every 5 seconds
+
+    return () => clearInterval(pollInterval)
+  }, [draft?.id, draft?.status, draft?.current_pick, draft?.current_team_id, picks.length, supabase])
 
   // Timer countdown
   useEffect(() => {
@@ -287,7 +332,7 @@ export default function DraftRoomPage() {
 
         if (nextPickNumber > totalPicks) {
           // Draft complete
-          await supabase
+          const { error } = await supabase
             .from('drafts')
             .update({
               status: 'completed',
@@ -296,6 +341,11 @@ export default function DraftRoomPage() {
               completed_at: new Date().toISOString()
             })
             .eq('id', draft.id)
+
+          if (!error) {
+            // Force local state update
+            setDraft(prev => prev ? { ...prev, status: 'completed', current_team_id: null, pick_deadline: null } : null)
+          }
         } else {
           // Get next team from draft order
           const nextOrder = draftOrder.find(o => o.pick_number === nextPickNumber)
@@ -303,7 +353,7 @@ export default function DraftRoomPage() {
             const nextRound = Math.ceil(nextPickNumber / teams.length)
             const newDeadline = new Date(Date.now() + (settings?.draft_timer_seconds || 60) * 1000)
 
-            await supabase
+            const { error } = await supabase
               .from('drafts')
               .update({
                 current_round: nextRound,
@@ -312,6 +362,17 @@ export default function DraftRoomPage() {
                 pick_deadline: newDeadline.toISOString()
               })
               .eq('id', draft.id)
+
+            if (!error) {
+              // Force local state update
+              setDraft(prev => prev ? {
+                ...prev,
+                current_round: nextRound,
+                current_pick: nextPickNumber,
+                current_team_id: nextOrder.fantasy_team_id,
+                pick_deadline: newDeadline.toISOString()
+              } : null)
+            }
           }
         }
       }
@@ -988,10 +1049,12 @@ export default function DraftRoomPage() {
         {/* Right Panel - Teams & Rosters */}
         <div className="w-1/4 border-l border-gray-700 overflow-y-auto">
           <div className="p-4">
-            <h2 className="text-lg font-semibold text-white mb-4">Teams</h2>
+            <h2 className="text-lg font-semibold text-white mb-4">Draft Order</h2>
 
             <div className="space-y-4">
-              {teams.map(team => {
+              {[...teams]
+                .sort((a, b) => (a.draft_position || 999) - (b.draft_position || 999))
+                .map((team, index) => {
                 const teamPicks = picks.filter(p => p.fantasy_team_id === team.id)
                 const isOnClock = team.id === draft?.current_team_id
 
@@ -1003,7 +1066,10 @@ export default function DraftRoomPage() {
                     }`}
                   >
                     <div className="flex justify-between items-center mb-2">
-                      <div className="text-white font-medium">{team.name}</div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-gray-500 text-sm">{index + 1}.</span>
+                        <span className="text-white font-medium">{team.name}</span>
+                      </div>
                       <div className="text-gray-400 text-sm">
                         {teamPicks.length}/{settings?.schools_per_team || 12}
                       </div>

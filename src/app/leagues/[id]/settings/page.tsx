@@ -230,7 +230,7 @@ export default function LeagueSettingsPage() {
                       className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white disabled:opacity-50"
                     >
                       <option value="random">Random (shuffled when draft starts)</option>
-                      <option value="manual">Manual (set order below)</option>
+                      <option value="manual">Manual (set order at draft)</option>
                     </select>
                     <p className="text-gray-500 text-sm mt-1">
                       {settings.draft_order_type === 'manual'
