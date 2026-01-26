@@ -81,8 +81,8 @@ export default function DraftRoomPage() {
   const [pendingPick, setPendingPick] = useState<School | null>(null) // School selected, awaiting confirmation
   const [isSubmittingPick, setIsSubmittingPick] = useState(false)
 
-  // Track the last pick we made to prevent polling from reverting state
-  const [lastLocalPickNumber, setLastLocalPickNumber] = useState<number>(0)
+  // Track if timer has expired (for showing warning)
+  const [timerExpired, setTimerExpired] = useState(false)
 
   // Get unique conferences from schools
   const conferences = [...new Set(schools.map(s => s.conference))].sort()
@@ -333,42 +333,17 @@ export default function DraftRoomPage() {
         .single()
 
       if (draftData) {
-        // CRITICAL: Only accept server updates that represent FORWARD progress
-        // This prevents stale polling responses from reverting state after we make a pick
-        const serverPick = draftData.current_pick
-        const localPick = draft.current_pick
-
-        // If server is behind our local state, ignore this update (stale response)
-        if (serverPick < localPick) {
-          console.log('Polling: ignoring stale server data (server pick', serverPick, '< local pick', localPick, ')')
-          return
-        }
-
-        // If server is behind the last pick we made locally, ignore (race condition)
-        if (serverPick < lastLocalPickNumber) {
-          console.log('Polling: ignoring data behind our last local pick (server', serverPick, '< lastLocal', lastLocalPickNumber, ')')
-          return
-        }
-
-        // Only update if something actually changed AND it's forward progress
+        // Only update if something changed
         if (draftData.current_pick !== draft.current_pick ||
             draftData.status !== draft.status ||
             draftData.current_team_id !== draft.current_team_id) {
-          console.log('Polling: accepting draft update (pick', serverPick, ')')
+          console.log('Polling: draft state changed', draftData)
           setDraft(draftData as DraftState)
+          // Reset timer expired flag when pick changes
+          if (draftData.current_pick !== draft.current_pick) {
+            setTimerExpired(false)
+          }
         }
-      }
-
-      // Always refresh draft order (might have new makeup picks from skips)
-      const { data: orderData } = await supabase
-        .from('draft_order')
-        .select('fantasy_team_id, pick_number, round')
-        .eq('draft_id', draft.id)
-        .order('pick_number')
-
-      if (orderData && orderData.length !== draftOrder.length) {
-        console.log('Polling: draft order updated', orderData.length, 'entries (was', draftOrder.length, ')')
-        setDraftOrder(orderData)
       }
 
       // Also check for new picks
@@ -389,131 +364,40 @@ export default function DraftRoomPage() {
     }, 5000) // Poll every 5 seconds
 
     return () => clearInterval(pollInterval)
-  }, [draft?.id, draft?.status, draft?.current_pick, draft?.current_team_id, picks.length, draftOrder.length, lastLocalPickNumber, supabase])
+  }, [draft?.id, draft?.status, draft?.current_pick, draft?.current_team_id, picks.length, supabase])
 
-  // Timer countdown
+  // Timer countdown - just tracks time, no auto-skip
   useEffect(() => {
     if (!draft?.pick_deadline || draft.status !== 'in_progress') {
       setTimeRemaining(null)
+      setTimerExpired(false)
       return
     }
 
-    let hasSkipped = false
-
-    const updateTimer = async () => {
+    const updateTimer = () => {
       const deadline = new Date(draft.pick_deadline!).getTime()
       const now = Date.now()
       const remaining = Math.max(0, Math.floor((deadline - now) / 1000))
       setTimeRemaining(remaining)
 
-      if (remaining === 0 && isCommissioner && !hasSkipped) {
-        // Auto-skip when timer expires (commissioner handles this)
-        hasSkipped = true
-        console.log('Timer expired, auto-skipping pick')
-
-        // Get the current team being skipped
-        const currentOrder = draftOrder.find(o => o.pick_number === draft.current_pick)
-        const skippedTeamId = currentOrder?.fantasy_team_id || draft.current_team_id
-
-        // Find the highest pick number in draft_order to add makeup pick at the end
-        const maxPickNumber = Math.max(...draftOrder.map(o => o.pick_number))
-        const makeupPickNumber = maxPickNumber + 1
-        const makeupRound = Math.ceil(makeupPickNumber / teams.length)
-
-        // Add the skipped pick to the end of the draft order
-        if (skippedTeamId) {
-          console.log(`Adding makeup pick #${makeupPickNumber} for skipped team`)
-          const { error: insertError } = await supabase
-            .from('draft_order')
-            .insert({
-              draft_id: draft.id,
-              fantasy_team_id: skippedTeamId,
-              pick_number: makeupPickNumber,
-              round: makeupRound
-            })
-
-          if (!insertError) {
-            // Update local draft order state
-            setDraftOrder(prev => [...prev, {
-              fantasy_team_id: skippedTeamId,
-              pick_number: makeupPickNumber,
-              round: makeupRound
-            }])
-          } else {
-            console.error('Error adding makeup pick:', insertError)
-          }
-        }
-
-        // Now advance to the next pick in the CURRENT order
-        const nextPickNumber = draft.current_pick + 1
-
-        // Check if there's a next pick in the order (could be regular or makeup)
-        const nextOrder = draftOrder.find(o => o.pick_number === nextPickNumber)
-
-        if (!nextOrder) {
-          // No more picks in the original order - draft complete
-          const { error } = await supabase
-            .from('drafts')
-            .update({
-              status: 'completed',
-              current_team_id: null,
-              pick_deadline: null,
-              completed_at: new Date().toISOString()
-            })
-            .eq('id', draft.id)
-
-          if (!error) {
-            setDraft(prev => prev ? { ...prev, status: 'completed', current_team_id: null, pick_deadline: null } : null)
-          }
-        } else {
-          // Move to next pick
-          const nextRound = nextOrder.round
-          const newDeadline = new Date(Date.now() + (settings?.draft_timer_seconds || 60) * 1000)
-
-          const { error } = await supabase
-            .from('drafts')
-            .update({
-              current_round: nextRound,
-              current_pick: nextPickNumber,
-              current_team_id: nextOrder.fantasy_team_id,
-              pick_deadline: newDeadline.toISOString()
-            })
-            .eq('id', draft.id)
-
-          if (!error) {
-            setDraft(prev => prev ? {
-              ...prev,
-              current_round: nextRound,
-              current_pick: nextPickNumber,
-              current_team_id: nextOrder.fantasy_team_id,
-              pick_deadline: newDeadline.toISOString()
-            } : null)
-          }
-        }
+      // Set expired flag when timer hits 0 (but don't auto-skip)
+      if (remaining === 0 && !timerExpired) {
+        setTimerExpired(true)
       }
     }
 
     updateTimer()
     const interval = setInterval(updateTimer, 1000)
     return () => clearInterval(interval)
-  }, [draft?.pick_deadline, draft?.status, draft?.current_pick, draft?.id, isCommissioner, teams.length, settings?.schools_per_team, settings?.draft_timer_seconds, draftOrder, supabase])
+  }, [draft?.pick_deadline, draft?.status, timerExpired])
 
-  // Close confirmation modal if timer expires or it's no longer my turn
+  // Close confirmation modal if it's no longer my turn (someone else picked)
   useEffect(() => {
-    if (pendingPick) {
-      // Close if timer expired
-      if (timeRemaining !== null && timeRemaining <= 0) {
-        console.log('Closing modal - timer expired')
-        setPendingPick(null)
-        setActionError('Time expired! Your pick was skipped.')
-      }
-      // Close if it's no longer my turn (draft advanced)
-      if (!isMyPick) {
-        console.log('Closing modal - no longer my turn')
-        setPendingPick(null)
-      }
+    if (pendingPick && !isMyPick) {
+      console.log('Closing modal - no longer my turn')
+      setPendingPick(null)
     }
-  }, [timeRemaining, isMyPick, pendingPick])
+  }, [isMyPick, pendingPick])
 
   // Commissioner: Start draft
   const handleStartDraft = async () => {
@@ -742,12 +626,7 @@ export default function DraftRoomPage() {
       console.log('Blocked from showing modal:', { hasDraft: !!draft, isMyPick, status: draft?.status })
       return
     }
-    // Don't allow picks if timer has expired
-    if (timeRemaining !== null && timeRemaining <= 0) {
-      console.log('Blocked - timer expired')
-      setActionError('Time expired! The pick is being skipped.')
-      return
-    }
+    // Allow picks even after timer expires - no auto-skip
     console.log('Opening confirmation modal for:', school.name)
     setPendingPick(school)
   }
@@ -796,17 +675,7 @@ export default function DraftRoomPage() {
       return
     }
 
-    // Double-check timer hasn't expired (race condition protection)
-    if (draft.pick_deadline) {
-      const deadline = new Date(draft.pick_deadline).getTime()
-      if (Date.now() > deadline) {
-        console.log('Pick rejected - timer expired')
-        setActionError('Time expired! Your pick was skipped.')
-        setPendingPick(null)
-        return
-      }
-    }
-
+    // Allow picks even after timer expires - no auto-skip
     setIsSubmittingPick(true)
 
     try {
@@ -916,8 +785,8 @@ export default function DraftRoomPage() {
 
     console.log('Advancing to pick', nextPickNumber, 'round', nextRound, 'team', nextOrder.fantasy_team_id)
 
-    // Track this pick number to prevent stale polling from reverting our state
-    setLastLocalPickNumber(nextPickNumber)
+    // Reset timer expired flag for the next pick
+    setTimerExpired(false)
 
     const { error } = await supabase
       .from('drafts')
@@ -1116,11 +985,12 @@ export default function DraftRoomPage() {
                 </div>
                 {timeRemaining !== null && (
                   <div className={`text-2xl font-mono font-bold ${
+                    timerExpired ? 'text-red-500 animate-pulse' :
                     timeRemaining <= 10 ? 'text-red-500 animate-pulse' :
                     timeRemaining <= 30 ? 'text-yellow-500' :
                     'text-white'
                   }`}>
-                    {Math.floor(timeRemaining / 60)}:{(timeRemaining % 60).toString().padStart(2, '0')}
+                    {timerExpired ? 'TIME UP!' : `${Math.floor(timeRemaining / 60)}:${(timeRemaining % 60).toString().padStart(2, '0')}`}
                   </div>
                 )}
               </>
@@ -1198,10 +1068,24 @@ export default function DraftRoomPage() {
         </div>
       )}
 
+      {/* Timer Expired Warning */}
+      {timerExpired && draft?.status === 'in_progress' && (
+        <div className="bg-red-600 text-white text-center py-3 font-bold animate-pulse">
+          TIME EXPIRED! {currentTeam?.name} must make a selection to continue the draft.
+        </div>
+      )}
+
       {/* Your Turn Notification */}
-      {isMyPick && draft?.status === 'in_progress' && (
+      {isMyPick && draft?.status === 'in_progress' && !timerExpired && (
         <div className="bg-green-600 text-white text-center py-2 font-semibold animate-pulse">
           It&apos;s your turn! Select a school from the left panel.
+        </div>
+      )}
+
+      {/* Your Turn + Timer Expired */}
+      {isMyPick && draft?.status === 'in_progress' && timerExpired && (
+        <div className="bg-red-600 text-white text-center py-2 font-semibold animate-pulse">
+          Your time is up! Please make your selection now.
         </div>
       )}
 
