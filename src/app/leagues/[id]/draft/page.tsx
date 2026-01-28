@@ -497,8 +497,8 @@ export default function DraftRoomPage() {
       setActionError('League settings not found')
       return
     }
-    if (teams.length < 2) {
-      setActionError('Need at least 2 teams to start the draft')
+    if (teams.length < 1) {
+      setActionError('Need at least 1 team to start the draft')
       return
     }
     if (teams.length < memberCount) {
@@ -1151,7 +1151,7 @@ export default function DraftRoomPage() {
                'Not Started'}
             </span>
 
-            {isCommissioner && draft?.status === 'not_started' && teams.length >= 2 && teams.length >= memberCount && (
+            {isCommissioner && draft?.status === 'not_started' && teams.length >= 1 && teams.length >= memberCount && (
               <button
                 onClick={handleStartDraft}
                 className="bg-green-600 hover:bg-green-700 text-white px-4 py-1.5 rounded text-sm font-medium"
@@ -1159,7 +1159,7 @@ export default function DraftRoomPage() {
                 Start Draft
               </button>
             )}
-            {isCommissioner && draft?.status === 'not_started' && teams.length >= 2 && teams.length < memberCount && (
+            {isCommissioner && draft?.status === 'not_started' && teams.length >= 1 && teams.length < memberCount && (
               <span className="text-yellow-400 text-sm">
                 Waiting for teams ({teams.length}/{memberCount})
               </span>
@@ -1356,16 +1356,16 @@ export default function DraftRoomPage() {
             <div className="p-6">
               <div className="text-center text-gray-400 mb-6">
                 <p className="text-xl mb-2">Draft has not started yet</p>
-                {teams.length < 2 && (
+                {teams.length < 1 && (
                   <p>Need at least 2 teams to start the draft</p>
                 )}
-                {isCommissioner && teams.length >= 2 && (
+                {isCommissioner && teams.length >= 1 && (
                   <p>Click &quot;Start Draft&quot; when everyone is ready</p>
                 )}
               </div>
 
               {/* Manual Draft Order Setup */}
-              {isCommissioner && settings?.draft_order_type === 'manual' && teams.length >= 2 && (
+              {isCommissioner && settings?.draft_order_type === 'manual' && teams.length >= 1 && (
                 <div className="max-w-md mx-auto bg-gray-800 rounded-lg p-4">
                   <h3 className="text-white font-semibold mb-3">Set Draft Order</h3>
                   <p className="text-gray-400 text-sm mb-4">
@@ -1404,7 +1404,7 @@ export default function DraftRoomPage() {
               )}
 
               {/* Random Order Info */}
-              {isCommissioner && settings?.draft_order_type === 'random' && teams.length >= 2 && (
+              {isCommissioner && settings?.draft_order_type === 'random' && teams.length >= 1 && (
                 <div className="max-w-md mx-auto text-center">
                   <p className="text-gray-500 text-sm">
                     Draft order is set to <strong className="text-gray-400">Random</strong>.

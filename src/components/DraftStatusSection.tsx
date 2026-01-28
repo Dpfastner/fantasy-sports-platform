@@ -88,7 +88,7 @@ export default function DraftStatusSection({
                 })}
               </p>
             )}
-            {isCommissioner && teamCount >= 2 && allMembersHaveTeams && (
+            {isCommissioner && teamCount >= 1 && allMembersHaveTeams && (
               <Link
                 href={`/leagues/${leagueId}/draft`}
                 className="inline-block bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors"
@@ -96,7 +96,7 @@ export default function DraftStatusSection({
                 Start Draft
               </Link>
             )}
-            {isCommissioner && teamCount >= 2 && !allMembersHaveTeams && (
+            {isCommissioner && teamCount >= 1 && !allMembersHaveTeams && (
               <div>
                 <p className="text-yellow-500 mb-2">
                   Waiting for all members to create teams ({teamCount}/{memberCount})
@@ -109,12 +109,12 @@ export default function DraftStatusSection({
                 </Link>
               </div>
             )}
-            {isCommissioner && teamCount < 2 && (
+            {isCommissioner && teamCount < 1 && (
               <p className="text-gray-500">
-                Need at least 2 teams to start the draft
+                Need at least 1 team to start the draft
               </p>
             )}
-            {!isCommissioner && teamCount >= 2 && (
+            {!isCommissioner && teamCount >= 1 && (
               <div>
                 <p className="text-gray-400 mb-3">
                   Waiting for commissioner to start the draft...
