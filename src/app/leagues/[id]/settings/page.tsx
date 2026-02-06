@@ -110,6 +110,10 @@ export default function CommissionerToolsPage() {
   const [activeTab, setActiveTab] = useState<TabType>('league')
   const [leagueSubTab, setLeagueSubTab] = useState<LeagueSubTab>('basic')
 
+  // Second owner state
+  const [editingSecondOwner, setEditingSecondOwner] = useState<string | null>(null)
+  const [secondOwnerEmail, setSecondOwnerEmail] = useState('')
+
   useEffect(() => {
     async function loadData() {
       try {
@@ -370,11 +374,24 @@ export default function CommissionerToolsPage() {
     }
   }
 
-  const handleAddSecondOwner = async (teamId: string, secondOwnerId: string | null) => {
+  const handleAddSecondOwnerByEmail = async (teamId: string, email: string) => {
     try {
+      // Look up user by email
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('id, email, display_name')
+        .eq('email', email.toLowerCase().trim())
+        .single()
+
+      if (profileError || !profile) {
+        setError('No user found with that email address')
+        return
+      }
+
+      // Update the team with the second owner
       const { error } = await supabase
         .from('fantasy_teams')
-        .update({ second_owner_id: secondOwnerId })
+        .update({ second_owner_id: profile.id })
         .eq('id', teamId)
 
       if (error) throw error
@@ -383,15 +400,42 @@ export default function CommissionerToolsPage() {
       setMembers(members.map(m => ({
         ...m,
         fantasy_teams: m.fantasy_teams?.map(t =>
-          t.id === teamId ? { ...t, second_owner_id: secondOwnerId } : t
+          t.id === teamId ? { ...t, second_owner_id: profile.id } : t
         ) || null
       })))
 
-      setSuccess(secondOwnerId ? 'Second owner added' : 'Second owner removed')
+      setEditingSecondOwner(null)
+      setSecondOwnerEmail('')
+      setSuccess('Second owner added')
       setTimeout(() => setSuccess(null), 3000)
     } catch (err) {
       console.error('Error updating second owner:', err)
       setError('Failed to update second owner')
+    }
+  }
+
+  const handleRemoveSecondOwner = async (teamId: string) => {
+    try {
+      const { error } = await supabase
+        .from('fantasy_teams')
+        .update({ second_owner_id: null })
+        .eq('id', teamId)
+
+      if (error) throw error
+
+      // Update local state
+      setMembers(members.map(m => ({
+        ...m,
+        fantasy_teams: m.fantasy_teams?.map(t =>
+          t.id === teamId ? { ...t, second_owner_id: null } : t
+        ) || null
+      })))
+
+      setSuccess('Second owner removed')
+      setTimeout(() => setSuccess(null), 3000)
+    } catch (err) {
+      console.error('Error removing second owner:', err)
+      setError('Failed to remove second owner')
     }
   }
 
@@ -1178,55 +1222,85 @@ export default function CommissionerToolsPage() {
                     <table className="w-full">
                       <thead>
                         <tr className="text-left text-gray-400 border-b border-gray-700">
-                          <th className="pb-3 font-medium">Team</th>
-                          <th className="pb-3 font-medium">Name</th>
-                          <th className="pb-3 font-medium">Email</th>
-                          <th className="pb-3 font-medium">Second Owner</th>
-                          <th className="pb-3 font-medium">Role</th>
-                          <th className="pb-3 font-medium">Paid</th>
-                          <th className="pb-3 font-medium"></th>
+                          <th className="pb-4 pr-4 font-medium">Team</th>
+                          <th className="pb-4 pr-4 font-medium">Name</th>
+                          <th className="pb-4 pr-4 font-medium">Email</th>
+                          <th className="pb-4 pr-4 font-medium">Second Owner</th>
+                          <th className="pb-4 pr-4 font-medium">Role</th>
+                          <th className="pb-4 pr-4 font-medium">Paid</th>
+                          <th className="pb-4 font-medium"></th>
                         </tr>
                       </thead>
                       <tbody>
                         {members.map(member => {
                           const team = member.fantasy_teams?.[0]
                           const isCommissionerMember = member.role === 'commissioner'
+                          const secondOwnerProfile = team?.second_owner_id
+                            ? members.find(m => m.user_id === team.second_owner_id)?.profiles
+                            : null
 
                           return (
                             <tr key={member.id} className="border-b border-gray-700/50">
-                              <td className="py-3 text-white">
+                              <td className="py-4 pr-4 text-white font-medium">
                                 {team?.name || <span className="text-yellow-500">No team</span>}
                               </td>
-                              <td className="py-3 text-white">
+                              <td className="py-4 pr-4 text-white">
                                 {member.profiles?.display_name || 'Unknown'}
                               </td>
-                              <td className="py-3 text-gray-400">
+                              <td className="py-4 pr-4 text-gray-400">
                                 {member.profiles?.email || 'N/A'}
                               </td>
-                              <td className="py-3">
+                              <td className="py-4 pr-4">
                                 {team ? (
-                                  <select
-                                    value={team.second_owner_id || ''}
-                                    onChange={(e) => handleAddSecondOwner(team.id, e.target.value || null)}
-                                    className="px-2 py-1 bg-gray-700 text-white text-sm rounded border border-gray-600 w-full max-w-[150px]"
-                                  >
-                                    <option value="">None</option>
-                                    {members
-                                      .filter(m => m.user_id !== member.user_id)
-                                      .map(m => (
-                                        <option key={m.user_id} value={m.user_id}>
-                                          {m.profiles?.display_name || m.profiles?.email || 'Unknown'}
-                                        </option>
-                                      ))
-                                    }
-                                  </select>
+                                  editingSecondOwner === team.id ? (
+                                    <div className="flex items-center gap-2">
+                                      <input
+                                        type="email"
+                                        value={secondOwnerEmail}
+                                        onChange={(e) => setSecondOwnerEmail(e.target.value)}
+                                        placeholder="Enter email"
+                                        className="px-2 py-1 bg-gray-700 text-white text-sm rounded border border-gray-600 w-36"
+                                      />
+                                      <button
+                                        onClick={() => handleAddSecondOwnerByEmail(team.id, secondOwnerEmail)}
+                                        className="px-2 py-1 bg-green-600 hover:bg-green-700 text-white text-xs rounded"
+                                      >
+                                        Add
+                                      </button>
+                                      <button
+                                        onClick={() => { setEditingSecondOwner(null); setSecondOwnerEmail('') }}
+                                        className="px-2 py-1 bg-gray-600 hover:bg-gray-500 text-white text-xs rounded"
+                                      >
+                                        Cancel
+                                      </button>
+                                    </div>
+                                  ) : team.second_owner_id ? (
+                                    <div className="flex items-center gap-2">
+                                      <span className="text-white text-sm">
+                                        {secondOwnerProfile?.display_name || secondOwnerProfile?.email || 'Unknown'}
+                                      </span>
+                                      <button
+                                        onClick={() => handleRemoveSecondOwner(team.id)}
+                                        className="px-2 py-1 bg-red-600/50 hover:bg-red-600 text-white text-xs rounded"
+                                      >
+                                        Remove
+                                      </button>
+                                    </div>
+                                  ) : (
+                                    <button
+                                      onClick={() => setEditingSecondOwner(team.id)}
+                                      className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs rounded"
+                                    >
+                                      Add Second Owner
+                                    </button>
+                                  )
                                 ) : (
                                   <span className="text-gray-500">-</span>
                                 )}
                               </td>
-                              <td className="py-3">
+                              <td className="py-4 pr-4">
                                 {isCommissionerMember ? (
-                                  <span className="px-2 py-1 rounded text-xs font-medium bg-purple-500/20 text-purple-400">
+                                  <span className="px-3 py-1 rounded text-xs font-medium bg-purple-500/20 text-purple-400">
                                     Commissioner
                                   </span>
                                 ) : (
@@ -1244,7 +1318,7 @@ export default function CommissionerToolsPage() {
                                   </select>
                                 )}
                               </td>
-                              <td className="py-3">
+                              <td className="py-4 pr-4">
                                 <button
                                   onClick={() => handleTogglePaid(member.id, member.has_paid)}
                                   className={`px-3 py-1 rounded text-xs font-medium transition-colors ${
@@ -1256,7 +1330,7 @@ export default function CommissionerToolsPage() {
                                   {member.has_paid ? 'Paid' : 'Unpaid'}
                                 </button>
                               </td>
-                              <td className="py-3">
+                              <td className="py-4">
                                 {!isCommissionerMember && (
                                   <button
                                     onClick={() => handleRemoveMember(member.id, member.profiles?.display_name || 'this member')}
