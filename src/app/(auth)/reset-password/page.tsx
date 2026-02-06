@@ -11,20 +11,42 @@ export default function ResetPasswordPage() {
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [checking, setChecking] = useState(true)
+  const [hasSession, setHasSession] = useState(false)
   const router = useRouter()
   const supabase = createClient()
 
-  // Check if user has a valid session from the reset link
+  // Listen for auth state changes - Supabase will process the URL tokens
   useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        if (event === 'PASSWORD_RECOVERY') {
+          // User clicked the reset link and Supabase processed it
+          setHasSession(true)
+          setChecking(false)
+        } else if (event === 'SIGNED_IN' && session) {
+          // Session established
+          setHasSession(true)
+          setChecking(false)
+        }
+      }
+    )
+
+    // Also check for existing session
     async function checkSession() {
       const { data: { session } } = await supabase.auth.getSession()
-      if (!session) {
-        // No session means the reset link is invalid or expired
-        setError('Invalid or expired reset link. Please request a new one.')
+      if (session) {
+        setHasSession(true)
       }
-      setChecking(false)
+      // Give Supabase a moment to process URL tokens
+      setTimeout(() => {
+        setChecking(false)
+      }, 1000)
     }
     checkSession()
+
+    return () => {
+      subscription.unsubscribe()
+    }
   }, [supabase])
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -82,10 +104,10 @@ export default function ResetPasswordPage() {
         </div>
 
         <div className="bg-gray-800 rounded-lg p-8 shadow-lg">
-          {error && error.includes('Invalid or expired') ? (
+          {!hasSession && !checking ? (
             <div>
               <div className="bg-red-500/10 border border-red-500 text-red-500 px-4 py-3 rounded-lg mb-6">
-                {error}
+                Invalid or expired reset link. Please request a new one.
               </div>
               <Link
                 href="/forgot-password"
