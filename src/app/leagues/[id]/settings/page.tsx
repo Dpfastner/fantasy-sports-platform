@@ -70,16 +70,18 @@ interface League {
 interface LeagueMember {
   id: string
   user_id: string
-  role: 'commissioner' | 'member'
+  role: 'commissioner' | 'co_commissioner' | 'member'
   has_paid: boolean
   joined_at: string
   profiles: {
+    id: string
     email: string
     display_name: string | null
   }
   fantasy_teams: {
     id: string
     name: string
+    second_owner_id: string | null
   }[] | null
 }
 
@@ -183,13 +185,13 @@ export default function CommissionerToolsPage() {
 
           const { data: teamsData } = await supabase
             .from('fantasy_teams')
-            .select('id, name, user_id')
+            .select('id, name, user_id, second_owner_id')
             .eq('league_id', leagueId)
 
           // Combine the data
           const combinedMembers = membersData.map(member => ({
             ...member,
-            profiles: profilesData?.find(p => p.id === member.user_id) || { email: 'Unknown', display_name: null },
+            profiles: profilesData?.find(p => p.id === member.user_id) || { id: member.user_id, email: 'Unknown', display_name: null },
             fantasy_teams: teamsData?.filter(t => t.user_id === member.user_id) || []
           }))
 
@@ -277,6 +279,119 @@ export default function CommissionerToolsPage() {
     } catch (err) {
       console.error('Error updating payment status:', err)
       setError('Failed to update payment status')
+    }
+  }
+
+  const handleRemoveMember = async (memberId: string, memberName: string) => {
+    if (!confirm(`Are you sure you want to remove ${memberName} from the league?`)) {
+      return
+    }
+
+    try {
+      const { error } = await supabase
+        .from('league_members')
+        .delete()
+        .eq('id', memberId)
+
+      if (error) throw error
+
+      setMembers(members.filter(m => m.id !== memberId))
+      setSuccess('Member removed successfully')
+      setTimeout(() => setSuccess(null), 3000)
+    } catch (err) {
+      console.error('Error removing member:', err)
+      setError('Failed to remove member')
+    }
+  }
+
+  const handleChangeRole = async (memberId: string, userId: string, newRole: 'commissioner' | 'co_commissioner' | 'member') => {
+    // If transferring commissioner role, confirm
+    if (newRole === 'commissioner') {
+      if (!confirm('Are you sure you want to transfer commissioner role? You will become a co-commissioner.')) {
+        return
+      }
+    }
+
+    try {
+      // If transferring commissioner, update current commissioner to co-commissioner
+      if (newRole === 'commissioner' && league) {
+        const currentCommissioner = members.find(m => m.role === 'commissioner')
+        if (currentCommissioner) {
+          await supabase
+            .from('league_members')
+            .update({ role: 'co_commissioner' })
+            .eq('id', currentCommissioner.id)
+        }
+
+        // Also update the league's created_by to the new commissioner
+        await supabase
+          .from('leagues')
+          .update({ created_by: userId })
+          .eq('id', league.id)
+      }
+
+      const { error } = await supabase
+        .from('league_members')
+        .update({ role: newRole })
+        .eq('id', memberId)
+
+      if (error) throw error
+
+      // Reload members to get updated roles
+      const { data: membersData } = await supabase
+        .from('league_members')
+        .select('id, user_id, role, has_paid, joined_at')
+        .eq('league_id', leagueId)
+
+      if (membersData && membersData.length > 0) {
+        const userIds = membersData.map(m => m.user_id)
+        const { data: profilesData } = await supabase
+          .from('profiles')
+          .select('id, email, display_name')
+          .in('id', userIds)
+        const { data: teamsData } = await supabase
+          .from('fantasy_teams')
+          .select('id, name, user_id, second_owner_id')
+          .eq('league_id', leagueId)
+
+        const combinedMembers = membersData.map(member => ({
+          ...member,
+          profiles: profilesData?.find(p => p.id === member.user_id) || { id: member.user_id, email: 'Unknown', display_name: null },
+          fantasy_teams: teamsData?.filter(t => t.user_id === member.user_id) || []
+        }))
+        setMembers(combinedMembers as unknown as LeagueMember[])
+      }
+
+      setSuccess('Role updated successfully')
+      setTimeout(() => setSuccess(null), 3000)
+    } catch (err) {
+      console.error('Error changing role:', err)
+      setError('Failed to change role')
+    }
+  }
+
+  const handleAddSecondOwner = async (teamId: string, secondOwnerId: string | null) => {
+    try {
+      const { error } = await supabase
+        .from('fantasy_teams')
+        .update({ second_owner_id: secondOwnerId })
+        .eq('id', teamId)
+
+      if (error) throw error
+
+      // Update local state
+      setMembers(members.map(m => ({
+        ...m,
+        fantasy_teams: m.fantasy_teams?.map(t =>
+          t.id === teamId ? { ...t, second_owner_id: secondOwnerId } : t
+        ) || null
+      })))
+
+      setSuccess(secondOwnerId ? 'Second owner added' : 'Second owner removed')
+      setTimeout(() => setSuccess(null), 3000)
+    } catch (err) {
+      console.error('Error updating second owner:', err)
+      setError('Failed to update second owner')
     }
   }
 
@@ -1059,41 +1174,31 @@ export default function CommissionerToolsPage() {
                 {members.length === 0 ? (
                   <p className="text-gray-400">No members yet.</p>
                 ) : (
-                  <div className="overflow-x-auto">
-                    <table className="w-full">
-                      <thead>
-                        <tr className="text-left text-gray-400 border-b border-gray-700">
-                          <th className="pb-3 font-medium">Name</th>
-                          <th className="pb-3 font-medium">Email</th>
-                          <th className="pb-3 font-medium">Team</th>
-                          <th className="pb-3 font-medium">Role</th>
-                          <th className="pb-3 font-medium">Paid</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {members.map(member => (
-                          <tr key={member.id} className="border-b border-gray-700/50">
-                            <td className="py-3 text-white">
-                              {member.profiles?.display_name || 'Unknown'}
-                            </td>
-                            <td className="py-3 text-gray-400">
-                              {member.profiles?.email || 'N/A'}
-                            </td>
-                            <td className="py-3 text-white">
-                              {member.fantasy_teams?.[0]?.name || (
-                                <span className="text-yellow-500">No team yet</span>
-                              )}
-                            </td>
-                            <td className="py-3">
+                  <div className="space-y-4">
+                    {members.map(member => {
+                      const team = member.fantasy_teams?.[0]
+                      const isCurrentUser = member.user_id === league?.created_by
+                      const secondOwner = team?.second_owner_id
+                        ? members.find(m => m.user_id === team.second_owner_id)
+                        : null
+
+                      return (
+                        <div key={member.id} className="bg-gray-700/50 rounded-lg p-4">
+                          {/* Team Name Header */}
+                          <div className="flex items-center justify-between mb-3">
+                            <h3 className="text-lg font-semibold text-white">
+                              {team?.name || <span className="text-yellow-500 italic">No team created</span>}
+                            </h3>
+                            <div className="flex items-center gap-2">
                               <span className={`px-2 py-1 rounded text-xs font-medium ${
                                 member.role === 'commissioner'
                                   ? 'bg-purple-500/20 text-purple-400'
+                                  : member.role === 'co_commissioner'
+                                  ? 'bg-blue-500/20 text-blue-400'
                                   : 'bg-gray-600/50 text-gray-400'
                               }`}>
-                                {member.role}
+                                {member.role === 'co_commissioner' ? 'Co-Commissioner' : member.role}
                               </span>
-                            </td>
-                            <td className="py-3">
                               <button
                                 onClick={() => handleTogglePaid(member.id, member.has_paid)}
                                 className={`px-3 py-1 rounded text-xs font-medium transition-colors ${
@@ -1102,13 +1207,92 @@ export default function CommissionerToolsPage() {
                                     : 'bg-red-500/20 text-red-400 hover:bg-red-500/30'
                                 }`}
                               >
-                                {member.has_paid ? '✓ Paid' : '✗ Unpaid'}
+                                {member.has_paid ? 'Paid' : 'Unpaid'}
                               </button>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                            </div>
+                          </div>
+
+                          {/* Owner Info */}
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-3">
+                            <div>
+                              <p className="text-xs text-gray-500 uppercase mb-1">Primary Owner</p>
+                              <p className="text-white">{member.profiles?.display_name || 'Unknown'}</p>
+                              <p className="text-gray-400 text-sm">{member.profiles?.email || 'N/A'}</p>
+                            </div>
+                            <div>
+                              <p className="text-xs text-gray-500 uppercase mb-1">Second Owner</p>
+                              {secondOwner ? (
+                                <>
+                                  <p className="text-white">{secondOwner.profiles?.display_name || 'Unknown'}</p>
+                                  <p className="text-gray-400 text-sm">{secondOwner.profiles?.email || 'N/A'}</p>
+                                </>
+                              ) : (
+                                <p className="text-gray-500 italic">None</p>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Actions */}
+                          <div className="flex flex-wrap gap-2 pt-3 border-t border-gray-600">
+                            {/* Role Management */}
+                            {member.role !== 'commissioner' && (
+                              <>
+                                <button
+                                  onClick={() => handleChangeRole(member.id, member.user_id, 'commissioner')}
+                                  className="px-3 py-1 bg-purple-600 hover:bg-purple-700 text-white text-xs rounded transition-colors"
+                                >
+                                  Transfer Commissioner
+                                </button>
+                                {member.role === 'member' ? (
+                                  <button
+                                    onClick={() => handleChangeRole(member.id, member.user_id, 'co_commissioner')}
+                                    className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs rounded transition-colors"
+                                  >
+                                    Promote to Co-Commissioner
+                                  </button>
+                                ) : (
+                                  <button
+                                    onClick={() => handleChangeRole(member.id, member.user_id, 'member')}
+                                    className="px-3 py-1 bg-gray-600 hover:bg-gray-500 text-white text-xs rounded transition-colors"
+                                  >
+                                    Demote to Member
+                                  </button>
+                                )}
+                              </>
+                            )}
+
+                            {/* Second Owner Management */}
+                            {team && (
+                              <select
+                                value={team.second_owner_id || ''}
+                                onChange={(e) => handleAddSecondOwner(team.id, e.target.value || null)}
+                                className="px-3 py-1 bg-gray-600 text-white text-xs rounded border border-gray-500"
+                              >
+                                <option value="">No Second Owner</option>
+                                {members
+                                  .filter(m => m.user_id !== member.user_id && !m.fantasy_teams?.length)
+                                  .map(m => (
+                                    <option key={m.user_id} value={m.user_id}>
+                                      {m.profiles?.display_name || m.profiles?.email || 'Unknown'}
+                                    </option>
+                                  ))
+                                }
+                              </select>
+                            )}
+
+                            {/* Remove Member */}
+                            {!isCurrentUser && member.role !== 'commissioner' && (
+                              <button
+                                onClick={() => handleRemoveMember(member.id, member.profiles?.display_name || 'this member')}
+                                className="px-3 py-1 bg-red-600 hover:bg-red-700 text-white text-xs rounded transition-colors ml-auto"
+                              >
+                                Remove from League
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      )
+                    })}
                   </div>
                 )}
 
