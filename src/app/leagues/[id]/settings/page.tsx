@@ -159,15 +159,11 @@ export default function CommissionerToolsPage() {
           setSettings(settingsData as LeagueSettings)
         }
 
-        // Get members with their profiles and teams
+        // Get members first
         console.log('Fetching members for league:', leagueId)
         const { data: membersData, error: membersError } = await supabase
           .from('league_members')
-          .select(`
-            id, user_id, role, has_paid, joined_at,
-            profiles(email, display_name),
-            fantasy_teams(id, name)
-          `)
+          .select('id, user_id, role, has_paid, joined_at')
           .eq('league_id', leagueId)
 
         console.log('Members query result:', { membersData, membersError })
@@ -176,9 +172,29 @@ export default function CommissionerToolsPage() {
           console.error('Error loading members:', membersError)
         }
 
-        if (membersData) {
-          console.log('Setting members:', membersData.length)
-          setMembers(membersData as unknown as LeagueMember[])
+        if (membersData && membersData.length > 0) {
+          // Fetch profiles and teams for these members
+          const userIds = membersData.map(m => m.user_id)
+
+          const { data: profilesData } = await supabase
+            .from('profiles')
+            .select('id, email, display_name')
+            .in('id', userIds)
+
+          const { data: teamsData } = await supabase
+            .from('fantasy_teams')
+            .select('id, name, user_id')
+            .eq('league_id', leagueId)
+
+          // Combine the data
+          const combinedMembers = membersData.map(member => ({
+            ...member,
+            profiles: profilesData?.find(p => p.id === member.user_id) || { email: 'Unknown', display_name: null },
+            fantasy_teams: teamsData?.filter(t => t.user_id === member.user_id) || []
+          }))
+
+          console.log('Combined members:', combinedMembers)
+          setMembers(combinedMembers as unknown as LeagueMember[])
         }
 
       } catch (err) {
