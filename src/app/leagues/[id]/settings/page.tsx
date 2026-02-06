@@ -261,10 +261,6 @@ export default function CommissionerToolsPage() {
   }
 
   const handleResetDraft = async () => {
-    if (!confirm('Are you sure you want to reset the draft? This will delete all picks and cannot be undone.')) {
-      return
-    }
-
     try {
       const response = await fetch('/api/drafts/reset', {
         method: 'POST',
