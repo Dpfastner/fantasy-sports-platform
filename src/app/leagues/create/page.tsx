@@ -56,7 +56,7 @@ export default function CreateLeaguePage() {
     loadSports()
   }, [supabase])
 
-  // Load seasons when sport changes
+  // Load seasons when sport changes - auto-select 2025 season
   useEffect(() => {
     async function loadSeasons() {
       if (!sportId) {
@@ -73,9 +73,12 @@ export default function CreateLeaguePage() {
       if (data) {
         const seasonsData = data as Season[]
         setSeasons(seasonsData)
-        // Auto-select current season
+        // Auto-select 2025 season for testing, otherwise current season
+        const season2025 = seasonsData.find(s => s.year === 2025)
         const current = seasonsData.find(s => s.is_current)
-        if (current) {
+        if (season2025) {
+          setSeasonId(season2025.id)
+        } else if (current) {
           setSeasonId(current.id)
         } else if (seasonsData.length > 0) {
           setSeasonId(seasonsData[0].id)
@@ -100,7 +103,7 @@ export default function CreateLeaguePage() {
     }
 
     if (!seasonId) {
-      setError('Please select a season')
+      setError('No season available for this sport')
       return
     }
 
@@ -261,46 +264,25 @@ export default function CreateLeaguePage() {
               </div>
 
               <div>
-                <label htmlFor="season" className="block text-gray-300 mb-2">
-                  Season *
+                <label htmlFor="maxTeams" className="block text-gray-300 mb-2">
+                  Maximum Teams
                 </label>
-                <select
-                  id="season"
-                  value={seasonId}
-                  onChange={(e) => setSeasonId(e.target.value)}
-                  required
-                  disabled={!sportId}
-                  className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500 disabled:opacity-50"
-                >
-                  <option value="">Select a season</option>
-                  {seasons.map((season) => (
-                    <option key={season.id} value={season.id}>
-                      {season.name} {season.is_current && '(Current)'}
-                    </option>
-                  ))}
-                </select>
+                <input
+                  type="number"
+                  id="maxTeams"
+                  value={maxTeams}
+                  onChange={(e) => {
+                    const val = parseInt(e.target.value) || 1
+                    setMaxTeams(Math.min(30, Math.max(1, val)))
+                  }}
+                  min={1}
+                  max={30}
+                  className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
+                />
+                <p className="text-gray-500 text-sm mt-1">
+                  Enter a number between 1-30
+                </p>
               </div>
-            </div>
-
-            <div className="mb-6">
-              <label htmlFor="maxTeams" className="block text-gray-300 mb-2">
-                Maximum Teams
-              </label>
-              <select
-                id="maxTeams"
-                value={maxTeams}
-                onChange={(e) => setMaxTeams(Number(e.target.value))}
-                className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
-              >
-                {[4, 6, 8, 10, 12, 14, 16, 18, 20].map((n) => (
-                  <option key={n} value={n}>
-                    {n} teams
-                  </option>
-                ))}
-              </select>
-              <p className="text-gray-500 text-sm mt-1">
-                8-12 teams recommended for balanced drafts
-              </p>
             </div>
 
             <div className="mb-8">
