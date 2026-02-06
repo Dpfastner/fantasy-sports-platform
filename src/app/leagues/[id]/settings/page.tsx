@@ -160,6 +160,7 @@ export default function CommissionerToolsPage() {
         }
 
         // Get members with their profiles and teams
+        console.log('Fetching members for league:', leagueId)
         const { data: membersData, error: membersError } = await supabase
           .from('league_members')
           .select(`
@@ -169,11 +170,14 @@ export default function CommissionerToolsPage() {
           `)
           .eq('league_id', leagueId)
 
+        console.log('Members query result:', { membersData, membersError })
+
         if (membersError) {
           console.error('Error loading members:', membersError)
         }
 
         if (membersData) {
+          console.log('Setting members:', membersData.length)
           setMembers(membersData as unknown as LeagueMember[])
         }
 
