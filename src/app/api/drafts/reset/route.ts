@@ -134,8 +134,9 @@ export async function POST(request: Request) {
 
   } catch (error) {
     console.error('Reset draft error:', error)
+    const errorMessage = error instanceof Error ? error.message : String(error)
     return NextResponse.json(
-      { error: 'Failed to reset draft', details: String(error) },
+      { error: `Failed to reset draft: ${errorMessage}` },
       { status: 500 }
     )
   }

@@ -160,14 +160,18 @@ export default function CommissionerToolsPage() {
         }
 
         // Get members with their profiles and teams
-        const { data: membersData } = await supabase
+        const { data: membersData, error: membersError } = await supabase
           .from('league_members')
           .select(`
             id, user_id, role, has_paid, joined_at,
-            profiles!inner(email, display_name),
+            profiles(email, display_name),
             fantasy_teams(id, name)
           `)
           .eq('league_id', leagueId)
+
+        if (membersError) {
+          console.error('Error loading members:', membersError)
+        }
 
         if (membersData) {
           setMembers(membersData as unknown as LeagueMember[])
@@ -279,7 +283,7 @@ export default function CommissionerToolsPage() {
       setTimeout(() => setSuccess(null), 3000)
     } catch (err) {
       console.error('Error resetting draft:', err)
-      setError('Failed to reset draft: ' + (err instanceof Error ? err.message : String(err)))
+      setError(err instanceof Error ? err.message : 'Failed to reset draft')
     }
   }
 
