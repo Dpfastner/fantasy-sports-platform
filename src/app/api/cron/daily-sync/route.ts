@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { fetchScoreboard, fetchRankings, getTeamLogoUrl } from '@/lib/api/espn'
+import { calculateAllPoints } from '@/lib/points/calculator'
 
 // Create admin client
 function getSupabaseAdmin() {
@@ -190,12 +191,19 @@ export async function GET(request: Request) {
       results.currentWeekGames.error = String(error)
     }
 
+    // Calculate points for the current week
+    let pointsResult = null
+    if (results.currentWeekGames.success && results.currentWeekGames.synced > 0) {
+      pointsResult = await calculateAllPoints(season.id, currentWeek, supabase)
+    }
+
     return NextResponse.json({
       success: true,
       timestamp: new Date().toISOString(),
       year,
       currentWeek,
       results,
+      pointsCalculation: pointsResult,
     })
   } catch (error) {
     console.error('Daily sync cron error:', error)

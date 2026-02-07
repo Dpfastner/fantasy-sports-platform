@@ -377,6 +377,24 @@ const SCHOOL_ESPN_IDS: Record<string, string> = {
   'wyoming': '2751',
 }
 
+// School name aliases for fuzzy matching
+const SCHOOL_NAME_ALIASES: Record<string, string[]> = {
+  'usc': ['southern california', 'trojans'],
+  'ucla': ['california los angeles', 'bruins'],
+  'lsu': ['louisiana state'],
+  'ole miss': ['mississippi rebels'],
+  'smu': ['southern methodist'],
+  'tcu': ['texas christian'],
+  'ucf': ['central florida'],
+  'fau': ['florida atlantic'],
+  'fiu': ['florida international'],
+  'unlv': ['las vegas'],
+  'utep': ['texas el paso'],
+  'utsa': ['texas san antonio'],
+  'uab': ['alabama birmingham'],
+  'umass': ['massachusetts'],
+}
+
 /**
  * Get ESPN team ID for a school name
  */
