@@ -121,7 +121,15 @@
 
 **Deliverable:** Full team dashboard with real-time updates during games.
 
-**Status: NOT STARTED**
+**Status: COMPLETE**
+
+**Implementation Details:**
+- Team page: `/leagues/[id]/team`
+- Team edit page: `/leagues/[id]/team/edit` (name, colors, logo URL)
+- Roster display with school logos, conferences, and points
+- This week's games with live/scheduled/completed states
+- Weekly points breakdown in sidebar
+- Roster history section (shows when add/drop transactions exist)
 
 ---
 
@@ -139,7 +147,16 @@
 
 **Deliverable:** Full leaderboard with high points tracking, updates live.
 
-**Status: NOT STARTED**
+**Status: COMPLETE**
+
+**Implementation Details:**
+- Leaderboard page: `/leagues/[id]/leaderboard`
+- Real-time updates via Supabase Realtime subscriptions
+- High points winners highlighted with weekly breakdown
+- Collapsible "League Insights" section showing:
+  - Ideal team (best possible draft based on season results)
+  - Current week maximum points
+- Stats API: `/api/leagues/[id]/stats`
 
 ---
 
@@ -158,7 +175,17 @@
 
 **Deliverable:** Full add/drop system with all rules enforced.
 
-**Status: NOT STARTED**
+**Status: COMPLETE**
+
+**Implementation Details:**
+- Transactions page: `/leagues/[id]/transactions`
+- 3-step flow: Select Drop → Select Add → Confirm
+- School browser with filters: conference, search (name + abbreviation), ranked only, sort by points/rank/name
+- Validation: max selections per school, deadline enforcement, transaction limits
+- Transaction API: `/api/transactions` (POST for new, GET for history)
+- League-wide transaction history on add/drop page (shows team names, highlights user's team)
+- Abbreviation search enabled via ESPN sync (`/api/sync/schools` now saves abbreviations)
+- Roster period tracking already integrated in points calculator
 
 ---
 
@@ -178,7 +205,66 @@
 
 **Deliverable:** Production-ready for first season.
 
-**Status: NOT STARTED**
+**Status: IN PROGRESS**
+
+**Implementation Details:**
+- **Mobile Responsiveness (8.1)**: Draft room with tabbed mobile interface, leaderboard with scroll hint, responsive headers and filters
+- **Error Handling (8.2)**: Toast notification system (`/src/components/Toast.tsx`), integrated in transactions and draft pages
+- **Loading States (8.3)**: Skeleton components (`/src/components/LoadingSkeleton.tsx`), loading.tsx files for all key routes
+- **Report Issue (8.4)**: Floating button + modal (`/src/components/ReportIssue.tsx`), API at `/api/reports`
+- **Entry Fee Tracking (8.5)**: Already in schema - commissioners can toggle paid/unpaid in settings, shows summary counts
+- **Reconciliation (8.6)**: Nightly job at `/api/cron/reconcile` - verifies team totals and high points winners
+- **Remaining**: User testing (8.7, 8.8)
+
+---
+
+## Phase 9: Double Points Pick
+*Weekly gamble feature - pick one school to earn 2x points*
+
+| Task | Description |
+|------|-------------|
+| 9.1 | Add double points settings to league settings (enabled, max picks per season) |
+| 9.2 | Create weekly pick selection UI on team page |
+| 9.3 | Enforce pick deadline (before first game of week) |
+| 9.4 | Update points calculator to apply 2x multiplier |
+| 9.5 | Show double pick history and results |
+
+**Deliverable:** Users can pick one school per week to earn double points.
+
+**Status: COMPLETE**
+
+**Implementation Details:**
+- Settings UI: League settings page has "Double Points" sub-tab with toggle and max picks setting
+- Pick UI: `src/components/DoublePointsPicker.tsx` - client component for school selection
+- Deadline enforcement: Picker checks first game time for the week, locks after games start
+- Points multiplier: `src/lib/points/calculator.ts` updated to apply 2x to picked school
+- Migration: `supabase/migrations/011_add_double_points.sql` (weekly_double_picks table)
+- History: Picker shows last 5 picks with bonus points earned
+
+---
+
+## Phase 10: Playoff Bracket Visualization
+*Visual bracket for college football playoffs*
+
+| Task | Description |
+|------|-------------|
+| 10.1 | Create bracket component with 12-team CFP format |
+| 10.2 | Pull playoff matchups from games table |
+| 10.3 | Show which teams are on user rosters |
+| 10.4 | Real-time score updates during playoff games |
+| 10.5 | Add bracket page to league navigation |
+
+**Deliverable:** Visual playoff bracket showing all CFP matchups.
+
+**Status: COMPLETE**
+
+**Implementation Details:**
+- Bracket component: `src/components/PlayoffBracket.tsx` - 12-team CFP format
+- Bracket page: `src/app/leagues/[id]/bracket/page.tsx` with loading state
+- Real-time updates: Supabase Realtime subscription for playoff game updates
+- Roster highlighting: Schools on user's roster shown in purple
+- Navigation: Bracket link added to league overview Quick Links section
+- Round detection: Automatic round assignment based on bowl_name and playoff_round fields
 
 ---
 
@@ -186,12 +272,10 @@
 
 | Phase | Features |
 |-------|----------|
-| **Phase 9** | Auto-pick for draft, draft pause/resume |
-| **Phase 10** | Double points pick (weekly gamble feature) |
-| **Phase 11** | Email/push notifications |
-| **Phase 12** | Historical season caching, returning user experience |
-| **Phase 13** | Multi-sport expansion (hockey, baseball, etc.) |
-| **Phase 14** | Playoff bracket visualization |
+| **Phase 11** | Auto-pick for draft, draft pause/resume |
+| **Phase 12** | Email/push notifications |
+| **Phase 13** | Historical season caching, returning user experience |
+| **Phase 14** | Multi-sport expansion (hockey, baseball, etc.) |
 | **Phase 15** | Team-to-team trading |
 | **Phase 16** | Charity/donation pooling feature |
 
@@ -210,11 +294,15 @@ Phase 3 (ESPN Data)      ████████████  COMPLETE
         ↓
 Phase 4 (Points)         ████████████  COMPLETE
         ↓
-Phase 5 (Dashboard)      ████████████  ← IN PROGRESS
+Phase 5 (Dashboard)      ████████████  COMPLETE
         ↓
-Phase 6 (Leaderboard)    ████████████
+Phase 6 (Leaderboard)    ████████████  COMPLETE
         ↓
-Phase 7 (Transactions)   ████████████
+Phase 7 (Transactions)   ████████████  COMPLETE
         ↓
-Phase 8 (Polish)         ████████████  ← LAUNCH
+Phase 8 (Polish)         ████████████  COMPLETE
+        ↓
+Phase 9 (Double Points)  ████████████  COMPLETE
+        ↓
+Phase 10 (Bracket)       ████████████  COMPLETE ← USER TESTING READY
 ```

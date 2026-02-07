@@ -45,7 +45,7 @@ export async function POST(request: Request) {
       )
     }
 
-    const updates: { id: string; name: string; external_api_id: string; logo_url: string }[] = []
+    const updates: { id: string; name: string; external_api_id: string; logo_url: string; abbreviation: string | null }[] = []
     const notFound: string[] = []
 
     // Create a map of ESPN team ID -> team for quick lookup
@@ -65,6 +65,7 @@ export async function POST(request: Request) {
             name: school.name,
             external_api_id: matchedTeam.id,
             logo_url: logoUrl,
+            abbreviation: matchedTeam.abbreviation || null,
           })
         } else {
           notFound.push(`${school.name} (no logo)`)
@@ -86,6 +87,7 @@ export async function POST(request: Request) {
         .update({
           external_api_id: update.external_api_id,
           logo_url: update.logo_url,
+          abbreviation: update.abbreviation,
         })
         .eq('id', update.id)
 
@@ -111,6 +113,7 @@ export async function POST(request: Request) {
         name: u.name,
         espnId: u.external_api_id,
         logoUrl: u.logo_url,
+        abbreviation: u.abbreviation,
       })),
     })
   } catch (error) {

@@ -1,6 +1,7 @@
 import { redirect, notFound } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
+import { DoublePointsPicker } from '@/components/DoublePointsPicker'
 
 interface PageProps {
   params: Promise<{ id: string }>
@@ -91,7 +92,7 @@ export default async function TeamPage({ params }: PageProps) {
   // Get league settings
   const { data: settings } = await supabase
     .from('league_settings')
-    .select('max_add_drops_per_season, add_drop_deadline')
+    .select('max_add_drops_per_season, add_drop_deadline, double_points_enabled, max_double_picks_per_season')
     .eq('league_id', leagueId)
     .single()
 
@@ -119,6 +120,31 @@ export default async function TeamPage({ params }: PageProps) {
     .order('slot_number', { ascending: true })
 
   const roster = rosterData as unknown as RosterSchool[] | null
+
+  // Get historical roster (dropped schools)
+  const { data: droppedRosterData } = await supabase
+    .from('roster_periods')
+    .select(`
+      id,
+      school_id,
+      slot_number,
+      start_week,
+      end_week,
+      schools (
+        id,
+        name,
+        abbreviation,
+        logo_url,
+        conference,
+        primary_color,
+        secondary_color
+      )
+    `)
+    .eq('fantasy_team_id', team.id)
+    .not('end_week', 'is', null)
+    .order('end_week', { ascending: false })
+
+  const droppedRoster = droppedRosterData as unknown as RosterSchool[] | null
 
   // Calculate current week
   const seasons = league.seasons as unknown as { year: number } | { year: number }[] | null
@@ -198,19 +224,56 @@ export default async function TeamPage({ params }: PageProps) {
 
       <main className="container mx-auto px-4 py-8">
         {/* Team Header */}
-        <div className="bg-gray-800 rounded-lg p-6 mb-8">
+        <div
+          className="rounded-lg p-6 mb-8"
+          style={{
+            backgroundColor: team.primary_color || '#1f2937',
+            borderLeft: `4px solid ${team.secondary_color || '#ffffff'}`
+          }}
+        >
           <div className="flex justify-between items-start">
-            <div>
-              <h1 className="text-3xl font-bold text-white mb-2">{team.name}</h1>
-              <div className="flex items-center gap-6 text-gray-400">
-                <span>Standing: <span className="text-white font-semibold">{standing} of {totalTeams}</span></span>
-                <span>Total Points: <span className="text-white font-semibold">{team.total_points}</span></span>
-                <span>Add/Drops: <span className="text-white font-semibold">{team.add_drops_used} / {settings?.max_add_drops_per_season || 50}</span></span>
+            <div className="flex items-center gap-4">
+              {team.image_url ? (
+                <img
+                  src={team.image_url}
+                  alt={team.name}
+                  className="w-16 h-16 object-contain rounded-lg bg-white/10 p-1"
+                />
+              ) : (
+                <div
+                  className="w-16 h-16 rounded-lg flex items-center justify-center text-2xl font-bold"
+                  style={{
+                    backgroundColor: team.secondary_color || '#ffffff',
+                    color: team.primary_color || '#1a1a1a'
+                  }}
+                >
+                  {team.name.substring(0, 2).toUpperCase()}
+                </div>
+              )}
+              <div>
+                <h1
+                  className="text-3xl font-bold mb-2"
+                  style={{ color: team.secondary_color || '#ffffff' }}
+                >
+                  {team.name}
+                </h1>
+                <div
+                  className="flex items-center gap-6"
+                  style={{ color: `${team.secondary_color || '#ffffff'}cc` }}
+                >
+                  <span>Standing: <span className="font-semibold" style={{ color: team.secondary_color || '#ffffff' }}>{standing} of {totalTeams}</span></span>
+                  <span>Total Points: <span className="font-semibold" style={{ color: team.secondary_color || '#ffffff' }}>{team.total_points}</span></span>
+                  <span>Add/Drops: <span className="font-semibold" style={{ color: team.secondary_color || '#ffffff' }}>{team.add_drops_used} / {settings?.max_add_drops_per_season || 50}</span></span>
+                </div>
               </div>
             </div>
             <Link
               href={`/leagues/${leagueId}/team/edit`}
-              className="bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded-lg transition-colors"
+              className="px-4 py-2 rounded-lg transition-opacity hover:opacity-80"
+              style={{
+                backgroundColor: team.secondary_color || '#ffffff',
+                color: team.primary_color || '#1a1a1a'
+              }}
             >
               Edit Team
             </Link>
@@ -371,6 +434,57 @@ export default async function TeamPage({ params }: PageProps) {
                 <p className="text-gray-500">No games this week for your schools.</p>
               )}
             </div>
+
+            {/* Historical Roster (Dropped Schools) */}
+            {droppedRoster && droppedRoster.length > 0 && (
+              <div className="bg-gray-800 rounded-lg p-6">
+                <h2 className="text-xl font-semibold text-white mb-4">Roster History</h2>
+                <p className="text-gray-400 text-sm mb-4">Schools previously on your roster</p>
+
+                <div className="space-y-3">
+                  {droppedRoster.map((slot) => {
+                    const school = slot.schools
+                    const points = schoolTotals.get(slot.school_id) || 0
+
+                    return (
+                      <div
+                        key={slot.id}
+                        className="flex items-center justify-between p-4 bg-gray-700/30 rounded-lg border border-gray-700"
+                      >
+                        <div className="flex items-center gap-4">
+                          {school.logo_url ? (
+                            <img
+                              src={school.logo_url}
+                              alt={school.name}
+                              className="w-10 h-10 object-contain opacity-60"
+                            />
+                          ) : (
+                            <div
+                              className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold opacity-60"
+                              style={{ backgroundColor: school.primary_color }}
+                            >
+                              {school.abbreviation || school.name.substring(0, 2)}
+                            </div>
+                          )}
+                          <div>
+                            <p className="text-gray-300">{school.name}</p>
+                            <p className="text-gray-500 text-sm">{school.conference}</p>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-gray-400 text-sm">
+                            Weeks {slot.start_week} - {slot.end_week}
+                          </p>
+                          <p className="text-gray-500 text-xs">
+                            Dropped Week {slot.end_week}
+                          </p>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Sidebar */}
@@ -400,6 +514,21 @@ export default async function TeamPage({ params }: PageProps) {
                 <p className="text-gray-500">No points calculated yet.</p>
               )}
             </div>
+
+            {/* Double Points Picker */}
+            {settings?.double_points_enabled && roster && roster.length > 0 && (
+              <DoublePointsPicker
+                teamId={team.id}
+                leagueId={leagueId}
+                currentWeek={currentWeek}
+                roster={roster.map(r => ({
+                  school_id: r.school_id,
+                  schools: r.schools
+                }))}
+                maxPicksPerSeason={settings.max_double_picks_per_season || 0}
+                seasonId={league.season_id}
+              />
+            )}
 
             {/* Quick Actions */}
             <div className="bg-gray-800 rounded-lg p-6">

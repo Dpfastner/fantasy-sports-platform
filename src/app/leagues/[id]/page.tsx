@@ -311,6 +311,12 @@ export default async function LeaguePage({ params }: PageProps) {
                     >
                       Live Scores
                     </Link>
+                    <Link
+                      href={`/leagues/${id}/bracket`}
+                      className="block text-gray-400 hover:text-white transition-colors"
+                    >
+                      Playoff Bracket
+                    </Link>
                   </>
                 )}
               </div>

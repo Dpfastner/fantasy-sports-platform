@@ -55,6 +55,9 @@ interface LeagueSettings {
   winner_percentage: number
   runner_up_percentage: number
   third_place_percentage: number
+  // Double points settings
+  double_points_enabled: boolean
+  max_double_picks_per_season: number
   // Status
   settings_locked: boolean
 }
@@ -86,7 +89,7 @@ interface LeagueMember {
 }
 
 type TabType = 'league' | 'draft' | 'members' | 'misc'
-type LeagueSubTab = 'basic' | 'roster' | 'scoring' | 'transactions'
+type LeagueSubTab = 'basic' | 'roster' | 'scoring' | 'transactions' | 'double_points'
 
 export default function CommissionerToolsPage() {
   const params = useParams()
@@ -551,7 +554,8 @@ export default function CommissionerToolsPage() {
                   { id: 'basic' as LeagueSubTab, label: 'Basic Settings' },
                   { id: 'roster' as LeagueSubTab, label: 'Roster Settings' },
                   { id: 'scoring' as LeagueSubTab, label: 'Scoring' },
-                  { id: 'transactions' as LeagueSubTab, label: 'Transactions' }
+                  { id: 'transactions' as LeagueSubTab, label: 'Transactions' },
+                  { id: 'double_points' as LeagueSubTab, label: 'Double Points' }
                 ].map(tab => (
                   <button
                     key={tab.id}
@@ -1092,6 +1096,62 @@ export default function CommissionerToolsPage() {
                       className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-600/50 text-white font-semibold py-3 px-4 rounded-lg transition-colors mt-4"
                     >
                       {saving ? 'Saving...' : 'Save Transaction Settings'}
+                    </button>
+                  </div>
+                </section>
+              )}
+
+              {/* Double Points Settings */}
+              {leagueSubTab === 'double_points' && (
+                <section className="bg-gray-800 rounded-lg p-6">
+                  <h2 className="text-xl font-semibold text-white mb-6">Double Points Pick</h2>
+                  <p className="text-gray-400 mb-6">
+                    Allow team owners to pick one school per week to receive double points.
+                    The pick must be made before the first game of the week.
+                  </p>
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between p-4 bg-gray-700 rounded-lg">
+                      <div>
+                        <label className="text-white font-medium">Enable Double Points</label>
+                        <p className="text-gray-400 text-sm mt-1">Allow teams to pick one school per week for 2x points</p>
+                      </div>
+                      <button
+                        onClick={() => setSettings({ ...settings, double_points_enabled: !settings.double_points_enabled })}
+                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                          settings.double_points_enabled ? 'bg-blue-600' : 'bg-gray-600'
+                        }`}
+                      >
+                        <span
+                          className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                            settings.double_points_enabled ? 'translate-x-6' : 'translate-x-1'
+                          }`}
+                        />
+                      </button>
+                    </div>
+
+                    {settings.double_points_enabled && (
+                      <div>
+                        <label className="block text-gray-300 mb-2">Max Double Picks per Season</label>
+                        <select
+                          value={settings.max_double_picks_per_season}
+                          onChange={(e) => setSettings({ ...settings, max_double_picks_per_season: parseInt(e.target.value) })}
+                          className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white"
+                        >
+                          <option value="0">Unlimited</option>
+                          {[3, 5, 8, 10, 12, 15].map(n => (
+                            <option key={n} value={n}>{n} picks</option>
+                          ))}
+                        </select>
+                        <p className="text-gray-500 text-sm mt-1">0 = unlimited double picks throughout the season</p>
+                      </div>
+                    )}
+
+                    <button
+                      onClick={handleSaveSettings}
+                      disabled={saving}
+                      className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-600/50 text-white font-semibold py-3 px-4 rounded-lg transition-colors mt-4"
+                    >
+                      {saving ? 'Saving...' : 'Save Double Points Settings'}
                     </button>
                   </div>
                 </section>

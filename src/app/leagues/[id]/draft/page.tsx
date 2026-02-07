@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
+import { useToast } from '@/components/Toast'
 
 interface School {
   id: string
@@ -55,6 +56,7 @@ interface LeagueSettings {
 export default function DraftRoomPage() {
   const params = useParams()
   const router = useRouter()
+  const { addToast } = useToast()
   const leagueId = params.id as string
   const supabase = createClient()
 
@@ -83,6 +85,7 @@ export default function DraftRoomPage() {
   const [isSubmittingPick, setIsSubmittingPick] = useState(false)
   const [isResettingDraft, setIsResettingDraft] = useState(false)
   const [showResetConfirm, setShowResetConfirm] = useState(false)
+  const [mobileTab, setMobileTab] = useState<'schools' | 'history' | 'teams'>('schools')
 
   // Track if timer has expired (for showing warning)
   const [timerExpired, setTimerExpired] = useState(false)
@@ -780,6 +783,7 @@ export default function DraftRoomPage() {
       if (pickError) {
         console.error('Error inserting pick:', pickError)
         setActionError('Failed to make pick: ' + pickError.message)
+        addToast('Failed to make pick: ' + pickError.message, 'error')
         setIsSubmittingPick(false)
         return
       }
@@ -798,6 +802,7 @@ export default function DraftRoomPage() {
           fantasy_teams: { name: myTeam.name }
         }
         setPicks(prev => [...prev, newPick])
+        addToast(`Successfully drafted ${selectedSchool.name}!`, 'success')
       }
 
       console.log('Pick inserted, adding to roster')
@@ -821,7 +826,9 @@ export default function DraftRoomPage() {
 
     } catch (err) {
       console.error('Error making pick:', err)
-      setActionError('Failed to make pick: ' + (err instanceof Error ? err.message : String(err)))
+      const errorMessage = 'Failed to make pick: ' + (err instanceof Error ? err.message : String(err))
+      setActionError(errorMessage)
+      addToast(errorMessage, 'error')
     } finally {
       setIsSubmittingPick(false)
     }
@@ -1098,44 +1105,61 @@ export default function DraftRoomPage() {
   return (
     <div className="min-h-screen bg-gray-900 flex flex-col">
       {/* Header with Timer and On the Clock */}
-      <header className="bg-gray-800 border-b border-gray-700 px-4 py-2">
-        <div className="flex justify-between items-center">
-          <div className="flex items-center gap-4">
-            <Link href={`/leagues/${leagueId}`} className="text-gray-400 hover:text-white text-sm">
-              &larr; Back
-            </Link>
-            <h1 className="text-lg font-bold text-white">{leagueName} Draft</h1>
+      <header className="bg-gray-800 border-b border-gray-700 px-3 md:px-4 py-2">
+        {/* Mobile: Stack layout */}
+        <div className="flex flex-col gap-2 md:flex-row md:justify-between md:items-center">
+          {/* Row 1: Back + Title + Status (on mobile shows compactly) */}
+          <div className="flex items-center justify-between md:justify-start md:gap-4">
+            <div className="flex items-center gap-2 md:gap-4">
+              <Link href={`/leagues/${leagueId}`} className="text-gray-400 hover:text-white text-sm">
+                &larr;
+              </Link>
+              <h1 className="text-base md:text-lg font-bold text-white truncate max-w-[150px] md:max-w-none">{leagueName} Draft</h1>
+            </div>
+            {/* Status badge - shown on mobile in header row */}
+            <div className="md:hidden">
+              <span className={`px-2 py-0.5 rounded text-xs font-medium ${
+                draft?.status === 'in_progress' ? 'bg-green-600 text-white' :
+                draft?.status === 'paused' ? 'bg-yellow-600 text-white' :
+                draft?.status === 'completed' ? 'bg-blue-600 text-white' :
+                'bg-gray-600 text-white'
+              }`}>
+                {draft?.status === 'in_progress' ? 'Live' :
+                 draft?.status === 'paused' ? 'Paused' :
+                 draft?.status === 'completed' ? 'Done' : 'Not Started'}
+              </span>
+            </div>
           </div>
 
-          {/* Center: On the Clock + Timer */}
-          <div className="flex items-center gap-6">
+          {/* Row 2 on mobile / Center on desktop: On the Clock + Timer */}
+          <div className="flex items-center justify-between md:justify-center gap-2 md:gap-6">
             {draft?.status === 'in_progress' && currentTeam && (
               <>
-                <div className="flex items-center gap-3">
-                  <span className="text-gray-400 text-sm">ON THE CLOCK:</span>
-                  <span className={`text-lg font-bold ${isMyPick ? 'text-green-400' : 'text-white'}`}>
+                <div className="flex items-center gap-1 md:gap-3 flex-1 md:flex-none min-w-0">
+                  <span className="text-gray-400 text-xs md:text-sm hidden sm:inline">ON THE CLOCK:</span>
+                  <span className={`text-sm md:text-lg font-bold truncate ${isMyPick ? 'text-green-400' : 'text-white'}`}>
                     {currentTeam.name}
                   </span>
-                  <span className="text-gray-500 text-sm">
-                    (R{draft.current_round} P{draft.current_pick})
+                  <span className="text-gray-500 text-xs md:text-sm whitespace-nowrap">
+                    R{draft.current_round} P{draft.current_pick}
                   </span>
                 </div>
                 {timeRemaining !== null && (
-                  <div className={`text-2xl font-mono font-bold ${
+                  <div className={`text-lg md:text-2xl font-mono font-bold whitespace-nowrap ${
                     timerExpired ? 'text-red-500 animate-pulse' :
                     timeRemaining <= 10 ? 'text-red-500 animate-pulse' :
                     timeRemaining <= 30 ? 'text-yellow-500' :
                     'text-white'
                   }`}>
-                    {timerExpired ? 'TIME UP!' : `${Math.floor(timeRemaining / 60)}:${(timeRemaining % 60).toString().padStart(2, '0')}`}
+                    {timerExpired ? 'TIME!' : `${Math.floor(timeRemaining / 60)}:${(timeRemaining % 60).toString().padStart(2, '0')}`}
                   </div>
                 )}
               </>
             )}
           </div>
 
-          {/* Right: Status + Controls */}
-          <div className="flex items-center gap-3">
+          {/* Right: Status + Controls - hidden on mobile, controls shown below */}
+          <div className="hidden md:flex items-center gap-3">
             {actionError && (
               <span className="text-red-400 text-sm">{actionError}</span>
             )}
@@ -1186,6 +1210,46 @@ export default function DraftRoomPage() {
               </button>
             )}
           </div>
+
+          {/* Mobile Commissioner Controls - shown as row below header on mobile */}
+          {isCommissioner && (
+            <div className="flex md:hidden items-center gap-2 pt-1">
+              {actionError && (
+                <span className="text-red-400 text-xs flex-1">{actionError}</span>
+              )}
+              {draft?.status === 'not_started' && teams.length >= 1 && teams.length >= memberCount && (
+                <button
+                  onClick={handleStartDraft}
+                  className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-xs font-medium"
+                >
+                  Start Draft
+                </button>
+              )}
+              {draft?.status === 'not_started' && teams.length >= 1 && teams.length < memberCount && (
+                <span className="text-yellow-400 text-xs">
+                  Waiting ({teams.length}/{memberCount})
+                </span>
+              )}
+              {(draft?.status === 'in_progress' || draft?.status === 'paused') && (
+                <button
+                  onClick={handleTogglePause}
+                  className={`${
+                    draft.status === 'paused' ? 'bg-green-600 hover:bg-green-700' : 'bg-yellow-600 hover:bg-yellow-700'
+                  } text-white px-3 py-1 rounded text-xs font-medium`}
+                >
+                  {draft.status === 'paused' ? 'Resume' : 'Pause'}
+                </button>
+              )}
+              {(draft?.status === 'in_progress' || draft?.status === 'paused' || draft?.status === 'completed' || picks.length > 0) && (
+                <button
+                  onClick={() => setShowResetConfirm(true)}
+                  className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-xs font-medium"
+                >
+                  Reset
+                </button>
+              )}
+            </div>
+          )}
         </div>
       </header>
 
@@ -1241,11 +1305,45 @@ export default function DraftRoomPage() {
         </div>
       )}
 
+      {/* Mobile Tab Navigation */}
+      <div className="md:hidden flex border-b border-gray-700">
+        <button
+          onClick={() => setMobileTab('schools')}
+          className={`flex-1 py-3 text-sm font-medium transition-colors ${
+            mobileTab === 'schools'
+              ? 'text-white border-b-2 border-blue-500 bg-gray-800'
+              : 'text-gray-400 hover:text-white'
+          }`}
+        >
+          Schools ({availableSchools.length})
+        </button>
+        <button
+          onClick={() => setMobileTab('history')}
+          className={`flex-1 py-3 text-sm font-medium transition-colors ${
+            mobileTab === 'history'
+              ? 'text-white border-b-2 border-blue-500 bg-gray-800'
+              : 'text-gray-400 hover:text-white'
+          }`}
+        >
+          History ({picks.length})
+        </button>
+        <button
+          onClick={() => setMobileTab('teams')}
+          className={`flex-1 py-3 text-sm font-medium transition-colors ${
+            mobileTab === 'teams'
+              ? 'text-white border-b-2 border-blue-500 bg-gray-800'
+              : 'text-gray-400 hover:text-white'
+          }`}
+        >
+          Teams
+        </button>
+      </div>
+
       <div className="flex flex-1 overflow-hidden">
         {/* Left Panel - Available Schools */}
-        <div className="w-1/3 border-r border-gray-700 flex flex-col">
+        <div className={`${mobileTab === 'schools' ? 'flex' : 'hidden'} md:flex w-full md:w-1/3 border-r border-gray-700 flex-col`}>
           <div className="p-3 border-b border-gray-700">
-            <h2 className="text-sm font-semibold text-white mb-2">Available Schools</h2>
+            <h2 className="text-sm font-semibold text-white mb-2 hidden md:block">Available Schools</h2>
             <div className="flex gap-2">
               <input
                 type="text"
@@ -1350,7 +1448,7 @@ export default function DraftRoomPage() {
         </div>
 
         {/* Center Panel - Draft History */}
-        <div className="flex-1 flex flex-col border-r border-gray-700">
+        <div className={`${mobileTab === 'history' ? 'flex' : 'hidden'} md:flex flex-1 flex-col border-r border-gray-700`}>
           {/* Draft Status Messages */}
           {draft?.status === 'not_started' && (
             <div className="p-6">
@@ -1481,7 +1579,7 @@ export default function DraftRoomPage() {
         </div>
 
         {/* Right Panel - My Team / View Teams */}
-        <div className="w-1/4 flex flex-col">
+        <div className={`${mobileTab === 'teams' ? 'flex' : 'hidden'} md:flex w-full md:w-1/4 flex-col`}>
           <div className="p-3 border-b border-gray-700">
             <div className="flex items-center justify-between mb-2">
               <h2 className="text-sm font-semibold text-white">Team Roster</h2>

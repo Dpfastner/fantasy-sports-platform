@@ -334,14 +334,29 @@ export async function calculateFantasyTeamPoints(
     return { teamsUpdated, highPointsWinner: null, errors }
   }
 
-  // Get league settings for high points configuration
+  // Get league settings for high points and double points configuration
   const { data: settings } = await client
     .from('league_settings')
-    .select('high_points_enabled, high_points_weekly_amount, high_points_allow_ties')
+    .select('high_points_enabled, high_points_weekly_amount, high_points_allow_ties, double_points_enabled')
     .eq('league_id', leagueId)
     .single()
 
-  const teamPoints: Array<{ teamId: string; points: number }> = []
+  // Get all double picks for this week if enabled
+  const doublePicksMap = new Map<string, string>() // teamId -> schoolId
+  if (settings?.double_points_enabled) {
+    const teamIds = teams.map(t => t.id)
+    const { data: doublePicks } = await client
+      .from('weekly_double_picks')
+      .select('team_id, school_id')
+      .in('team_id', teamIds)
+      .eq('week_number', weekNumber)
+
+    for (const pick of doublePicks || []) {
+      doublePicksMap.set(pick.team_id, pick.school_id)
+    }
+  }
+
+  const teamPoints: Array<{ teamId: string; points: number; bonusPoints: number }> = []
 
   // For each team, get their roster for this week and sum school points
   for (const team of teams) {
@@ -360,16 +375,17 @@ export async function calculateFantasyTeamPoints(
 
     if (!rosterPeriods || rosterPeriods.length === 0) {
       // Team has no roster, set points to 0
-      teamPoints.push({ teamId: team.id, points: 0 })
+      teamPoints.push({ teamId: team.id, points: 0, bonusPoints: 0 })
       continue
     }
 
     const schoolIds = rosterPeriods.map(r => r.school_id)
+    const doublePickSchoolId = doublePicksMap.get(team.id)
 
     // Get school weekly points for these schools
     const { data: schoolPoints, error: pointsError } = await client
       .from('school_weekly_points')
-      .select('total_points')
+      .select('school_id, total_points')
       .eq('season_id', league.season_id)
       .eq('week_number', weekNumber)
       .in('school_id', schoolIds)
@@ -379,8 +395,36 @@ export async function calculateFantasyTeamPoints(
       continue
     }
 
-    const weeklyTotal = (schoolPoints || []).reduce((sum, sp) => sum + Number(sp.total_points), 0)
-    teamPoints.push({ teamId: team.id, points: weeklyTotal })
+    // Calculate total with double points multiplier
+    let weeklyTotal = 0
+    let bonusPoints = 0
+    for (const sp of schoolPoints || []) {
+      const points = Number(sp.total_points)
+      if (doublePickSchoolId && sp.school_id === doublePickSchoolId) {
+        // Apply 2x multiplier - add the original points again as bonus
+        weeklyTotal += points * 2
+        bonusPoints = points
+      } else {
+        weeklyTotal += points
+      }
+    }
+
+    // Update the weekly_double_picks record with the points earned
+    if (doublePickSchoolId && bonusPoints > 0) {
+      const doublePickSchoolPoints = (schoolPoints || []).find(sp => sp.school_id === doublePickSchoolId)
+      if (doublePickSchoolPoints) {
+        await client
+          .from('weekly_double_picks')
+          .update({
+            points_earned: Number(doublePickSchoolPoints.total_points),
+            bonus_points: bonusPoints
+          })
+          .eq('team_id', team.id)
+          .eq('week_number', weekNumber)
+      }
+    }
+
+    teamPoints.push({ teamId: team.id, points: weeklyTotal, bonusPoints })
   }
 
   // Determine high points winner
