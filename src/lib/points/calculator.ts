@@ -347,12 +347,12 @@ export async function calculateFantasyTeamPoints(
     const teamIds = teams.map(t => t.id)
     const { data: doublePicks } = await client
       .from('weekly_double_picks')
-      .select('team_id, school_id')
-      .in('team_id', teamIds)
+      .select('fantasy_team_id, school_id')
+      .in('fantasy_team_id', teamIds)
       .eq('week_number', weekNumber)
 
     for (const pick of doublePicks || []) {
-      doublePicksMap.set(pick.team_id, pick.school_id)
+      doublePicksMap.set(pick.fantasy_team_id, pick.school_id)
     }
   }
 
@@ -419,7 +419,7 @@ export async function calculateFantasyTeamPoints(
             points_earned: Number(doublePickSchoolPoints.total_points),
             bonus_points: bonusPoints
           })
-          .eq('team_id', team.id)
+          .eq('fantasy_team_id', team.id)
           .eq('week_number', weekNumber)
       }
     }

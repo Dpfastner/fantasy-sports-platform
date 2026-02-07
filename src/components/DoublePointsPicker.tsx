@@ -71,7 +71,7 @@ export function DoublePointsPicker({
       const { data: picks } = await supabase
         .from('weekly_double_picks')
         .select('*')
-        .eq('team_id', teamId)
+        .eq('fantasy_team_id', teamId)
         .order('week_number', { ascending: true })
 
       if (picks) {
@@ -145,7 +145,7 @@ export function DoublePointsPicker({
         const { error: insertError } = await supabase
           .from('weekly_double_picks')
           .insert({
-            team_id: teamId,
+            fantasy_team_id: teamId,
             week_number: currentWeek,
             school_id: selectedSchool
           })
