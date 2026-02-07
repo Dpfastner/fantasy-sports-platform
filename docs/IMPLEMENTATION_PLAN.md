@@ -68,7 +68,14 @@
 
 **Deliverable:** Real-world game data flows into the system automatically.
 
-**Status: NOT STARTED**
+**Status: COMPLETE**
+
+**Implementation Details:**
+- ESPN client: `src/lib/api/espn.ts` (teams, scoreboard, rankings)
+- Sync routes: `/api/sync/schools`, `/api/sync/games`, `/api/sync/rankings`, `/api/sync/bulk`
+- Cron jobs: `/api/cron/daily-sync` (6 AM ET), `/api/cron/gameday-sync` (every 15 min on Saturdays)
+- Admin UI: `/admin/sync` with all sync options
+- Bowl/playoff detection in bulk sync
 
 ---
 
@@ -86,7 +93,16 @@
 
 **Deliverable:** Points calculate automatically and correctly based on commissioner's rules.
 
-**Status: NOT STARTED**
+**Status: COMPLETE**
+
+**Implementation Details:**
+- Points calculator: `src/lib/points/calculator.ts`
+- API endpoint: `/api/points/calculate` (week/season/league modes)
+- Standings API: `/api/leagues/[id]/standings`
+- School points API: `/api/schools/[id]/points`
+- Integrated with cron jobs for automatic calculation
+- Ranked bonus logic: 1-10 = 2pts, 11-25 = 1pt (mutually exclusive)
+- Playoffs: 1-12 = 2pts (12 playoff seeds)
 
 ---
 
@@ -190,11 +206,11 @@ Phase 1 (Leagues)        ████████████  COMPLETE
         ↓
 Phase 2 (Draft)          ████████████  COMPLETE
         ↓
-Phase 3 (ESPN Data)      ████████████  ← NEXT
+Phase 3 (ESPN Data)      ████████████  COMPLETE
         ↓
-Phase 4 (Points)         ████████████
+Phase 4 (Points)         ████████████  COMPLETE
         ↓
-Phase 5 (Dashboard)      ████████████
+Phase 5 (Dashboard)      ████████████  ← IN PROGRESS
         ↓
 Phase 6 (Leaderboard)    ████████████
         ↓
