@@ -41,6 +41,7 @@ interface Game {
   away_rank: number | null
   status: string
   is_conference_game: boolean
+  is_playoff_game: boolean
 }
 
 interface SchoolPointsBreakdown {
@@ -101,19 +102,40 @@ export function calculateSchoolGamePoints(
     if (game.is_conference_game) conferenceBonus = scoring.points_conference_game
     if (teamScore >= 50) over50Bonus = scoring.points_over_50
     if (opponentScore === 0) shutoutBonus = scoring.points_shutout
-    if (schoolRank && schoolRank <= 25) ranked25Bonus = scoring.points_ranked_25
-    if (schoolRank && schoolRank <= 10) ranked10Bonus = scoring.points_ranked_10
+    // Ranked bonuses are mutually exclusive (not cumulative)
+    // During playoffs, ranks 1-12 get the top-10 bonus (since playoffs only have 12 seeds)
+    if (schoolRank) {
+      if (game.is_playoff_game) {
+        // Playoffs: ranks 1-12 get the higher bonus
+        if (schoolRank <= 12) ranked10Bonus = scoring.points_ranked_10
+      } else {
+        // Regular season: ranks 1-10 get higher bonus, 11-25 get lower bonus
+        if (schoolRank <= 10) {
+          ranked10Bonus = scoring.points_ranked_10
+        } else if (schoolRank <= 25) {
+          ranked25Bonus = scoring.points_ranked_25
+        }
+      }
+    }
   } else {
     basePoints = scoring.points_loss
     if (game.is_conference_game) conferenceBonus = scoring.points_conference_game_loss
     if (teamScore >= 50) over50Bonus = scoring.points_over_50_loss
     if (opponentScore === 0) shutoutBonus = scoring.points_shutout_loss
-    if (schoolRank && schoolRank <= 25) ranked25Bonus = scoring.points_ranked_25_loss
-    if (schoolRank && schoolRank <= 10) ranked10Bonus = scoring.points_ranked_10_loss
+    // Ranked bonuses are mutually exclusive (not cumulative)
+    if (schoolRank) {
+      if (game.is_playoff_game) {
+        if (schoolRank <= 12) ranked10Bonus = scoring.points_ranked_10_loss
+      } else {
+        if (schoolRank <= 10) {
+          ranked10Bonus = scoring.points_ranked_10_loss
+        } else if (schoolRank <= 25) {
+          ranked25Bonus = scoring.points_ranked_25_loss
+        }
+      }
+    }
   }
 
-  // Only add ranked_10 if not already counting ranked_25 (they're cumulative per scoring rules)
-  // Actually, based on typical fantasy scoring, both apply if ranked in top 10
   const totalPoints = basePoints + conferenceBonus + over50Bonus + shutoutBonus + ranked25Bonus + ranked10Bonus
 
   return {
@@ -201,6 +223,7 @@ export async function calculateWeeklySchoolPoints(
     const gameWithConf: Game = {
       ...game,
       is_conference_game: isConferenceGame,
+      is_playoff_game: game.is_playoff_game || false,
     }
 
     // Calculate points for home team if FBS

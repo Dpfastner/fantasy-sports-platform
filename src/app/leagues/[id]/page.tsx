@@ -89,15 +89,19 @@ export default async function LeaguePage({ params }: PageProps) {
     .select('*', { count: 'exact', head: true })
     .eq('league_id', id)
 
-  // Get all teams in the league
-  const { data: teamsData } = await supabase
+  // Get all teams in the league (use explicit FK to avoid ambiguity)
+  const { data: teamsData, error: teamsError } = await supabase
     .from('fantasy_teams')
     .select(`
       *,
-      profiles (display_name, email)
+      profiles!fantasy_teams_user_id_fkey(display_name, email)
     `)
     .eq('league_id', id)
     .order('total_points', { ascending: false })
+
+  if (teamsError) {
+    console.error('Error fetching teams:', teamsError)
+  }
 
   const teams = teamsData as unknown as TeamData[] | null
 
