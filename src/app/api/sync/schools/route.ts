@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
-import { fetchAllTeams, matchTeamToSchool, getTeamLogoUrl } from '@/lib/api/espn'
+import { fetchAllTeams, getTeamLogoUrl, getEspnTeamId } from '@/lib/api/espn'
 
 // Create admin client lazily at runtime (not build time)
 function getSupabaseAdmin() {
@@ -18,7 +18,7 @@ export async function POST(request: Request) {
   try {
     // Check for authorization (basic security)
     const authHeader = request.headers.get('authorization')
-    const expectedKey = process.env.SYNC_API_KEY || 'sync-schools-key'
+    const expectedKey = process.env.SYNC_API_KEY || 'fantasy-sports-sync-2024'
 
     if (authHeader !== `Bearer ${expectedKey}`) {
       return NextResponse.json(
@@ -48,11 +48,14 @@ export async function POST(request: Request) {
     const updates: { id: string; name: string; external_api_id: string; logo_url: string }[] = []
     const notFound: string[] = []
 
-    // Match each school to an ESPN team
+    // Create a map of ESPN team ID -> team for quick lookup
+    const espnTeamMap = new Map(espnTeams.map(team => [team.id, team]))
+
+    // Match each school to an ESPN team using direct ID mapping
     for (const school of schools || []) {
-      const matchedTeam = espnTeams.find(espnTeam =>
-        matchTeamToSchool(espnTeam, school.name)
-      )
+      // First try direct ID lookup from our mapping
+      const espnId = getEspnTeamId(school.name)
+      let matchedTeam = espnId ? espnTeamMap.get(espnId) : null
 
       if (matchedTeam) {
         const logoUrl = getTeamLogoUrl(matchedTeam)
@@ -63,9 +66,11 @@ export async function POST(request: Request) {
             external_api_id: matchedTeam.id,
             logo_url: logoUrl,
           })
+        } else {
+          notFound.push(`${school.name} (no logo)`)
         }
       } else {
-        notFound.push(school.name)
+        notFound.push(`${school.name} (ID: ${espnId || 'not mapped'})`)
       }
     }
 

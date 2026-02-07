@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
-import { fetchScoreboard, ESPNGame } from '@/lib/api/espn'
+import { fetchScoreboard, ESPNGame, getTeamLogoUrl } from '@/lib/api/espn'
 
 // Create admin client lazily at runtime (not build time)
 function getSupabaseAdmin() {
@@ -24,7 +24,7 @@ export async function POST(request: Request) {
   try {
     // Check for authorization
     const authHeader = request.headers.get('authorization')
-    const expectedKey = process.env.SYNC_API_KEY || 'sync-schools-key'
+    const expectedKey = process.env.SYNC_API_KEY || 'fantasy-sports-sync-2024'
 
     if (authHeader !== `Bearer ${expectedKey}`) {
       return NextResponse.json(
@@ -93,21 +93,26 @@ export async function POST(request: Request) {
       const homeSchoolId = schoolMap.get(homeCompetitor.team.id)
       const awaySchoolId = schoolMap.get(awayCompetitor.team.id)
 
-      // Skip games where we don't have both teams
-      if (!homeSchoolId || !awaySchoolId) {
+      // Skip games where NEITHER team is FBS (we need at least one)
+      if (!homeSchoolId && !awaySchoolId) {
         skippedGames.push(
-          `${awayCompetitor.team.displayName} @ ${homeCompetitor.team.displayName} ` +
-          `(missing: ${!homeSchoolId ? 'home' : ''}${!homeSchoolId && !awaySchoolId ? '/' : ''}${!awaySchoolId ? 'away' : ''})`
+          `${awayCompetitor.team.displayName} @ ${homeCompetitor.team.displayName} (no FBS teams)`
         )
         continue
       }
 
+      // Always store both teams' display info for easy UI rendering
+      const homeTeamName = homeCompetitor.team.displayName
+      const homeTeamLogoUrl = getTeamLogoUrl(homeCompetitor.team)
+      const awayTeamName = awayCompetitor.team.displayName
+      const awayTeamLogoUrl = getTeamLogoUrl(awayCompetitor.team)
+
       // Determine game status
       let status = 'scheduled'
       if (competition.status.type.state === 'in') {
-        status = 'in_progress'
+        status = 'live'
       } else if (competition.status.type.state === 'post') {
-        status = 'final'
+        status = 'completed'
       }
 
       // Parse game date
@@ -123,8 +128,8 @@ export async function POST(request: Request) {
             external_game_id: game.id,
             season_id: season.id,
             week_number: week,
-            home_school_id: homeSchoolId,
-            away_school_id: awaySchoolId,
+            home_school_id: homeSchoolId || null,
+            away_school_id: awaySchoolId || null,
             home_score: parseInt(homeCompetitor.score) || 0,
             away_score: parseInt(awayCompetitor.score) || 0,
             home_rank: homeCompetitor.curatedRank?.current || null,
@@ -132,12 +137,16 @@ export async function POST(request: Request) {
             game_date: gameDateStr,
             game_time: gameTimeStr,
             status: status,
-            quarter: status === 'in_progress' ? String(competition.status.period) : null,
-            clock: status === 'in_progress' ? competition.status.displayClock : null,
+            quarter: status === 'live' ? String(competition.status.period) : null,
+            clock: status === 'live' ? competition.status.displayClock : null,
             possession_team_id: competition.situation?.possession
               ? schoolMap.get(competition.situation.possession) || null
               : null,
             is_playoff_game: seasonType === 3,
+            home_team_name: homeTeamName,
+            home_team_logo_url: homeTeamLogoUrl,
+            away_team_name: awayTeamName,
+            away_team_logo_url: awayTeamLogoUrl,
           },
           { onConflict: 'season_id,external_game_id' }
         )
