@@ -197,6 +197,21 @@ export function RosterList({
     doublePicksMap.get(pick.school_id)!.add(pick.week_number)
   }
 
+  // Conference abbreviation mapping
+  const conferenceAbbreviations: Record<string, string> = {
+    'Big Ten': 'B10',
+    'SEC': 'SEC',
+    'Big 12': 'B12',
+    'ACC': 'ACC',
+    'Pac-12': 'P12',
+    'American Athletic': 'AAC',
+    'Mountain West': 'MW',
+    'Sun Belt': 'SBC',
+    'Conference USA': 'CUSA',
+    'Mid-American': 'MAC',
+    'Independent': 'IND',
+  }
+
   // Week columns configuration
   const regularWeeks = Array.from({ length: 17 }, (_, i) => i) // 0-16
   const specialColumns = [
@@ -264,9 +279,9 @@ export function RosterList({
             // Get opponent school from our schools data
             const opponentSchoolId = thisWeekGame ? (isHome ? thisWeekGame.away_school_id : thisWeekGame.home_school_id) : null
             const opponentSchool = opponentSchoolId ? opponentSchoolsMap.get(opponentSchoolId) : null
-            const opponentName = opponentSchool?.abbreviation || opponentSchool?.name || 'TBD'
+            const opponentName = opponentSchool?.name || 'TBD'
             const opponentLogo = opponentSchool?.logo_url || null
-            const opponentConf = opponentSchool?.conference || null
+            const opponentConfAbbr = opponentSchool?.conference ? (conferenceAbbreviations[opponentSchool.conference] || opponentSchool.conference.substring(0, 3).toUpperCase()) : null
             const opponentRank = thisWeekGame ? (isHome ? thisWeekGame.away_rank : thisWeekGame.home_rank) : null
             const myScore = thisWeekGame ? (isHome ? thisWeekGame.home_score : thisWeekGame.away_score) : null
             const oppScore = thisWeekGame ? (isHome ? thisWeekGame.away_score : thisWeekGame.home_score) : null
@@ -347,7 +362,7 @@ export function RosterList({
                           <span className="text-gray-400">{isHome ? 'vs' : '@'} </span>
                           {opponentRank && <span className="text-gray-500">#{opponentRank} </span>}
                           {opponentName}
-                          {opponentConf && <span className="text-gray-500"> ({opponentConf})</span>}
+                          {opponentConfAbbr && <span className="text-gray-500"> {opponentConfAbbr}</span>}
                         </span>
                         <span className="text-gray-500 text-xs">{getGameDateTime()}</span>
                       </div>
