@@ -277,6 +277,7 @@ export default async function TeamPage({ params }: PageProps) {
                 id: r.id,
                 school_id: r.school_id,
                 slot_number: r.slot_number,
+                start_week: r.start_week,
                 schools: r.schools
               }))}
               games={gamesData}

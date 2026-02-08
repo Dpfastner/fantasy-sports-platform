@@ -17,6 +17,7 @@ interface RosterSchool {
   id: string
   school_id: string
   slot_number: number
+  start_week: number
   schools: School
 }
 
@@ -185,9 +186,9 @@ export function RosterList({
               <span className="w-px mx-1"></span>
             </>
           )}
-          <span className="w-36">Opponent</span>
+          <span className="w-40">Opponent</span>
           <span className="w-px mx-1"></span>
-          <span className="w-28 text-center">Game</span>
+          <span className="w-24 text-center">Status</span>
           <span className="w-px mx-1"></span>
           <span className="w-20 text-right">Points</span>
         </div>
@@ -207,34 +208,37 @@ export function RosterList({
         </button>
       </div>
 
-      {/* Roster rows */}
-      <div className="space-y-1 overflow-x-auto">
-        {roster.map((slot, index) => {
-          const thisWeekGame = games.find(
-            g => g.week_number === currentWeek &&
-                 (g.home_school_id === slot.school_id || g.away_school_id === slot.school_id)
-          )
-          const weeklyPts = schoolPointsMap.get(slot.school_id) || []
-          const total = schoolTotals.get(slot.school_id) || 0
+      {/* Roster rows with container-level horizontal scroll */}
+      <div className="overflow-x-auto">
+        <div className="space-y-1 min-w-fit">
+          {roster.map((slot, index) => {
+            const thisWeekGame = games.find(
+              g => g.week_number === currentWeek &&
+                   (g.home_school_id === slot.school_id || g.away_school_id === slot.school_id)
+            )
+            const weeklyPts = schoolPointsMap.get(slot.school_id) || []
+            const total = schoolTotals.get(slot.school_id) || 0
 
-          return (
-            <RosterRow
-              key={slot.id}
-              index={index + 1}
-              schoolId={slot.school_id}
-              school={slot.schools}
-              game={thisWeekGame || null}
-              weeklyPoints={weeklyPts}
-              totalPoints={total}
-              currentWeek={currentWeek}
-              doublePointsEnabled={doublePointsEnabled}
-              isDoublePointsPick={doublePickSchoolId === slot.school_id}
-              canPickDoublePoints={canPick && !maxPicksReached && !saving}
-              onDoublePointsSelect={handleDoublePointsSelect}
-              expanded={expanded}
-            />
-          )
-        })}
+            return (
+              <RosterRow
+                key={slot.id}
+                index={index + 1}
+                schoolId={slot.school_id}
+                school={slot.schools}
+                game={thisWeekGame || null}
+                weeklyPoints={weeklyPts}
+                totalPoints={total}
+                currentWeek={currentWeek}
+                startWeek={slot.start_week}
+                doublePointsEnabled={doublePointsEnabled}
+                isDoublePointsPick={doublePickSchoolId === slot.school_id}
+                canPickDoublePoints={canPick && !maxPicksReached && !saving}
+                onDoublePointsSelect={handleDoublePointsSelect}
+                expanded={expanded}
+              />
+            )
+          })}
+        </div>
       </div>
 
       {/* Footer info */}
