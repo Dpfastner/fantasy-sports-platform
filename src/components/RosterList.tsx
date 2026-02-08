@@ -46,6 +46,19 @@ interface SchoolPoints {
   total_points: number
 }
 
+interface OpponentSchool {
+  id: string
+  name: string
+  abbreviation: string | null
+  logo_url: string | null
+  conference: string
+}
+
+interface DoublePick {
+  week_number: number
+  school_id: string
+}
+
 interface Props {
   roster: RosterSchool[]
   games: Game[]
@@ -55,6 +68,8 @@ interface Props {
   seasonId: string
   doublePointsEnabled: boolean
   maxDoublePicksPerSeason: number
+  opponentSchools: OpponentSchool[]
+  doublePicks: DoublePick[]
 }
 
 export function RosterList({
@@ -65,7 +80,9 @@ export function RosterList({
   teamId,
   seasonId,
   doublePointsEnabled,
-  maxDoublePicksPerSeason
+  maxDoublePicksPerSeason,
+  opponentSchools,
+  doublePicks
 }: Props) {
   const supabase = createClient()
   const [doublePickSchoolId, setDoublePickSchoolId] = useState<string | null>(null)
@@ -165,6 +182,21 @@ export function RosterList({
 
   const maxPicksReached = maxDoublePicksPerSeason > 0 && picksUsed >= maxDoublePicksPerSeason && !doublePickSchoolId
 
+  // Build opponent schools map for quick lookup
+  const opponentSchoolsMap = new Map<string, OpponentSchool>()
+  for (const school of opponentSchools) {
+    opponentSchoolsMap.set(school.id, school)
+  }
+
+  // Build double picks map: school_id -> Set of week_numbers
+  const doublePicksMap = new Map<string, Set<number>>()
+  for (const pick of doublePicks) {
+    if (!doublePicksMap.has(pick.school_id)) {
+      doublePicksMap.set(pick.school_id, new Set())
+    }
+    doublePicksMap.get(pick.school_id)!.add(pick.week_number)
+  }
+
   // Week columns configuration
   const regularWeeks = Array.from({ length: 17 }, (_, i) => i) // 0-16
   const specialColumns = [
@@ -228,8 +260,13 @@ export function RosterList({
             )
             const total = schoolTotals.get(slot.school_id) || 0
             const isHome = thisWeekGame?.home_school_id === slot.school_id
-            const opponentName = thisWeekGame ? (isHome ? thisWeekGame.away_team_name : thisWeekGame.home_team_name) : null
-            const opponentLogo = thisWeekGame ? (isHome ? thisWeekGame.away_team_logo_url : thisWeekGame.home_team_logo_url) : null
+
+            // Get opponent school from our schools data
+            const opponentSchoolId = thisWeekGame ? (isHome ? thisWeekGame.away_school_id : thisWeekGame.home_school_id) : null
+            const opponentSchool = opponentSchoolId ? opponentSchoolsMap.get(opponentSchoolId) : null
+            const opponentName = opponentSchool?.abbreviation || opponentSchool?.name || 'TBD'
+            const opponentLogo = opponentSchool?.logo_url || null
+            const opponentConf = opponentSchool?.conference || null
             const opponentRank = thisWeekGame ? (isHome ? thisWeekGame.away_rank : thisWeekGame.home_rank) : null
             const myScore = thisWeekGame ? (isHome ? thisWeekGame.home_score : thisWeekGame.away_score) : null
             const oppScore = thisWeekGame ? (isHome ? thisWeekGame.away_score : thisWeekGame.home_score) : null
@@ -306,10 +343,11 @@ export function RosterList({
                         )}
                       </div>
                       <div className="flex flex-col min-w-0 flex-1">
-                        <span className="text-gray-300 text-xs">
+                        <span className="text-gray-300 text-xs truncate">
                           <span className="text-gray-400">{isHome ? 'vs' : '@'} </span>
                           {opponentRank && <span className="text-gray-500">#{opponentRank} </span>}
-                          {opponentName || 'TBD'}
+                          {opponentName}
+                          {opponentConf && <span className="text-gray-500"> ({opponentConf})</span>}
                         </span>
                         <span className="text-gray-500 text-xs">{getGameDateTime()}</span>
                       </div>
@@ -379,6 +417,7 @@ export function RosterList({
             {roster.map((slot) => {
               const pointsMap = schoolPointsMap.get(slot.school_id) || new Map()
               const startWeek = slot.start_week
+              const schoolDoublePicks = doublePicksMap.get(slot.school_id)
 
               return (
                 <div key={slot.id} className="flex items-center h-14 bg-gray-700/50 border-b border-gray-800 min-w-max">
@@ -387,18 +426,25 @@ export function RosterList({
                     const pts = pointsMap.get(week) || 0
                     const isCurrent = week === currentWeek
                     const wasOnRoster = week >= startWeek
+                    const hadDoublePick = schoolDoublePicks?.has(week)
 
                     return (
                       <div
                         key={week}
-                        className={`w-9 flex-shrink-0 py-1 text-center ${
+                        className={`w-9 flex-shrink-0 py-1 text-center relative ${
+                          hadDoublePick ? 'bg-amber-600/30 border border-amber-500/50' :
                           isCurrent ? 'bg-blue-600/30' : ''
                         }`}
                       >
                         {wasOnRoster ? (
-                          <span className={`text-xs ${pts > 0 ? 'text-white font-medium' : 'text-gray-500'}`}>
-                            {pts}
-                          </span>
+                          <div className="flex flex-col items-center">
+                            {hadDoublePick && (
+                              <span className="text-amber-400 text-[8px] font-bold leading-none">2x</span>
+                            )}
+                            <span className={`text-xs ${pts > 0 ? 'text-white font-medium' : 'text-gray-500'}`}>
+                              {pts}
+                            </span>
+                          </div>
                         ) : (
                           <span className="text-gray-700 text-xs">-</span>
                         )}

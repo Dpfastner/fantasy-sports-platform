@@ -170,6 +170,35 @@ export default async function TeamPage({ params }: PageProps) {
     gamesData = (data || []) as Game[]
   }
 
+  // Get all opponent school IDs from games
+  const opponentSchoolIds = new Set<string>()
+  for (const game of gamesData) {
+    if (game.home_school_id && !schoolIds.includes(game.home_school_id)) {
+      opponentSchoolIds.add(game.home_school_id)
+    }
+    if (game.away_school_id && !schoolIds.includes(game.away_school_id)) {
+      opponentSchoolIds.add(game.away_school_id)
+    }
+  }
+
+  // Fetch opponent schools data
+  let opponentSchools: { id: string; name: string; abbreviation: string | null; logo_url: string | null; conference: string }[] = []
+  if (opponentSchoolIds.size > 0) {
+    const { data: oppData } = await supabase
+      .from('schools')
+      .select('id, name, abbreviation, logo_url, conference')
+      .in('id', Array.from(opponentSchoolIds))
+    opponentSchools = oppData || []
+  }
+
+  // Fetch double picks history for this team
+  const { data: doublePicksData } = await supabase
+    .from('weekly_double_picks')
+    .select('week_number, school_id')
+    .eq('fantasy_team_id', team.id)
+
+  const doublePicks = (doublePicksData || []) as { week_number: number; school_id: string }[]
+
   // Calculate totals per school
   const schoolTotals = new Map<string, number>()
   for (const sp of schoolPoints) {
@@ -287,6 +316,8 @@ export default async function TeamPage({ params }: PageProps) {
               seasonId={league.season_id}
               doublePointsEnabled={settings?.double_points_enabled || false}
               maxDoublePicksPerSeason={settings?.max_double_picks_per_season || 0}
+              opponentSchools={opponentSchools}
+              doublePicks={doublePicks}
             />
           ) : (
             <p className="text-gray-500">No schools on roster yet. Complete the draft to build your team.</p>
