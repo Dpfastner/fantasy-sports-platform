@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { RosterRow } from './RosterRow'
 
 interface School {
   id: string
@@ -82,7 +81,6 @@ export function RosterList({
   }, [teamId, currentWeek, doublePointsEnabled])
 
   const loadDoublePicks = async () => {
-    // Get all picks for the season
     const { data: allPicks } = await supabase
       .from('weekly_double_picks')
       .select('*')
@@ -96,7 +94,6 @@ export function RosterList({
       }
     }
 
-    // Check if we can still pick (before first game)
     const schoolIds = roster.map(r => r.school_id)
     if (schoolIds.length > 0) {
       const weekGames = games.filter(g => g.week_number === currentWeek)
@@ -118,7 +115,6 @@ export function RosterList({
   const handleDoublePointsSelect = async (schoolId: string) => {
     if (!canPick || saving) return
 
-    // Check max picks limit
     if (maxDoublePicksPerSeason > 0 && picksUsed >= maxDoublePicksPerSeason && !doublePickSchoolId) {
       return
     }
@@ -127,14 +123,12 @@ export function RosterList({
 
     try {
       if (doublePickSchoolId) {
-        // Update existing pick
         await supabase
           .from('weekly_double_picks')
           .update({ school_id: schoolId, picked_at: new Date().toISOString() })
           .eq('fantasy_team_id', teamId)
           .eq('week_number', currentWeek)
       } else {
-        // Insert new pick
         await supabase
           .from('weekly_double_picks')
           .insert({
@@ -154,11 +148,12 @@ export function RosterList({
   }
 
   // Build points by school
-  const schoolPointsMap = new Map<string, SchoolPoints[]>()
+  const schoolPointsMap = new Map<string, Map<number, number>>()
   for (const sp of schoolPoints) {
-    const existing = schoolPointsMap.get(sp.school_id) || []
-    existing.push(sp)
-    schoolPointsMap.set(sp.school_id, existing)
+    if (!schoolPointsMap.has(sp.school_id)) {
+      schoolPointsMap.set(sp.school_id, new Map())
+    }
+    schoolPointsMap.get(sp.school_id)!.set(sp.week_number, sp.total_points)
   }
 
   // Calculate totals
@@ -168,30 +163,23 @@ export function RosterList({
     schoolTotals.set(sp.school_id, current + Number(sp.total_points))
   }
 
-  // Check if max picks reached
   const maxPicksReached = maxDoublePicksPerSeason > 0 && picksUsed >= maxDoublePicksPerSeason && !doublePickSchoolId
+
+  // Week columns configuration
+  const regularWeeks = Array.from({ length: 17 }, (_, i) => i) // 0-16
+  const specialColumns = [
+    { week: 99, label: 'Heis', color: 'bg-yellow-600/20', textColor: 'text-yellow-400' },
+    { week: 17, label: 'R1', color: 'bg-orange-600/20', textColor: 'text-orange-400' },
+    { week: 18, label: 'QF', color: 'bg-orange-600/20', textColor: 'text-orange-400' },
+    { week: 19, label: 'SF', color: 'bg-orange-600/20', textColor: 'text-orange-400' },
+    { week: 20, label: 'NC', color: 'bg-orange-600/20', textColor: 'text-orange-400' },
+  ]
 
   return (
     <div className="space-y-2">
-      {/* Header row with expand button */}
+      {/* Header with expand button */}
       <div className="flex items-center justify-between px-3 py-2 text-xs text-gray-500 uppercase tracking-wide border-b border-gray-700">
-        <div className="flex items-center gap-1">
-          <span className="w-8 text-center">#</span>
-          <span className="w-10"></span>
-          <span className="w-32">School</span>
-          <span className="w-px mx-1"></span>
-          {doublePointsEnabled && (
-            <>
-              <span className="w-10 text-center">2x</span>
-              <span className="w-px mx-1"></span>
-            </>
-          )}
-          <span className="w-40">Opponent</span>
-          <span className="w-px mx-1"></span>
-          <span className="w-24 text-center">Status</span>
-          <span className="w-px mx-1"></span>
-          <span className="w-20 text-right">Points</span>
-        </div>
+        <span>Roster</span>
         <button
           onClick={() => setExpanded(!expanded)}
           className="flex items-center gap-1 px-2 py-1 bg-gray-700 hover:bg-gray-600 rounded text-gray-300 transition-colors"
@@ -204,41 +192,236 @@ export function RosterList({
           >
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
           </svg>
-          <span className="text-xs normal-case">{expanded ? 'Hide' : 'Show'} Points</span>
+          <span className="text-xs normal-case">{expanded ? 'Hide' : 'Show'} Weekly Points</span>
         </button>
       </div>
 
-      {/* Roster rows with container-level horizontal scroll */}
-      <div className="overflow-x-auto">
-        <div className="space-y-1 min-w-fit">
+      {/* Roster container with fixed left + scrollable right */}
+      <div className="flex">
+        {/* Fixed left section */}
+        <div className="flex-shrink-0">
+          {/* Header row */}
+          <div className="flex items-center h-8 px-3 text-xs text-gray-500 uppercase tracking-wide border-b border-gray-700">
+            <span className="w-6 text-center">#</span>
+            <span className="w-10"></span>
+            <span className="w-28">School</span>
+            <span className="w-px mx-1 h-5 bg-gray-700"></span>
+            {doublePointsEnabled && (
+              <>
+                <span className="w-10 text-center">2x</span>
+                <span className="w-px mx-1 h-5 bg-gray-700"></span>
+              </>
+            )}
+            <span className="w-48">Opponent</span>
+            <span className="w-px mx-1 h-5 bg-gray-700"></span>
+            <span className="w-20 text-center">Status</span>
+            <span className="w-px mx-1 h-5 bg-gray-700"></span>
+            <span className="w-16 text-right">Total</span>
+          </div>
+
+          {/* Data rows - fixed section */}
           {roster.map((slot, index) => {
+            const school = slot.schools
             const thisWeekGame = games.find(
               g => g.week_number === currentWeek &&
                    (g.home_school_id === slot.school_id || g.away_school_id === slot.school_id)
             )
-            const weeklyPts = schoolPointsMap.get(slot.school_id) || []
             const total = schoolTotals.get(slot.school_id) || 0
+            const isHome = thisWeekGame?.home_school_id === slot.school_id
+            const opponentName = thisWeekGame ? (isHome ? thisWeekGame.away_team_name : thisWeekGame.home_team_name) : null
+            const opponentLogo = thisWeekGame ? (isHome ? thisWeekGame.away_team_logo_url : thisWeekGame.home_team_logo_url) : null
+            const opponentRank = thisWeekGame ? (isHome ? thisWeekGame.away_rank : thisWeekGame.home_rank) : null
+            const myScore = thisWeekGame ? (isHome ? thisWeekGame.home_score : thisWeekGame.away_score) : null
+            const oppScore = thisWeekGame ? (isHome ? thisWeekGame.away_score : thisWeekGame.home_score) : null
+
+            const getGameDateTime = () => {
+              if (!thisWeekGame) return null
+              const gameDate = new Date(`${thisWeekGame.game_date}T${thisWeekGame.game_time || '12:00:00'}`)
+              const dateStr = gameDate.toLocaleDateString('en-US', { month: 'numeric', day: 'numeric' })
+              const timeStr = gameDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
+              return `${dateStr} ${timeStr}`
+            }
 
             return (
-              <RosterRow
-                key={slot.id}
-                index={index + 1}
-                schoolId={slot.school_id}
-                school={slot.schools}
-                game={thisWeekGame || null}
-                weeklyPoints={weeklyPts}
-                totalPoints={total}
-                currentWeek={currentWeek}
-                startWeek={slot.start_week}
-                doublePointsEnabled={doublePointsEnabled}
-                isDoublePointsPick={doublePickSchoolId === slot.school_id}
-                canPickDoublePoints={canPick && !maxPicksReached && !saving}
-                onDoublePointsSelect={handleDoublePointsSelect}
-                expanded={expanded}
-              />
+              <div key={slot.id} className="flex items-center h-14 px-3 bg-gray-700/50 border-b border-gray-800">
+                {/* Number */}
+                <div className="w-6 flex-shrink-0 text-center">
+                  <span className="text-gray-500 font-medium text-sm">{index + 1}</span>
+                </div>
+
+                {/* School Logo */}
+                <div className="w-10 flex-shrink-0 flex justify-center">
+                  {school.logo_url ? (
+                    <img src={school.logo_url} alt={school.name} className="w-8 h-8 object-contain" />
+                  ) : (
+                    <div
+                      className="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-xs"
+                      style={{ backgroundColor: school.primary_color }}
+                    >
+                      {school.abbreviation || school.name.substring(0, 2)}
+                    </div>
+                  )}
+                </div>
+
+                {/* School Name */}
+                <div className="w-28 flex-shrink-0 overflow-hidden">
+                  <p className="text-white font-medium text-sm truncate">{school.name}</p>
+                  <p className="text-gray-400 text-xs truncate">{school.conference}</p>
+                </div>
+
+                <div className="w-px h-10 bg-gray-600 flex-shrink-0 mx-1" />
+
+                {/* Double Points */}
+                {doublePointsEnabled && (
+                  <>
+                    <div className="w-10 flex-shrink-0 flex justify-center">
+                      {doublePickSchoolId === slot.school_id ? (
+                        <span className="bg-purple-600 text-white text-xs font-bold px-2 py-1 rounded">2x</span>
+                      ) : canPick && !maxPicksReached && !saving ? (
+                        <button
+                          onClick={() => handleDoublePointsSelect(slot.school_id)}
+                          className="text-purple-400 hover:text-purple-300 text-xs border border-purple-500 px-1.5 py-0.5 rounded hover:bg-purple-500/20 transition-colors"
+                        >
+                          2x
+                        </button>
+                      ) : (
+                        <span className="text-gray-600 text-xs">-</span>
+                      )}
+                    </div>
+                    <div className="w-px h-10 bg-gray-600 flex-shrink-0 mx-1" />
+                  </>
+                )}
+
+                {/* Opponent - wider section */}
+                <div className="w-48 flex-shrink-0 flex items-center gap-2 overflow-hidden">
+                  {thisWeekGame ? (
+                    <>
+                      <div className="w-8 h-8 flex-shrink-0 flex items-center justify-center">
+                        {opponentLogo ? (
+                          <img src={opponentLogo} alt="" className="w-8 h-8 object-contain" />
+                        ) : (
+                          <div className="w-8 h-8 bg-gray-600 rounded-full flex items-center justify-center text-gray-400 text-xs">
+                            ?
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex flex-col min-w-0 flex-1">
+                        <span className="text-gray-300 text-xs">
+                          <span className="text-gray-400">{isHome ? 'vs' : '@'} </span>
+                          {opponentRank && <span className="text-gray-500">#{opponentRank} </span>}
+                          {opponentName || 'TBD'}
+                        </span>
+                        <span className="text-gray-500 text-xs">{getGameDateTime()}</span>
+                      </div>
+                    </>
+                  ) : (
+                    <span className="text-gray-500 text-xs">Bye week</span>
+                  )}
+                </div>
+
+                <div className="w-px h-10 bg-gray-600 flex-shrink-0 mx-1" />
+
+                {/* Game Status - narrower */}
+                <div className="w-20 flex-shrink-0 text-center overflow-hidden">
+                  {thisWeekGame ? (
+                    thisWeekGame.status === 'live' ? (
+                      <div className="flex flex-col items-center">
+                        <span className="text-white font-semibold text-sm">{myScore ?? 0}-{oppScore ?? 0}</span>
+                        <span className="text-yellow-400 text-xs animate-pulse">LIVE</span>
+                      </div>
+                    ) : thisWeekGame.status === 'completed' ? (
+                      <div className="flex flex-col items-center">
+                        <span className={`font-semibold text-sm ${(myScore || 0) > (oppScore || 0) ? 'text-green-400' : (myScore || 0) < (oppScore || 0) ? 'text-red-400' : 'text-gray-400'}`}>
+                          {myScore}-{oppScore}
+                        </span>
+                        <span className="text-gray-500 text-xs">Final</span>
+                      </div>
+                    ) : (
+                      <span className="text-gray-500 text-xs">Upcoming</span>
+                    )
+                  ) : (
+                    <span className="text-gray-600 text-xs">-</span>
+                  )}
+                </div>
+
+                <div className="w-px h-10 bg-gray-600 flex-shrink-0 mx-1" />
+
+                {/* Total Points */}
+                <div className="w-16 flex-shrink-0 text-right">
+                  <p className="text-white font-semibold text-sm">{total} pts</p>
+                </div>
+              </div>
             )
           })}
         </div>
+
+        {/* Scrollable right section - Weekly Points */}
+        {expanded && (
+          <div className="flex-1 overflow-x-auto border-l border-gray-600">
+            {/* Header row for weeks */}
+            <div className="flex items-center h-8 text-xs text-gray-500 uppercase tracking-wide border-b border-gray-700 min-w-max">
+              {regularWeeks.map(week => (
+                <div
+                  key={week}
+                  className={`w-9 flex-shrink-0 text-center ${week === currentWeek ? 'text-blue-400' : ''}`}
+                >
+                  W{week}
+                </div>
+              ))}
+              {specialColumns.map(({ week, label, textColor }) => (
+                <div key={week} className={`w-9 flex-shrink-0 text-center ${textColor}`}>
+                  {label}
+                </div>
+              ))}
+            </div>
+
+            {/* Data rows - weekly points */}
+            {roster.map((slot) => {
+              const pointsMap = schoolPointsMap.get(slot.school_id) || new Map()
+              const startWeek = slot.start_week
+
+              return (
+                <div key={slot.id} className="flex items-center h-14 bg-gray-700/50 border-b border-gray-800 min-w-max">
+                  {/* Regular season weeks */}
+                  {regularWeeks.map(week => {
+                    const pts = pointsMap.get(week) || 0
+                    const isCurrent = week === currentWeek
+                    const wasOnRoster = week >= startWeek
+
+                    return (
+                      <div
+                        key={week}
+                        className={`w-9 flex-shrink-0 py-1 text-center ${
+                          isCurrent ? 'bg-blue-600/30' : ''
+                        }`}
+                      >
+                        {wasOnRoster ? (
+                          <span className={`text-xs ${pts > 0 ? 'text-white font-medium' : 'text-gray-500'}`}>
+                            {pts}
+                          </span>
+                        ) : (
+                          <span className="text-gray-700 text-xs">-</span>
+                        )}
+                      </div>
+                    )
+                  })}
+
+                  {/* Special columns (Heisman, Playoffs) */}
+                  {specialColumns.map(({ week, color }) => {
+                    const pts = pointsMap.get(week) || 0
+                    return (
+                      <div key={week} className={`w-9 flex-shrink-0 py-1 text-center ${color}`}>
+                        <span className={`text-xs ${pts > 0 ? 'text-white font-medium' : 'text-gray-500'}`}>
+                          {pts}
+                        </span>
+                      </div>
+                    )
+                  })}
+                </div>
+              )
+            })}
+          </div>
+        )}
       </div>
 
       {/* Footer info */}
