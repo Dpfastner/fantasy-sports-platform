@@ -7,6 +7,10 @@
     {
       "path": "/api/cron/gameday-sync",
       "schedule": "0 12 * * 6"
+    },
+    {
+      "path": "/api/cron/rankings-sync",
+      "schedule": "0 14 * * 2"
     }
   ]
 }
