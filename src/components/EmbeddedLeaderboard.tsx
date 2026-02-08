@@ -282,10 +282,10 @@ export default function EmbeddedLeaderboard({
                 <tr className="bg-gray-700/50">
                   <th className="px-2 md:px-4 py-3 text-left text-gray-400 font-medium sticky left-0 bg-gray-700/50 z-10 text-sm">#</th>
                   <th className="px-2 md:px-4 py-3 text-left text-gray-400 font-medium sticky left-6 md:left-10 bg-gray-700/50 z-10 text-sm">Team</th>
-                  <th className="px-2 md:px-4 py-3 text-center text-yellow-400 font-medium text-sm">
-                    <div className="flex flex-col items-center">
-                      <span className="text-[10px] text-yellow-400/70">HP</span>
-                      <span>Total</span>
+                  <th className="px-2 md:px-4 py-3 text-right text-yellow-400 font-medium text-sm">
+                    <div className="flex flex-col items-end">
+                      <span className="text-[8px] text-yellow-400/70 leading-none">HP</span>
+                      <span className="text-sm">Total</span>
                     </div>
                   </th>
                   {weeksToShow.map(week => (
@@ -341,7 +341,7 @@ export default function EmbeddedLeaderboard({
                             </div>
                           </div>
                         </td>
-                        <td className="px-2 md:px-4 py-2 text-center">
+                        <td className="px-2 md:px-4 py-2 text-right">
                           {team.high_points_winnings > 0 ? (
                             <span className="text-yellow-400 font-bold">${team.high_points_winnings}</span>
                           ) : (
