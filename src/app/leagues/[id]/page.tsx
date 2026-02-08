@@ -224,6 +224,12 @@ export default async function LeaguePage({ params }: PageProps) {
             >
               Playoff Bracket
             </Link>
+            <Link
+              href={`/leagues/${id}/stats`}
+              className="bg-gray-700 hover:bg-gray-600 text-white text-sm py-2 px-4 rounded-lg transition-colors"
+            >
+              League Stats
+            </Link>
           </div>
         )}
 
@@ -381,6 +387,41 @@ export default async function LeaguePage({ params }: PageProps) {
                     <span className="text-purple-400">Enabled</span>
                   </div>
                 )}
+              </div>
+            </div>
+
+            {/* Key Dates */}
+            <div className="bg-gray-800 rounded-lg p-4">
+              <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-wide mb-3">Key Dates</h2>
+              <div className="space-y-3 text-xs">
+                <div className="flex items-start gap-2">
+                  <div className="w-2 h-2 mt-1 bg-yellow-500 rounded-full flex-shrink-0"></div>
+                  <div>
+                    <p className="text-white font-medium">Heisman Trophy</p>
+                    <p className="text-gray-400">Dec 14, {year}</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-2">
+                  <div className="w-2 h-2 mt-1 bg-orange-500 rounded-full flex-shrink-0"></div>
+                  <div>
+                    <p className="text-white font-medium">CFP Quarterfinals</p>
+                    <p className="text-gray-400">Dec 31, {year} - Jan 1, {year + 1}</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-2">
+                  <div className="w-2 h-2 mt-1 bg-orange-500 rounded-full flex-shrink-0"></div>
+                  <div>
+                    <p className="text-white font-medium">CFP Semifinals</p>
+                    <p className="text-gray-400">Jan 9-10, {year + 1}</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-2">
+                  <div className="w-2 h-2 mt-1 bg-red-500 rounded-full flex-shrink-0"></div>
+                  <div>
+                    <p className="text-white font-medium">National Championship</p>
+                    <p className="text-gray-400">Jan 20, {year + 1}</p>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
