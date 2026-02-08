@@ -2,6 +2,7 @@ import { redirect, notFound } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import DraftStatusSection from '@/components/DraftStatusSection'
+import EmbeddedLeaderboard from '@/components/EmbeddedLeaderboard'
 
 interface PageProps {
   params: Promise<{ id: string }>
@@ -14,6 +15,7 @@ interface LeagueData {
   invite_code: string
   is_public: boolean
   max_teams: number
+  season_id: string
   sports: { name: string; slug: string } | null
   seasons: { name: string; year: number } | null
   league_settings: {
@@ -23,6 +25,8 @@ interface LeagueData {
     max_add_drops_per_season: number
     entry_fee: number
     prize_pool: number
+    high_points_enabled: boolean
+    high_points_weekly_amount: number
   } | null
   drafts: {
     status: string
@@ -34,8 +38,20 @@ interface TeamData {
   name: string
   user_id: string
   total_points: number
+  high_points_winnings: number
   add_drops_used: number
+  primary_color: string
+  secondary_color: string
+  image_url: string | null
   profiles: { display_name: string | null; email: string } | null
+}
+
+interface WeeklyPoints {
+  fantasy_team_id: string
+  week_number: number
+  points: number
+  is_high_points_winner: boolean
+  high_points_amount: number
 }
 
 export default async function LeaguePage({ params }: PageProps) {
@@ -89,19 +105,16 @@ export default async function LeaguePage({ params }: PageProps) {
     .select('*', { count: 'exact', head: true })
     .eq('league_id', id)
 
-  // Get all teams in the league (use explicit FK to avoid ambiguity)
-  const { data: teamsData, error: teamsError } = await supabase
+  // Get all teams in the league
+  const { data: teamsData } = await supabase
     .from('fantasy_teams')
     .select(`
-      *,
+      id, name, user_id, total_points, high_points_winnings, add_drops_used,
+      primary_color, secondary_color, image_url,
       profiles!fantasy_teams_user_id_fkey(display_name, email)
     `)
     .eq('league_id', id)
     .order('total_points', { ascending: false })
-
-  if (teamsError) {
-    console.error('Error fetching teams:', teamsError)
-  }
 
   const teams = teamsData as unknown as TeamData[] | null
 
@@ -109,8 +122,27 @@ export default async function LeaguePage({ params }: PageProps) {
   const userTeam = teams?.find(t => t.user_id === user.id)
 
   const settings = league.league_settings
-  // Handle both array and single object responses from Supabase
   const draft = Array.isArray(league.drafts) ? league.drafts[0] : league.drafts
+  const isDraftComplete = draft?.status === 'completed'
+
+  // Calculate current week
+  const seasons = league.seasons as unknown as { year: number; name: string } | null
+  const year = seasons?.year || new Date().getFullYear()
+  const seasonStart = new Date(year, 7, 24)
+  const weeksDiff = Math.floor((Date.now() - seasonStart.getTime()) / (7 * 24 * 60 * 60 * 1000))
+  const currentWeek = Math.max(1, Math.min(weeksDiff + 1, 15))
+
+  // Get weekly points for leaderboard (only if draft complete)
+  let weeklyPoints: WeeklyPoints[] = []
+  if (isDraftComplete && teams && teams.length > 0) {
+    const teamIds = teams.map(t => t.id)
+    const { data: weeklyPointsData } = await supabase
+      .from('fantasy_team_weekly_points')
+      .select('*')
+      .in('fantasy_team_id', teamIds)
+      .order('week_number', { ascending: true })
+    weeklyPoints = (weeklyPointsData || []) as WeeklyPoints[]
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-900 to-gray-800">
@@ -127,8 +159,8 @@ export default async function LeaguePage({ params }: PageProps) {
       </header>
 
       <main className="container mx-auto px-4 py-8">
-        {/* League Header */}
-        <div className="flex justify-between items-start mb-8">
+        {/* League Header with Action Buttons */}
+        <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-4 mb-8">
           <div>
             <div className="flex items-center gap-3 mb-2">
               <h1 className="text-3xl font-bold text-white">{league.name}</h1>
@@ -146,14 +178,25 @@ export default async function LeaguePage({ params }: PageProps) {
             )}
           </div>
 
-          {isCommissioner && (
-            <Link
-              href={`/leagues/${id}/settings`}
-              className="bg-gray-700 hover:bg-gray-600 text-white font-semibold py-2 px-4 rounded-lg transition-colors"
-            >
-              Commissioner Tools
-            </Link>
-          )}
+          {/* Action Buttons */}
+          <div className="flex flex-wrap gap-3">
+            {isDraftComplete && userTeam && (
+              <Link
+                href={`/leagues/${id}/team`}
+                className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors"
+              >
+                My Roster
+              </Link>
+            )}
+            {isCommissioner && (
+              <Link
+                href={`/leagues/${id}/settings`}
+                className="bg-gray-700 hover:bg-gray-600 text-white font-semibold py-2 px-4 rounded-lg transition-colors"
+              >
+                Commissioner Tools
+              </Link>
+            )}
+          </div>
         </div>
 
         {/* Invite Code (Commissioner only) */}
@@ -169,74 +212,70 @@ export default async function LeaguePage({ params }: PageProps) {
         <div className="grid lg:grid-cols-3 gap-8">
           {/* Main Content */}
           <div className="lg:col-span-2 space-y-8">
-            {/* Draft Status Section - polls for updates */}
-            <DraftStatusSection
-              leagueId={id}
-              initialStatus={draft?.status || 'not_started'}
-              isCommissioner={isCommissioner}
-              teamCount={teams?.length || 0}
-              memberCount={memberCount || 0}
-              draftDate={settings?.draft_date || null}
-            />
+            {/* Draft Status (only when NOT completed) */}
+            {!isDraftComplete && (
+              <DraftStatusSection
+                leagueId={id}
+                initialStatus={draft?.status || 'not_started'}
+                isCommissioner={isCommissioner}
+                teamCount={teams?.length || 0}
+                memberCount={memberCount || 0}
+                draftDate={settings?.draft_date || null}
+              />
+            )}
 
-            {/* Standings */}
-            <div className="bg-gray-800 rounded-lg p-6">
-              <h2 className="text-xl font-semibold text-white mb-4">Standings</h2>
-
-              {teams && teams.length > 0 ? (
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead>
-                      <tr className="text-gray-400 text-left border-b border-gray-700">
-                        <th className="pb-3 pr-4">#</th>
-                        <th className="pb-3 pr-4">Team</th>
-                        <th className="pb-3 pr-4">Owner</th>
-                        <th className="pb-3 text-right">Points</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {teams.map((team, index) => (
-                        <tr
-                          key={team.id}
-                          className={`border-b border-gray-700/50 ${
-                            team.user_id === user.id ? 'bg-blue-900/20' : ''
-                          }`}
-                        >
-                          <td className="py-3 pr-4 text-gray-400">{index + 1}</td>
-                          <td className="py-3 pr-4">
-                            <span className="text-white font-medium">{team.name}</span>
-                          </td>
-                          <td className="py-3 pr-4 text-gray-400">
-                            {team.profiles?.display_name || team.profiles?.email?.split('@')[0]}
-                          </td>
-                          <td className="py-3 text-right text-white font-semibold">
-                            {team.total_points}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              ) : (
-                <p className="text-gray-500">No teams have joined yet.</p>
-              )}
-            </div>
+            {/* Leaderboard (only when draft IS completed) */}
+            {isDraftComplete && teams && teams.length > 0 && (
+              <div className="bg-gray-800 rounded-lg p-6">
+                <EmbeddedLeaderboard
+                  leagueId={id}
+                  currentWeek={currentWeek}
+                  currentUserId={user.id}
+                  initialTeams={teams}
+                  initialWeeklyPoints={weeklyPoints}
+                  settings={settings ? {
+                    high_points_enabled: settings.high_points_enabled || false,
+                    high_points_weekly_amount: settings.high_points_weekly_amount || 0,
+                  } : null}
+                />
+              </div>
+            )}
           </div>
 
           {/* Sidebar */}
           <div className="space-y-6">
-            {/* Your Team */}
+            {/* Your Team Summary */}
             {userTeam && (
               <div className="bg-gray-800 rounded-lg p-6">
                 <h2 className="text-xl font-semibold text-white mb-4">Your Team</h2>
                 <div className="space-y-3">
-                  <div>
-                    <p className="text-gray-400 text-sm">Team Name</p>
+                  <div className="flex items-center gap-3">
+                    {userTeam.image_url ? (
+                      <img src={userTeam.image_url} alt={userTeam.name} className="w-10 h-10 object-contain rounded" />
+                    ) : (
+                      <div
+                        className="w-10 h-10 rounded flex items-center justify-center text-sm font-bold"
+                        style={{
+                          backgroundColor: userTeam.primary_color || '#374151',
+                          color: userTeam.secondary_color || '#ffffff',
+                        }}
+                      >
+                        {userTeam.name.substring(0, 2).toUpperCase()}
+                      </div>
+                    )}
                     <p className="text-white font-medium">{userTeam.name}</p>
                   </div>
-                  <div>
-                    <p className="text-gray-400 text-sm">Total Points</p>
-                    <p className="text-2xl font-bold text-white">{userTeam.total_points}</p>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-gray-400 text-sm">Total Points</p>
+                      <p className="text-2xl font-bold text-white">{userTeam.total_points}</p>
+                    </div>
+                    <div>
+                      <p className="text-gray-400 text-sm">Rank</p>
+                      <p className="text-2xl font-bold text-white">
+                        #{(teams?.findIndex(t => t.id === userTeam.id) || 0) + 1}
+                      </p>
+                    </div>
                   </div>
                   <div>
                     <p className="text-gray-400 text-sm">Add/Drops Used</p>
@@ -245,14 +284,6 @@ export default async function LeaguePage({ params }: PageProps) {
                     </p>
                   </div>
                 </div>
-                {draft?.status === 'completed' && (
-                  <Link
-                    href={`/leagues/${id}/team`}
-                    className="block mt-4 text-center bg-gray-700 hover:bg-gray-600 text-white font-semibold py-2 px-4 rounded-lg transition-colors"
-                  >
-                    View My Roster
-                  </Link>
-                )}
               </div>
             )}
 
@@ -288,39 +319,25 @@ export default async function LeaguePage({ params }: PageProps) {
             </div>
 
             {/* Quick Links */}
-            <div className="bg-gray-800 rounded-lg p-6">
-              <h2 className="text-xl font-semibold text-white mb-4">Quick Links</h2>
-              <div className="space-y-2">
-                <Link
-                  href={`/leagues/${id}/leaderboard`}
-                  className="block text-gray-400 hover:text-white transition-colors"
-                >
-                  Full Leaderboard
-                </Link>
-                {draft?.status === 'completed' && (
-                  <>
-                    <Link
-                      href={`/leagues/${id}/transactions`}
-                      className="block text-gray-400 hover:text-white transition-colors"
-                    >
-                      Transaction Log
-                    </Link>
-                    <Link
-                      href={`/leagues/${id}/scores`}
-                      className="block text-gray-400 hover:text-white transition-colors"
-                    >
-                      Live Scores
-                    </Link>
-                    <Link
-                      href={`/leagues/${id}/bracket`}
-                      className="block text-gray-400 hover:text-white transition-colors"
-                    >
-                      Playoff Bracket
-                    </Link>
-                  </>
-                )}
+            {isDraftComplete && (
+              <div className="bg-gray-800 rounded-lg p-6">
+                <h2 className="text-xl font-semibold text-white mb-4">Quick Links</h2>
+                <div className="grid grid-cols-2 gap-2">
+                  <Link
+                    href={`/leagues/${id}/transactions`}
+                    className="text-center bg-gray-700 hover:bg-gray-600 text-white text-sm py-2 px-3 rounded-lg transition-colors"
+                  >
+                    Transactions
+                  </Link>
+                  <Link
+                    href={`/leagues/${id}/bracket`}
+                    className="text-center bg-gray-700 hover:bg-gray-600 text-white text-sm py-2 px-3 rounded-lg transition-colors"
+                  >
+                    Playoff Bracket
+                  </Link>
+                </div>
               </div>
-            </div>
+            )}
           </div>
         </div>
       </main>
