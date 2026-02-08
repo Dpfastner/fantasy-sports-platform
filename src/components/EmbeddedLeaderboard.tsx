@@ -197,9 +197,6 @@ export default function EmbeddedLeaderboard({
                     W{week}
                   </th>
                 ))}
-                {settings?.high_points_enabled && (
-                  <th className="px-2 md:px-4 py-3 text-right text-yellow-400 font-medium text-sm">HP $</th>
-                )}
               </tr>
             </thead>
             <tbody>
@@ -268,17 +265,6 @@ export default function EmbeddedLeaderboard({
                         </td>
                       )
                     })}
-                    {settings?.high_points_enabled && (
-                      <td className="px-2 md:px-4 py-2 text-right">
-                        {team.high_points_winnings > 0 ? (
-                          <span className="text-yellow-400 font-semibold text-sm">
-                            ${team.high_points_winnings}
-                          </span>
-                        ) : (
-                          <span className="text-gray-600">-</span>
-                        )}
-                      </td>
-                    )}
                   </tr>
                 )
               })}

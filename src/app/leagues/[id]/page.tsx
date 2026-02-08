@@ -165,9 +165,19 @@ export default async function LeaguePage({ params }: PageProps) {
           <Link href="/dashboard" className="text-2xl font-bold text-white">
             Fantasy Sports Platform
           </Link>
-          <Link href="/dashboard" className="text-gray-400 hover:text-white transition-colors">
-            My Leagues
-          </Link>
+          <div className="flex items-center gap-4">
+            {isDraftComplete && userTeam && (
+              <Link
+                href={`/leagues/${id}/team`}
+                className="text-blue-400 hover:text-blue-300 transition-colors font-medium"
+              >
+                My Roster
+              </Link>
+            )}
+            <Link href="/dashboard" className="text-gray-400 hover:text-white transition-colors">
+              My Leagues
+            </Link>
+          </div>
         </div>
       </header>
 
@@ -202,14 +212,6 @@ export default async function LeaguePage({ params }: PageProps) {
         {/* Quick Navigation Bar */}
         {isDraftComplete && (
           <div className="flex flex-wrap items-center gap-2 mb-6 pb-4 border-b border-gray-700">
-            {userTeam && (
-              <Link
-                href={`/leagues/${id}/team`}
-                className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium py-2 px-4 rounded-lg transition-colors"
-              >
-                My Roster
-              </Link>
-            )}
             <Link
               href={`/leagues/${id}/transactions`}
               className="bg-gray-700 hover:bg-gray-600 text-white text-sm py-2 px-4 rounded-lg transition-colors"
