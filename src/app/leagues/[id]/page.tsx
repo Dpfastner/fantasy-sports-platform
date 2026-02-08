@@ -419,7 +419,7 @@ export default async function LeaguePage({ params }: PageProps) {
                   <div className="w-2 h-2 mt-1 bg-red-500 rounded-full flex-shrink-0"></div>
                   <div>
                     <p className="text-white font-medium">National Championship</p>
-                    <p className="text-gray-400">Jan 20, {year + 1}</p>
+                    <p className="text-gray-400">Jan 20, {year + 1} @ 7:30 PM ET</p>
                   </div>
                 </div>
               </div>

@@ -1,61 +1,35 @@
 import { redirect, notFound } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
+import StatsClient from './StatsClient'
 
 interface PageProps {
   params: Promise<{ id: string }>
+  searchParams: Promise<{ week?: string }>
 }
 
-interface SchoolStats {
+interface SchoolRecord {
   id: string
   name: string
   abbreviation: string | null
   logo_url: string | null
   conference: string
-  total_points: number
-  weeks_with_points: number
-}
-
-interface ApRanking {
-  school_id: string
-  week_number: number
-  rank: number
-  previous_rank: number | null
-  schools: {
-    name: string
-    logo_url: string | null
-    conference: string
-  } | {
-    name: string
-    logo_url: string | null
-    conference: string
-  }[] | null
-}
-
-interface HeismanWinner {
-  id: string
-  school_id: string
-  player_name: string
-  position: string
-  schools: {
-    name: string
-    logo_url: string | null
-  } | {
-    name: string
-    logo_url: string | null
-  }[] | null
-}
-
-interface ConferenceRecord {
-  conference: string
   wins: number
   losses: number
-  totalPoints: number
-  schools: number
+  confWins: number
+  confLosses: number
 }
 
-export default async function StatsPage({ params }: PageProps) {
+interface ConferenceStanding {
+  conference: string
+  schools: SchoolRecord[]
+  totalWins: number
+  totalLosses: number
+}
+
+export default async function StatsPage({ params, searchParams }: PageProps) {
   const { id: leagueId } = await params
+  const { week: weekParam } = await searchParams
   const supabase = await createClient()
 
   const { data: { user } } = await supabase.auth.getUser()
@@ -99,13 +73,144 @@ export default async function StatsPage({ params }: PageProps) {
   const seasonStart = new Date(year, 7, 24)
   const weeksDiff = Math.floor((Date.now() - seasonStart.getTime()) / (7 * 24 * 60 * 60 * 1000))
   const currentWeek = Math.max(1, Math.min(weeksDiff + 1, 15))
+  const selectedWeek = weekParam ? parseInt(weekParam) : currentWeek
 
   const settings = Array.isArray(league.league_settings)
     ? league.league_settings[0]
     : league.league_settings
   const schoolsPerTeam = settings?.schools_per_team || 12
 
-  // Fetch stats from API
+  // Get all schools
+  const { data: schools } = await supabase
+    .from('schools')
+    .select('id, name, abbreviation, logo_url, conference')
+    .eq('is_active', true)
+
+  // Get all completed games for record calculation
+  const { data: games } = await supabase
+    .from('games')
+    .select('home_school_id, away_school_id, home_score, away_score, is_conference_game, status')
+    .eq('season_id', league.season_id)
+    .eq('status', 'final')
+
+  // Calculate W-L records for each school
+  const schoolRecords = new Map<string, { wins: number; losses: number; confWins: number; confLosses: number }>()
+
+  for (const game of games || []) {
+    if (game.home_score === null || game.away_score === null) continue
+
+    const homeWon = game.home_score > game.away_score
+
+    // Home team
+    const homeRecord = schoolRecords.get(game.home_school_id) || { wins: 0, losses: 0, confWins: 0, confLosses: 0 }
+    if (homeWon) {
+      homeRecord.wins++
+      if (game.is_conference_game) homeRecord.confWins++
+    } else {
+      homeRecord.losses++
+      if (game.is_conference_game) homeRecord.confLosses++
+    }
+    schoolRecords.set(game.home_school_id, homeRecord)
+
+    // Away team
+    const awayRecord = schoolRecords.get(game.away_school_id) || { wins: 0, losses: 0, confWins: 0, confLosses: 0 }
+    if (!homeWon) {
+      awayRecord.wins++
+      if (game.is_conference_game) awayRecord.confWins++
+    } else {
+      awayRecord.losses++
+      if (game.is_conference_game) awayRecord.confLosses++
+    }
+    schoolRecords.set(game.away_school_id, awayRecord)
+  }
+
+  // Build conference standings
+  const conferenceMap = new Map<string, SchoolRecord[]>()
+
+  for (const school of schools || []) {
+    const record = schoolRecords.get(school.id) || { wins: 0, losses: 0, confWins: 0, confLosses: 0 }
+    const schoolData: SchoolRecord = {
+      id: school.id,
+      name: school.name,
+      abbreviation: school.abbreviation,
+      logo_url: school.logo_url,
+      conference: school.conference,
+      wins: record.wins,
+      losses: record.losses,
+      confWins: record.confWins,
+      confLosses: record.confLosses,
+    }
+
+    const conf = school.conference || 'Independent'
+    if (!conferenceMap.has(conf)) {
+      conferenceMap.set(conf, [])
+    }
+    conferenceMap.get(conf)!.push(schoolData)
+  }
+
+  // Sort schools within each conference by conference record, then overall record
+  const conferenceStandings: ConferenceStanding[] = []
+  for (const [conference, confSchools] of conferenceMap) {
+    confSchools.sort((a, b) => {
+      // Sort by conference win %, then overall win %
+      const aConfPct = a.confWins + a.confLosses > 0 ? a.confWins / (a.confWins + a.confLosses) : 0
+      const bConfPct = b.confWins + b.confLosses > 0 ? b.confWins / (b.confWins + b.confLosses) : 0
+      if (bConfPct !== aConfPct) return bConfPct - aConfPct
+
+      const aOverallPct = a.wins + a.losses > 0 ? a.wins / (a.wins + a.losses) : 0
+      const bOverallPct = b.wins + b.losses > 0 ? b.wins / (b.wins + b.losses) : 0
+      return bOverallPct - aOverallPct
+    })
+
+    conferenceStandings.push({
+      conference,
+      schools: confSchools,
+      totalWins: confSchools.reduce((sum, s) => sum + s.wins, 0),
+      totalLosses: confSchools.reduce((sum, s) => sum + s.losses, 0),
+    })
+  }
+
+  // Sort conferences by total wins
+  conferenceStandings.sort((a, b) => b.totalWins - a.totalWins)
+
+  // Fetch AP Rankings for selected week
+  const { data: apRankings } = await supabase
+    .from('ap_rankings_history')
+    .select(`
+      school_id,
+      week_number,
+      rank,
+      previous_rank,
+      schools (name, logo_url, conference)
+    `)
+    .eq('season_id', league.season_id)
+    .eq('week_number', selectedWeek)
+    .order('rank', { ascending: true })
+    .limit(25)
+
+  // Get available weeks for AP rankings
+  const { data: availableWeeks } = await supabase
+    .from('ap_rankings_history')
+    .select('week_number')
+    .eq('season_id', league.season_id)
+    .order('week_number', { ascending: true })
+
+  const uniqueWeeks = [...new Set(availableWeeks?.map(w => w.week_number) || [])]
+
+  // Fetch Heisman winner for this season
+  const { data: heismanWinner } = await supabase
+    .from('heisman_winners')
+    .select(`
+      id,
+      school_id,
+      player_name,
+      awarded_at,
+      schools (name, logo_url)
+    `)
+    .eq('season_id', league.season_id)
+    .single()
+
+  // Fetch stats from API for ideal team
   let statsData = null
   try {
     const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
@@ -119,317 +224,20 @@ export default async function StatsPage({ params }: PageProps) {
     console.error('Failed to fetch stats:', error)
   }
 
-  // Fetch AP Rankings for current week
-  const { data: apRankings } = await supabase
-    .from('ap_rankings_history')
-    .select(`
-      school_id,
-      week_number,
-      rank,
-      previous_rank,
-      schools (name, logo_url, conference)
-    `)
-    .eq('season_id', league.season_id)
-    .eq('week_number', currentWeek)
-    .order('rank', { ascending: true })
-    .limit(25)
-
-  // Fetch Heisman winner for this season
-  const { data: heismanWinner } = await supabase
-    .from('heisman_winners')
-    .select(`
-      id,
-      school_id,
-      player_name,
-      position,
-      schools (name, logo_url)
-    `)
-    .eq('season_id', league.season_id)
-    .single()
-
-  // Calculate conference records from school points
-  const conferenceRecords: ConferenceRecord[] = []
-  if (statsData?.allSchoolsRanked) {
-    const conferenceMap = new Map<string, { wins: number; losses: number; points: number; count: number }>()
-
-    for (const school of statsData.allSchoolsRanked as SchoolStats[]) {
-      const conf = school.conference || 'Independent'
-      const current = conferenceMap.get(conf) || { wins: 0, losses: 0, points: 0, count: 0 }
-      conferenceMap.set(conf, {
-        wins: current.wins,
-        losses: current.losses,
-        points: current.points + school.total_points,
-        count: current.count + 1,
-      })
-    }
-
-    for (const [conference, data] of conferenceMap) {
-      conferenceRecords.push({
-        conference,
-        wins: data.wins,
-        losses: data.losses,
-        totalPoints: data.points,
-        schools: data.count,
-      })
-    }
-
-    conferenceRecords.sort((a, b) => b.totalPoints - a.totalPoints)
-  }
-
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-900 to-gray-800">
-      {/* Header */}
-      <header className="bg-gray-800/50 border-b border-gray-700">
-        <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-          <Link href="/dashboard" className="text-2xl font-bold text-white">
-            Fantasy Sports Platform
-          </Link>
-          <div className="flex items-center gap-4">
-            <Link
-              href={`/leagues/${leagueId}`}
-              className="text-gray-400 hover:text-white transition-colors"
-            >
-              {league.name}
-            </Link>
-            <Link href="/dashboard" className="text-gray-400 hover:text-white transition-colors">
-              My Leagues
-            </Link>
-          </div>
-        </div>
-      </header>
-
-      <main className="container mx-auto px-4 py-6">
-        {/* Page Header */}
-        <div className="mb-6">
-          <h1 className="text-2xl md:text-3xl font-bold text-white mb-1">League Stats</h1>
-          <p className="text-gray-400">{seasonName} &bull; Week {currentWeek}</p>
-        </div>
-
-        {/* Quick Nav */}
-        <div className="flex flex-wrap items-center gap-2 mb-6 pb-4 border-b border-gray-700">
-          <Link
-            href={`/leagues/${leagueId}`}
-            className="bg-gray-700 hover:bg-gray-600 text-white text-sm py-2 px-4 rounded-lg transition-colors"
-          >
-            &larr; Back to League
-          </Link>
-        </div>
-
-        <div className="grid lg:grid-cols-2 gap-6">
-          {/* AP Top 25 */}
-          <div className="bg-gray-800 rounded-lg p-4 md:p-6">
-            <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-              <span className="text-blue-400">📊</span>
-              AP Top 25 - Week {currentWeek}
-            </h2>
-            {apRankings && apRankings.length > 0 ? (
-              <div className="space-y-2 max-h-[400px] overflow-y-auto">
-                {(apRankings as unknown as ApRanking[]).map((ranking) => {
-                  const movement = ranking.previous_rank
-                    ? ranking.previous_rank - ranking.rank
-                    : 0
-                  const school = Array.isArray(ranking.schools) ? ranking.schools[0] : ranking.schools
-
-                  return (
-                    <div
-                      key={ranking.school_id}
-                      className="flex items-center justify-between p-2 bg-gray-700/30 rounded"
-                    >
-                      <div className="flex items-center gap-3">
-                        <span className="text-gray-400 text-sm w-6 text-right">
-                          {ranking.rank}
-                        </span>
-                        {school?.logo_url ? (
-                          <img
-                            src={school.logo_url}
-                            alt=""
-                            className="w-6 h-6 object-contain"
-                          />
-                        ) : (
-                          <div className="w-6 h-6 bg-gray-600 rounded-full" />
-                        )}
-                        <div>
-                          <span className="text-white text-sm">{school?.name}</span>
-                          <span className="text-gray-500 text-xs ml-2">
-                            {school?.conference}
-                          </span>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        {movement !== 0 && (
-                          <span
-                            className={`text-xs ${
-                              movement > 0 ? 'text-green-400' : 'text-red-400'
-                            }`}
-                          >
-                            {movement > 0 ? `▲${movement}` : `▼${Math.abs(movement)}`}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
-            ) : (
-              <p className="text-gray-500 text-sm">No AP rankings available for this week.</p>
-            )}
-          </div>
-
-          {/* Conference Standings */}
-          <div className="bg-gray-800 rounded-lg p-4 md:p-6">
-            <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-              <span className="text-orange-400">🏆</span>
-              Conference Standings (by Fantasy Points)
-            </h2>
-            {conferenceRecords.length > 0 ? (
-              <div className="space-y-2 max-h-[400px] overflow-y-auto">
-                {conferenceRecords.map((conf, index) => (
-                  <div
-                    key={conf.conference}
-                    className="flex items-center justify-between p-3 bg-gray-700/30 rounded"
-                  >
-                    <div className="flex items-center gap-3">
-                      <span className="text-gray-400 text-sm w-6 text-right">{index + 1}</span>
-                      <div>
-                        <span className="text-white font-medium">{conf.conference}</span>
-                        <span className="text-gray-500 text-xs ml-2">
-                          ({conf.schools} schools)
-                        </span>
-                      </div>
-                    </div>
-                    <span className="text-green-400 font-semibold">
-                      {conf.totalPoints.toLocaleString()} pts
-                    </span>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-gray-500 text-sm">No conference data available.</p>
-            )}
-          </div>
-
-          {/* Heisman */}
-          <div className="bg-gray-800 rounded-lg p-4 md:p-6">
-            <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-              <span className="text-yellow-400">🏈</span>
-              Heisman Trophy
-            </h2>
-            {heismanWinner ? (() => {
-              const hw = heismanWinner as unknown as HeismanWinner
-              const school = Array.isArray(hw.schools) ? hw.schools[0] : hw.schools
-              return (
-                <div className="flex items-center gap-4 p-4 bg-yellow-900/20 border border-yellow-700/30 rounded-lg">
-                  {school?.logo_url ? (
-                    <img
-                      src={school.logo_url}
-                      alt=""
-                      className="w-12 h-12 object-contain"
-                    />
-                  ) : (
-                    <div className="w-12 h-12 bg-gray-600 rounded-full" />
-                  )}
-                  <div>
-                    <p className="text-yellow-400 text-lg font-bold">
-                      {hw.player_name}
-                    </p>
-                    <p className="text-gray-400 text-sm">
-                      {hw.position} - {school?.name}
-                    </p>
-                  </div>
-                </div>
-              )
-            })() : (
-              <div className="p-4 bg-gray-700/30 rounded-lg text-center">
-                <p className="text-gray-400 mb-2">Heisman Trophy Ceremony</p>
-                <p className="text-white text-lg font-semibold">December 14, {year}</p>
-                <p className="text-gray-500 text-sm mt-2">Winner to be announced</p>
-              </div>
-            )}
-          </div>
-
-          {/* Ideal Team */}
-          <div className="bg-gray-800 rounded-lg p-4 md:p-6">
-            <h2 className="text-lg font-semibold text-white mb-2 flex items-center gap-2">
-              <span className="text-green-400">⭐</span>
-              Ideal Team
-            </h2>
-            <p className="text-gray-400 text-sm mb-4">
-              Best possible {schoolsPerTeam}-school roster based on season results
-            </p>
-            {statsData?.idealTeam ? (
-              <>
-                <div className="mb-4 p-3 bg-green-900/20 border border-green-700/30 rounded-lg text-center">
-                  <span className="text-3xl font-bold text-green-400">
-                    {statsData.idealTeam.totalPoints.toLocaleString()}
-                  </span>
-                  <span className="text-gray-400 ml-2">total points</span>
-                </div>
-                <div className="space-y-2 max-h-64 overflow-y-auto">
-                  {(statsData.idealTeam.schools as SchoolStats[]).map((school, idx) => (
-                    <div
-                      key={school.id}
-                      className="flex items-center justify-between p-2 bg-gray-700/30 rounded"
-                    >
-                      <div className="flex items-center gap-2">
-                        <span className="text-gray-500 text-sm w-5">{idx + 1}.</span>
-                        {school.logo_url ? (
-                          <img src={school.logo_url} alt="" className="w-6 h-6 object-contain" />
-                        ) : (
-                          <div className="w-6 h-6 bg-gray-600 rounded-full" />
-                        )}
-                        <span className="text-white text-sm">{school.name}</span>
-                      </div>
-                      <span className="text-green-400 font-medium">{school.total_points}</span>
-                    </div>
-                  ))}
-                </div>
-              </>
-            ) : (
-              <p className="text-gray-500 text-sm">Loading ideal team data...</p>
-            )}
-          </div>
-
-          {/* Weekly Maximum Points */}
-          <div className="bg-gray-800 rounded-lg p-4 md:p-6 lg:col-span-2">
-            <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-              <span className="text-blue-400">📈</span>
-              Weekly Maximum Points
-            </h2>
-            <p className="text-gray-400 text-sm mb-4">
-              Best possible points per week with a {schoolsPerTeam}-school roster
-            </p>
-            {statsData?.weeklyMaxPoints ? (
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="bg-gray-700/50">
-                      <th className="px-3 py-2 text-left text-gray-400 font-medium text-sm">Week</th>
-                      <th className="px-3 py-2 text-right text-gray-400 font-medium text-sm">Max Points</th>
-                      <th className="px-3 py-2 text-left text-gray-400 font-medium text-sm">Top Schools</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {(statsData.weeklyMaxPoints as Array<{ week: number; maxPoints: number; topSchools: Array<{ id: string; name: string; points: number }> }>).map((weekData) => (
-                      <tr key={weekData.week} className="border-t border-gray-700/50">
-                        <td className="px-3 py-2 text-white">Week {weekData.week}</td>
-                        <td className="px-3 py-2 text-right">
-                          <span className="text-blue-400 font-semibold">{weekData.maxPoints}</span>
-                        </td>
-                        <td className="px-3 py-2 text-gray-400 text-sm">
-                          {weekData.topSchools.slice(0, 3).map(s => s.name).join(', ')}
-                          {weekData.topSchools.length > 3 && '...'}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            ) : (
-              <p className="text-gray-500 text-sm">Loading weekly data...</p>
-            )}
-          </div>
-        </div>
-      </main>
-    </div>
+    <StatsClient
+      leagueId={leagueId}
+      leagueName={league.name}
+      seasonName={seasonName}
+      year={year}
+      currentWeek={currentWeek}
+      selectedWeek={selectedWeek}
+      availableWeeks={uniqueWeeks}
+      schoolsPerTeam={schoolsPerTeam}
+      conferenceStandings={conferenceStandings}
+      apRankings={apRankings}
+      heismanWinner={heismanWinner}
+      statsData={statsData}
+    />
   )
 }

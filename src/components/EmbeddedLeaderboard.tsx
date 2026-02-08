@@ -273,24 +273,18 @@ export default function EmbeddedLeaderboard({
         </div>
       </div>
 
-      {/* High Points Summary - Table Format */}
+      {/* High Points Summary - Table Format (matching main standings table) */}
       {settings?.high_points_enabled && (
         <div className="bg-gray-700/30 rounded-lg overflow-hidden">
-          <div className="px-4 py-3 bg-gray-700/50 border-b border-gray-600">
-            <h3 className="text-sm font-semibold text-white flex items-center gap-2">
-              <span className="text-yellow-400">★</span>
-              High Points Standings
-            </h3>
-          </div>
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
-                <tr className="bg-gray-700/30">
-                  <th className="px-2 md:px-4 py-2 text-left text-gray-400 font-medium text-xs">#</th>
-                  <th className="px-2 md:px-4 py-2 text-left text-gray-400 font-medium text-xs">Team</th>
-                  <th className="px-2 md:px-4 py-2 text-right text-yellow-400 font-medium text-xs">Total</th>
+                <tr className="bg-gray-700/50">
+                  <th className="px-2 md:px-4 py-3 text-left text-gray-400 font-medium sticky left-0 bg-gray-700/50 z-10 text-sm">#</th>
+                  <th className="px-2 md:px-4 py-3 text-left text-gray-400 font-medium sticky left-6 md:left-10 bg-gray-700/50 z-10 text-sm">Team</th>
+                  <th className="px-2 md:px-4 py-3 text-right text-yellow-400 font-medium text-sm">HP Total</th>
                   {weeksToShow.map(week => (
-                    <th key={week} className="px-1 py-2 text-center text-gray-400 font-medium text-[10px]">
+                    <th key={week} className="px-2 py-3 text-center text-gray-400 font-medium text-xs">
                       W{week}
                     </th>
                   ))}
@@ -314,18 +308,18 @@ export default function EmbeddedLeaderboard({
                           isCurrentUser ? 'bg-blue-900/20' : hasAnyWins ? 'bg-yellow-900/10' : 'hover:bg-gray-700/30'
                         }`}
                       >
-                        <td className="px-2 md:px-4 py-2 text-gray-400 text-xs">{index + 1}</td>
-                        <td className="px-2 md:px-4 py-2">
+                        <td className="px-2 md:px-4 py-2 text-gray-400 sticky left-0 bg-inherit z-10 text-sm">{index + 1}</td>
+                        <td className="px-2 md:px-4 py-2 sticky left-6 md:left-10 bg-inherit z-10">
                           <div className="flex items-center gap-2">
                             {team.image_url ? (
                               <img
                                 src={team.image_url}
                                 alt={team.name}
-                                className="w-5 h-5 object-contain rounded flex-shrink-0"
+                                className="w-6 h-6 object-contain rounded flex-shrink-0"
                               />
                             ) : (
                               <div
-                                className="w-5 h-5 rounded flex items-center justify-center text-[8px] font-bold flex-shrink-0"
+                                className="w-6 h-6 rounded flex items-center justify-center text-[10px] font-bold flex-shrink-0"
                                 style={{
                                   backgroundColor: team.primary_color || '#374151',
                                   color: team.secondary_color || '#ffffff',
@@ -334,14 +328,19 @@ export default function EmbeddedLeaderboard({
                                 {team.name.substring(0, 2).toUpperCase()}
                               </div>
                             )}
-                            <span className="text-white text-xs truncate max-w-[80px] md:max-w-none">{team.name}</span>
+                            <div className="min-w-0">
+                              <p className="text-white font-medium text-sm truncate max-w-[100px] md:max-w-none">{team.name}</p>
+                              <p className="text-gray-500 text-[10px] truncate hidden sm:block">
+                                {team.profiles?.display_name || team.profiles?.email?.split('@')[0]}
+                              </p>
+                            </div>
                           </div>
                         </td>
                         <td className="px-2 md:px-4 py-2 text-right">
                           {team.high_points_winnings > 0 ? (
-                            <span className="text-yellow-400 font-bold text-sm">${team.high_points_winnings}</span>
+                            <span className="text-yellow-400 font-bold">${team.high_points_winnings}</span>
                           ) : (
-                            <span className="text-gray-600 text-sm">$0</span>
+                            <span className="text-gray-600">$0</span>
                           )}
                         </td>
                         {weeksToShow.map(week => {
@@ -349,7 +348,7 @@ export default function EmbeddedLeaderboard({
                           return (
                             <td
                               key={week}
-                              className={`px-1 py-2 text-center text-[10px] ${win ? 'bg-yellow-900/30' : ''}`}
+                              className={`px-1 py-2 text-center text-xs ${win ? 'bg-yellow-900/30' : ''}`}
                             >
                               {win ? (
                                 <span className="text-yellow-400 font-semibold">${win.amount}</span>

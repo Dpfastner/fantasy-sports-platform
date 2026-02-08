@@ -49,6 +49,7 @@ interface TransactionsClientProps {
   allSchools: School[]
   schoolPointsMap: Record<string, number>
   rankingsMap: Record<string, number>
+  schoolRecordsMap: Record<string, { wins: number; losses: number }>
   schoolSelectionCounts: Record<string, number>
   transactionHistory: Transaction[]
   addDropsUsed: number
@@ -72,6 +73,7 @@ export default function TransactionsClient({
   allSchools,
   schoolPointsMap,
   rankingsMap,
+  schoolRecordsMap,
   schoolSelectionCounts,
   transactionHistory,
   addDropsUsed,
@@ -88,7 +90,8 @@ export default function TransactionsClient({
   const [searchQuery, setSearchQuery] = useState('')
   const [conferenceFilter, setConferenceFilter] = useState<string>('all')
   const [showRankedOnly, setShowRankedOnly] = useState(false)
-  const [sortBy, setSortBy] = useState<'name' | 'points' | 'rank'>('points')
+  const [sortBy, setSortBy] = useState<'name' | 'points' | 'rank' | 'record'>('points')
+  const [recordFilter, setRecordFilter] = useState<'all' | 'winning' | 'losing'>('all')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [showHistory, setShowHistory] = useState(false)
@@ -136,6 +139,14 @@ export default function TransactionsClient({
         return false
       }
 
+      // Record filter
+      if (recordFilter !== 'all') {
+        const record = schoolRecordsMap[school.id]
+        if (!record) return false
+        if (recordFilter === 'winning' && record.wins <= record.losses) return false
+        if (recordFilter === 'losing' && record.wins >= record.losses) return false
+      }
+
       return true
     })
 
@@ -149,12 +160,18 @@ export default function TransactionsClient({
         const rankA = rankingsMap[a.id] || 999
         const rankB = rankingsMap[b.id] || 999
         return rankA - rankB
+      } else if (sortBy === 'record') {
+        const recordA = schoolRecordsMap[a.id] || { wins: 0, losses: 0 }
+        const recordB = schoolRecordsMap[b.id] || { wins: 0, losses: 0 }
+        const pctA = recordA.wins + recordA.losses > 0 ? recordA.wins / (recordA.wins + recordA.losses) : 0
+        const pctB = recordB.wins + recordB.losses > 0 ? recordB.wins / (recordB.wins + recordB.losses) : 0
+        return pctB - pctA
       }
       return 0
     })
 
     return schools
-  }, [allSchools, rosterSchoolIds, schoolSelectionCounts, maxSelectionsPerSchool, searchQuery, conferenceFilter, showRankedOnly, sortBy, schoolPointsMap, rankingsMap])
+  }, [allSchools, rosterSchoolIds, schoolSelectionCounts, maxSelectionsPerSchool, searchQuery, conferenceFilter, showRankedOnly, recordFilter, sortBy, schoolPointsMap, rankingsMap, schoolRecordsMap])
 
   const handleSelectDrop = (rosterEntry: RosterSchool) => {
     setSelectedDrop(rosterEntry)
@@ -385,7 +402,7 @@ export default function TransactionsClient({
                   </div>
 
                   {/* Filters */}
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-4 mb-4">
+                  <div className="grid grid-cols-2 md:grid-cols-5 gap-2 md:gap-3 mb-4">
                     <input
                       type="text"
                       placeholder="Search..."
@@ -396,7 +413,7 @@ export default function TransactionsClient({
                     <select
                       value={conferenceFilter}
                       onChange={(e) => setConferenceFilter(e.target.value)}
-                      className="px-2 md:px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="px-2 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                     >
                       <option value="all">All Conf</option>
                       {conferences.map(conf => (
@@ -404,12 +421,22 @@ export default function TransactionsClient({
                       ))}
                     </select>
                     <select
+                      value={recordFilter}
+                      onChange={(e) => setRecordFilter(e.target.value as 'all' | 'winning' | 'losing')}
+                      className="px-2 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="all">All Records</option>
+                      <option value="winning">Winning</option>
+                      <option value="losing">Losing</option>
+                    </select>
+                    <select
                       value={sortBy}
-                      onChange={(e) => setSortBy(e.target.value as 'name' | 'points' | 'rank')}
-                      className="px-2 md:px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      onChange={(e) => setSortBy(e.target.value as 'name' | 'points' | 'rank' | 'record')}
+                      className="px-2 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                     >
                       <option value="points">By Points</option>
                       <option value="rank">By Rank</option>
+                      <option value="record">By Record</option>
                       <option value="name">By Name</option>
                     </select>
                     <label className="col-span-2 md:col-span-1 flex items-center gap-2 text-gray-400 text-sm">
@@ -430,6 +457,7 @@ export default function TransactionsClient({
                     ) : (
                       availableSchools.map((school) => {
                         const selectionCount = schoolSelectionCounts[school.id] || 0
+                        const record = schoolRecordsMap[school.id] || { wins: 0, losses: 0 }
                         return (
                           <button
                             key={school.id}
@@ -455,6 +483,9 @@ export default function TransactionsClient({
                                     <span className="text-yellow-400 mr-1">#{rankingsMap[school.id]}</span>
                                   )}
                                   {school.name}
+                                  <span className={`ml-2 text-xs ${record.wins > record.losses ? 'text-green-400' : record.wins < record.losses ? 'text-red-400' : 'text-gray-400'}`}>
+                                    ({record.wins}-{record.losses})
+                                  </span>
                                 </p>
                                 <p className="text-gray-500 text-xs">{school.conference}</p>
                               </div>

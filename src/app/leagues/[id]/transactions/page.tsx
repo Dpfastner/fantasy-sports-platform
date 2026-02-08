@@ -121,6 +121,38 @@ export default async function TransactionsPage({ params }: PageProps) {
 
   const allSchools = schoolsData as School[] || []
 
+  // Get all completed games for record calculation
+  const { data: gamesData } = await supabase
+    .from('games')
+    .select('home_school_id, away_school_id, home_score, away_score, status')
+    .eq('season_id', league.season_id)
+    .eq('status', 'final')
+
+  // Calculate W-L records for each school
+  const schoolRecordsMap = new Map<string, { wins: number; losses: number }>()
+  for (const game of gamesData || []) {
+    if (game.home_score === null || game.away_score === null) continue
+    const homeWon = game.home_score > game.away_score
+
+    // Home team
+    const homeRecord = schoolRecordsMap.get(game.home_school_id) || { wins: 0, losses: 0 }
+    if (homeWon) {
+      homeRecord.wins++
+    } else {
+      homeRecord.losses++
+    }
+    schoolRecordsMap.set(game.home_school_id, homeRecord)
+
+    // Away team
+    const awayRecord = schoolRecordsMap.get(game.away_school_id) || { wins: 0, losses: 0 }
+    if (!homeWon) {
+      awayRecord.wins++
+    } else {
+      awayRecord.losses++
+    }
+    schoolRecordsMap.set(game.away_school_id, awayRecord)
+  }
+
   // Get school points for this season
   const { data: schoolPointsData } = await supabase
     .from('school_weekly_points')
@@ -254,6 +286,7 @@ export default async function TransactionsPage({ params }: PageProps) {
       allSchools={allSchools}
       schoolPointsMap={Object.fromEntries(schoolPointsMap)}
       rankingsMap={Object.fromEntries(rankingsMap)}
+      schoolRecordsMap={Object.fromEntries(schoolRecordsMap)}
       schoolSelectionCounts={Object.fromEntries(schoolSelectionCounts)}
       transactionHistory={transactionHistory || []}
       addDropsUsed={team.add_drops_used || 0}
