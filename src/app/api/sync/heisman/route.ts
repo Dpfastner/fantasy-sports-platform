@@ -15,6 +15,7 @@ function getSupabaseAdmin() {
 // Known Heisman winners data (Wikipedia-sourced)
 // This provides reliable fallback data when scraping fails
 const KNOWN_HEISMAN_WINNERS: Record<number, { playerName: string; school: string; awardedAt: string }> = {
+  2025: { playerName: 'Fernando Mendoza', school: 'Indiana', awardedAt: '2025-12-13' },
   2024: { playerName: 'Travis Hunter', school: 'Colorado', awardedAt: '2024-12-14' },
   2023: { playerName: 'Jayden Daniels', school: 'LSU', awardedAt: '2023-12-09' },
   2022: { playerName: 'Caleb Williams', school: 'USC', awardedAt: '2022-12-10' },

@@ -110,7 +110,7 @@ export default function StatsClient({
   statsData,
 }: Props) {
   const router = useRouter()
-  const [activeSection, setActiveSection] = useState<'standings' | 'fantasy'>('standings')
+  const [activeSection, setActiveSection] = useState<'standings' | 'stats'>('standings')
 
   const handleWeekChange = (week: number) => {
     router.push(`/leagues/${leagueId}/stats?week=${week}`)
@@ -176,219 +176,211 @@ export default function StatsClient({
                 : 'bg-gray-700 text-gray-400 hover:bg-gray-600'
             }`}
           >
-            Conference Standings / AP Top 25 / Heisman
+            Conference Standings
           </button>
           <button
-            onClick={() => setActiveSection('fantasy')}
+            onClick={() => setActiveSection('stats')}
             className={`flex-1 py-3 px-4 text-sm font-medium rounded-r-lg transition-colors ${
-              activeSection === 'fantasy'
+              activeSection === 'stats'
                 ? 'bg-blue-600 text-white'
                 : 'bg-gray-700 text-gray-400 hover:bg-gray-600'
             }`}
           >
-            Ideal Team / Weekly Maximum
+            AP Top 25 / Heisman / Ideal Team / Weekly Max
           </button>
         </div>
 
-        {/* Section 1: Conference Standings, AP Top 25, Heisman */}
+        {/* Section 1: Conference Standings Only */}
         {activeSection === 'standings' && (
-          <>
-            {/* Conference Standings */}
-            <section className="mb-10">
-              <h2 className="text-xl font-semibold text-white mb-6 flex items-center gap-2">
-                <span className="text-orange-400">🏆</span>
-                Conference Standings
-              </h2>
+          <section>
+            <h2 className="text-xl font-semibold text-white mb-6 flex items-center gap-2">
+              <span className="text-orange-400">🏆</span>
+              Conference Standings
+            </h2>
 
-              <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-6">
-                {sortedConferences.map((conf) => (
-                  <div key={conf.conference} className="bg-gray-800 rounded-lg overflow-hidden">
-                    {/* Conference Header */}
-                    <div className="bg-gray-700/50 px-4 py-3 flex justify-between items-center">
-                      <h3 className="text-white font-semibold">{conf.conference}</h3>
-                      <span className="text-green-400 font-medium text-sm">
-                        {conf.totalWins}-{conf.totalLosses}
-                      </span>
-                    </div>
-
-                    {/* Schools Table */}
-                    <div className="overflow-x-auto">
-                      <table className="w-full">
-                        <thead>
-                          <tr className="bg-gray-700/30 text-xs">
-                            <th className="px-3 py-2 text-left text-gray-400">#</th>
-                            <th className="px-3 py-2 text-left text-gray-400">Team</th>
-                            <th className="px-3 py-2 text-center text-gray-400">Conf</th>
-                            <th className="px-3 py-2 text-center text-gray-400">Overall</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {conf.schools.map((school, idx) => (
-                            <tr key={school.id} className="border-t border-gray-700/50 hover:bg-gray-700/30">
-                              <td className="px-3 py-2 text-gray-500 text-sm">{idx + 1}</td>
-                              <td className="px-3 py-2">
-                                <div className="flex items-center gap-2">
-                                  {school.logo_url ? (
-                                    <img src={school.logo_url} alt="" className="w-5 h-5 object-contain" />
-                                  ) : (
-                                    <div className="w-5 h-5 bg-gray-600 rounded-full" />
-                                  )}
-                                  <span className="text-white text-sm truncate max-w-[120px]">{school.name}</span>
-                                </div>
-                              </td>
-                              <td className="px-3 py-2 text-center">
-                                <span className="text-white text-sm font-medium">
-                                  {school.confWins}-{school.confLosses}
-                                </span>
-                              </td>
-                              <td className="px-3 py-2 text-center">
-                                <span className={`text-sm ${school.wins > school.losses ? 'text-green-400' : school.wins < school.losses ? 'text-red-400' : 'text-gray-400'}`}>
-                                  {school.wins}-{school.losses}
-                                </span>
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
+            <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-6">
+              {sortedConferences.map((conf) => (
+                <div key={conf.conference} className="bg-gray-800 rounded-lg overflow-hidden">
+                  {/* Conference Header */}
+                  <div className="bg-gray-700/50 px-4 py-3 flex justify-between items-center">
+                    <h3 className="text-white font-semibold">{conf.conference}</h3>
+                    <span className="text-green-400 font-medium text-sm">
+                      {conf.totalWins}-{conf.totalLosses}
+                    </span>
                   </div>
-                ))}
-              </div>
-            </section>
 
-            {/* AP Top 25 and Heisman */}
-            <section>
-              <div className="grid lg:grid-cols-2 gap-6">
-                {/* AP Top 25 with Week Dropdown */}
-                <div className="bg-gray-800 rounded-lg p-4 md:p-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-lg font-semibold text-white flex items-center gap-2">
-                      <span className="text-blue-400">📊</span>
-                      AP Top 25
-                    </h3>
-                    <select
-                      value={selectedWeek}
-                      onChange={(e) => handleWeekChange(parseInt(e.target.value))}
-                      className="bg-gray-700 text-white text-sm rounded-lg px-3 py-1.5 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    >
-                      {availableWeeks.length > 0 ? (
-                        availableWeeks.map((week) => (
-                          <option key={week} value={week}>
-                            Week {week}
-                          </option>
-                        ))
-                      ) : (
-                        <option value={currentWeek}>Week {currentWeek}</option>
-                      )}
-                    </select>
-                  </div>
-                  {rankings && rankings.length > 0 ? (
-                    <div className="space-y-2 max-h-[400px] overflow-y-auto">
-                      {rankings.map((ranking) => {
-                        const movement = ranking.previous_rank
-                          ? ranking.previous_rank - ranking.rank
-                          : 0
-                        const school = Array.isArray(ranking.schools) ? ranking.schools[0] : ranking.schools
-
-                        return (
-                          <div
-                            key={ranking.school_id}
-                            className="flex items-center justify-between p-2 bg-gray-700/30 rounded"
-                          >
-                            <div className="flex items-center gap-3">
-                              <span className="text-gray-400 text-sm w-6 text-right">
-                                {ranking.rank}
-                              </span>
-                              {school?.logo_url ? (
-                                <img
-                                  src={school.logo_url}
-                                  alt=""
-                                  className="w-6 h-6 object-contain"
-                                />
-                              ) : (
-                                <div className="w-6 h-6 bg-gray-600 rounded-full" />
-                              )}
-                              <div>
-                                <span className="text-white text-sm">{school?.name}</span>
-                                <span className="text-gray-500 text-xs ml-2">
-                                  {school?.conference}
-                                </span>
+                  {/* Schools Table */}
+                  <div className="overflow-x-auto">
+                    <table className="w-full">
+                      <thead>
+                        <tr className="bg-gray-700/30 text-xs">
+                          <th className="px-3 py-2 text-left text-gray-400">#</th>
+                          <th className="px-3 py-2 text-left text-gray-400">Team</th>
+                          <th className="px-3 py-2 text-center text-gray-400">Conf</th>
+                          <th className="px-3 py-2 text-center text-gray-400">Overall</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {conf.schools.map((school, idx) => (
+                          <tr key={school.id} className="border-t border-gray-700/50 hover:bg-gray-700/30">
+                            <td className="px-3 py-2 text-gray-500 text-sm">{idx + 1}</td>
+                            <td className="px-3 py-2">
+                              <div className="flex items-center gap-2">
+                                {school.logo_url ? (
+                                  <img src={school.logo_url} alt="" className="w-5 h-5 object-contain" />
+                                ) : (
+                                  <div className="w-5 h-5 bg-gray-600 rounded-full" />
+                                )}
+                                <span className="text-white text-sm truncate max-w-[120px]">{school.name}</span>
                               </div>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              {movement !== 0 && (
-                                <span
-                                  className={`text-xs ${
-                                    movement > 0 ? 'text-green-400' : 'text-red-400'
-                                  }`}
-                                >
-                                  {movement > 0 ? `▲${movement}` : `▼${Math.abs(movement)}`}
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                        )
-                      })}
-                    </div>
-                  ) : (
-                    <div className="text-center py-8">
-                      <p className="text-gray-500 text-sm mb-2">No AP rankings available for Week {selectedWeek}.</p>
-                      <p className="text-gray-600 text-xs">Rankings are synced weekly from ESPN.</p>
-                    </div>
-                  )}
+                            </td>
+                            <td className="px-3 py-2 text-center">
+                              <span className="text-white text-sm font-medium">
+                                {school.confWins}-{school.confLosses}
+                              </span>
+                            </td>
+                            <td className="px-3 py-2 text-center">
+                              <span className={`text-sm ${school.wins > school.losses ? 'text-green-400' : school.wins < school.losses ? 'text-red-400' : 'text-gray-400'}`}>
+                                {school.wins}-{school.losses}
+                              </span>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
-
-                {/* Heisman */}
-                <div className="bg-gray-800 rounded-lg p-4 md:p-6">
-                  <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-                    <span className="text-yellow-400">🏈</span>
-                    Heisman Trophy
-                  </h3>
-                  {heisman ? (
-                    <div className="flex items-center gap-4 p-4 bg-yellow-900/20 border border-yellow-700/30 rounded-lg">
-                      {heismanSchool?.logo_url ? (
-                        <img
-                          src={heismanSchool.logo_url}
-                          alt=""
-                          className="w-12 h-12 object-contain"
-                        />
-                      ) : (
-                        <div className="w-12 h-12 bg-gray-600 rounded-full" />
-                      )}
-                      <div>
-                        <p className="text-yellow-400 text-lg font-bold">
-                          {heisman.player_name}
-                        </p>
-                        <p className="text-gray-400 text-sm">
-                          {heismanSchool?.name}
-                        </p>
-                        {heisman.awarded_at && (
-                          <p className="text-gray-500 text-xs mt-1">
-                            Awarded: {new Date(heisman.awarded_at).toLocaleDateString()}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="p-4 bg-gray-700/30 rounded-lg text-center">
-                      <p className="text-gray-400 mb-2">Heisman Trophy Ceremony</p>
-                      <p className="text-white text-lg font-semibold">December 14, {year}</p>
-                      <p className="text-gray-500 text-sm mt-2">Winner to be announced</p>
-                      <p className="text-gray-600 text-xs mt-3">
-                        Data will be populated after the ceremony.
-                      </p>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </section>
-          </>
+              ))}
+            </div>
+          </section>
         )}
 
-        {/* Section 2: Ideal Team and Weekly Maximum */}
-        {activeSection === 'fantasy' && (
+        {/* Section 2: AP Top 25, Heisman, Ideal Team, Weekly Maximum */}
+        {activeSection === 'stats' && (
           <section>
             <div className="grid lg:grid-cols-2 gap-6">
+              {/* AP Top 25 with Week Dropdown */}
+              <div className="bg-gray-800 rounded-lg p-4 md:p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+                    <span className="text-blue-400">📊</span>
+                    AP Top 25
+                  </h3>
+                  <select
+                    value={selectedWeek}
+                    onChange={(e) => handleWeekChange(parseInt(e.target.value))}
+                    className="bg-gray-700 text-white text-sm rounded-lg px-3 py-1.5 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    {availableWeeks.length > 0 ? (
+                      availableWeeks.map((week) => (
+                        <option key={week} value={week}>
+                          Week {week}
+                        </option>
+                      ))
+                    ) : (
+                      <option value={currentWeek}>Week {currentWeek}</option>
+                    )}
+                  </select>
+                </div>
+                {rankings && rankings.length > 0 ? (
+                  <div className="space-y-2 max-h-[400px] overflow-y-auto">
+                    {rankings.map((ranking) => {
+                      const movement = ranking.previous_rank
+                        ? ranking.previous_rank - ranking.rank
+                        : 0
+                      const school = Array.isArray(ranking.schools) ? ranking.schools[0] : ranking.schools
+
+                      return (
+                        <div
+                          key={ranking.school_id}
+                          className="flex items-center justify-between p-2 bg-gray-700/30 rounded"
+                        >
+                          <div className="flex items-center gap-3">
+                            <span className="text-gray-400 text-sm w-6 text-right">
+                              {ranking.rank}
+                            </span>
+                            {school?.logo_url ? (
+                              <img
+                                src={school.logo_url}
+                                alt=""
+                                className="w-6 h-6 object-contain"
+                              />
+                            ) : (
+                              <div className="w-6 h-6 bg-gray-600 rounded-full" />
+                            )}
+                            <div>
+                              <span className="text-white text-sm">{school?.name}</span>
+                              <span className="text-gray-500 text-xs ml-2">
+                                {school?.conference}
+                              </span>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            {movement !== 0 && (
+                              <span
+                                className={`text-xs ${
+                                  movement > 0 ? 'text-green-400' : 'text-red-400'
+                                }`}
+                              >
+                                {movement > 0 ? `▲${movement}` : `▼${Math.abs(movement)}`}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                ) : (
+                  <div className="text-center py-8">
+                    <p className="text-gray-500 text-sm mb-2">No AP rankings available for Week {selectedWeek}.</p>
+                    <p className="text-gray-600 text-xs">Rankings are synced weekly from ESPN.</p>
+                  </div>
+                )}
+              </div>
+
+              {/* Heisman */}
+              <div className="bg-gray-800 rounded-lg p-4 md:p-6">
+                <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                  <span className="text-yellow-400">🏈</span>
+                  Heisman Trophy
+                </h3>
+                {heisman ? (
+                  <div className="flex items-center gap-4 p-4 bg-yellow-900/20 border border-yellow-700/30 rounded-lg">
+                    {heismanSchool?.logo_url ? (
+                      <img
+                        src={heismanSchool.logo_url}
+                        alt=""
+                        className="w-12 h-12 object-contain"
+                      />
+                    ) : (
+                      <div className="w-12 h-12 bg-gray-600 rounded-full" />
+                    )}
+                    <div>
+                      <p className="text-yellow-400 text-lg font-bold">
+                        {heisman.player_name}
+                      </p>
+                      <p className="text-gray-400 text-sm">
+                        {heismanSchool?.name}
+                      </p>
+                      {heisman.awarded_at && (
+                        <p className="text-gray-500 text-xs mt-1">
+                          Awarded: {new Date(heisman.awarded_at).toLocaleDateString()}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="p-4 bg-gray-700/30 rounded-lg text-center">
+                    <p className="text-gray-400 mb-2">Heisman Trophy Ceremony</p>
+                    <p className="text-white text-lg font-semibold">December 14, {year}</p>
+                    <p className="text-gray-500 text-sm mt-2">Winner to be announced</p>
+                    <p className="text-gray-600 text-xs mt-3">
+                      Data will be populated after the ceremony.
+                    </p>
+                  </div>
+                )}
+              </div>
+
               {/* Ideal Team */}
               <div className="bg-gray-800 rounded-lg p-4 md:p-6">
                 <h3 className="text-lg font-semibold text-white mb-2 flex items-center gap-2">
@@ -406,7 +398,7 @@ export default function StatsClient({
                       </span>
                       <span className="text-gray-400 ml-2">total points</span>
                     </div>
-                    <div className="space-y-2 max-h-[400px] overflow-y-auto">
+                    <div className="space-y-2 max-h-[300px] overflow-y-auto">
                       {statsData.idealTeam.schools.map((school, idx) => (
                         <div
                           key={school.id}
@@ -441,7 +433,7 @@ export default function StatsClient({
                   Best possible points per week with a {schoolsPerTeam}-school roster
                 </p>
                 {statsData?.weeklyMaxPoints ? (
-                  <div className="overflow-x-auto max-h-[400px]">
+                  <div className="overflow-x-auto max-h-[300px]">
                     <table className="w-full">
                       <thead className="sticky top-0 bg-gray-800">
                         <tr className="bg-gray-700/50">
