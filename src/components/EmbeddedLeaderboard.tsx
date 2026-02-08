@@ -287,39 +287,97 @@ export default function EmbeddedLeaderboard({
         </div>
       </div>
 
-      {/* High Points Summary */}
-      {settings?.high_points_enabled && highPointsWinners.size > 0 && (
-        <div className="bg-gray-700/30 rounded-lg p-4">
-          <h3 className="text-sm font-semibold text-white mb-3 flex items-center gap-2">
-            <span className="text-yellow-400">*</span>
-            High Points Winners
-          </h3>
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
-            {weeksToShow.map(week => {
-              const winners = highPointsWinners.get(week)
-              if (!winners || winners.length === 0) return null
+      {/* High Points Summary - Table Format */}
+      {settings?.high_points_enabled && (
+        <div className="bg-gray-700/30 rounded-lg overflow-hidden">
+          <div className="px-4 py-3 bg-gray-700/50 border-b border-gray-600">
+            <h3 className="text-sm font-semibold text-white flex items-center gap-2">
+              <span className="text-yellow-400">★</span>
+              High Points Standings
+            </h3>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="bg-gray-700/30">
+                  <th className="px-2 md:px-4 py-2 text-left text-gray-400 font-medium text-xs">#</th>
+                  <th className="px-2 md:px-4 py-2 text-left text-gray-400 font-medium text-xs">Team</th>
+                  <th className="px-2 md:px-4 py-2 text-right text-yellow-400 font-medium text-xs">Total</th>
+                  {weeksToShow.map(week => (
+                    <th key={week} className="px-1 py-2 text-center text-gray-400 font-medium text-[10px]">
+                      W{week}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {[...teams]
+                  .sort((a, b) => b.high_points_winnings - a.high_points_winnings)
+                  .map((team, index) => {
+                    const isCurrentUser = team.user_id === currentUserId
+                    const teamWins = weeksToShow.map(week => {
+                      const winners = highPointsWinners.get(week)
+                      return winners?.find(w => w.teamId === team.id)
+                    })
+                    const hasAnyWins = teamWins.some(w => w)
 
-              return (
-                <div
-                  key={week}
-                  className="bg-gray-800/50 rounded p-3 border border-yellow-700/30"
-                >
-                  <p className="text-gray-400 text-xs mb-1">Week {week}</p>
-                  {winners.map(winner => {
-                    const team = teams.find(t => t.id === winner.teamId)
                     return (
-                      <div key={winner.teamId}>
-                        <p className="text-white font-medium text-xs truncate">{team?.name}</p>
-                        <div className="flex justify-between items-center">
-                          <span className="text-gray-400 text-[10px]">{winner.points} pts</span>
-                          <span className="text-yellow-400 text-xs font-semibold">${winner.amount}</span>
-                        </div>
-                      </div>
+                      <tr
+                        key={team.id}
+                        className={`border-t border-gray-700/50 transition-colors ${
+                          isCurrentUser ? 'bg-blue-900/20' : hasAnyWins ? 'bg-yellow-900/10' : 'hover:bg-gray-700/30'
+                        }`}
+                      >
+                        <td className="px-2 md:px-4 py-2 text-gray-400 text-xs">{index + 1}</td>
+                        <td className="px-2 md:px-4 py-2">
+                          <div className="flex items-center gap-2">
+                            {team.image_url ? (
+                              <img
+                                src={team.image_url}
+                                alt={team.name}
+                                className="w-5 h-5 object-contain rounded flex-shrink-0"
+                              />
+                            ) : (
+                              <div
+                                className="w-5 h-5 rounded flex items-center justify-center text-[8px] font-bold flex-shrink-0"
+                                style={{
+                                  backgroundColor: team.primary_color || '#374151',
+                                  color: team.secondary_color || '#ffffff',
+                                }}
+                              >
+                                {team.name.substring(0, 2).toUpperCase()}
+                              </div>
+                            )}
+                            <span className="text-white text-xs truncate max-w-[80px] md:max-w-none">{team.name}</span>
+                          </div>
+                        </td>
+                        <td className="px-2 md:px-4 py-2 text-right">
+                          {team.high_points_winnings > 0 ? (
+                            <span className="text-yellow-400 font-bold text-sm">${team.high_points_winnings}</span>
+                          ) : (
+                            <span className="text-gray-600 text-sm">$0</span>
+                          )}
+                        </td>
+                        {weeksToShow.map(week => {
+                          const win = teamWins[week - 1]
+                          return (
+                            <td
+                              key={week}
+                              className={`px-1 py-2 text-center text-[10px] ${win ? 'bg-yellow-900/30' : ''}`}
+                            >
+                              {win ? (
+                                <span className="text-yellow-400 font-semibold">${win.amount}</span>
+                              ) : (
+                                <span className="text-gray-600">-</span>
+                              )}
+                            </td>
+                          )
+                        })}
+                      </tr>
                     )
                   })}
-                </div>
-              )
-            })}
+              </tbody>
+            </table>
           </div>
         </div>
       )}

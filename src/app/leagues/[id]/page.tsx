@@ -23,10 +23,13 @@ interface LeagueData {
     draft_type: string
     schools_per_team: number
     max_add_drops_per_season: number
+    max_school_selections_total: number
     entry_fee: number
     prize_pool: number
     high_points_enabled: boolean
     high_points_weekly_amount: number
+    double_points_enabled: boolean
+    max_double_picks_per_season: number
   } | null
   drafts: {
     status: string
@@ -144,6 +147,16 @@ export default async function LeaguePage({ params }: PageProps) {
     weeklyPoints = (weeklyPointsData || []) as WeeklyPoints[]
   }
 
+  // Get double picks count for user's team
+  let doublePicksUsed = 0
+  if (userTeam && settings?.double_points_enabled) {
+    const { count } = await supabase
+      .from('weekly_double_picks')
+      .select('*', { count: 'exact', head: true })
+      .eq('fantasy_team_id', userTeam.id)
+    doublePicksUsed = count || 0
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-900 to-gray-800">
       {/* Header */}
@@ -158,60 +171,74 @@ export default async function LeaguePage({ params }: PageProps) {
         </div>
       </header>
 
-      <main className="container mx-auto px-4 py-8">
-        {/* League Header with Action Buttons */}
-        <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-4 mb-8">
+      <main className="container mx-auto px-4 py-6">
+        {/* League Header */}
+        <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-4 mb-4">
           <div>
-            <div className="flex items-center gap-3 mb-2">
-              <h1 className="text-3xl font-bold text-white">{league.name}</h1>
+            <div className="flex items-center gap-3 mb-1">
+              <h1 className="text-2xl md:text-3xl font-bold text-white">{league.name}</h1>
               {isCommissioner && (
-                <span className="bg-yellow-500/20 text-yellow-400 text-sm px-3 py-1 rounded">
+                <span className="bg-yellow-500/20 text-yellow-400 text-xs px-2 py-1 rounded">
                   Commissioner
                 </span>
               )}
             </div>
-            <p className="text-gray-400">
-              {league.sports?.name} &bull; {league.seasons?.name}
+            <p className="text-gray-400 text-sm">
+              {league.sports?.name} &bull; {league.seasons?.name} &bull; Week {currentWeek}
             </p>
-            {league.description && (
-              <p className="text-gray-500 mt-2">{league.description}</p>
-            )}
           </div>
 
-          {/* Action Buttons */}
-          <div className="flex flex-wrap gap-3">
-            {isDraftComplete && userTeam && (
+          {/* Commissioner Tools */}
+          {isCommissioner && (
+            <Link
+              href={`/leagues/${id}/settings`}
+              className="bg-gray-700 hover:bg-gray-600 text-white text-sm font-medium py-2 px-4 rounded-lg transition-colors"
+            >
+              Commissioner Tools
+            </Link>
+          )}
+        </div>
+
+        {/* Quick Navigation Bar */}
+        {isDraftComplete && (
+          <div className="flex flex-wrap items-center gap-2 mb-6 pb-4 border-b border-gray-700">
+            {userTeam && (
               <Link
                 href={`/leagues/${id}/team`}
-                className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors"
+                className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium py-2 px-4 rounded-lg transition-colors"
               >
                 My Roster
               </Link>
             )}
-            {isCommissioner && (
-              <Link
-                href={`/leagues/${id}/settings`}
-                className="bg-gray-700 hover:bg-gray-600 text-white font-semibold py-2 px-4 rounded-lg transition-colors"
-              >
-                Commissioner Tools
-              </Link>
-            )}
+            <Link
+              href={`/leagues/${id}/transactions`}
+              className="bg-gray-700 hover:bg-gray-600 text-white text-sm py-2 px-4 rounded-lg transition-colors"
+            >
+              Transactions
+            </Link>
+            <Link
+              href={`/leagues/${id}/bracket`}
+              className="bg-gray-700 hover:bg-gray-600 text-white text-sm py-2 px-4 rounded-lg transition-colors"
+            >
+              Playoff Bracket
+            </Link>
           </div>
-        </div>
+        )}
 
         {/* Invite Code (Commissioner only) */}
         {isCommissioner && (
-          <div className="bg-blue-900/30 border border-blue-700 rounded-lg p-4 mb-8">
-            <p className="text-blue-300 mb-2">Invite Code (share with friends):</p>
-            <code className="text-2xl font-mono text-white tracking-wider">
+          <div className="bg-blue-900/30 border border-blue-700 rounded-lg p-3 mb-6 flex items-center gap-3">
+            <span className="text-blue-300 text-sm">Invite Code:</span>
+            <code className="text-lg font-mono text-white tracking-wider">
               {league.invite_code}
             </code>
           </div>
         )}
 
-        <div className="grid lg:grid-cols-3 gap-8">
-          {/* Main Content */}
-          <div className="lg:col-span-2 space-y-8">
+        {/* Main Grid - Wider leaderboard, narrower sidebar */}
+        <div className="grid lg:grid-cols-4 gap-6">
+          {/* Main Content - 3 columns */}
+          <div className="lg:col-span-3 space-y-6">
             {/* Draft Status (only when NOT completed) */}
             {!isDraftComplete && (
               <DraftStatusSection
@@ -226,7 +253,7 @@ export default async function LeaguePage({ params }: PageProps) {
 
             {/* Leaderboard (only when draft IS completed) */}
             {isDraftComplete && teams && teams.length > 0 && (
-              <div className="bg-gray-800 rounded-lg p-6">
+              <div className="bg-gray-800 rounded-lg p-4 md:p-6">
                 <EmbeddedLeaderboard
                   leagueId={id}
                   currentWeek={currentWeek}
@@ -242,66 +269,91 @@ export default async function LeaguePage({ params }: PageProps) {
             )}
           </div>
 
-          {/* Sidebar */}
-          <div className="space-y-6">
-            {/* Your Team Summary */}
+          {/* Sidebar - 1 column */}
+          <div className="space-y-4">
+            {/* Your Team Summary - Compact */}
             {userTeam && (
-              <div className="bg-gray-800 rounded-lg p-6">
-                <h2 className="text-xl font-semibold text-white mb-4">Your Team</h2>
-                <div className="space-y-3">
-                  <div className="flex items-center gap-3">
-                    {userTeam.image_url ? (
-                      <img src={userTeam.image_url} alt={userTeam.name} className="w-10 h-10 object-contain rounded" />
-                    ) : (
-                      <div
-                        className="w-10 h-10 rounded flex items-center justify-center text-sm font-bold"
-                        style={{
-                          backgroundColor: userTeam.primary_color || '#374151',
-                          color: userTeam.secondary_color || '#ffffff',
-                        }}
-                      >
-                        {userTeam.name.substring(0, 2).toUpperCase()}
-                      </div>
-                    )}
-                    <p className="text-white font-medium">{userTeam.name}</p>
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <p className="text-gray-400 text-sm">Total Points</p>
-                      <p className="text-2xl font-bold text-white">{userTeam.total_points}</p>
+              <div className="bg-gray-800 rounded-lg p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-wide">Your Team</h2>
+                  {isDraftComplete && (
+                    <Link
+                      href={`/leagues/${id}/team`}
+                      className="text-blue-400 hover:text-blue-300 text-xs"
+                    >
+                      View Roster →
+                    </Link>
+                  )}
+                </div>
+                <div className="flex items-center gap-3 mb-3">
+                  {userTeam.image_url ? (
+                    <img src={userTeam.image_url} alt={userTeam.name} className="w-8 h-8 object-contain rounded" />
+                  ) : (
+                    <div
+                      className="w-8 h-8 rounded flex items-center justify-center text-xs font-bold"
+                      style={{
+                        backgroundColor: userTeam.primary_color || '#374151',
+                        color: userTeam.secondary_color || '#ffffff',
+                      }}
+                    >
+                      {userTeam.name.substring(0, 2).toUpperCase()}
                     </div>
-                    <div>
-                      <p className="text-gray-400 text-sm">Rank</p>
-                      <p className="text-2xl font-bold text-white">
-                        #{(teams?.findIndex(t => t.id === userTeam.id) || 0) + 1}
-                      </p>
-                    </div>
-                  </div>
+                  )}
                   <div>
-                    <p className="text-gray-400 text-sm">Add/Drops Used</p>
-                    <p className="text-white">
-                      {userTeam.add_drops_used} / {settings?.max_add_drops_per_season || 50}
+                    <p className="text-white font-medium text-sm">{userTeam.name}</p>
+                    <p className="text-gray-500 text-xs">
+                      Rank #{(teams?.findIndex(t => t.id === userTeam.id) || 0) + 1} of {teams?.length || 0}
                     </p>
                   </div>
+                </div>
+                <div className="grid grid-cols-2 gap-2 text-center">
+                  <div className="bg-gray-700/50 rounded p-2">
+                    <p className="text-lg font-bold text-white">{userTeam.total_points}</p>
+                    <p className="text-gray-400 text-[10px] uppercase">Points</p>
+                  </div>
+                  <div className="bg-gray-700/50 rounded p-2">
+                    <p className="text-lg font-bold text-white">{userTeam.add_drops_used}/{settings?.max_add_drops_per_season || 50}</p>
+                    <p className="text-gray-400 text-[10px] uppercase">Add/Drops</p>
+                  </div>
+                  {settings?.double_points_enabled && (
+                    <div className="bg-gray-700/50 rounded p-2">
+                      <p className="text-lg font-bold text-purple-400">
+                        {doublePicksUsed}/{settings.max_double_picks_per_season > 0 ? settings.max_double_picks_per_season : '∞'}
+                      </p>
+                      <p className="text-gray-400 text-[10px] uppercase">2x Picks</p>
+                    </div>
+                  )}
+                  {settings?.high_points_enabled && (
+                    <div className="bg-gray-700/50 rounded p-2">
+                      <p className="text-lg font-bold text-yellow-400">
+                        ${userTeam.high_points_winnings || 0}
+                      </p>
+                      <p className="text-gray-400 text-[10px] uppercase">HP Won</p>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
 
-            {/* League Info */}
-            <div className="bg-gray-800 rounded-lg p-6">
-              <h2 className="text-xl font-semibold text-white mb-4">League Info</h2>
-              <div className="space-y-3 text-sm">
+            {/* League Info - Compact */}
+            <div className="bg-gray-800 rounded-lg p-4">
+              <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-wide mb-3">League Info</h2>
+              <div className="space-y-2 text-xs">
                 <div className="flex justify-between">
                   <span className="text-gray-400">Teams</span>
                   <span className="text-white">{teams?.length || 0} / {league.max_teams}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-400">Draft Type</span>
-                  <span className="text-white capitalize">{settings?.draft_type || 'Snake'}</span>
-                </div>
-                <div className="flex justify-between">
                   <span className="text-gray-400">Schools per Team</span>
                   <span className="text-white">{settings?.schools_per_team || 12}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-400">School Limit (League)</span>
+                  <span className="text-white">{settings?.max_school_selections_total || 3}x max</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-400">Draft Type</span>
+                  <span className="text-white capitalize">{settings?.draft_type || 'Snake'}</span>
                 </div>
                 {settings?.entry_fee && settings.entry_fee > 0 && (
                   <div className="flex justify-between">
@@ -312,32 +364,23 @@ export default async function LeaguePage({ params }: PageProps) {
                 {settings?.prize_pool && settings.prize_pool > 0 && (
                   <div className="flex justify-between">
                     <span className="text-gray-400">Prize Pool</span>
-                    <span className="text-white">${settings.prize_pool}</span>
+                    <span className="text-green-400 font-medium">${settings.prize_pool}</span>
+                  </div>
+                )}
+                {settings?.high_points_enabled && (
+                  <div className="flex justify-between">
+                    <span className="text-gray-400">High Points</span>
+                    <span className="text-yellow-400">${settings.high_points_weekly_amount}/wk</span>
+                  </div>
+                )}
+                {settings?.double_points_enabled && (
+                  <div className="flex justify-between">
+                    <span className="text-gray-400">Double Points</span>
+                    <span className="text-purple-400">Enabled</span>
                   </div>
                 )}
               </div>
             </div>
-
-            {/* Quick Links */}
-            {isDraftComplete && (
-              <div className="bg-gray-800 rounded-lg p-6">
-                <h2 className="text-xl font-semibold text-white mb-4">Quick Links</h2>
-                <div className="grid grid-cols-2 gap-2">
-                  <Link
-                    href={`/leagues/${id}/transactions`}
-                    className="text-center bg-gray-700 hover:bg-gray-600 text-white text-sm py-2 px-3 rounded-lg transition-colors"
-                  >
-                    Transactions
-                  </Link>
-                  <Link
-                    href={`/leagues/${id}/bracket`}
-                    className="text-center bg-gray-700 hover:bg-gray-600 text-white text-sm py-2 px-3 rounded-lg transition-colors"
-                  >
-                    Playoff Bracket
-                  </Link>
-                </div>
-              </div>
-            )}
           </div>
         </div>
       </main>
