@@ -72,6 +72,7 @@ export function RosterList({
   const [canPick, setCanPick] = useState(true)
   const [picksUsed, setPicksUsed] = useState(0)
   const [saving, setSaving] = useState(false)
+  const [expanded, setExpanded] = useState(false)
 
   useEffect(() => {
     if (doublePointsEnabled) {
@@ -171,62 +172,84 @@ export function RosterList({
 
   return (
     <div className="space-y-2">
-      {/* Header row */}
-      <div className="flex items-center px-3 py-2 text-xs text-gray-500 uppercase tracking-wide">
-        <span className="w-6 text-center">#</span>
-        <span className="w-10 ml-2"></span>
-        <span className="min-w-[140px] ml-2">School</span>
-        <span className="w-px mx-2"></span>
-        {doublePointsEnabled && (
-          <>
-            <span className="w-12 text-center">2x</span>
-            <span className="w-px mx-2"></span>
-          </>
-        )}
-        <span className="min-w-[120px]">Opponent</span>
-        <span className="w-px mx-2"></span>
-        <span className="w-20 text-center">Score</span>
-        <span className="w-px mx-2"></span>
-        <span className="ml-auto text-right">Points</span>
+      {/* Header row with expand button */}
+      <div className="flex items-center justify-between px-3 py-2 text-xs text-gray-500 uppercase tracking-wide border-b border-gray-700">
+        <div className="flex items-center gap-1">
+          <span className="w-8 text-center">#</span>
+          <span className="w-10"></span>
+          <span className="w-32">School</span>
+          <span className="w-px mx-1"></span>
+          {doublePointsEnabled && (
+            <>
+              <span className="w-10 text-center">2x</span>
+              <span className="w-px mx-1"></span>
+            </>
+          )}
+          <span className="w-36">Opponent</span>
+          <span className="w-px mx-1"></span>
+          <span className="w-28 text-center">Game</span>
+          <span className="w-px mx-1"></span>
+          <span className="w-20 text-right">Points</span>
+        </div>
+        <button
+          onClick={() => setExpanded(!expanded)}
+          className="flex items-center gap-1 px-2 py-1 bg-gray-700 hover:bg-gray-600 rounded text-gray-300 transition-colors"
+        >
+          <svg
+            className={`w-4 h-4 transition-transform ${expanded ? 'rotate-180' : ''}`}
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+          </svg>
+          <span className="text-xs normal-case">{expanded ? 'Hide' : 'Show'} Points</span>
+        </button>
       </div>
 
       {/* Roster rows */}
-      {roster.map((slot, index) => {
-        const thisWeekGame = games.find(
-          g => g.week_number === currentWeek &&
-               (g.home_school_id === slot.school_id || g.away_school_id === slot.school_id)
-        )
-        const weeklyPts = schoolPointsMap.get(slot.school_id) || []
-        const total = schoolTotals.get(slot.school_id) || 0
+      <div className="space-y-1 overflow-x-auto">
+        {roster.map((slot, index) => {
+          const thisWeekGame = games.find(
+            g => g.week_number === currentWeek &&
+                 (g.home_school_id === slot.school_id || g.away_school_id === slot.school_id)
+          )
+          const weeklyPts = schoolPointsMap.get(slot.school_id) || []
+          const total = schoolTotals.get(slot.school_id) || 0
 
-        return (
-          <RosterRow
-            key={slot.id}
-            index={index + 1}
-            schoolId={slot.school_id}
-            school={slot.schools}
-            game={thisWeekGame || null}
-            weeklyPoints={weeklyPts}
-            totalPoints={total}
-            currentWeek={currentWeek}
-            teamId={teamId}
-            doublePointsEnabled={doublePointsEnabled}
-            isDoublePointsPick={doublePickSchoolId === slot.school_id}
-            canPickDoublePoints={canPick && !maxPicksReached && !saving}
-            onDoublePointsSelect={handleDoublePointsSelect}
-          />
-        )
-      })}
+          return (
+            <RosterRow
+              key={slot.id}
+              index={index + 1}
+              schoolId={slot.school_id}
+              school={slot.schools}
+              game={thisWeekGame || null}
+              weeklyPoints={weeklyPts}
+              totalPoints={total}
+              currentWeek={currentWeek}
+              doublePointsEnabled={doublePointsEnabled}
+              isDoublePointsPick={doublePickSchoolId === slot.school_id}
+              canPickDoublePoints={canPick && !maxPicksReached && !saving}
+              onDoublePointsSelect={handleDoublePointsSelect}
+              expanded={expanded}
+            />
+          )
+        })}
+      </div>
 
-      {/* Double points info */}
-      {doublePointsEnabled && (
-        <div className="flex items-center justify-between px-3 py-2 text-xs text-gray-500 border-t border-gray-700 mt-4">
-          <span>
-            Double Points: {maxDoublePicksPerSeason > 0 ? `${picksUsed}/${maxDoublePicksPerSeason} used` : 'Unlimited'}
-          </span>
-          {!canPick && <span className="text-yellow-500">Deadline passed for this week</span>}
-        </div>
-      )}
+      {/* Footer info */}
+      <div className="flex items-center justify-between px-3 py-2 text-xs text-gray-500 border-t border-gray-700 mt-2">
+        {doublePointsEnabled ? (
+          <>
+            <span>
+              Double Points: {maxDoublePicksPerSeason > 0 ? `${picksUsed}/${maxDoublePicksPerSeason} used` : 'Unlimited'}
+            </span>
+            {!canPick && <span className="text-yellow-500">Deadline passed for this week</span>}
+          </>
+        ) : (
+          <span>Double Points: Disabled</span>
+        )}
+      </div>
     </div>
   )
 }
