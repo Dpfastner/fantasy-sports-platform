@@ -284,86 +284,80 @@ export default function StatsClient({
               )}
             </div>
 
-            <div className="grid lg:grid-cols-2 gap-6">
-              {/* AP Top 25 with Week Dropdown */}
-              <div className="bg-gray-800 rounded-lg p-4 md:p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-semibold text-white flex items-center gap-2">
-                    <span className="text-blue-400">📊</span>
-                    AP Top 25
-                  </h3>
-                  <select
-                    value={selectedWeek}
-                    onChange={(e) => handleWeekChange(parseInt(e.target.value))}
-                    className="bg-gray-700 text-white text-sm rounded-lg px-3 py-1.5 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    {availableWeeks.length > 0 ? (
-                      availableWeeks.map((week) => (
-                        <option key={week} value={week}>
-                          Week {week}
-                        </option>
-                      ))
-                    ) : (
-                      <option value={currentWeek}>Week {currentWeek}</option>
-                    )}
-                  </select>
-                </div>
-                {rankings && rankings.length > 0 ? (
-                  <div className="space-y-2 max-h-[400px] overflow-y-auto">
-                    {rankings.map((ranking) => {
-                      const movement = ranking.previous_rank
-                        ? ranking.previous_rank - ranking.rank
-                        : 0
-                      const school = Array.isArray(ranking.schools) ? ranking.schools[0] : ranking.schools
-
-                      return (
-                        <div
-                          key={ranking.school_id}
-                          className="flex items-center justify-between p-2 bg-gray-700/30 rounded"
-                        >
-                          <div className="flex items-center gap-3">
-                            <span className="text-gray-400 text-sm w-6 text-right">
-                              {ranking.rank}
-                            </span>
-                            {school?.logo_url ? (
-                              <img
-                                src={school.logo_url}
-                                alt=""
-                                className="w-6 h-6 object-contain"
-                              />
-                            ) : (
-                              <div className="w-6 h-6 bg-gray-600 rounded-full" />
-                            )}
-                            <div>
-                              <span className="text-white text-sm">{school?.name}</span>
-                              <span className="text-gray-500 text-xs ml-2">
-                                {school?.conference}
-                              </span>
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            {movement !== 0 && (
-                              <span
-                                className={`text-xs ${
-                                  movement > 0 ? 'text-green-400' : 'text-red-400'
-                                }`}
-                              >
-                                {movement > 0 ? `▲${movement}` : `▼${Math.abs(movement)}`}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      )
-                    })}
-                  </div>
-                ) : (
-                  <div className="text-center py-8">
-                    <p className="text-gray-500 text-sm mb-2">No AP rankings available for Week {selectedWeek}.</p>
-                    <p className="text-gray-600 text-xs">Rankings are synced weekly from ESPN.</p>
-                  </div>
-                )}
+            {/* AP Top 25 - Full Width */}
+            <div className="bg-gray-800 rounded-lg p-4 md:p-6 mb-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+                  <span className="text-blue-400">📊</span>
+                  AP Top 25
+                </h3>
+                <select
+                  value={selectedWeek}
+                  onChange={(e) => handleWeekChange(parseInt(e.target.value))}
+                  className="bg-gray-700 text-white text-sm rounded-lg px-3 py-1.5 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  {availableWeeks.length > 0 ? (
+                    availableWeeks.map((week) => (
+                      <option key={week} value={week}>
+                        Week {week}
+                      </option>
+                    ))
+                  ) : (
+                    <option value={currentWeek}>Week {currentWeek}</option>
+                  )}
+                </select>
               </div>
+              {rankings && rankings.length > 0 ? (
+                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-2">
+                  {rankings.map((ranking) => {
+                    const movement = ranking.previous_rank
+                      ? ranking.previous_rank - ranking.rank
+                      : 0
+                    const school = Array.isArray(ranking.schools) ? ranking.schools[0] : ranking.schools
 
+                    return (
+                      <div
+                        key={ranking.school_id}
+                        className="flex items-center justify-between p-2 bg-gray-700/30 rounded"
+                      >
+                        <div className="flex items-center gap-2">
+                          <span className="text-gray-400 text-sm w-5 text-right">
+                            {ranking.rank}
+                          </span>
+                          {school?.logo_url ? (
+                            <img
+                              src={school.logo_url}
+                              alt=""
+                              className="w-5 h-5 object-contain"
+                            />
+                          ) : (
+                            <div className="w-5 h-5 bg-gray-600 rounded-full" />
+                          )}
+                          <span className="text-white text-sm truncate">{school?.name}</span>
+                        </div>
+                        {movement !== 0 && (
+                          <span
+                            className={`text-xs ${
+                              movement > 0 ? 'text-green-400' : 'text-red-400'
+                            }`}
+                          >
+                            {movement > 0 ? `▲${movement}` : `▼${Math.abs(movement)}`}
+                          </span>
+                        )}
+                      </div>
+                    )
+                  })}
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <p className="text-gray-500 text-sm mb-2">No AP rankings available for Week {selectedWeek}.</p>
+                  <p className="text-gray-600 text-xs">Rankings are synced weekly from ESPN.</p>
+                </div>
+              )}
+            </div>
+
+            {/* Ideal Team + Weekly Max - Side by Side */}
+            <div className="grid lg:grid-cols-2 gap-6">
               {/* Ideal Team */}
               <div className="bg-gray-800 rounded-lg p-4 md:p-6">
                 <h3 className="text-lg font-semibold text-white mb-2 flex items-center gap-2">

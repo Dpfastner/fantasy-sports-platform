@@ -170,6 +170,35 @@ export default async function TeamPage({ params }: PageProps) {
     gamesData = (data || []) as Game[]
   }
 
+  // Calculate W-L records for roster schools from completed games
+  const schoolRecordsMap = new Map<string, { wins: number; losses: number }>()
+  for (const game of gamesData) {
+    if (game.status !== 'completed' || game.home_score === null || game.away_score === null) continue
+    const homeWon = game.home_score > game.away_score
+
+    // Home team
+    if (game.home_school_id && schoolIds.includes(game.home_school_id)) {
+      const homeRecord = schoolRecordsMap.get(game.home_school_id) || { wins: 0, losses: 0 }
+      if (homeWon) {
+        homeRecord.wins++
+      } else {
+        homeRecord.losses++
+      }
+      schoolRecordsMap.set(game.home_school_id, homeRecord)
+    }
+
+    // Away team
+    if (game.away_school_id && schoolIds.includes(game.away_school_id)) {
+      const awayRecord = schoolRecordsMap.get(game.away_school_id) || { wins: 0, losses: 0 }
+      if (!homeWon) {
+        awayRecord.wins++
+      } else {
+        awayRecord.losses++
+      }
+      schoolRecordsMap.set(game.away_school_id, awayRecord)
+    }
+  }
+
   // Get all opponent school IDs from games
   const opponentSchoolIds = new Set<string>()
   for (const game of gamesData) {
@@ -311,6 +340,7 @@ export default async function TeamPage({ params }: PageProps) {
               }))}
               games={gamesData}
               schoolPoints={schoolPoints}
+              schoolRecordsMap={Object.fromEntries(schoolRecordsMap)}
               currentWeek={currentWeek}
               teamId={team.id}
               seasonId={league.season_id}

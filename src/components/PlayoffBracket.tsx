@@ -361,6 +361,33 @@ export function PlayoffBracket({ seasonId, rosterSchoolIds = [], leagueId }: Pro
     )
   }
 
+  // Find roster schools that are in the playoffs
+  const rosterSchoolsInPlayoffs = new Set<string>()
+  const rosterSchoolsInfo: { id: string; name: string; logo: string | null }[] = []
+
+  for (const game of games) {
+    if (game.home_school_id && rosterSchoolIds.includes(game.home_school_id)) {
+      if (!rosterSchoolsInPlayoffs.has(game.home_school_id)) {
+        rosterSchoolsInPlayoffs.add(game.home_school_id)
+        rosterSchoolsInfo.push({
+          id: game.home_school_id,
+          name: game.home_team_name || 'Unknown',
+          logo: game.home_team_logo_url
+        })
+      }
+    }
+    if (game.away_school_id && rosterSchoolIds.includes(game.away_school_id)) {
+      if (!rosterSchoolsInPlayoffs.has(game.away_school_id)) {
+        rosterSchoolsInPlayoffs.add(game.away_school_id)
+        rosterSchoolsInfo.push({
+          id: game.away_school_id,
+          name: game.away_team_name || 'Unknown',
+          logo: game.away_team_logo_url
+        })
+      }
+    }
+  }
+
   return (
     <div className="bg-gray-800 rounded-lg p-6">
       <div className="flex items-center justify-between mb-6">
@@ -376,6 +403,33 @@ export function PlayoffBracket({ seasonId, rosterSchoolIds = [], leagueId }: Pro
           </span>
         </div>
       </div>
+
+      {/* Roster Schools in Playoffs Summary */}
+      {rosterSchoolsInfo.length > 0 && (
+        <div className="mb-6 p-4 bg-purple-900/20 border border-purple-500/30 rounded-lg">
+          <div className="flex items-center gap-2 mb-3">
+            <span className="text-purple-400 font-medium">Your Schools in the Playoffs</span>
+            <span className="bg-purple-600 text-white text-xs font-bold px-2 py-0.5 rounded-full">
+              {rosterSchoolsInfo.length}
+            </span>
+          </div>
+          <div className="flex flex-wrap gap-3">
+            {rosterSchoolsInfo.map((school) => (
+              <div
+                key={school.id}
+                className="flex items-center gap-2 bg-gray-800/50 px-3 py-2 rounded-lg border border-purple-500/30"
+              >
+                {school.logo ? (
+                  <img src={school.logo} alt="" className="w-6 h-6 object-contain" />
+                ) : (
+                  <div className="w-6 h-6 bg-gray-600 rounded" />
+                )}
+                <span className="text-purple-300 text-sm font-medium">{school.name}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Bracket layout - horizontal scroll on mobile */}
       <div className="overflow-x-auto pb-4">

@@ -63,6 +63,7 @@ interface Props {
   roster: RosterSchool[]
   games: Game[]
   schoolPoints: SchoolPoints[]
+  schoolRecordsMap: Record<string, { wins: number; losses: number }>
   currentWeek: number
   teamId: string
   seasonId: string
@@ -76,6 +77,7 @@ export function RosterList({
   roster,
   games,
   schoolPoints,
+  schoolRecordsMap,
   currentWeek,
   teamId,
   seasonId,
@@ -251,7 +253,7 @@ export function RosterList({
           <div className="flex items-center h-8 px-3 text-xs text-gray-500 uppercase tracking-wide border-b border-gray-700">
             <span className="w-6 text-center">#</span>
             <span className="w-10"></span>
-            <span className="w-28">School</span>
+            <span className="w-32">School</span>
             <span className="w-px mx-1 h-5 bg-gray-700"></span>
             {doublePointsEnabled && (
               <>
@@ -315,9 +317,22 @@ export function RosterList({
                   )}
                 </div>
 
-                {/* School Name */}
-                <div className="w-28 flex-shrink-0 overflow-hidden">
-                  <p className="text-white font-medium text-sm truncate">{school.name}</p>
+                {/* School Name + Record */}
+                <div className="w-32 flex-shrink-0 overflow-hidden">
+                  <div className="flex items-center gap-1">
+                    <p className="text-white font-medium text-sm truncate">{school.name}</p>
+                    {schoolRecordsMap[slot.school_id] && (
+                      <span className={`text-xs flex-shrink-0 ${
+                        schoolRecordsMap[slot.school_id].wins > schoolRecordsMap[slot.school_id].losses
+                          ? 'text-green-400'
+                          : schoolRecordsMap[slot.school_id].wins < schoolRecordsMap[slot.school_id].losses
+                            ? 'text-red-400'
+                            : 'text-gray-400'
+                      }`}>
+                        ({schoolRecordsMap[slot.school_id].wins}-{schoolRecordsMap[slot.school_id].losses})
+                      </span>
+                    )}
+                  </div>
                   <p className="text-gray-400 text-xs truncate">{school.conference}</p>
                 </div>
 
