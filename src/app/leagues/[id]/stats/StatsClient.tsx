@@ -338,45 +338,28 @@ export default function StatsClient({
                 )}
               </div>
 
-              {/* Heisman */}
-              <div className="bg-gray-800 rounded-lg p-4 md:p-6">
-                <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-                  <span className="text-yellow-400">🏈</span>
-                  Heisman Trophy
-                </h3>
+              {/* Heisman - Compact Banner */}
+              <div className="bg-yellow-900/20 border border-yellow-700/30 rounded-lg p-3">
                 {heisman ? (
-                  <div className="flex items-center gap-4 p-4 bg-yellow-900/20 border border-yellow-700/30 rounded-lg">
-                    {heismanSchool?.logo_url ? (
-                      <img
-                        src={heismanSchool.logo_url}
-                        alt=""
-                        className="w-12 h-12 object-contain"
-                      />
-                    ) : (
-                      <div className="w-12 h-12 bg-gray-600 rounded-full" />
+                  <div className="flex items-center gap-3">
+                    <span className="text-yellow-400 text-lg">🏆</span>
+                    {heismanSchool?.logo_url && (
+                      <img src={heismanSchool.logo_url} alt="" className="w-8 h-8 object-contain" />
                     )}
-                    <div>
-                      <p className="text-yellow-400 text-lg font-bold">
-                        {heisman.player_name}
+                    <div className="flex-1">
+                      <p className="text-yellow-400 font-semibold text-sm">
+                        Heisman Winner: {heisman.player_name}
                       </p>
-                      <p className="text-gray-400 text-sm">
-                        {heismanSchool?.name}
-                      </p>
-                      {heisman.awarded_at && (
-                        <p className="text-gray-500 text-xs mt-1">
-                          Awarded: {new Date(heisman.awarded_at).toLocaleDateString()}
-                        </p>
-                      )}
+                      <p className="text-gray-400 text-xs">{heismanSchool?.name}</p>
                     </div>
                   </div>
                 ) : (
-                  <div className="p-4 bg-gray-700/30 rounded-lg text-center">
-                    <p className="text-gray-400 mb-2">Heisman Trophy Ceremony</p>
-                    <p className="text-white text-lg font-semibold">December 14, {year}</p>
-                    <p className="text-gray-500 text-sm mt-2">Winner to be announced</p>
-                    <p className="text-gray-600 text-xs mt-3">
-                      Data will be populated after the ceremony.
-                    </p>
+                  <div className="flex items-center gap-3">
+                    <span className="text-yellow-400 text-lg">🏆</span>
+                    <div>
+                      <p className="text-yellow-400 font-semibold text-sm">Heisman Trophy</p>
+                      <p className="text-gray-400 text-xs">Ceremony: December 14, {year}</p>
+                    </div>
                   </div>
                 )}
               </div>
@@ -423,41 +406,42 @@ export default function StatsClient({
                 )}
               </div>
 
-              {/* Weekly Maximum Points */}
+              {/* Weekly Maximum Points - Selected Week */}
               <div className="bg-gray-800 rounded-lg p-4 md:p-6">
-                <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                <h3 className="text-lg font-semibold text-white mb-2 flex items-center gap-2">
                   <span className="text-blue-400">📈</span>
-                  Weekly Maximum Points
+                  Week {selectedWeek} Maximum
                 </h3>
                 <p className="text-gray-400 text-sm mb-4">
-                  Best possible points per week with a {schoolsPerTeam}-school roster
+                  Best {schoolsPerTeam} schools for Week {selectedWeek}
                 </p>
-                {statsData?.weeklyMaxPoints ? (
-                  <div className="overflow-x-auto max-h-[300px]">
-                    <table className="w-full">
-                      <thead className="sticky top-0 bg-gray-800">
-                        <tr className="bg-gray-700/50">
-                          <th className="px-3 py-2 text-left text-gray-400 font-medium text-sm">Week</th>
-                          <th className="px-3 py-2 text-right text-gray-400 font-medium text-sm">Max</th>
-                          <th className="px-3 py-2 text-left text-gray-400 font-medium text-sm">Top Schools</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {statsData.weeklyMaxPoints.map((weekData) => (
-                          <tr key={weekData.week} className="border-t border-gray-700/50">
-                            <td className="px-3 py-2 text-white text-sm">W{weekData.week}</td>
-                            <td className="px-3 py-2 text-right">
-                              <span className="text-blue-400 font-semibold text-sm">{weekData.maxPoints}</span>
-                            </td>
-                            <td className="px-3 py-2 text-gray-400 text-xs">
-                              {weekData.topSchools.slice(0, 2).map(s => s.name).join(', ')}...
-                            </td>
-                          </tr>
+                {statsData?.weeklyMaxPoints ? (() => {
+                  const selectedWeekData = statsData.weeklyMaxPoints.find(w => w.week === selectedWeek)
+                  if (!selectedWeekData) {
+                    return <p className="text-gray-500 text-sm">No data for Week {selectedWeek}</p>
+                  }
+                  return (
+                    <>
+                      <div className="mb-4 p-3 bg-blue-900/20 border border-blue-700/30 rounded-lg text-center">
+                        <span className="text-3xl font-bold text-blue-400">
+                          {selectedWeekData.maxPoints.toLocaleString()}
+                        </span>
+                        <span className="text-gray-400 text-sm ml-2">pts</span>
+                      </div>
+                      <div className="space-y-2">
+                        {selectedWeekData.topSchools.slice(0, schoolsPerTeam).map((school, idx) => (
+                          <div key={school.id} className="flex items-center justify-between p-2 bg-gray-700/30 rounded">
+                            <div className="flex items-center gap-3">
+                              <span className="text-gray-500 text-sm w-5">{idx + 1}.</span>
+                              <span className="text-white text-sm">{school.name}</span>
+                            </div>
+                            <span className="text-blue-400 font-medium">{school.points}</span>
+                          </div>
                         ))}
-                      </tbody>
-                    </table>
-                  </div>
-                ) : (
+                      </div>
+                    </>
+                  )
+                })() : (
                   <p className="text-gray-500 text-sm">Loading weekly data...</p>
                 )}
               </div>

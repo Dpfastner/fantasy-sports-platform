@@ -59,7 +59,6 @@ export default function ScheduleClient({
   const router = useRouter()
   const [games, setGames] = useState<Game[]>(initialGames)
   const [filter, setFilter] = useState<'all' | 'roster' | 'ranked' | 'live'>('all')
-  const [activeTab, setActiveTab] = useState<'schedule' | 'bracket'>('schedule')
 
   useEffect(() => {
     const supabase = createClient()
@@ -173,38 +172,6 @@ export default function ScheduleClient({
           </Link>
         </div>
 
-        {/* Schedule / Bracket Tabs */}
-        <div className="flex gap-1 mb-6 bg-gray-800 rounded-lg p-1 w-fit">
-          <button
-            onClick={() => setActiveTab('schedule')}
-            className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
-              activeTab === 'schedule'
-                ? 'bg-blue-600 text-white'
-                : 'text-gray-400 hover:text-white'
-            }`}
-          >
-            Schedule
-          </button>
-          <button
-            onClick={() => setActiveTab('bracket')}
-            className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
-              activeTab === 'bracket'
-                ? 'bg-blue-600 text-white'
-                : 'text-gray-400 hover:text-white'
-            }`}
-          >
-            CFP Bracket
-          </button>
-        </div>
-
-        {activeTab === 'bracket' ? (
-          <PlayoffBracket
-            seasonId={seasonId}
-            rosterSchoolIds={rosterSchoolIds}
-            leagueId={leagueId}
-          />
-        ) : (
-          <>
         {/* Week Selector and Filters */}
         <div className="flex flex-wrap items-center gap-4 mb-6">
           <select
@@ -459,8 +426,16 @@ export default function ScheduleClient({
             <span>Ranked</span>
           </div>
         </div>
-          </>
-        )}
+
+        {/* CFP Bracket Section */}
+        <div className="mt-12 pt-8 border-t border-gray-700">
+          <h2 className="text-xl font-bold text-white mb-6">College Football Playoff Bracket</h2>
+          <PlayoffBracket
+            seasonId={seasonId}
+            rosterSchoolIds={rosterSchoolIds}
+            leagueId={leagueId}
+          />
+        </div>
       </main>
     </div>
   )

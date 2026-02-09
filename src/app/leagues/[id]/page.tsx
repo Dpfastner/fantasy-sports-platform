@@ -410,22 +410,15 @@ export default async function LeaguePage({ params }: PageProps) {
                 <div className="flex items-start gap-2">
                   <div className="w-2 h-2 mt-1 bg-orange-500 rounded-full flex-shrink-0"></div>
                   <div>
-                    <p className="text-white font-medium">CFP Quarterfinals</p>
-                    <p className="text-gray-400">Dec 31, {year} - Jan 1, {year + 1}</p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-2">
-                  <div className="w-2 h-2 mt-1 bg-orange-500 rounded-full flex-shrink-0"></div>
-                  <div>
-                    <p className="text-white font-medium">CFP Semifinals</p>
-                    <p className="text-gray-400">Jan 9-10, {year + 1}</p>
+                    <p className="text-white font-medium">College Football Playoffs</p>
+                    <p className="text-gray-400">Dec 20, {year} - Jan 10, {year + 1}</p>
                   </div>
                 </div>
                 <div className="flex items-start gap-2">
                   <div className="w-2 h-2 mt-1 bg-red-500 rounded-full flex-shrink-0"></div>
                   <div>
                     <p className="text-white font-medium">National Championship</p>
-                    <p className="text-gray-400">Jan 20, {year + 1} @ 7:30 PM ET</p>
+                    <p className="text-gray-400">Jan 20, {year + 1}</p>
                   </div>
                 </div>
               </div>

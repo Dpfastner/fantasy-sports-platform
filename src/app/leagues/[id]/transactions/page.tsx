@@ -126,7 +126,7 @@ export default async function TransactionsPage({ params }: PageProps) {
     .from('games')
     .select('home_school_id, away_school_id, home_score, away_score, status')
     .eq('season_id', league.season_id)
-    .eq('status', 'final')
+    .eq('status', 'completed')
 
   // Calculate W-L records for each school
   const schoolRecordsMap = new Map<string, { wins: number; losses: number }>()
