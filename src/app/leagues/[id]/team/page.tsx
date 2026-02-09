@@ -265,6 +265,34 @@ export default async function TeamPage({ params }: PageProps) {
       </header>
 
       <main className="container mx-auto px-4 py-8">
+        {/* Quick Nav */}
+        <div className="flex flex-wrap items-center gap-2 mb-6 pb-4 border-b border-gray-700">
+          <Link
+            href={`/leagues/${leagueId}`}
+            className="bg-gray-700 hover:bg-gray-600 text-white text-sm py-2 px-4 rounded-lg transition-colors"
+          >
+            League Home
+          </Link>
+          <Link
+            href={`/leagues/${leagueId}/schedule`}
+            className="bg-gray-700 hover:bg-gray-600 text-white text-sm py-2 px-4 rounded-lg transition-colors"
+          >
+            Schedule
+          </Link>
+          <Link
+            href={`/leagues/${leagueId}/transactions`}
+            className="bg-gray-700 hover:bg-gray-600 text-white text-sm py-2 px-4 rounded-lg transition-colors"
+          >
+            Add/Drop
+          </Link>
+          <Link
+            href={`/leagues/${leagueId}/stats`}
+            className="bg-gray-700 hover:bg-gray-600 text-white text-sm py-2 px-4 rounded-lg transition-colors"
+          >
+            League Stats
+          </Link>
+        </div>
+
         {/* Team Header */}
         <div
           className="rounded-lg p-6 mb-8"
@@ -405,36 +433,6 @@ export default async function TeamPage({ params }: PageProps) {
           </div>
         )}
 
-        {/* Quick Navigation */}
-        <div className="bg-gray-800 rounded-lg p-6">
-          <h2 className="text-xl font-semibold text-white mb-4">Quick Navigation</h2>
-          <div className="flex flex-wrap gap-3">
-            <Link
-              href={`/leagues/${leagueId}/schedule`}
-              className="bg-gray-700 hover:bg-gray-600 text-white py-2 px-6 rounded-lg transition-colors"
-            >
-              Schedule
-            </Link>
-            <Link
-              href={`/leagues/${leagueId}/transactions`}
-              className="bg-gray-700 hover:bg-gray-600 text-white py-2 px-6 rounded-lg transition-colors"
-            >
-              Add/Drop
-            </Link>
-            <Link
-              href={`/leagues/${leagueId}/stats`}
-              className="bg-gray-700 hover:bg-gray-600 text-white py-2 px-6 rounded-lg transition-colors"
-            >
-              League Stats
-            </Link>
-            <Link
-              href={`/leagues/${leagueId}`}
-              className="bg-gray-700 hover:bg-gray-600 text-white py-2 px-6 rounded-lg transition-colors"
-            >
-              League Home
-            </Link>
-          </div>
-        </div>
       </main>
     </div>
   )

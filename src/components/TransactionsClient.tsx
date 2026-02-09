@@ -269,6 +269,28 @@ export default function TransactionsClient({
       </header>
 
       <main className="container mx-auto px-3 md:px-4 py-4 md:py-8">
+        {/* Quick Nav */}
+        <div className="flex flex-wrap items-center gap-2 mb-6 pb-4 border-b border-gray-700">
+          <Link
+            href={`/leagues/${leagueId}`}
+            className="bg-gray-700 hover:bg-gray-600 text-white text-sm py-2 px-4 rounded-lg transition-colors"
+          >
+            League Home
+          </Link>
+          <Link
+            href={`/leagues/${leagueId}/schedule`}
+            className="bg-gray-700 hover:bg-gray-600 text-white text-sm py-2 px-4 rounded-lg transition-colors"
+          >
+            Schedule
+          </Link>
+          <Link
+            href={`/leagues/${leagueId}/stats`}
+            className="bg-gray-700 hover:bg-gray-600 text-white text-sm py-2 px-4 rounded-lg transition-colors"
+          >
+            League Stats
+          </Link>
+        </div>
+
         {/* Page Header */}
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3 mb-4 md:mb-8">
           <div>

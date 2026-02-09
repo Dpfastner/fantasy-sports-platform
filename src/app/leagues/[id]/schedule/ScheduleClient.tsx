@@ -174,7 +174,19 @@ export default function ScheduleClient({
             href={`/leagues/${leagueId}`}
             className="bg-gray-700 hover:bg-gray-600 text-white text-sm py-2 px-4 rounded-lg transition-colors"
           >
-            &larr; Back to League
+            League Home
+          </Link>
+          <Link
+            href={`/leagues/${leagueId}/transactions`}
+            className="bg-gray-700 hover:bg-gray-600 text-white text-sm py-2 px-4 rounded-lg transition-colors"
+          >
+            Add/Drop
+          </Link>
+          <Link
+            href={`/leagues/${leagueId}/stats`}
+            className="bg-gray-700 hover:bg-gray-600 text-white text-sm py-2 px-4 rounded-lg transition-colors"
+          >
+            League Stats
           </Link>
         </div>
 

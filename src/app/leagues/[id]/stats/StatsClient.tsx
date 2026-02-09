@@ -162,7 +162,19 @@ export default function StatsClient({
             href={`/leagues/${leagueId}`}
             className="bg-gray-700 hover:bg-gray-600 text-white text-sm py-2 px-4 rounded-lg transition-colors"
           >
-            &larr; Back to League
+            League Home
+          </Link>
+          <Link
+            href={`/leagues/${leagueId}/schedule`}
+            className="bg-gray-700 hover:bg-gray-600 text-white text-sm py-2 px-4 rounded-lg transition-colors"
+          >
+            Schedule
+          </Link>
+          <Link
+            href={`/leagues/${leagueId}/transactions`}
+            className="bg-gray-700 hover:bg-gray-600 text-white text-sm py-2 px-4 rounded-lg transition-colors"
+          >
+            Add/Drop
           </Link>
         </div>
 
@@ -289,23 +301,9 @@ export default function StatsClient({
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-semibold text-white flex items-center gap-2">
                   <span className="text-blue-400">📊</span>
-                  AP Top 25
+                  AP Top 25 - Final Rankings
                 </h3>
-                <select
-                  value={selectedWeek}
-                  onChange={(e) => handleWeekChange(parseInt(e.target.value))}
-                  className="bg-gray-700 text-white text-sm rounded-lg px-3 py-1.5 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  {availableWeeks.length > 0 ? (
-                    availableWeeks.map((week) => (
-                      <option key={week} value={week}>
-                        Week {week}
-                      </option>
-                    ))
-                  ) : (
-                    <option value={currentWeek}>Week {currentWeek}</option>
-                  )}
-                </select>
+                <span className="text-gray-400 text-sm">{year} Season</span>
               </div>
               {rankings && rankings.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
