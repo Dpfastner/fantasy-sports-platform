@@ -49,7 +49,7 @@ interface TransactionsClientProps {
   allSchools: School[]
   schoolPointsMap: Record<string, number>
   rankingsMap: Record<string, number>
-  schoolRecordsMap: Record<string, { wins: number; losses: number }>
+  schoolRecordsMap: Record<string, { wins: number; losses: number; confWins: number; confLosses: number }>
   schoolSelectionCounts: Record<string, number>
   transactionHistory: Transaction[]
   addDropsUsed: number
@@ -339,37 +339,50 @@ export default function TransactionsClient({
                 <div className="bg-gray-800 rounded-lg p-4 md:p-6">
                   <h2 className="text-lg md:text-xl font-semibold text-white mb-3 md:mb-4">Select a school to drop</h2>
                   <div className="space-y-2 md:space-y-3">
-                    {roster.map((entry) => (
-                      <button
-                        key={entry.id}
-                        onClick={() => handleSelectDrop(entry)}
-                        className="w-full flex items-center justify-between p-3 md:p-4 bg-gray-700/50 hover:bg-gray-700 rounded-lg transition-colors text-left"
-                      >
-                        <div className="flex items-center gap-3 md:gap-4">
-                          {entry.schools.logo_url ? (
-                            <img
-                              src={entry.schools.logo_url}
-                              alt={entry.schools.name}
-                              className="w-8 h-8 md:w-10 md:h-10 object-contain"
-                            />
-                          ) : (
-                            <div className="w-10 h-10 bg-gray-600 rounded-full" />
-                          )}
-                          <div>
-                            <p className="text-white font-medium">{entry.schools.name}</p>
-                            <p className="text-gray-400 text-sm">{entry.schools.conference}</p>
+                    {roster.map((entry) => {
+                      const record = schoolRecordsMap[entry.school_id] || { wins: 0, losses: 0, confWins: 0, confLosses: 0 }
+                      return (
+                        <button
+                          key={entry.id}
+                          onClick={() => handleSelectDrop(entry)}
+                          className="w-full flex items-center justify-between p-3 md:p-4 bg-gray-700/50 hover:bg-gray-700 rounded-lg transition-colors text-left"
+                        >
+                          <div className="flex items-center gap-3 md:gap-4">
+                            {entry.schools.logo_url ? (
+                              <img
+                                src={entry.schools.logo_url}
+                                alt={entry.schools.name}
+                                className="w-8 h-8 md:w-10 md:h-10 object-contain"
+                              />
+                            ) : (
+                              <div className="w-10 h-10 bg-gray-600 rounded-full" />
+                            )}
+                            <div>
+                              <p className="text-white font-medium">{entry.schools.name}</p>
+                              <div className="flex items-center gap-2 text-sm">
+                                <span className="text-gray-400">{entry.schools.conference}</span>
+                                <span className={record.wins > record.losses ? 'text-green-400' : record.wins < record.losses ? 'text-red-400' : 'text-gray-400'}>
+                                  {record.wins}-{record.losses}
+                                </span>
+                                {(record.confWins > 0 || record.confLosses > 0) && (
+                                  <span className="text-gray-500 text-xs">
+                                    ({record.confWins}-{record.confLosses})
+                                  </span>
+                                )}
+                              </div>
+                            </div>
                           </div>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-white font-medium">
-                            {schoolPointsMap[entry.school_id] || 0} pts
-                          </p>
-                          {rankingsMap[entry.school_id] && (
-                            <p className="text-gray-400 text-sm">#{rankingsMap[entry.school_id]}</p>
-                          )}
-                        </div>
-                      </button>
-                    ))}
+                          <div className="text-right">
+                            <p className="text-white font-medium">
+                              {schoolPointsMap[entry.school_id] || 0} pts
+                            </p>
+                            {rankingsMap[entry.school_id] && (
+                              <p className="text-gray-400 text-sm">#{rankingsMap[entry.school_id]}</p>
+                            )}
+                          </div>
+                        </button>
+                      )
+                    })}
                   </div>
                 </div>
               )}
@@ -466,11 +479,18 @@ export default function TransactionsClient({
                                     <span className="text-yellow-400 mr-1">#{rankingsMap[school.id]}</span>
                                   )}
                                   {school.name}
-                                  <span className={`ml-2 text-xs ${record.wins > record.losses ? 'text-green-400' : record.wins < record.losses ? 'text-red-400' : 'text-gray-400'}`}>
-                                    ({record.wins}-{record.losses})
-                                  </span>
                                 </p>
-                                <p className="text-gray-500 text-xs">{school.conference}</p>
+                                <div className="flex items-center gap-2 text-xs">
+                                  <span className="text-gray-500">{school.conference}</span>
+                                  <span className={record.wins > record.losses ? 'text-green-400' : record.wins < record.losses ? 'text-red-400' : 'text-gray-400'}>
+                                    {record.wins}-{record.losses}
+                                  </span>
+                                  {(record.confWins > 0 || record.confLosses > 0) && (
+                                    <span className="text-gray-500">
+                                      ({record.confWins}-{record.confLosses} conf)
+                                    </span>
+                                  )}
+                                </div>
                               </div>
                             </div>
                             <div className="text-right">
@@ -595,28 +615,36 @@ export default function TransactionsClient({
               <div className="bg-gray-800 rounded-lg p-6">
                 <h3 className="text-lg font-semibold text-white mb-4">Current Roster</h3>
                 <div className="space-y-2">
-                  {roster.map((entry) => (
-                    <div
-                      key={entry.id}
-                      className={`flex items-center justify-between p-2 rounded ${
-                        selectedDrop?.id === entry.id ? 'bg-red-900/30 border border-red-700' : 'bg-gray-700/30'
-                      }`}
-                    >
-                      <div className="flex items-center gap-2">
-                        {entry.schools.logo_url ? (
-                          <img
-                            src={entry.schools.logo_url}
-                            alt=""
-                            className="w-6 h-6 object-contain"
-                          />
-                        ) : (
-                          <div className="w-6 h-6 bg-gray-600 rounded-full" />
-                        )}
-                        <span className="text-white text-sm">{entry.schools.abbreviation || entry.schools.name}</span>
+                  {roster.map((entry) => {
+                    const record = schoolRecordsMap[entry.school_id] || { wins: 0, losses: 0, confWins: 0, confLosses: 0 }
+                    return (
+                      <div
+                        key={entry.id}
+                        className={`flex items-center justify-between p-2 rounded ${
+                          selectedDrop?.id === entry.id ? 'bg-red-900/30 border border-red-700' : 'bg-gray-700/30'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2">
+                          {entry.schools.logo_url ? (
+                            <img
+                              src={entry.schools.logo_url}
+                              alt=""
+                              className="w-6 h-6 object-contain"
+                            />
+                          ) : (
+                            <div className="w-6 h-6 bg-gray-600 rounded-full" />
+                          )}
+                          <div>
+                            <span className="text-white text-sm">{entry.schools.abbreviation || entry.schools.name}</span>
+                            <span className={`ml-1 text-xs ${record.wins > record.losses ? 'text-green-400' : record.wins < record.losses ? 'text-red-400' : 'text-gray-500'}`}>
+                              {record.wins}-{record.losses}
+                            </span>
+                          </div>
+                        </div>
+                        <span className="text-gray-400 text-sm">{schoolPointsMap[entry.school_id] || 0}</span>
                       </div>
-                      <span className="text-gray-400 text-sm">{schoolPointsMap[entry.school_id] || 0}</span>
-                    </div>
-                  ))}
+                    )
+                  })}
                 </div>
               </div>
             </div>

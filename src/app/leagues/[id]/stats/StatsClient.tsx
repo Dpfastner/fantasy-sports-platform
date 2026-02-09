@@ -258,6 +258,32 @@ export default function StatsClient({
         {/* Section 2: AP Top 25, Heisman, Ideal Team, Weekly Maximum */}
         {activeSection === 'stats' && (
           <section>
+            {/* Heisman Banner - Full Width */}
+            <div className="bg-yellow-900/20 border border-yellow-700/30 rounded-lg p-3 mb-6">
+              {heisman ? (
+                <div className="flex items-center gap-3">
+                  <span className="text-yellow-400 text-lg">🏆</span>
+                  {heismanSchool?.logo_url && (
+                    <img src={heismanSchool.logo_url} alt="" className="w-8 h-8 object-contain" />
+                  )}
+                  <div className="flex-1">
+                    <p className="text-yellow-400 font-semibold text-sm">
+                      Heisman Winner: {heisman.player_name}
+                    </p>
+                    <p className="text-gray-400 text-xs">{heismanSchool?.name}</p>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex items-center gap-3">
+                  <span className="text-yellow-400 text-lg">🏆</span>
+                  <div>
+                    <p className="text-yellow-400 font-semibold text-sm">Heisman Trophy</p>
+                    <p className="text-gray-400 text-xs">Ceremony: December 14, {year}</p>
+                  </div>
+                </div>
+              )}
+            </div>
+
             <div className="grid lg:grid-cols-2 gap-6">
               {/* AP Top 25 with Week Dropdown */}
               <div className="bg-gray-800 rounded-lg p-4 md:p-6">
@@ -334,32 +360,6 @@ export default function StatsClient({
                   <div className="text-center py-8">
                     <p className="text-gray-500 text-sm mb-2">No AP rankings available for Week {selectedWeek}.</p>
                     <p className="text-gray-600 text-xs">Rankings are synced weekly from ESPN.</p>
-                  </div>
-                )}
-              </div>
-
-              {/* Heisman - Compact Banner */}
-              <div className="bg-yellow-900/20 border border-yellow-700/30 rounded-lg p-3">
-                {heisman ? (
-                  <div className="flex items-center gap-3">
-                    <span className="text-yellow-400 text-lg">🏆</span>
-                    {heismanSchool?.logo_url && (
-                      <img src={heismanSchool.logo_url} alt="" className="w-8 h-8 object-contain" />
-                    )}
-                    <div className="flex-1">
-                      <p className="text-yellow-400 font-semibold text-sm">
-                        Heisman Winner: {heisman.player_name}
-                      </p>
-                      <p className="text-gray-400 text-xs">{heismanSchool?.name}</p>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-3">
-                    <span className="text-yellow-400 text-lg">🏆</span>
-                    <div>
-                      <p className="text-yellow-400 font-semibold text-sm">Heisman Trophy</p>
-                      <p className="text-gray-400 text-xs">Ceremony: December 14, {year}</p>
-                    </div>
                   </div>
                 )}
               </div>

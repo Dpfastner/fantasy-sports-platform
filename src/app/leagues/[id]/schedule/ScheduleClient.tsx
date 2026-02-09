@@ -59,6 +59,7 @@ export default function ScheduleClient({
   const router = useRouter()
   const [games, setGames] = useState<Game[]>(initialGames)
   const [filter, setFilter] = useState<'all' | 'roster' | 'ranked' | 'live'>('all')
+  const [activeView, setActiveView] = useState<'schedule' | 'bracket'>('schedule')
 
   useEffect(() => {
     const supabase = createClient()
@@ -172,6 +173,32 @@ export default function ScheduleClient({
           </Link>
         </div>
 
+        {/* Schedule / Bracket Toggle */}
+        <div className="flex mb-6">
+          <button
+            onClick={() => setActiveView('schedule')}
+            className={`flex-1 py-3 px-4 text-sm font-medium rounded-l-lg transition-colors ${
+              activeView === 'schedule'
+                ? 'bg-blue-600 text-white'
+                : 'bg-gray-700 text-gray-400 hover:bg-gray-600'
+            }`}
+          >
+            Schedule
+          </button>
+          <button
+            onClick={() => setActiveView('bracket')}
+            className={`flex-1 py-3 px-4 text-sm font-medium rounded-r-lg transition-colors ${
+              activeView === 'bracket'
+                ? 'bg-orange-600 text-white'
+                : 'bg-gray-700 text-gray-400 hover:bg-gray-600'
+            }`}
+          >
+            CFP Bracket
+          </button>
+        </div>
+
+        {activeView === 'schedule' && (
+        <>
         {/* Week Selector and Filters */}
         <div className="flex flex-wrap items-center gap-4 mb-6">
           <select
@@ -426,16 +453,23 @@ export default function ScheduleClient({
             <span>Ranked</span>
           </div>
         </div>
+        </>
+        )}
 
-        {/* CFP Bracket Section */}
-        <div className="mt-12 pt-8 border-t border-gray-700">
-          <h2 className="text-xl font-bold text-white mb-6">College Football Playoff Bracket</h2>
-          <PlayoffBracket
-            seasonId={seasonId}
-            rosterSchoolIds={rosterSchoolIds}
-            leagueId={leagueId}
-          />
-        </div>
+        {/* CFP Bracket View */}
+        {activeView === 'bracket' && (
+          <div>
+            <h2 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
+              <span className="text-orange-400">🏆</span>
+              College Football Playoff Bracket
+            </h2>
+            <PlayoffBracket
+              seasonId={seasonId}
+              rosterSchoolIds={rosterSchoolIds}
+              leagueId={leagueId}
+            />
+          </div>
+        )}
       </main>
     </div>
   )

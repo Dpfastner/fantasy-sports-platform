@@ -121,34 +121,38 @@ export default async function TransactionsPage({ params }: PageProps) {
 
   const allSchools = schoolsData as School[] || []
 
-  // Get all completed games for record calculation
+  // Get all completed games for record calculation (including conference game flag)
   const { data: gamesData } = await supabase
     .from('games')
-    .select('home_school_id, away_school_id, home_score, away_score, status')
+    .select('home_school_id, away_school_id, home_score, away_score, is_conference_game, status')
     .eq('season_id', league.season_id)
     .eq('status', 'completed')
 
-  // Calculate W-L records for each school
-  const schoolRecordsMap = new Map<string, { wins: number; losses: number }>()
+  // Calculate W-L records for each school (overall and conference)
+  const schoolRecordsMap = new Map<string, { wins: number; losses: number; confWins: number; confLosses: number }>()
   for (const game of gamesData || []) {
     if (game.home_score === null || game.away_score === null) continue
     const homeWon = game.home_score > game.away_score
 
     // Home team
-    const homeRecord = schoolRecordsMap.get(game.home_school_id) || { wins: 0, losses: 0 }
+    const homeRecord = schoolRecordsMap.get(game.home_school_id) || { wins: 0, losses: 0, confWins: 0, confLosses: 0 }
     if (homeWon) {
       homeRecord.wins++
+      if (game.is_conference_game) homeRecord.confWins++
     } else {
       homeRecord.losses++
+      if (game.is_conference_game) homeRecord.confLosses++
     }
     schoolRecordsMap.set(game.home_school_id, homeRecord)
 
     // Away team
-    const awayRecord = schoolRecordsMap.get(game.away_school_id) || { wins: 0, losses: 0 }
+    const awayRecord = schoolRecordsMap.get(game.away_school_id) || { wins: 0, losses: 0, confWins: 0, confLosses: 0 }
     if (!homeWon) {
       awayRecord.wins++
+      if (game.is_conference_game) awayRecord.confWins++
     } else {
       awayRecord.losses++
+      if (game.is_conference_game) awayRecord.confLosses++
     }
     schoolRecordsMap.set(game.away_school_id, awayRecord)
   }
