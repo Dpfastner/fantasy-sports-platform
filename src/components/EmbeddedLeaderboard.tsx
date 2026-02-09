@@ -143,7 +143,16 @@ export default function EmbeddedLeaderboard({
     }
   }
 
-  const weeksToShow = Array.from({ length: currentWeek }, (_, i) => i + 1)
+  // Show all regular season weeks (1-15) plus bonus columns
+  const maxRegularWeek = 15
+  const weeksToShow = Array.from({ length: Math.max(currentWeek, maxRegularWeek) }, (_, i) => i + 1)
+
+  // Additional scoring columns after regular season
+  const bonusColumns = [
+    { key: 'bowls', label: 'Bowls' },
+    { key: 'playoffs', label: 'CFP' },
+    { key: 'heisman', label: 'Heis' },
+  ]
 
   return (
     <div className="space-y-6">
@@ -193,8 +202,13 @@ export default function EmbeddedLeaderboard({
                 <th className="px-2 md:px-4 py-3 text-left text-gray-400 font-medium sticky left-6 md:left-10 bg-gray-700/50 z-10 text-sm">Team</th>
                 <th className="px-2 md:px-4 py-3 text-right text-gray-400 font-medium text-sm">Total</th>
                 {weeksToShow.map(week => (
-                  <th key={week} className="px-2 py-3 text-center text-gray-400 font-medium text-xs">
+                  <th key={week} className="px-2 py-3 text-center text-gray-400 font-medium text-xs whitespace-nowrap">
                     W{week}
+                  </th>
+                ))}
+                {bonusColumns.map(col => (
+                  <th key={col.key} className="px-2 py-3 text-center text-purple-400 font-medium text-xs whitespace-nowrap">
+                    {col.label}
                   </th>
                 ))}
               </tr>
@@ -251,7 +265,7 @@ export default function EmbeddedLeaderboard({
                       return (
                         <td
                           key={week}
-                          className={`px-1 py-2 text-center text-xs ${
+                          className={`px-1 py-2 text-center text-xs whitespace-nowrap ${
                             isHighPoints ? 'bg-yellow-900/30' : ''
                           }`}
                         >
@@ -265,6 +279,12 @@ export default function EmbeddedLeaderboard({
                         </td>
                       )
                     })}
+                    {/* Bonus columns - placeholder for future data */}
+                    {bonusColumns.map(col => (
+                      <td key={col.key} className="px-1 py-2 text-center text-xs whitespace-nowrap">
+                        <span className="text-gray-600">-</span>
+                      </td>
+                    ))}
                   </tr>
                 )
               })}
@@ -289,8 +309,13 @@ export default function EmbeddedLeaderboard({
                     </div>
                   </th>
                   {weeksToShow.map(week => (
-                    <th key={week} className="px-2 py-3 text-center text-gray-400 font-medium text-xs">
+                    <th key={week} className="px-2 py-3 text-center text-gray-400 font-medium text-xs whitespace-nowrap">
                       W{week}
+                    </th>
+                  ))}
+                  {bonusColumns.map(col => (
+                    <th key={col.key} className="px-2 py-3 text-center text-purple-400 font-medium text-xs whitespace-nowrap">
+                      {col.label}
                     </th>
                   ))}
                 </tr>
@@ -353,7 +378,7 @@ export default function EmbeddedLeaderboard({
                           return (
                             <td
                               key={week}
-                              className={`px-1 py-2 text-center text-xs ${win ? 'bg-yellow-900/30' : ''}`}
+                              className={`px-1 py-2 text-center text-xs whitespace-nowrap ${win ? 'bg-yellow-900/30' : ''}`}
                             >
                               {win ? (
                                 <span className="text-yellow-400 font-semibold">${win.amount}</span>
@@ -363,6 +388,12 @@ export default function EmbeddedLeaderboard({
                             </td>
                           )
                         })}
+                        {/* Bonus columns - placeholder for future data */}
+                        {bonusColumns.map(col => (
+                          <td key={col.key} className="px-1 py-2 text-center text-xs whitespace-nowrap">
+                            <span className="text-gray-600">-</span>
+                          </td>
+                        ))}
                       </tr>
                     )
                   })}

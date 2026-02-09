@@ -91,7 +91,7 @@ export default async function StatsPage({ params, searchParams }: PageProps) {
     .from('games')
     .select('home_school_id, away_school_id, home_score, away_score, is_conference_game, status')
     .eq('season_id', league.season_id)
-    .eq('status', 'final')
+    .eq('status', 'completed')
 
   // Calculate W-L records for each school
   const schoolRecords = new Map<string, { wins: number; losses: number; confWins: number; confLosses: number }>()
@@ -210,19 +210,102 @@ export default async function StatsPage({ params, searchParams }: PageProps) {
     .eq('season_id', league.season_id)
     .single()
 
-  // Fetch stats from API for ideal team
-  let statsData = null
-  try {
-    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
-    const response = await fetch(`${baseUrl}/api/leagues/${leagueId}/stats`, {
-      cache: 'no-store',
+  // Fetch school weekly points directly for ideal team calculation
+  const { data: schoolPoints } = await supabase
+    .from('school_weekly_points')
+    .select('school_id, week_number, total_points')
+    .eq('season_id', league.season_id)
+
+  // Calculate total points per school
+  const schoolTotals = new Map<string, { points: number; weeks: number }>()
+  for (const sp of schoolPoints || []) {
+    const current = schoolTotals.get(sp.school_id) || { points: 0, weeks: 0 }
+    schoolTotals.set(sp.school_id, {
+      points: current.points + Number(sp.total_points),
+      weeks: current.weeks + 1,
     })
-    if (response.ok) {
-      statsData = await response.json()
-    }
-  } catch (error) {
-    console.error('Failed to fetch stats:', error)
   }
+
+  // Create schools map for lookup
+  const schoolsMap = new Map(schools?.map(s => [s.id, s]) || [])
+
+  // Build school stats array sorted by total points
+  const schoolStats: Array<{
+    id: string
+    name: string
+    abbreviation: string | null
+    logo_url: string | null
+    conference: string
+    total_points: number
+    weeks_with_points: number
+  }> = []
+
+  for (const [schoolId, stats] of schoolTotals) {
+    const school = schoolsMap.get(schoolId)
+    if (school) {
+      schoolStats.push({
+        id: schoolId,
+        name: school.name,
+        abbreviation: school.abbreviation,
+        logo_url: school.logo_url,
+        conference: school.conference,
+        total_points: stats.points,
+        weeks_with_points: stats.weeks,
+      })
+    }
+  }
+  schoolStats.sort((a, b) => b.total_points - a.total_points)
+
+  // Ideal team is top N schools
+  const idealTeam = schoolStats.slice(0, schoolsPerTeam)
+  const idealTeamPoints = idealTeam.reduce((sum, s) => sum + s.total_points, 0)
+
+  // Calculate weekly max points
+  const weeklyMaxPoints: Array<{
+    week: number
+    maxPoints: number
+    topSchools: Array<{ id: string; name: string; points: number }>
+  }> = []
+
+  const weeks = [...new Set(schoolPoints?.map(p => p.week_number) || [])].sort((a, b) => a - b)
+
+  for (const week of weeks) {
+    const weekPoints = new Map<string, number>()
+    for (const sp of schoolPoints || []) {
+      if (sp.week_number === week) {
+        weekPoints.set(sp.school_id, Number(sp.total_points))
+      }
+    }
+
+    const topSchools = [...weekPoints.entries()]
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, schoolsPerTeam)
+      .map(([id, points]) => ({
+        id,
+        name: schoolsMap.get(id)?.name || 'Unknown',
+        points,
+      }))
+
+    weeklyMaxPoints.push({
+      week,
+      maxPoints: topSchools.reduce((sum, s) => sum + s.points, 0),
+      topSchools,
+    })
+  }
+
+  // Build statsData object
+  const statsData = schoolPoints && schoolPoints.length > 0 ? {
+    idealTeam: {
+      schools: idealTeam,
+      totalPoints: idealTeamPoints,
+    },
+    currentWeekMax: {
+      week: currentWeek,
+      maxPoints: weeklyMaxPoints.find(w => w.week === currentWeek)?.maxPoints || 0,
+      topSchools: weeklyMaxPoints.find(w => w.week === currentWeek)?.topSchools || [],
+    },
+    weeklyMaxPoints,
+  } : null
 
   return (
     <StatsClient

@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
-import { fetchRankings } from '@/lib/api/espn'
+import { fetchRankings, fetchCFPRankings } from '@/lib/api/espn'
 
 // Create admin client lazily at runtime (not build time)
 function getSupabaseAdmin() {
@@ -17,6 +17,9 @@ function getSupabaseAdmin() {
 interface SyncRankingsRequest {
   year?: number
   week?: number
+  seasonType?: number // 1 = preseason, 2 = regular, 3 = final
+  backfillAll?: boolean // Set true to sync all weeks
+  useCFP?: boolean // Set true to fetch CFP rankings (poll 22)
 }
 
 export async function POST(request: Request) {
@@ -35,11 +38,21 @@ export async function POST(request: Request) {
     const body: SyncRankingsRequest = await request.json().catch(() => ({}))
     const year = body.year || new Date().getFullYear()
     const week = body.week || 1
+    const seasonType = body.seasonType || 2
+    const backfillAll = body.backfillAll || false
+    const useCFP = body.useCFP || false
 
-    console.log(`Fetching rankings for ${year}...`)
+    // Handle backfill all weeks
+    if (backfillAll) {
+      return await handleBackfillAll(year, request)
+    }
 
-    // Fetch rankings from ESPN
-    const rankingsData = await fetchRankings(year)
+    console.log(`Fetching rankings for ${year} week ${week} (seasonType: ${seasonType}, CFP: ${useCFP})...`)
+
+    // Fetch rankings from ESPN with week-specific parameters
+    const rankingsData = useCFP
+      ? await fetchCFPRankings(year, week)
+      : await fetchRankings(year, week, seasonType)
 
     // Find the AP Top 25 poll
     const apPoll = rankingsData.rankings?.find(
@@ -158,7 +171,189 @@ export async function POST(request: Request) {
 export async function GET() {
   return NextResponse.json({
     message: 'Rankings sync endpoint',
-    usage: 'POST with { year, week } and Authorization: Bearer <SYNC_API_KEY>',
-    example: { year: 2024, week: 1 },
+    usage: 'POST with { year, week, seasonType?, backfillAll?, useCFP? } and Authorization: Bearer <SYNC_API_KEY>',
+    examples: [
+      { description: 'Current week rankings', body: { year: 2025, week: 10 } },
+      { description: 'Preseason rankings', body: { year: 2025, week: 1, seasonType: 1 } },
+      { description: 'CFP rankings (week 10+)', body: { year: 2025, week: 12, useCFP: true } },
+      { description: 'Final rankings', body: { year: 2025, week: 1, seasonType: 3 } },
+      { description: 'Backfill entire season', body: { year: 2025, backfillAll: true } },
+    ],
+    seasonTypes: {
+      1: 'Preseason',
+      2: 'Regular season (default)',
+      3: 'Final/postseason',
+    },
   })
+}
+
+/**
+ * Handle backfilling all rankings for a season
+ */
+async function handleBackfillAll(year: number, request: Request) {
+  console.log(`Starting full backfill for ${year} season...`)
+
+  const supabase = getSupabaseAdmin()
+
+  // Get season ID
+  const { data: season } = await supabase
+    .from('seasons')
+    .select('id')
+    .eq('year', year)
+    .single()
+
+  if (!season) {
+    return NextResponse.json(
+      { error: `Season ${year} not found in database` },
+      { status: 404 }
+    )
+  }
+
+  // Get school mappings
+  const { data: schools } = await supabase
+    .from('schools')
+    .select('id, external_api_id, name')
+    .not('external_api_id', 'is', null)
+
+  const schoolMap = new Map<string, string>()
+  const schoolNameMap = new Map<string, string>()
+  for (const school of schools || []) {
+    if (school.external_api_id) {
+      schoolMap.set(school.external_api_id, school.id)
+    }
+    schoolNameMap.set(school.id, school.name)
+  }
+
+  const results: Array<{
+    week: number
+    seasonType: number
+    synced: number
+    skipped: number
+  }> = []
+
+  // Sync preseason (week 0, seasonType 1)
+  try {
+    console.log('Fetching preseason rankings...')
+    const presasonData = await fetchRankings(year, 1, 1)
+    const preseasonResult = await syncWeekRankings(
+      supabase, season.id, 0, presasonData, schoolMap, schoolNameMap
+    )
+    results.push({ week: 0, seasonType: 1, ...preseasonResult })
+  } catch (err) {
+    console.warn('Preseason rankings not available:', err)
+  }
+
+  // Sync regular season weeks 1-15
+  for (let week = 1; week <= 15; week++) {
+    try {
+      console.log(`Fetching week ${week} rankings...`)
+      const weekData = await fetchRankings(year, week, 2)
+      const weekResult = await syncWeekRankings(
+        supabase, season.id, week, weekData, schoolMap, schoolNameMap
+      )
+      results.push({ week, seasonType: 2, ...weekResult })
+
+      // Small delay to avoid rate limiting
+      await new Promise(resolve => setTimeout(resolve, 200))
+    } catch (err) {
+      console.warn(`Week ${week} rankings not available:`, err)
+    }
+  }
+
+  // Sync week 16 (bowl week)
+  try {
+    console.log('Fetching week 16 rankings...')
+    const week16Data = await fetchRankings(year, 16, 2)
+    const week16Result = await syncWeekRankings(
+      supabase, season.id, 16, week16Data, schoolMap, schoolNameMap
+    )
+    results.push({ week: 16, seasonType: 2, ...week16Result })
+  } catch (err) {
+    console.warn('Week 16 rankings not available:', err)
+  }
+
+  // Try to sync final rankings
+  try {
+    console.log('Fetching final rankings...')
+    const finalData = await fetchRankings(year, 1, 3)
+    const finalResult = await syncWeekRankings(
+      supabase, season.id, 17, finalData, schoolMap, schoolNameMap
+    )
+    results.push({ week: 17, seasonType: 3, ...finalResult })
+  } catch (err) {
+    console.warn('Final rankings not available:', err)
+  }
+
+  const totalSynced = results.reduce((sum, r) => sum + r.synced, 0)
+  const totalSkipped = results.reduce((sum, r) => sum + r.skipped, 0)
+
+  return NextResponse.json({
+    success: true,
+    summary: {
+      year,
+      weeksProcessed: results.length,
+      totalSynced,
+      totalSkipped,
+    },
+    weeklyResults: results,
+  })
+}
+
+/**
+ * Sync rankings for a single week
+ */
+async function syncWeekRankings(
+  supabase: ReturnType<typeof getSupabaseAdmin>,
+  seasonId: string,
+  weekNumber: number,
+  rankingsData: Awaited<ReturnType<typeof fetchRankings>>,
+  schoolMap: Map<string, string>,
+  schoolNameMap: Map<string, string>
+): Promise<{ synced: number; skipped: number }> {
+  // Find the AP Top 25 poll
+  const apPoll = rankingsData.rankings?.find(
+    r => r.name.toLowerCase().includes('ap') || r.type === 'ap'
+  )
+
+  if (!apPoll || !apPoll.ranks?.length) {
+    return { synced: 0, skipped: 0 }
+  }
+
+  // Clear existing rankings for this week
+  await supabase
+    .from('ap_rankings_history')
+    .delete()
+    .eq('season_id', seasonId)
+    .eq('week_number', weekNumber)
+
+  let synced = 0
+  let skipped = 0
+
+  // Insert new rankings
+  for (const rankedTeam of apPoll.ranks) {
+    const espnId = rankedTeam.team?.id
+    const schoolId = espnId ? schoolMap.get(espnId) : null
+
+    if (!schoolId) {
+      skipped++
+      continue
+    }
+
+    const { error } = await supabase
+      .from('ap_rankings_history')
+      .insert({
+        season_id: seasonId,
+        week_number: weekNumber,
+        school_id: schoolId,
+        rank: rankedTeam.current,
+      })
+
+    if (error) {
+      skipped++
+    } else {
+      synced++
+    }
+  }
+
+  return { synced, skipped }
 }

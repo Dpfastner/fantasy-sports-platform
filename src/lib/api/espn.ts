@@ -196,13 +196,36 @@ export async function fetchScoreboard(
 }
 
 /**
- * Fetch current AP Top 25 rankings
+ * Fetch AP Top 25 rankings for a specific week
+ *
+ * ESPN URL patterns:
+ * - Preseason (week 1, seasontype 1): /rankings/_/week/1/year/2025/seasontype/1
+ * - Regular season (weeks 2-15, seasontype 2): /rankings/_/week/7/year/2025/seasontype/2
+ * - CFP rankings (poll 22): /rankings/_/poll/22/week/16/year/2025/seasontype/2
+ * - Final rankings (seasontype 3): /rankings/_/week/1/year/2025/seasontype/3
+ *
+ * @param year - The season year (e.g., 2025)
+ * @param week - The week number (1-16 for regular season, null for current)
+ * @param seasonType - 1 = preseason, 2 = regular season, 3 = postseason/final
  */
-export async function fetchRankings(year: number = new Date().getFullYear()): Promise<ESPNRankingsResponse> {
+export async function fetchRankings(
+  year: number = new Date().getFullYear(),
+  week?: number,
+  seasonType: number = 2
+): Promise<ESPNRankingsResponse> {
   try {
-    const response = await fetch(
-      `${ESPN_BASE_URL}/rankings?seasons=${year}`
-    )
+    // Build URL with optional week and seasontype parameters
+    let url = `${ESPN_BASE_URL}/rankings?seasons=${year}`
+
+    if (week !== undefined) {
+      url += `&week=${week}`
+    }
+
+    if (seasonType !== 2) {
+      url += `&seasontype=${seasonType}`
+    }
+
+    const response = await fetch(url)
 
     if (!response.ok) {
       throw new Error(`ESPN API error: ${response.status}`)
@@ -213,6 +236,87 @@ export async function fetchRankings(year: number = new Date().getFullYear()): Pr
     console.error('Error fetching ESPN rankings:', error)
     throw error
   }
+}
+
+/**
+ * Fetch CFP (College Football Playoff) rankings for a specific week
+ * CFP rankings use poll ID 22 and typically appear from week 10 onwards
+ *
+ * @param year - The season year
+ * @param week - The week number (typically 10-16)
+ */
+export async function fetchCFPRankings(
+  year: number = new Date().getFullYear(),
+  week: number
+): Promise<ESPNRankingsResponse> {
+  try {
+    // CFP rankings use poll=22 parameter
+    const url = `${ESPN_BASE_URL}/rankings?seasons=${year}&week=${week}&poll=22&seasontype=2`
+
+    const response = await fetch(url)
+
+    if (!response.ok) {
+      throw new Error(`ESPN API error: ${response.status}`)
+    }
+
+    return await response.json()
+  } catch (error) {
+    console.error('Error fetching ESPN CFP rankings:', error)
+    throw error
+  }
+}
+
+/**
+ * Fetch all historical rankings for a season (weeks 1-16 + postseason)
+ * Useful for backfilling ranking data
+ *
+ * @param year - The season year
+ */
+export async function fetchAllSeasonRankings(year: number): Promise<{
+  week: number
+  seasonType: number
+  rankings: ESPNRankingsResponse
+}[]> {
+  const results: { week: number; seasonType: number; rankings: ESPNRankingsResponse }[] = []
+
+  try {
+    // Preseason (week 1, seasontype 1)
+    const preseason = await fetchRankings(year, 1, 1)
+    results.push({ week: 0, seasonType: 1, rankings: preseason })
+
+    // Regular season weeks 1-15 (seasontype 2)
+    for (let week = 1; week <= 15; week++) {
+      try {
+        const weekRankings = await fetchRankings(year, week, 2)
+        results.push({ week, seasonType: 2, rankings: weekRankings })
+        // Small delay to avoid rate limiting
+        await new Promise(resolve => setTimeout(resolve, 100))
+      } catch (err) {
+        console.warn(`Could not fetch rankings for week ${week}:`, err)
+      }
+    }
+
+    // Bowl/playoff weeks 16+
+    try {
+      const week16 = await fetchRankings(year, 16, 2)
+      results.push({ week: 16, seasonType: 2, rankings: week16 })
+    } catch (err) {
+      console.warn('Could not fetch week 16 rankings:', err)
+    }
+
+    // Final rankings (seasontype 3)
+    try {
+      const finalRankings = await fetchRankings(year, 1, 3)
+      results.push({ week: 17, seasonType: 3, rankings: finalRankings })
+    } catch (err) {
+      console.warn('Could not fetch final rankings:', err)
+    }
+
+  } catch (error) {
+    console.error('Error fetching all season rankings:', error)
+  }
+
+  return results
 }
 
 /**

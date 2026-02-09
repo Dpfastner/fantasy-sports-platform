@@ -105,11 +105,29 @@ export function PlayoffBracket({ seasonId, rosterSchoolIds = [], leagueId }: Pro
       .select('*')
       .eq('season_id', seasonId)
       .eq('is_playoff_game', true)
+      .not('playoff_round', 'is', null)
       .order('game_date', { ascending: true })
       .order('game_time', { ascending: true })
 
     if (data) {
-      setGames(data)
+      // Filter to only CFP games (12-team format: 11 total games max)
+      const cfpGames = data.filter(game => {
+        const round = game.playoff_round?.toLowerCase()
+        const bowl = game.bowl_name?.toLowerCase() || ''
+        // Only include games with explicit playoff_round or known CFP bowl names
+        return round === 'first_round' ||
+               round === 'quarterfinal' ||
+               round === 'semifinal' ||
+               round === 'championship' ||
+               bowl.includes('national championship') ||
+               bowl.includes('cotton bowl') ||
+               bowl.includes('orange bowl') ||
+               bowl.includes('sugar bowl') ||
+               bowl.includes('rose bowl') ||
+               bowl.includes('peach bowl') ||
+               bowl.includes('fiesta bowl')
+      })
+      setGames(cfpGames.slice(0, 11)) // Max 11 games in 12-team CFP
     }
     setLoading(false)
   }

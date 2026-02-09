@@ -91,7 +91,7 @@ export default function TransactionsClient({
   const [conferenceFilter, setConferenceFilter] = useState<string>('all')
   const [showRankedOnly, setShowRankedOnly] = useState(false)
   const [sortBy, setSortBy] = useState<'name' | 'points' | 'rank' | 'record'>('points')
-  const [recordFilter, setRecordFilter] = useState<'all' | 'winning' | 'losing'>('all')
+  // Record filter removed - users can sort by record instead
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [showHistory, setShowHistory] = useState(false)
@@ -139,14 +139,6 @@ export default function TransactionsClient({
         return false
       }
 
-      // Record filter
-      if (recordFilter !== 'all') {
-        const record = schoolRecordsMap[school.id]
-        if (!record) return false
-        if (recordFilter === 'winning' && record.wins <= record.losses) return false
-        if (recordFilter === 'losing' && record.wins >= record.losses) return false
-      }
-
       return true
     })
 
@@ -171,7 +163,7 @@ export default function TransactionsClient({
     })
 
     return schools
-  }, [allSchools, rosterSchoolIds, schoolSelectionCounts, maxSelectionsPerSchool, searchQuery, conferenceFilter, showRankedOnly, recordFilter, sortBy, schoolPointsMap, rankingsMap, schoolRecordsMap])
+  }, [allSchools, rosterSchoolIds, schoolSelectionCounts, maxSelectionsPerSchool, searchQuery, conferenceFilter, showRankedOnly, sortBy, schoolPointsMap, rankingsMap, schoolRecordsMap])
 
   const handleSelectDrop = (rosterEntry: RosterSchool) => {
     setSelectedDrop(rosterEntry)
@@ -419,15 +411,6 @@ export default function TransactionsClient({
                       {conferences.map(conf => (
                         <option key={conf} value={conf}>{conf}</option>
                       ))}
-                    </select>
-                    <select
-                      value={recordFilter}
-                      onChange={(e) => setRecordFilter(e.target.value as 'all' | 'winning' | 'losing')}
-                      className="px-2 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    >
-                      <option value="all">All Records</option>
-                      <option value="winning">Winning</option>
-                      <option value="losing">Losing</option>
                     </select>
                     <select
                       value={sortBy}

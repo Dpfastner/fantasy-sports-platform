@@ -213,6 +213,12 @@ export default async function LeaguePage({ params }: PageProps) {
         {isDraftComplete && (
           <div className="flex flex-wrap items-center gap-2 mb-6 pb-4 border-b border-gray-700">
             <Link
+              href={`/leagues/${id}/schedule`}
+              className="bg-gray-700 hover:bg-gray-600 text-white text-sm py-2 px-4 rounded-lg transition-colors"
+            >
+              Schedule
+            </Link>
+            <Link
               href={`/leagues/${id}/transactions`}
               className="bg-gray-700 hover:bg-gray-600 text-white text-sm py-2 px-4 rounded-lg transition-colors"
             >
