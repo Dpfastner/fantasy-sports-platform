@@ -113,7 +113,7 @@ export default async function BracketPage({ params }: PageProps) {
               href={`/leagues/${leagueId}/transactions`}
               className="py-3 px-4 text-gray-400 hover:text-white transition-colors whitespace-nowrap"
             >
-              Transactions
+              Add/Drop
             </Link>
           </div>
         </div>

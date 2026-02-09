@@ -405,27 +405,27 @@ export default async function TeamPage({ params }: PageProps) {
           </div>
         )}
 
-        {/* Actions - Now at bottom */}
+        {/* Quick Navigation */}
         <div className="bg-gray-800 rounded-lg p-6">
-          <h2 className="text-xl font-semibold text-white mb-4">Actions</h2>
+          <h2 className="text-xl font-semibold text-white mb-4">Quick Navigation</h2>
           <div className="flex flex-wrap gap-3">
+            <Link
+              href={`/leagues/${leagueId}/schedule`}
+              className="bg-gray-700 hover:bg-gray-600 text-white py-2 px-6 rounded-lg transition-colors"
+            >
+              Schedule
+            </Link>
             <Link
               href={`/leagues/${leagueId}/transactions`}
               className="bg-gray-700 hover:bg-gray-600 text-white py-2 px-6 rounded-lg transition-colors"
             >
-              Add/Drop School
+              Add/Drop
             </Link>
             <Link
-              href={`/leagues/${leagueId}/leaderboard`}
+              href={`/leagues/${leagueId}/stats`}
               className="bg-gray-700 hover:bg-gray-600 text-white py-2 px-6 rounded-lg transition-colors"
             >
-              View Leaderboard
-            </Link>
-            <Link
-              href={`/leagues/${leagueId}/bracket`}
-              className="bg-gray-700 hover:bg-gray-600 text-white py-2 px-6 rounded-lg transition-colors"
-            >
-              Playoff Bracket
+              League Stats
             </Link>
             <Link
               href={`/leagues/${leagueId}`}

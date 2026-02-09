@@ -90,7 +90,7 @@ export default function TransactionsClient({
   const [searchQuery, setSearchQuery] = useState('')
   const [conferenceFilter, setConferenceFilter] = useState<string>('all')
   const [showRankedOnly, setShowRankedOnly] = useState(false)
-  const [sortBy, setSortBy] = useState<'name' | 'points' | 'rank' | 'record' | 'confRecord'>('points')
+  const [sortBy, setSortBy] = useState<'name' | 'points' | 'rank' | 'record' | 'confRecord'>('name')
   // Record filter removed - users can sort by record instead
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)

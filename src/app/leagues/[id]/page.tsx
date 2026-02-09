@@ -222,13 +222,7 @@ export default async function LeaguePage({ params }: PageProps) {
               href={`/leagues/${id}/transactions`}
               className="bg-gray-700 hover:bg-gray-600 text-white text-sm py-2 px-4 rounded-lg transition-colors"
             >
-              Transactions
-            </Link>
-            <Link
-              href={`/leagues/${id}/bracket`}
-              className="bg-gray-700 hover:bg-gray-600 text-white text-sm py-2 px-4 rounded-lg transition-colors"
-            >
-              Playoff Bracket
+              Add/Drop
             </Link>
             <Link
               href={`/leagues/${id}/stats`}

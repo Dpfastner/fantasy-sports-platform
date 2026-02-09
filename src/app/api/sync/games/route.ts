@@ -65,19 +65,23 @@ export async function POST(request: Request) {
       )
     }
 
-    // Get school mappings (ESPN ID -> our school ID) and conference info
+    // Get school mappings (ESPN ID -> our school ID), conference info, and logos
     const { data: schools } = await getSupabaseAdmin()
       .from('schools')
-      .select('id, external_api_id, conference')
+      .select('id, external_api_id, conference, logo_url')
       .not('external_api_id', 'is', null)
 
     const schoolMap = new Map<string, string>()
     const schoolConferenceMap = new Map<string, string>()
+    const schoolLogoMap = new Map<string, string>()
     for (const school of schools || []) {
       if (school.external_api_id) {
         schoolMap.set(school.external_api_id, school.id)
         if (school.id) {
           schoolConferenceMap.set(school.id, school.conference || '')
+          if (school.logo_url) {
+            schoolLogoMap.set(school.id, school.logo_url)
+          }
         }
       }
     }
@@ -113,10 +117,11 @@ export async function POST(request: Request) {
       }
 
       // Always store both teams' display info for easy UI rendering
+      // Get logos from our schools table (ESPN scoreboard doesn't include logos)
       const homeTeamName = homeCompetitor.team.displayName
-      const homeTeamLogoUrl = getTeamLogoUrl(homeCompetitor.team)
+      const homeTeamLogoUrl = homeSchoolId ? schoolLogoMap.get(homeSchoolId) || null : null
       const awayTeamName = awayCompetitor.team.displayName
-      const awayTeamLogoUrl = getTeamLogoUrl(awayCompetitor.team)
+      const awayTeamLogoUrl = awaySchoolId ? schoolLogoMap.get(awaySchoolId) || null : null
 
       // Determine if this is a conference game
       const homeConference = homeSchoolId ? schoolConferenceMap.get(homeSchoolId) : null
@@ -280,19 +285,23 @@ async function handleBackfillAllGames(year: number) {
     )
   }
 
-  // Get school mappings with conference info
+  // Get school mappings with conference info and logos
   const { data: schools } = await supabase
     .from('schools')
-    .select('id, external_api_id, conference')
+    .select('id, external_api_id, conference, logo_url')
     .not('external_api_id', 'is', null)
 
   const schoolMap = new Map<string, string>()
   const schoolConferenceMap = new Map<string, string>()
+  const schoolLogoMap = new Map<string, string>()
   for (const school of schools || []) {
     if (school.external_api_id) {
       schoolMap.set(school.external_api_id, school.id)
       if (school.id) {
         schoolConferenceMap.set(school.id, school.conference || '')
+        if (school.logo_url) {
+          schoolLogoMap.set(school.id, school.logo_url)
+        }
       }
     }
   }
@@ -310,7 +319,7 @@ async function handleBackfillAllGames(year: number) {
       console.log(`Fetching week ${week} games...`)
       const games = await fetchScoreboard(year, week, 2)
       const weekResult = await syncWeekGames(
-        supabase, season.id, week, games, schoolMap, schoolConferenceMap, 2
+        supabase, season.id, week, games, schoolMap, schoolConferenceMap, schoolLogoMap, 2
       )
       results.push({ week, seasonType: 2, ...weekResult })
 
@@ -327,7 +336,7 @@ async function handleBackfillAllGames(year: number) {
       console.log(`Fetching postseason week ${week} games...`)
       const games = await fetchScoreboard(year, week, 3)
       const weekResult = await syncWeekGames(
-        supabase, season.id, 15 + week, games, schoolMap, schoolConferenceMap, 3
+        supabase, season.id, 15 + week, games, schoolMap, schoolConferenceMap, schoolLogoMap, 3
       )
       results.push({ week: 15 + week, seasonType: 3, ...weekResult })
 
@@ -362,6 +371,7 @@ async function syncWeekGames(
   games: ESPNGame[],
   schoolMap: Map<string, string>,
   schoolConferenceMap: Map<string, string>,
+  schoolLogoMap: Map<string, string>,
   seasonType: number
 ): Promise<{ synced: number; skipped: number }> {
   let synced = 0
@@ -433,9 +443,9 @@ async function syncWeekGames(
           bowl_name: bowlName,
           playoff_round: playoffRound,
           home_team_name: homeCompetitor.team.displayName,
-          home_team_logo_url: getTeamLogoUrl(homeCompetitor.team),
+          home_team_logo_url: homeSchoolId ? schoolLogoMap.get(homeSchoolId) || null : null,
           away_team_name: awayCompetitor.team.displayName,
-          away_team_logo_url: getTeamLogoUrl(awayCompetitor.team),
+          away_team_logo_url: awaySchoolId ? schoolLogoMap.get(awaySchoolId) || null : null,
         },
         { onConflict: 'season_id,external_game_id' }
       )

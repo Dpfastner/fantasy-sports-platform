@@ -91,7 +91,7 @@ export function RosterList({
   const [canPick, setCanPick] = useState(true)
   const [picksUsed, setPicksUsed] = useState(0)
   const [saving, setSaving] = useState(false)
-  const [expanded, setExpanded] = useState(false)
+  const [expanded, setExpanded] = useState(true)
 
   useEffect(() => {
     if (doublePointsEnabled) {
