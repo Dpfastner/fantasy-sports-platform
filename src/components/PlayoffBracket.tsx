@@ -100,21 +100,21 @@ export function PlayoffBracket({ seasonId, rosterSchoolIds = [], leagueId }: Pro
 
   const loadPlayoffGames = async () => {
     setLoading(true)
+    // Query for playoff games - more lenient to catch all possible playoff indicators
     const { data } = await supabase
       .from('games')
       .select('*')
       .eq('season_id', seasonId)
       .eq('is_playoff_game', true)
-      .not('playoff_round', 'is', null)
       .order('game_date', { ascending: true })
       .order('game_time', { ascending: true })
 
-    if (data) {
+    if (data && data.length > 0) {
       // Filter to only CFP games (12-team format: 11 total games max)
       const cfpGames = data.filter(game => {
-        const round = game.playoff_round?.toLowerCase()
+        const round = game.playoff_round?.toLowerCase() || ''
         const bowl = game.bowl_name?.toLowerCase() || ''
-        // Only include games with explicit playoff_round or known CFP bowl names
+        // Include games with explicit playoff_round or known CFP bowl names
         return round === 'first_round' ||
                round === 'quarterfinal' ||
                round === 'semifinal' ||
@@ -125,9 +125,14 @@ export function PlayoffBracket({ seasonId, rosterSchoolIds = [], leagueId }: Pro
                bowl.includes('sugar bowl') ||
                bowl.includes('rose bowl') ||
                bowl.includes('peach bowl') ||
-               bowl.includes('fiesta bowl')
+               bowl.includes('fiesta bowl') ||
+               // Also include any game marked as playoff if no other criteria met
+               (game.is_playoff_game && !bowl.includes('bowl'))
       })
-      setGames(cfpGames.slice(0, 11)) // Max 11 games in 12-team CFP
+      // If we have CFP games, use those, otherwise use all playoff games
+      setGames(cfpGames.length > 0 ? cfpGames.slice(0, 11) : data.slice(0, 11))
+    } else {
+      setGames([])
     }
     setLoading(false)
   }

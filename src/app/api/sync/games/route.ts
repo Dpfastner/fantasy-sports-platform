@@ -65,16 +65,20 @@ export async function POST(request: Request) {
       )
     }
 
-    // Get school mappings (ESPN ID -> our school ID)
+    // Get school mappings (ESPN ID -> our school ID) and conference info
     const { data: schools } = await getSupabaseAdmin()
       .from('schools')
-      .select('id, external_api_id')
+      .select('id, external_api_id, conference')
       .not('external_api_id', 'is', null)
 
     const schoolMap = new Map<string, string>()
+    const schoolConferenceMap = new Map<string, string>()
     for (const school of schools || []) {
       if (school.external_api_id) {
         schoolMap.set(school.external_api_id, school.id)
+        if (school.id) {
+          schoolConferenceMap.set(school.id, school.conference || '')
+        }
       }
     }
 
@@ -114,6 +118,13 @@ export async function POST(request: Request) {
       const awayTeamName = awayCompetitor.team.displayName
       const awayTeamLogoUrl = getTeamLogoUrl(awayCompetitor.team)
 
+      // Determine if this is a conference game
+      const homeConference = homeSchoolId ? schoolConferenceMap.get(homeSchoolId) : null
+      const awayConference = awaySchoolId ? schoolConferenceMap.get(awaySchoolId) : null
+      const isConferenceGame = !!(homeConference && awayConference &&
+        homeConference === awayConference &&
+        homeConference !== 'Independent')
+
       // Determine game status
       let status = 'scheduled'
       if (competition.status.type.state === 'in') {
@@ -126,6 +137,10 @@ export async function POST(request: Request) {
       const gameDate = new Date(game.date)
       const gameDateStr = gameDate.toISOString().split('T')[0]
       const gameTimeStr = gameDate.toTimeString().slice(0, 8)
+
+      // Extract bowl name and playoff round for postseason games
+      const bowlName = seasonType === 3 ? (game.name || null) : null
+      const playoffRound = seasonType === 3 ? determinePlayoffRound(game.name || '') : null
 
       // Upsert the game (using correct column names from schema)
       const { error: upsertError } = await getSupabaseAdmin()
@@ -152,6 +167,9 @@ export async function POST(request: Request) {
             down_distance: competition.situation?.downDistanceText || null,
             is_red_zone: competition.situation?.isRedZone || false,
             is_playoff_game: seasonType === 3,
+            is_conference_game: isConferenceGame,
+            bowl_name: bowlName,
+            playoff_round: playoffRound,
             home_team_name: homeTeamName,
             home_team_logo_url: homeTeamLogoUrl,
             away_team_name: awayTeamName,
@@ -210,6 +228,31 @@ export async function GET() {
 }
 
 /**
+ * Determine the playoff round from the game/bowl name
+ */
+function determinePlayoffRound(gameName: string): string | null {
+  const name = gameName.toLowerCase()
+
+  if (name.includes('national championship') || name.includes('cfp national')) {
+    return 'championship'
+  }
+  if (name.includes('semifinal') || name.includes('cotton bowl') ||
+      name.includes('orange bowl') || name.includes('sugar bowl') ||
+      name.includes('rose bowl')) {
+    return 'semifinal'
+  }
+  if (name.includes('quarterfinal') || name.includes('peach bowl') ||
+      name.includes('fiesta bowl')) {
+    return 'quarterfinal'
+  }
+  if (name.includes('first round') || name.includes('cfp first')) {
+    return 'first_round'
+  }
+
+  return null
+}
+
+/**
  * Handle backfilling all games for a season (weeks 0-16 regular + postseason)
  */
 async function handleBackfillAllGames(year: number) {
@@ -231,16 +274,20 @@ async function handleBackfillAllGames(year: number) {
     )
   }
 
-  // Get school mappings
+  // Get school mappings with conference info
   const { data: schools } = await supabase
     .from('schools')
-    .select('id, external_api_id')
+    .select('id, external_api_id, conference')
     .not('external_api_id', 'is', null)
 
   const schoolMap = new Map<string, string>()
+  const schoolConferenceMap = new Map<string, string>()
   for (const school of schools || []) {
     if (school.external_api_id) {
       schoolMap.set(school.external_api_id, school.id)
+      if (school.id) {
+        schoolConferenceMap.set(school.id, school.conference || '')
+      }
     }
   }
 
@@ -257,7 +304,7 @@ async function handleBackfillAllGames(year: number) {
       console.log(`Fetching week ${week} games...`)
       const games = await fetchScoreboard(year, week, 2)
       const weekResult = await syncWeekGames(
-        supabase, season.id, week, games, schoolMap, 2
+        supabase, season.id, week, games, schoolMap, schoolConferenceMap, 2
       )
       results.push({ week, seasonType: 2, ...weekResult })
 
@@ -274,7 +321,7 @@ async function handleBackfillAllGames(year: number) {
       console.log(`Fetching postseason week ${week} games...`)
       const games = await fetchScoreboard(year, week, 3)
       const weekResult = await syncWeekGames(
-        supabase, season.id, 15 + week, games, schoolMap, 3
+        supabase, season.id, 15 + week, games, schoolMap, schoolConferenceMap, 3
       )
       results.push({ week: 15 + week, seasonType: 3, ...weekResult })
 
@@ -308,6 +355,7 @@ async function syncWeekGames(
   weekNumber: number,
   games: ESPNGame[],
   schoolMap: Map<string, string>,
+  schoolConferenceMap: Map<string, string>,
   seasonType: number
 ): Promise<{ synced: number; skipped: number }> {
   let synced = 0
@@ -331,6 +379,13 @@ async function syncWeekGames(
       continue
     }
 
+    // Determine if this is a conference game
+    const homeConference = homeSchoolId ? schoolConferenceMap.get(homeSchoolId) : null
+    const awayConference = awaySchoolId ? schoolConferenceMap.get(awaySchoolId) : null
+    const isConferenceGame = !!(homeConference && awayConference &&
+      homeConference === awayConference &&
+      homeConference !== 'Independent')
+
     // Determine game status
     let status = 'scheduled'
     if (competition.status.type.state === 'in') {
@@ -343,6 +398,10 @@ async function syncWeekGames(
     const gameDate = new Date(game.date)
     const gameDateStr = gameDate.toISOString().split('T')[0]
     const gameTimeStr = gameDate.toTimeString().slice(0, 8)
+
+    // Extract bowl name and playoff round for postseason games
+    const bowlName = seasonType === 3 ? (game.name || null) : null
+    const playoffRound = seasonType === 3 ? determinePlayoffRound(game.name || '') : null
 
     const { error } = await supabase
       .from('games')
@@ -363,6 +422,9 @@ async function syncWeekGames(
           quarter: status === 'live' ? String(competition.status.period) : null,
           clock: status === 'live' ? competition.status.displayClock : null,
           is_playoff_game: seasonType === 3,
+          is_conference_game: isConferenceGame,
+          bowl_name: bowlName,
+          playoff_round: playoffRound,
           home_team_name: homeCompetitor.team.displayName,
           home_team_logo_url: getTeamLogoUrl(homeCompetitor.team),
           away_team_name: awayCompetitor.team.displayName,

@@ -61,6 +61,11 @@ export default function ScheduleClient({
   const [filter, setFilter] = useState<'all' | 'roster' | 'ranked' | 'live'>('all')
   const [activeView, setActiveView] = useState<'schedule' | 'bracket'>('schedule')
 
+  // Update games when initialGames prop changes (after navigation)
+  useEffect(() => {
+    setGames(initialGames)
+  }, [initialGames])
+
   useEffect(() => {
     const supabase = createClient()
 
