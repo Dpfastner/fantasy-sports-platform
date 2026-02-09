@@ -149,6 +149,8 @@ export async function POST(request: Request) {
             possession_team_id: competition.situation?.possession
               ? schoolMap.get(competition.situation.possession) || null
               : null,
+            down_distance: competition.situation?.downDistanceText || null,
+            is_red_zone: competition.situation?.isRedZone || false,
             is_playoff_game: seasonType === 3,
             home_team_name: homeTeamName,
             home_team_logo_url: homeTeamLogoUrl,

@@ -28,6 +28,9 @@ interface Game {
   quarter: string | null
   clock: string | null
   broadcast: string | null
+  possession_team_id: string | null
+  down_distance: string | null
+  is_red_zone: boolean
 }
 
 interface Props {
@@ -333,9 +336,15 @@ export default function ScheduleClient({
                             {isLive ? (
                               <>
                                 <div className="flex items-center gap-3 text-xl font-bold">
-                                  <span className="text-white">{game.away_score ?? 0}</span>
+                                  <span className={game.possession_team_id === game.away_school_id ? 'text-yellow-400' : 'text-white'}>
+                                    {game.away_score ?? 0}
+                                    {game.possession_team_id === game.away_school_id && <span className="text-xs ml-0.5">\u25C0</span>}
+                                  </span>
                                   <span className="text-gray-500">-</span>
-                                  <span className="text-white">{game.home_score ?? 0}</span>
+                                  <span className={game.possession_team_id === game.home_school_id ? 'text-yellow-400' : 'text-white'}>
+                                    {game.possession_team_id === game.home_school_id && <span className="text-xs mr-0.5">\u25B6</span>}
+                                    {game.home_score ?? 0}
+                                  </span>
                                 </div>
                                 <div className="flex items-center gap-1 text-xs text-red-400">
                                   <span className="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse"></span>
@@ -343,6 +352,12 @@ export default function ScheduleClient({
                                     ? `Q${game.quarter} ${game.clock}`
                                     : 'LIVE'}
                                 </div>
+                                {game.down_distance && (
+                                  <div className={`text-xs mt-0.5 ${game.is_red_zone ? 'text-red-400 font-medium' : 'text-gray-400'}`}>
+                                    {game.is_red_zone && '\u{1F3C8} '}
+                                    {game.down_distance}
+                                  </div>
+                                )}
                               </>
                             ) : isCompleted ? (
                               <>
