@@ -344,6 +344,100 @@ export async function fetchTeam(teamId: string): Promise<ESPNTeam | null> {
 }
 
 /**
+ * Parsed ranking entry from ESPN website
+ */
+export interface ParsedRanking {
+  rank: number
+  teamName: string
+  teamId: string | null
+  record: string
+  points: number
+  previousRank: number | null
+}
+
+/**
+ * Fetch historical AP rankings from ESPN website for a specific week
+ * The ESPN API only returns current rankings, but the website has historical data
+ *
+ * @param year - The season year
+ * @param week - The week number
+ * @param seasonType - 1 = preseason, 2 = regular season
+ */
+export async function fetchRankingsFromWebsite(
+  year: number,
+  week: number,
+  seasonType: number = 2
+): Promise<ParsedRanking[]> {
+  try {
+    // ESPN website URL pattern for rankings
+    const url = `https://www.espn.com/college-football/rankings/_/week/${week}/year/${year}/seasontype/${seasonType}`
+
+    const response = await fetch(url, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (compatible; FantasySportsBot/1.0)',
+      },
+    })
+
+    if (!response.ok) {
+      throw new Error(`ESPN website error: ${response.status}`)
+    }
+
+    const html = await response.text()
+
+    // Parse the HTML to extract rankings
+    // ESPN embeds ranking data in a JSON script tag
+    const rankings: ParsedRanking[] = []
+
+    // Look for the __espnfitt__ data which contains the rankings
+    const dataMatch = html.match(/window\['__espnfitt__'\]\s*=\s*(\{[\s\S]*?\});/)
+    if (dataMatch) {
+      try {
+        const data = JSON.parse(dataMatch[1])
+        // Navigate to the rankings data in the structure
+        const rankingsData = data?.page?.content?.rankings?.rankings?.[0]?.ranks
+        if (rankingsData && Array.isArray(rankingsData)) {
+          for (const rank of rankingsData) {
+            rankings.push({
+              rank: rank.current || rank.rank,
+              teamName: rank.team?.displayName || rank.team?.name || '',
+              teamId: rank.team?.id || null,
+              record: rank.recordSummary || '',
+              points: rank.points || 0,
+              previousRank: rank.previous || null,
+            })
+          }
+        }
+      } catch (parseError) {
+        console.warn('Could not parse ESPN data JSON:', parseError)
+      }
+    }
+
+    // If we didn't find JSON data, try parsing the HTML directly
+    if (rankings.length === 0) {
+      // Simple regex-based parsing for ranking rows
+      // Match patterns like: "1. Ohio State" or rank number + team name
+      const rankPattern = /<tr[^>]*>[\s\S]*?<td[^>]*>(\d+)<\/td>[\s\S]*?team\/(\d+)[^>]*>([^<]+)<\/a>[\s\S]*?<\/tr>/gi
+      let match
+      while ((match = rankPattern.exec(html)) !== null) {
+        rankings.push({
+          rank: parseInt(match[1]),
+          teamName: match[3].trim(),
+          teamId: match[2],
+          record: '',
+          points: 0,
+          previousRank: null,
+        })
+      }
+    }
+
+    return rankings
+  } catch (error) {
+    console.error('Error fetching ESPN rankings from website:', error)
+    throw error
+  }
+}
+
+/**
  * Direct ESPN team ID mappings for all FBS schools
  * Key: our database name (lowercase), Value: ESPN team ID
  * This ensures 100% accurate matching without relying on fuzzy name matching

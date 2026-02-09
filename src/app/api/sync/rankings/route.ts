@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
-import { fetchRankings, fetchCFPRankings } from '@/lib/api/espn'
+import { fetchRankings, fetchCFPRankings, fetchRankingsFromWebsite, ParsedRanking } from '@/lib/api/espn'
 
 // Create admin client lazily at runtime (not build time)
 function getSupabaseAdmin() {
@@ -20,6 +20,7 @@ interface SyncRankingsRequest {
   seasonType?: number // 1 = preseason, 2 = regular, 3 = final
   backfillAll?: boolean // Set true to sync all weeks
   useCFP?: boolean // Set true to fetch CFP rankings (poll 22)
+  useWebsite?: boolean // Set true to scrape ESPN website for historical data
 }
 
 export async function POST(request: Request) {
@@ -41,10 +42,11 @@ export async function POST(request: Request) {
     const seasonType = body.seasonType || 2
     const backfillAll = body.backfillAll || false
     const useCFP = body.useCFP || false
+    const useWebsite = body.useWebsite ?? true // Default to website scraping for historical data
 
     // Handle backfill all weeks
     if (backfillAll) {
-      return await handleBackfillAll(year, request)
+      return await handleBackfillAllFromWebsite(year)
     }
 
     console.log(`Fetching rankings for ${year} week ${week} (seasonType: ${seasonType}, CFP: ${useCFP})...`)
@@ -349,6 +351,165 @@ async function syncWeekRankings(
       })
 
     if (error) {
+      skipped++
+    } else {
+      synced++
+    }
+  }
+
+  return { synced, skipped }
+}
+
+/**
+ * Handle backfilling all rankings from ESPN website (historical data)
+ */
+async function handleBackfillAllFromWebsite(year: number) {
+  console.log(`Starting full rankings backfill from ESPN website for ${year} season...`)
+
+  const supabase = getSupabaseAdmin()
+
+  // Get season ID
+  const { data: season } = await supabase
+    .from('seasons')
+    .select('id')
+    .eq('year', year)
+    .single()
+
+  if (!season) {
+    return NextResponse.json(
+      { error: `Season ${year} not found in database` },
+      { status: 404 }
+    )
+  }
+
+  // Get school mappings (ESPN ID -> our school ID)
+  const { data: schools } = await supabase
+    .from('schools')
+    .select('id, external_api_id, name')
+    .not('external_api_id', 'is', null)
+
+  const schoolMap = new Map<string, string>()
+  const schoolNameMap = new Map<string, string>()
+  for (const school of schools || []) {
+    if (school.external_api_id) {
+      schoolMap.set(school.external_api_id, school.id)
+      // Also map by name for fallback matching
+      schoolNameMap.set(school.name.toLowerCase(), school.id)
+    }
+  }
+
+  const results: Array<{
+    week: number
+    seasonType: number
+    synced: number
+    skipped: number
+  }> = []
+
+  // Sync preseason (week 1, seasonType 1)
+  try {
+    console.log('Fetching preseason rankings from website...')
+    const rankings = await fetchRankingsFromWebsite(year, 1, 1)
+    const result = await syncParsedRankings(supabase, season.id, 0, rankings, schoolMap, schoolNameMap)
+    results.push({ week: 0, seasonType: 1, ...result })
+    await new Promise(resolve => setTimeout(resolve, 500))
+  } catch (err) {
+    console.warn('Preseason rankings not available:', err)
+  }
+
+  // Sync regular season weeks 1-15
+  for (let week = 1; week <= 15; week++) {
+    try {
+      console.log(`Fetching week ${week} rankings from website...`)
+      const rankings = await fetchRankingsFromWebsite(year, week, 2)
+      const result = await syncParsedRankings(supabase, season.id, week, rankings, schoolMap, schoolNameMap)
+      results.push({ week, seasonType: 2, ...result })
+
+      // Delay to avoid rate limiting
+      await new Promise(resolve => setTimeout(resolve, 500))
+    } catch (err) {
+      console.warn(`Week ${week} rankings not available:`, err)
+    }
+  }
+
+  // Try week 16 (bowl week)
+  try {
+    console.log('Fetching week 16 rankings from website...')
+    const rankings = await fetchRankingsFromWebsite(year, 16, 2)
+    const result = await syncParsedRankings(supabase, season.id, 16, rankings, schoolMap, schoolNameMap)
+    results.push({ week: 16, seasonType: 2, ...result })
+  } catch (err) {
+    console.warn('Week 16 rankings not available:', err)
+  }
+
+  const totalSynced = results.reduce((sum, r) => sum + r.synced, 0)
+  const totalSkipped = results.reduce((sum, r) => sum + r.skipped, 0)
+
+  return NextResponse.json({
+    success: true,
+    method: 'website_scraping',
+    summary: {
+      year,
+      weeksProcessed: results.length,
+      totalSynced,
+      totalSkipped,
+    },
+    weeklyResults: results,
+  })
+}
+
+/**
+ * Sync parsed rankings from website scraping
+ */
+async function syncParsedRankings(
+  supabase: ReturnType<typeof getSupabaseAdmin>,
+  seasonId: string,
+  weekNumber: number,
+  rankings: ParsedRanking[],
+  schoolMap: Map<string, string>,
+  schoolNameMap: Map<string, string>
+): Promise<{ synced: number; skipped: number }> {
+  if (!rankings.length) {
+    return { synced: 0, skipped: 0 }
+  }
+
+  // Clear existing rankings for this week
+  await supabase
+    .from('ap_rankings_history')
+    .delete()
+    .eq('season_id', seasonId)
+    .eq('week_number', weekNumber)
+
+  let synced = 0
+  let skipped = 0
+
+  for (const ranking of rankings) {
+    // Try to match by ESPN team ID first, then by name
+    let schoolId = ranking.teamId ? schoolMap.get(ranking.teamId) : null
+
+    if (!schoolId && ranking.teamName) {
+      // Try name-based matching
+      const normalizedName = ranking.teamName.toLowerCase()
+      schoolId = schoolNameMap.get(normalizedName) || null
+    }
+
+    if (!schoolId) {
+      console.warn(`Could not match team: ${ranking.teamName} (ID: ${ranking.teamId})`)
+      skipped++
+      continue
+    }
+
+    const { error } = await supabase
+      .from('ap_rankings_history')
+      .insert({
+        season_id: seasonId,
+        week_number: weekNumber,
+        school_id: schoolId,
+        rank: ranking.rank,
+        previous_rank: ranking.previousRank,
+      })
+
+    if (error) {
+      console.error(`Error inserting ranking for ${ranking.teamName}:`, error)
       skipped++
     } else {
       synced++

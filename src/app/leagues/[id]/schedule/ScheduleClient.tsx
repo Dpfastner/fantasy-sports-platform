@@ -149,6 +149,12 @@ export default function ScheduleClient({
           </Link>
           <div className="flex items-center gap-4">
             <Link
+              href={`/leagues/${leagueId}/team`}
+              className="text-gray-400 hover:text-white transition-colors"
+            >
+              My Roster
+            </Link>
+            <Link
               href={`/leagues/${leagueId}`}
               className="text-gray-400 hover:text-white transition-colors"
             >

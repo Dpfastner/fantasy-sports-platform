@@ -260,6 +260,9 @@ export default async function TeamPage({ params }: PageProps) {
             >
               {league.name}
             </Link>
+            <Link href="/dashboard" className="text-gray-400 hover:text-white transition-colors">
+              My Leagues
+            </Link>
           </div>
         </div>
       </header>
