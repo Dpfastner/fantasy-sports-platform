@@ -385,30 +385,28 @@ export async function fetchRankingsFromWebsite(
     const html = await response.text()
 
     // Parse the HTML to extract rankings
-    // ESPN embeds ranking data in a JSON script tag
+    // ESPN embeds ranking data inline in the HTML
     const rankings: ParsedRanking[] = []
 
-    // Look for the __espnfitt__ data which contains the rankings
-    const dataMatch = html.match(/window\['__espnfitt__'\]\s*=\s*(\{[\s\S]*?\});/)
-    if (dataMatch) {
+    // Look for the "ranks" array in the HTML - ESPN embeds it inline
+    const ranksMatch = html.match(/"ranks":\[([\s\S]*?)\],"/)
+    if (ranksMatch) {
       try {
-        const data = JSON.parse(dataMatch[1])
-        // Navigate to the rankings data in the structure
-        const rankingsData = data?.page?.content?.rankings?.rankings?.[0]?.ranks
-        if (rankingsData && Array.isArray(rankingsData)) {
-          for (const rank of rankingsData) {
-            rankings.push({
-              rank: rank.current || rank.rank,
-              teamName: rank.team?.displayName || rank.team?.name || '',
-              teamId: rank.team?.id || null,
-              record: rank.recordSummary || '',
-              points: rank.points || 0,
-              previousRank: rank.previous || null,
-            })
-          }
+        const ranksJson = '[' + ranksMatch[1] + ']'
+        const ranksData = JSON.parse(ranksJson)
+
+        for (const rank of ranksData) {
+          rankings.push({
+            rank: rank.currentRank || rank.current || rank.rank,
+            teamName: rank.team?.location || rank.team?.displayName || rank.team?.name || '',
+            teamId: rank.team?.id || null,
+            record: rank.record || rank.recordSummary || '',
+            points: rank.points || 0,
+            previousRank: null, // Calculate from trend if needed
+          })
         }
       } catch (parseError) {
-        console.warn('Could not parse ESPN data JSON:', parseError)
+        console.warn('Could not parse ESPN ranks JSON:', parseError)
       }
     }
 
