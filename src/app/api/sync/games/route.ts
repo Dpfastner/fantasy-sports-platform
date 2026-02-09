@@ -138,9 +138,11 @@ export async function POST(request: Request) {
       const gameDateStr = gameDate.toISOString().split('T')[0]
       const gameTimeStr = gameDate.toTimeString().slice(0, 8)
 
-      // Extract bowl name and playoff round for postseason games
-      const bowlName = seasonType === 3 ? (game.name || null) : null
-      const playoffRound = seasonType === 3 ? determinePlayoffRound(game.name || '') : null
+      // Extract bowl name from ESPN notes (e.g., "College Football Playoff Quarterfinal at the Cotton Bowl")
+      // Notes contain the actual bowl/game name, not game.name which is just the matchup
+      const espnNotes = competition.notes as Array<{ headline?: string }> | undefined
+      const bowlName = seasonType === 3 ? (espnNotes?.[0]?.headline || null) : null
+      const playoffRound = seasonType === 3 ? determinePlayoffRound(bowlName || '') : null
 
       // Upsert the game (using correct column names from schema)
       const { error: upsertError } = await getSupabaseAdmin()
@@ -161,12 +163,7 @@ export async function POST(request: Request) {
             status: status,
             quarter: status === 'live' ? String(competition.status.period) : null,
             clock: status === 'live' ? competition.status.displayClock : null,
-            possession_team_id: competition.situation?.possession
-              ? schoolMap.get(competition.situation.possession) || null
-              : null,
-            down_distance: competition.situation?.downDistanceText || null,
-            is_red_zone: competition.situation?.isRedZone || false,
-            is_playoff_game: seasonType === 3,
+            is_playoff_game: playoffRound !== null,
             is_conference_game: isConferenceGame,
             bowl_name: bowlName,
             playoff_round: playoffRound,
@@ -228,28 +225,37 @@ export async function GET() {
 }
 
 /**
- * Determine the playoff round from the game/bowl name
+ * Determine the playoff round from the ESPN notes headline
+ * ESPN format examples:
+ * - "College Football Playoff First Round Game"
+ * - "College Football Playoff Quarterfinal at the Goodyear Cotton Bowl Classic"
+ * - "College Football Playoff Semifinal at the Vrbo Fiesta Bowl"
+ * - "College Football Playoff National Championship Presented by AT&T"
  */
-function determinePlayoffRound(gameName: string): string | null {
-  const name = gameName.toLowerCase()
+function determinePlayoffRound(notesHeadline: string): string | null {
+  const name = notesHeadline.toLowerCase()
 
-  if (name.includes('national championship') || name.includes('cfp national')) {
+  // Only process if it's actually a CFP game
+  if (!name.includes('college football playoff') && !name.includes('cfp')) {
+    return null
+  }
+
+  // Check for specific round keywords in order of specificity
+  if (name.includes('national championship')) {
     return 'championship'
   }
-  if (name.includes('semifinal') || name.includes('cotton bowl') ||
-      name.includes('orange bowl') || name.includes('sugar bowl') ||
-      name.includes('rose bowl')) {
+  if (name.includes('semifinal')) {
     return 'semifinal'
   }
-  if (name.includes('quarterfinal') || name.includes('peach bowl') ||
-      name.includes('fiesta bowl')) {
+  if (name.includes('quarterfinal')) {
     return 'quarterfinal'
   }
-  if (name.includes('first round') || name.includes('cfp first')) {
+  if (name.includes('first round')) {
     return 'first_round'
   }
 
-  return null
+  // Generic CFP game - shouldn't happen but fallback to first_round
+  return 'first_round'
 }
 
 /**
@@ -399,9 +405,10 @@ async function syncWeekGames(
     const gameDateStr = gameDate.toISOString().split('T')[0]
     const gameTimeStr = gameDate.toTimeString().slice(0, 8)
 
-    // Extract bowl name and playoff round for postseason games
-    const bowlName = seasonType === 3 ? (game.name || null) : null
-    const playoffRound = seasonType === 3 ? determinePlayoffRound(game.name || '') : null
+    // Extract bowl name from ESPN notes (actual bowl/game name)
+    const espnNotes = competition.notes as Array<{ headline?: string }> | undefined
+    const bowlName = seasonType === 3 ? (espnNotes?.[0]?.headline || null) : null
+    const playoffRound = seasonType === 3 ? determinePlayoffRound(bowlName || '') : null
 
     const { error } = await supabase
       .from('games')
@@ -421,7 +428,7 @@ async function syncWeekGames(
           status: status,
           quarter: status === 'live' ? String(competition.status.period) : null,
           clock: status === 'live' ? competition.status.displayClock : null,
-          is_playoff_game: seasonType === 3,
+          is_playoff_game: playoffRound !== null,
           is_conference_game: isConferenceGame,
           bowl_name: bowlName,
           playoff_round: playoffRound,

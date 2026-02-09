@@ -259,26 +259,26 @@ export default function StatsClient({
         {activeSection === 'stats' && (
           <section>
             {/* Heisman Banner - Full Width */}
-            <div className="bg-yellow-900/20 border border-yellow-700/30 rounded-lg p-3 mb-6">
+            <div className="bg-yellow-900/20 border border-yellow-700/30 rounded-lg p-4 md:p-5 mb-6">
               {heisman ? (
-                <div className="flex items-center gap-3">
-                  <span className="text-yellow-400 text-lg">🏆</span>
+                <div className="flex items-center gap-4">
+                  <span className="text-yellow-400 text-2xl md:text-3xl">🏆</span>
                   {heismanSchool?.logo_url && (
-                    <img src={heismanSchool.logo_url} alt="" className="w-8 h-8 object-contain" />
+                    <img src={heismanSchool.logo_url} alt="" className="w-12 h-12 md:w-14 md:h-14 object-contain" />
                   )}
                   <div className="flex-1">
-                    <p className="text-yellow-400 font-semibold text-sm">
+                    <p className="text-yellow-400 font-bold text-lg md:text-xl">
                       Heisman Winner: {heisman.player_name}
                     </p>
-                    <p className="text-gray-400 text-xs">{heismanSchool?.name}</p>
+                    <p className="text-gray-300 text-sm md:text-base">{heismanSchool?.name}</p>
                   </div>
                 </div>
               ) : (
-                <div className="flex items-center gap-3">
-                  <span className="text-yellow-400 text-lg">🏆</span>
+                <div className="flex items-center gap-4">
+                  <span className="text-yellow-400 text-2xl md:text-3xl">🏆</span>
                   <div>
-                    <p className="text-yellow-400 font-semibold text-sm">Heisman Trophy</p>
-                    <p className="text-gray-400 text-xs">Ceremony: December 14, {year}</p>
+                    <p className="text-yellow-400 font-bold text-lg md:text-xl">Heisman Trophy</p>
+                    <p className="text-gray-300 text-sm">Ceremony: December 14, {year}</p>
                   </div>
                 </div>
               )}
@@ -308,45 +308,108 @@ export default function StatsClient({
                 </select>
               </div>
               {rankings && rankings.length > 0 ? (
-                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-2">
-                  {rankings.map((ranking) => {
-                    const movement = ranking.previous_rank
-                      ? ranking.previous_rank - ranking.rank
-                      : 0
-                    const school = Array.isArray(ranking.schools) ? ranking.schools[0] : ranking.schools
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {/* Column 1: Ranks 1-10 */}
+                  <div className="space-y-2">
+                    {rankings.filter(r => r.rank >= 1 && r.rank <= 10).map((ranking) => {
+                      const movement = ranking.previous_rank
+                        ? ranking.previous_rank - ranking.rank
+                        : 0
+                      const school = Array.isArray(ranking.schools) ? ranking.schools[0] : ranking.schools
 
-                    return (
-                      <div
-                        key={ranking.school_id}
-                        className="flex items-center justify-between p-2 bg-gray-700/30 rounded"
-                      >
-                        <div className="flex items-center gap-2">
-                          <span className="text-gray-400 text-sm w-5 text-right">
-                            {ranking.rank}
-                          </span>
-                          {school?.logo_url ? (
-                            <img
-                              src={school.logo_url}
-                              alt=""
-                              className="w-5 h-5 object-contain"
-                            />
-                          ) : (
-                            <div className="w-5 h-5 bg-gray-600 rounded-full" />
+                      return (
+                        <div
+                          key={ranking.school_id}
+                          className="flex items-center justify-between p-2 bg-gray-700/30 rounded"
+                        >
+                          <div className="flex items-center gap-2">
+                            <span className="text-gray-400 text-sm w-5 text-right font-medium">
+                              {ranking.rank}
+                            </span>
+                            {school?.logo_url ? (
+                              <img src={school.logo_url} alt="" className="w-5 h-5 object-contain" />
+                            ) : (
+                              <div className="w-5 h-5 bg-gray-600 rounded-full" />
+                            )}
+                            <span className="text-white text-sm truncate">{school?.name}</span>
+                          </div>
+                          {movement !== 0 && (
+                            <span className={`text-xs ${movement > 0 ? 'text-green-400' : 'text-red-400'}`}>
+                              {movement > 0 ? `▲${movement}` : `▼${Math.abs(movement)}`}
+                            </span>
                           )}
-                          <span className="text-white text-sm truncate">{school?.name}</span>
                         </div>
-                        {movement !== 0 && (
-                          <span
-                            className={`text-xs ${
-                              movement > 0 ? 'text-green-400' : 'text-red-400'
-                            }`}
-                          >
-                            {movement > 0 ? `▲${movement}` : `▼${Math.abs(movement)}`}
-                          </span>
-                        )}
-                      </div>
-                    )
-                  })}
+                      )
+                    })}
+                  </div>
+
+                  {/* Column 2: Ranks 11-20 */}
+                  <div className="space-y-2">
+                    {rankings.filter(r => r.rank >= 11 && r.rank <= 20).map((ranking) => {
+                      const movement = ranking.previous_rank
+                        ? ranking.previous_rank - ranking.rank
+                        : 0
+                      const school = Array.isArray(ranking.schools) ? ranking.schools[0] : ranking.schools
+
+                      return (
+                        <div
+                          key={ranking.school_id}
+                          className="flex items-center justify-between p-2 bg-gray-700/30 rounded"
+                        >
+                          <div className="flex items-center gap-2">
+                            <span className="text-gray-400 text-sm w-5 text-right font-medium">
+                              {ranking.rank}
+                            </span>
+                            {school?.logo_url ? (
+                              <img src={school.logo_url} alt="" className="w-5 h-5 object-contain" />
+                            ) : (
+                              <div className="w-5 h-5 bg-gray-600 rounded-full" />
+                            )}
+                            <span className="text-white text-sm truncate">{school?.name}</span>
+                          </div>
+                          {movement !== 0 && (
+                            <span className={`text-xs ${movement > 0 ? 'text-green-400' : 'text-red-400'}`}>
+                              {movement > 0 ? `▲${movement}` : `▼${Math.abs(movement)}`}
+                            </span>
+                          )}
+                        </div>
+                      )
+                    })}
+                  </div>
+
+                  {/* Column 3: Ranks 21-25 */}
+                  <div className="space-y-2">
+                    {rankings.filter(r => r.rank >= 21 && r.rank <= 25).map((ranking) => {
+                      const movement = ranking.previous_rank
+                        ? ranking.previous_rank - ranking.rank
+                        : 0
+                      const school = Array.isArray(ranking.schools) ? ranking.schools[0] : ranking.schools
+
+                      return (
+                        <div
+                          key={ranking.school_id}
+                          className="flex items-center justify-between p-2 bg-gray-700/30 rounded"
+                        >
+                          <div className="flex items-center gap-2">
+                            <span className="text-gray-400 text-sm w-5 text-right font-medium">
+                              {ranking.rank}
+                            </span>
+                            {school?.logo_url ? (
+                              <img src={school.logo_url} alt="" className="w-5 h-5 object-contain" />
+                            ) : (
+                              <div className="w-5 h-5 bg-gray-600 rounded-full" />
+                            )}
+                            <span className="text-white text-sm truncate">{school?.name}</span>
+                          </div>
+                          {movement !== 0 && (
+                            <span className={`text-xs ${movement > 0 ? 'text-green-400' : 'text-red-400'}`}>
+                              {movement > 0 ? `▲${movement}` : `▼${Math.abs(movement)}`}
+                            </span>
+                          )}
+                        </div>
+                      )
+                    })}
+                  </div>
                 </div>
               ) : (
                 <div className="text-center py-8">

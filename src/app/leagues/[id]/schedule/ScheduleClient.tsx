@@ -306,7 +306,7 @@ export default function ScheduleClient({
                           {/* Away Team */}
                           <div className={`flex items-center gap-3 flex-1 ${awayWon ? '' : isCompleted ? 'opacity-60' : ''}`}>
                             <div className="flex items-center gap-2">
-                              {game.away_rank && (
+                              {game.away_rank && game.away_rank <= 25 && (
                                 <span className="text-xs text-yellow-400 font-medium w-4">
                                   #{game.away_rank}
                                 </span>
@@ -407,7 +407,7 @@ export default function ScheduleClient({
                               ) : (
                                 <div className="w-8 h-8 bg-gray-600 rounded-full" />
                               )}
-                              {game.home_rank && (
+                              {game.home_rank && game.home_rank <= 25 && (
                                 <span className="text-xs text-yellow-400 font-medium w-4">
                                   #{game.home_rank}
                                 </span>

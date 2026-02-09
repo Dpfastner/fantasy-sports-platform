@@ -111,26 +111,17 @@ export function PlayoffBracket({ seasonId, rosterSchoolIds = [], leagueId }: Pro
 
     if (data && data.length > 0) {
       // Filter to only CFP games (12-team format: 11 total games max)
+      // Only include games that have an explicit playoff_round set
       const cfpGames = data.filter(game => {
         const round = game.playoff_round?.toLowerCase() || ''
-        const bowl = game.bowl_name?.toLowerCase() || ''
-        // Include games with explicit playoff_round or known CFP bowl names
-        return round === 'first_round' ||
-               round === 'quarterfinal' ||
-               round === 'semifinal' ||
-               round === 'championship' ||
-               bowl.includes('national championship') ||
-               bowl.includes('cotton bowl') ||
-               bowl.includes('orange bowl') ||
-               bowl.includes('sugar bowl') ||
-               bowl.includes('rose bowl') ||
-               bowl.includes('peach bowl') ||
-               bowl.includes('fiesta bowl') ||
-               // Also include any game marked as playoff if no other criteria met
-               (game.is_playoff_game && !bowl.includes('bowl'))
+
+        // Only include games with explicit CFP round set
+        // This excludes regular bowl games that aren't part of the CFP
+        return round === 'first_round' || round === 'quarterfinal' ||
+               round === 'semifinal' || round === 'championship'
       })
-      // If we have CFP games, use those, otherwise use all playoff games
-      setGames(cfpGames.length > 0 ? cfpGames.slice(0, 11) : data.slice(0, 11))
+
+      setGames(cfpGames.slice(0, 11))
     } else {
       setGames([])
     }
@@ -168,21 +159,12 @@ export function PlayoffBracket({ seasonId, rosterSchoolIds = [], leagueId }: Pro
   }
 
   const determineRound = (game: PlayoffGame): RoundType => {
-    const bowlName = game.bowl_name?.toLowerCase() || ''
-    const playoffRound = game.playoff_round?.toLowerCase() || ''
+    // Use the playoff_round field set by the sync API
+    const round = game.playoff_round?.toLowerCase() || ''
 
-    if (playoffRound === 'championship' || bowlName.includes('national championship')) {
-      return 'championship'
-    }
-    if (playoffRound === 'semifinal' || bowlName.includes('semifinal') ||
-        bowlName.includes('cotton bowl') || bowlName.includes('orange bowl') ||
-        bowlName.includes('sugar bowl') || bowlName.includes('rose bowl')) {
-      return 'semifinal'
-    }
-    if (playoffRound === 'quarterfinal' || bowlName.includes('quarterfinal') ||
-        bowlName.includes('peach bowl') || bowlName.includes('fiesta bowl')) {
-      return 'quarterfinal'
-    }
+    if (round === 'championship') return 'championship'
+    if (round === 'semifinal') return 'semifinal'
+    if (round === 'quarterfinal') return 'quarterfinal'
     return 'first_round'
   }
 

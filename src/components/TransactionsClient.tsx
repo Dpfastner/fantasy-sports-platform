@@ -90,7 +90,7 @@ export default function TransactionsClient({
   const [searchQuery, setSearchQuery] = useState('')
   const [conferenceFilter, setConferenceFilter] = useState<string>('all')
   const [showRankedOnly, setShowRankedOnly] = useState(false)
-  const [sortBy, setSortBy] = useState<'name' | 'points' | 'rank' | 'record'>('points')
+  const [sortBy, setSortBy] = useState<'name' | 'points' | 'rank' | 'record' | 'confRecord'>('points')
   // Record filter removed - users can sort by record instead
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -157,6 +157,12 @@ export default function TransactionsClient({
         const recordB = schoolRecordsMap[b.id] || { wins: 0, losses: 0 }
         const pctA = recordA.wins + recordA.losses > 0 ? recordA.wins / (recordA.wins + recordA.losses) : 0
         const pctB = recordB.wins + recordB.losses > 0 ? recordB.wins / (recordB.wins + recordB.losses) : 0
+        return pctB - pctA
+      } else if (sortBy === 'confRecord') {
+        const recordA = schoolRecordsMap[a.id] || { wins: 0, losses: 0, confWins: 0, confLosses: 0 }
+        const recordB = schoolRecordsMap[b.id] || { wins: 0, losses: 0, confWins: 0, confLosses: 0 }
+        const pctA = recordA.confWins + recordA.confLosses > 0 ? recordA.confWins / (recordA.confWins + recordA.confLosses) : 0
+        const pctB = recordB.confWins + recordB.confLosses > 0 ? recordB.confWins / (recordB.confWins + recordB.confLosses) : 0
         return pctB - pctA
       }
       return 0
@@ -427,12 +433,13 @@ export default function TransactionsClient({
                     </select>
                     <select
                       value={sortBy}
-                      onChange={(e) => setSortBy(e.target.value as 'name' | 'points' | 'rank' | 'record')}
+                      onChange={(e) => setSortBy(e.target.value as 'name' | 'points' | 'rank' | 'record' | 'confRecord')}
                       className="px-2 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                     >
                       <option value="points">By Points</option>
                       <option value="rank">By Rank</option>
                       <option value="record">By Record</option>
+                      <option value="confRecord">By Conf Record</option>
                       <option value="name">By Name</option>
                     </select>
                     <label className="col-span-2 md:col-span-1 flex items-center gap-2 text-gray-400 text-sm">
