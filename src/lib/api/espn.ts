@@ -103,6 +103,10 @@ export interface ESPNGame {
       market: string
       names: string[]
     }[]
+    notes?: {
+      type: string
+      headline: string
+    }[]
   }[]
 }
 
