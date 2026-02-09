@@ -143,8 +143,8 @@ export default function EmbeddedLeaderboard({
     }
   }
 
-  // Show all regular season weeks (1-15) plus bonus columns
-  const maxRegularWeek = 15
+  // Show all regular season weeks (1-16) plus bonus columns
+  const maxRegularWeek = 16
   const weeksToShow = Array.from({ length: Math.max(currentWeek, maxRegularWeek) }, (_, i) => i + 1)
 
   // Additional scoring columns after regular season

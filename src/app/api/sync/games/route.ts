@@ -18,6 +18,7 @@ interface SyncGameRequest {
   year?: number
   week?: number
   seasonType?: number // 2 = regular, 3 = postseason
+  backfillAll?: boolean // Set true to sync all weeks
 }
 
 export async function POST(request: Request) {
@@ -37,6 +38,12 @@ export async function POST(request: Request) {
     const year = body.year || new Date().getFullYear()
     const week = body.week || 1
     const seasonType = body.seasonType || 2
+    const backfillAll = body.backfillAll || false
+
+    // Handle backfill all weeks
+    if (backfillAll) {
+      return await handleBackfillAllGames(year)
+    }
 
     console.log(`Fetching games for ${year} week ${week}...`)
 
@@ -191,7 +198,183 @@ export async function POST(request: Request) {
 export async function GET() {
   return NextResponse.json({
     message: 'Game sync endpoint',
-    usage: 'POST with { year, week, seasonType } and Authorization: Bearer <SYNC_API_KEY>',
-    example: { year: 2024, week: 1, seasonType: 2 },
+    usage: 'POST with { year, week, seasonType?, backfillAll? } and Authorization: Bearer <SYNC_API_KEY>',
+    examples: [
+      { description: 'Single week', body: { year: 2025, week: 5 } },
+      { description: 'Postseason', body: { year: 2025, week: 1, seasonType: 3 } },
+      { description: 'Backfill entire season', body: { year: 2025, backfillAll: true } },
+    ],
   })
+}
+
+/**
+ * Handle backfilling all games for a season (weeks 0-16 regular + postseason)
+ */
+async function handleBackfillAllGames(year: number) {
+  console.log(`Starting full game backfill for ${year} season...`)
+
+  const supabase = getSupabaseAdmin()
+
+  // Get season ID
+  const { data: season } = await supabase
+    .from('seasons')
+    .select('id')
+    .eq('year', year)
+    .single()
+
+  if (!season) {
+    return NextResponse.json(
+      { error: `Season ${year} not found in database` },
+      { status: 404 }
+    )
+  }
+
+  // Get school mappings
+  const { data: schools } = await supabase
+    .from('schools')
+    .select('id, external_api_id')
+    .not('external_api_id', 'is', null)
+
+  const schoolMap = new Map<string, string>()
+  for (const school of schools || []) {
+    if (school.external_api_id) {
+      schoolMap.set(school.external_api_id, school.id)
+    }
+  }
+
+  const results: Array<{
+    week: number
+    seasonType: number
+    synced: number
+    skipped: number
+  }> = []
+
+  // Sync regular season weeks 0-16
+  for (let week = 0; week <= 16; week++) {
+    try {
+      console.log(`Fetching week ${week} games...`)
+      const games = await fetchScoreboard(year, week, 2)
+      const weekResult = await syncWeekGames(
+        supabase, season.id, week, games, schoolMap, 2
+      )
+      results.push({ week, seasonType: 2, ...weekResult })
+
+      // Small delay to avoid rate limiting
+      await new Promise(resolve => setTimeout(resolve, 300))
+    } catch (err) {
+      console.warn(`Week ${week} games not available:`, err)
+    }
+  }
+
+  // Sync postseason (bowl games)
+  for (let week = 1; week <= 5; week++) {
+    try {
+      console.log(`Fetching postseason week ${week} games...`)
+      const games = await fetchScoreboard(year, week, 3)
+      const weekResult = await syncWeekGames(
+        supabase, season.id, 15 + week, games, schoolMap, 3
+      )
+      results.push({ week: 15 + week, seasonType: 3, ...weekResult })
+
+      await new Promise(resolve => setTimeout(resolve, 300))
+    } catch (err) {
+      console.warn(`Postseason week ${week} games not available:`, err)
+    }
+  }
+
+  const totalSynced = results.reduce((sum, r) => sum + r.synced, 0)
+  const totalSkipped = results.reduce((sum, r) => sum + r.skipped, 0)
+
+  return NextResponse.json({
+    success: true,
+    summary: {
+      year,
+      weeksProcessed: results.length,
+      totalSynced,
+      totalSkipped,
+    },
+    weeklyResults: results,
+  })
+}
+
+/**
+ * Sync games for a single week
+ */
+async function syncWeekGames(
+  supabase: ReturnType<typeof getSupabaseAdmin>,
+  seasonId: string,
+  weekNumber: number,
+  games: ESPNGame[],
+  schoolMap: Map<string, string>,
+  seasonType: number
+): Promise<{ synced: number; skipped: number }> {
+  let synced = 0
+  let skipped = 0
+
+  for (const game of games) {
+    const competition = game.competitions?.[0]
+    if (!competition) continue
+
+    const homeCompetitor = competition.competitors.find(c => c.homeAway === 'home')
+    const awayCompetitor = competition.competitors.find(c => c.homeAway === 'away')
+
+    if (!homeCompetitor || !awayCompetitor) continue
+
+    const homeSchoolId = schoolMap.get(homeCompetitor.team.id)
+    const awaySchoolId = schoolMap.get(awayCompetitor.team.id)
+
+    // Skip games where NEITHER team is FBS
+    if (!homeSchoolId && !awaySchoolId) {
+      skipped++
+      continue
+    }
+
+    // Determine game status
+    let status = 'scheduled'
+    if (competition.status.type.state === 'in') {
+      status = 'live'
+    } else if (competition.status.type.state === 'post') {
+      status = 'completed'
+    }
+
+    // Parse game date
+    const gameDate = new Date(game.date)
+    const gameDateStr = gameDate.toISOString().split('T')[0]
+    const gameTimeStr = gameDate.toTimeString().slice(0, 8)
+
+    const { error } = await supabase
+      .from('games')
+      .upsert(
+        {
+          external_game_id: game.id,
+          season_id: seasonId,
+          week_number: weekNumber,
+          home_school_id: homeSchoolId || null,
+          away_school_id: awaySchoolId || null,
+          home_score: parseInt(homeCompetitor.score) || 0,
+          away_score: parseInt(awayCompetitor.score) || 0,
+          home_rank: homeCompetitor.curatedRank?.current || null,
+          away_rank: awayCompetitor.curatedRank?.current || null,
+          game_date: gameDateStr,
+          game_time: gameTimeStr,
+          status: status,
+          quarter: status === 'live' ? String(competition.status.period) : null,
+          clock: status === 'live' ? competition.status.displayClock : null,
+          is_playoff_game: seasonType === 3,
+          home_team_name: homeCompetitor.team.displayName,
+          home_team_logo_url: getTeamLogoUrl(homeCompetitor.team),
+          away_team_name: awayCompetitor.team.displayName,
+          away_team_logo_url: getTeamLogoUrl(awayCompetitor.team),
+        },
+        { onConflict: 'season_id,external_game_id' }
+      )
+
+    if (error) {
+      skipped++
+    } else {
+      synced++
+    }
+  }
+
+  return { synced, skipped }
 }
