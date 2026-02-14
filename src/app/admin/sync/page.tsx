@@ -89,11 +89,12 @@ export default function SyncPage() {
           break
       }
 
+      const apiKey = process.env.NEXT_PUBLIC_SYNC_API_KEY || 'fantasy-sports-sync-2024'
       const response = await fetch(endpoint, {
         method: syncType === 'live' ? 'GET' : 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': 'Bearer fantasy-sports-sync-2024',
+          'Authorization': `Bearer ${apiKey}`,
         },
         body: body ? JSON.stringify(body) : undefined,
       })

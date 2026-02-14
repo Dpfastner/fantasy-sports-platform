@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { areCronsEnabled, getEnvironment } from '@/lib/env'
 
 function getSupabaseAdmin() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -26,6 +27,16 @@ export async function POST(request: NextRequest) {
 
     if (authHeader !== `Bearer ${expectedKey}`) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    // Skip cron jobs in non-production environments
+    if (!areCronsEnabled()) {
+      return NextResponse.json({
+        success: true,
+        skipped: true,
+        reason: `Crons disabled in ${getEnvironment()} environment`,
+        timestamp: new Date().toISOString(),
+      })
     }
 
     const supabase = getSupabaseAdmin()

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { fetchScoreboard } from '@/lib/api/espn'
 import { calculateAllPoints } from '@/lib/points/calculator'
+import { areCronsEnabled, getEnvironment } from '@/lib/env'
 
 // Create admin client
 function getSupabaseAdmin() {
@@ -33,8 +34,19 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
+    // Skip cron jobs in non-production environments
+    if (!areCronsEnabled()) {
+      return NextResponse.json({
+        success: true,
+        skipped: true,
+        reason: `Crons disabled in ${getEnvironment()} environment`,
+        timestamp: new Date().toISOString(),
+      })
+    }
+
     const supabase = getSupabaseAdmin()
-    const year = new Date().getFullYear()
+    const now = new Date()
+    const year = now.getFullYear()
 
     // Get current season
     const { data: season } = await supabase
@@ -50,28 +62,74 @@ export async function GET(request: Request) {
       })
     }
 
-    // Check if there are any games currently in progress or scheduled for today
-    const today = new Date().toISOString().split('T')[0]
+    // Check if there are any games today and if we're within the game window
+    const today = now.toISOString().split('T')[0]
     const { data: todaysGames } = await supabase
       .from('games')
-      .select('id, status')
+      .select('id, status, game_time')
       .eq('season_id', season.id)
       .eq('game_date', today)
+      .order('game_time', { ascending: true })
 
-    const hasActiveGames = todaysGames?.some(
+    // No games today - skip
+    if (!todaysGames || todaysGames.length === 0) {
+      return NextResponse.json({
+        success: true,
+        skipped: true,
+        reason: 'No games scheduled for today',
+        timestamp: now.toISOString(),
+      })
+    }
+
+    // All games complete - skip
+    const hasActiveGames = todaysGames.some(
       g => g.status === 'live' || g.status === 'scheduled'
     )
 
-    if (!hasActiveGames && todaysGames && todaysGames.length > 0) {
-      // All games for today are complete, skip sync
+    if (!hasActiveGames) {
       return NextResponse.json({
         success: true,
         skipped: true,
         reason: 'All games for today are complete',
-        timestamp: new Date().toISOString(),
+        timestamp: now.toISOString(),
       })
     }
 
+    // Check if we're within the game window
+    // Window: 30 min before first game to 4 hours after last game starts
+    const gameTimes = todaysGames
+      .filter(g => g.game_time)
+      .map(g => g.game_time as string)
+      .sort()
+
+    if (gameTimes.length > 0) {
+      const firstGameTime = gameTimes[0]
+      const lastGameTime = gameTimes[gameTimes.length - 1]
+
+      // Parse times (format: HH:MM:SS)
+      const [firstHour, firstMin] = firstGameTime.split(':').map(Number)
+      const [lastHour, lastMin] = lastGameTime.split(':').map(Number)
+
+      // Create date objects for comparison (using today's date)
+      const windowStart = new Date(now)
+      windowStart.setHours(firstHour, firstMin - 30, 0, 0) // 30 min before first game
+
+      const windowEnd = new Date(now)
+      windowEnd.setHours(lastHour + 4, lastMin, 0, 0) // 4 hours after last game starts
+
+      // Check if current time is outside the window
+      if (now < windowStart || now > windowEnd) {
+        return NextResponse.json({
+          success: true,
+          skipped: true,
+          reason: `Outside game window (${windowStart.toLocaleTimeString()} - ${windowEnd.toLocaleTimeString()})`,
+          nextCheck: now < windowStart ? windowStart.toISOString() : 'tomorrow',
+          timestamp: now.toISOString(),
+        })
+      }
+    }
+
+    // We're in the game window - proceed with sync
     // Get school mappings
     const { data: schools } = await supabase
       .from('schools')
@@ -85,11 +143,10 @@ export async function GET(request: Request) {
       }
     }
 
-    // Calculate current week
-    const currentDate = new Date()
-    const seasonStart = new Date(year, 7, 24)
-    const weeksDiff = Math.floor((currentDate.getTime() - seasonStart.getTime()) / (7 * 24 * 60 * 60 * 1000))
-    const currentWeek = Math.max(0, Math.min(weeksDiff + 1, 15))
+    // Calculate current week (extends to week 20 for postseason/bowls)
+    const seasonStart = new Date(year, 7, 24) // August 24
+    const weeksDiff = Math.floor((now.getTime() - seasonStart.getTime()) / (7 * 24 * 60 * 60 * 1000))
+    const currentWeek = Math.max(0, Math.min(weeksDiff + 1, 20))
 
     // Fetch live scores from ESPN
     const games = await fetchScoreboard(year, currentWeek, 2)
@@ -147,7 +204,7 @@ export async function GET(request: Request) {
           possession_team_id: competition.situation?.possession
             ? schoolMap.get(competition.situation.possession) || null
             : null,
-          updated_at: new Date().toISOString(),
+          updated_at: now.toISOString(),
         })
         .eq('external_game_id', game.id)
         .eq('season_id', season.id)
@@ -173,7 +230,7 @@ export async function GET(request: Request) {
 
     return NextResponse.json({
       success: true,
-      timestamp: new Date().toISOString(),
+      timestamp: now.toISOString(),
       year,
       currentWeek,
       summary: {

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { fetchScoreboard, fetchRankings, getTeamLogoUrl } from '@/lib/api/espn'
 import { calculateAllPoints } from '@/lib/points/calculator'
+import { areCronsEnabled, getEnvironment } from '@/lib/env'
 
 // Create admin client
 function getSupabaseAdmin() {
@@ -34,11 +35,23 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
+    // Skip cron jobs in non-production environments
+    if (!areCronsEnabled()) {
+      return NextResponse.json({
+        success: true,
+        skipped: true,
+        reason: `Crons disabled in ${getEnvironment()} environment`,
+        timestamp: new Date().toISOString(),
+      })
+    }
+
     const supabase = getSupabaseAdmin()
-    const year = new Date().getFullYear()
+    const now = new Date()
+    const year = now.getFullYear()
     const results = {
       rankings: { success: false, error: null as string | null },
       currentWeekGames: { success: false, synced: 0, error: null as string | null },
+      failsafe: { checked: false, weeksRecalculated: [] as number[], error: null as string | null },
     }
 
     // Get current season
@@ -70,12 +83,11 @@ export async function GET(request: Request) {
       }
     }
 
-    // Calculate current week based on date
+    // Calculate current week (extends to week 20 for postseason/bowls)
     // CFB season typically starts late August, Week 0 is sometimes used
-    const currentDate = new Date()
-    const seasonStart = new Date(year, 7, 24) // August 24 as approximate start
-    const weeksDiff = Math.floor((currentDate.getTime() - seasonStart.getTime()) / (7 * 24 * 60 * 60 * 1000))
-    const currentWeek = Math.max(0, Math.min(weeksDiff + 1, 15)) // Week 0-15
+    const seasonStart = new Date(year, 7, 24) // August 24
+    const weeksDiff = Math.floor((now.getTime() - seasonStart.getTime()) / (7 * 24 * 60 * 60 * 1000))
+    const currentWeek = Math.max(0, Math.min(weeksDiff + 1, 20)) // Week 0-20 (including postseason)
 
     // Sync Rankings
     try {
@@ -191,6 +203,41 @@ export async function GET(request: Request) {
       results.currentWeekGames.error = String(error)
     }
 
+    // FAILSAFE: Check for any completed games from recent days that might have missed points calculation
+    // This catches any games that completed while gameday-sync was down or had errors
+    try {
+      // Get yesterday's date and 2 days ago
+      const yesterday = new Date(now)
+      yesterday.setDate(yesterday.getDate() - 1)
+      const twoDaysAgo = new Date(now)
+      twoDaysAgo.setDate(twoDaysAgo.getDate() - 2)
+
+      const yesterdayStr = yesterday.toISOString().split('T')[0]
+      const twoDaysAgoStr = twoDaysAgo.toISOString().split('T')[0]
+
+      // Find completed games from recent days
+      const { data: recentCompletedGames } = await supabase
+        .from('games')
+        .select('week_number')
+        .eq('season_id', season.id)
+        .eq('status', 'completed')
+        .gte('game_date', twoDaysAgoStr)
+        .lte('game_date', yesterdayStr)
+
+      if (recentCompletedGames && recentCompletedGames.length > 0) {
+        // Get unique weeks that had completed games
+        const weeksToRecalculate = [...new Set(recentCompletedGames.map(g => g.week_number))]
+
+        for (const week of weeksToRecalculate) {
+          await calculateAllPoints(season.id, week, supabase)
+          results.failsafe.weeksRecalculated.push(week)
+        }
+      }
+      results.failsafe.checked = true
+    } catch (error) {
+      results.failsafe.error = String(error)
+    }
+
     // Calculate points for the current week
     let pointsResult = null
     if (results.currentWeekGames.success && results.currentWeekGames.synced > 0) {
@@ -199,7 +246,7 @@ export async function GET(request: Request) {
 
     return NextResponse.json({
       success: true,
-      timestamp: new Date().toISOString(),
+      timestamp: now.toISOString(),
       year,
       currentWeek,
       results,
