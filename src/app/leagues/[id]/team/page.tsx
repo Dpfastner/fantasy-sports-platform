@@ -418,10 +418,142 @@ export default async function TeamPage({ params }: PageProps) {
           )}
         </div>
 
-        {/* Transaction Log */}
+        {/* Roster History (Dropped Schools) - styled like current roster */}
         {droppedRoster && droppedRoster.length > 0 && (
           <div className="bg-gray-800 rounded-lg p-6 mb-8">
-            <h2 className="text-xl font-semibold text-white mb-4">Transaction History</h2>
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h2 className="text-xl font-semibold text-gray-400">Roster History</h2>
+                <p className="text-gray-500 text-sm">Schools previously on your roster and points earned while rostered</p>
+              </div>
+            </div>
+
+            {/* Roster container with fixed left + scrollable right - matching RosterList */}
+            <div className="flex">
+              {/* Fixed left section */}
+              <div className="flex-shrink-0">
+                {/* Header row */}
+                <div className="flex items-center h-8 px-3 text-xs text-gray-600 uppercase tracking-wide border-b border-gray-700">
+                  <span className="w-6 text-center">#</span>
+                  <span className="w-10"></span>
+                  <span className="w-32">School</span>
+                  <span className="w-px mx-1 h-5 bg-gray-700"></span>
+                  <span className="w-24">Tenure</span>
+                  <span className="w-px mx-1 h-5 bg-gray-700"></span>
+                  <span className="w-16 text-right">Earned</span>
+                </div>
+
+                {/* Data rows - fixed section */}
+                {droppedRoster.map((slot, index) => {
+                  const school = slot.schools
+                  const pointsDuringTenure = droppedSchoolPoints
+                    .filter(p =>
+                      p.school_id === slot.school_id &&
+                      p.week_number >= slot.start_week &&
+                      p.week_number < (slot.end_week || currentWeek + 1)
+                    )
+                  const totalPointsEarned = pointsDuringTenure.reduce((sum, p) => sum + Number(p.total_points), 0)
+
+                  return (
+                    <div key={slot.id} className="flex items-center h-14 px-3 bg-gray-700/30 border-b border-gray-800">
+                      {/* Number */}
+                      <div className="w-6 flex-shrink-0 text-center">
+                        <span className="text-gray-600 font-medium text-sm">{index + 1}</span>
+                      </div>
+
+                      {/* School Logo - faded */}
+                      <div className="w-10 flex-shrink-0 flex justify-center">
+                        {school.logo_url ? (
+                          <img src={school.logo_url} alt={school.name} className="w-8 h-8 object-contain opacity-40 grayscale" />
+                        ) : (
+                          <div
+                            className="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-xs opacity-40 grayscale"
+                            style={{ backgroundColor: school.primary_color }}
+                          >
+                            {school.abbreviation || school.name.substring(0, 2)}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* School Name */}
+                      <div className="w-32 flex-shrink-0 overflow-hidden">
+                        <p className="text-gray-400 font-medium text-sm truncate">{school.name}</p>
+                        <p className="text-gray-600 text-xs truncate">{school.conference}</p>
+                      </div>
+
+                      <div className="w-px h-10 bg-gray-600 flex-shrink-0 mx-1" />
+
+                      {/* Tenure */}
+                      <div className="w-24 flex-shrink-0 text-center">
+                        <span className="text-gray-500 text-xs">W{slot.start_week} - W{slot.end_week}</span>
+                      </div>
+
+                      <div className="w-px h-10 bg-gray-600 flex-shrink-0 mx-1" />
+
+                      {/* Total Points Earned */}
+                      <div className="w-16 flex-shrink-0 text-right">
+                        <p className="text-gray-400 font-semibold text-sm">{totalPointsEarned} pts</p>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+
+              {/* Scrollable right section - Weekly Points */}
+              <div className="flex-1 overflow-x-auto border-l border-gray-600">
+                {/* Header row for weeks */}
+                <div className="flex items-center h-8 text-xs text-gray-600 uppercase tracking-wide border-b border-gray-700 min-w-max">
+                  {Array.from({ length: 17 }, (_, i) => i).map(week => (
+                    <div key={week} className="w-9 flex-shrink-0 text-center">
+                      W{week}
+                    </div>
+                  ))}
+                </div>
+
+                {/* Data rows - weekly points */}
+                {droppedRoster.map((slot) => {
+                  const pointsDuringTenure = droppedSchoolPoints
+                    .filter(p => p.school_id === slot.school_id)
+
+                  return (
+                    <div key={slot.id} className="flex items-center h-14 bg-gray-700/30 border-b border-gray-800 min-w-max">
+                      {Array.from({ length: 17 }, (_, i) => i).map(week => {
+                        const wasOnRoster = week >= slot.start_week && week < (slot.end_week || currentWeek + 1)
+                        const weekPoints = pointsDuringTenure.find(p => p.week_number === week)
+                        const pts = weekPoints ? Number(weekPoints.total_points) : 0
+
+                        return (
+                          <div
+                            key={week}
+                            className={`w-9 flex-shrink-0 py-1 text-center ${wasOnRoster ? 'bg-gray-600/20' : ''}`}
+                          >
+                            {wasOnRoster ? (
+                              <span className={`text-xs ${pts > 0 ? 'text-gray-400' : 'text-gray-600'}`}>
+                                {pts}
+                              </span>
+                            ) : (
+                              <span className="text-gray-700 text-xs">-</span>
+                            )}
+                          </div>
+                        )
+                      })}
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Transaction History - at the bottom */}
+        {droppedRoster && droppedRoster.length > 0 && (
+          <div className="bg-gray-800 rounded-lg p-6 mb-8">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-semibold text-white">Transaction History</h2>
+              <span className="text-gray-400 text-sm">
+                {droppedRoster.length} / {settings?.max_add_drops_per_season || 50} transactions used
+              </span>
+            </div>
             <div className="space-y-2">
               {droppedRoster.map((slot) => {
                 const droppedSchool = slot.schools
@@ -447,86 +579,6 @@ export default async function TeamPage({ params }: PageProps) {
                         <span className="text-gray-300 font-medium">{replacement.schools?.name || 'Unknown'}</span>
                       </>
                     )}
-                  </div>
-                )
-              })}
-            </div>
-          </div>
-        )}
-
-        {/* Historical Roster with Points */}
-        {droppedRoster && droppedRoster.length > 0 && (
-          <div className="bg-gray-800 rounded-lg p-6 mb-8">
-            <h2 className="text-xl font-semibold text-white mb-4">Roster History</h2>
-            <p className="text-gray-400 text-sm mb-4">Schools previously on your roster and points earned while rostered</p>
-
-            <div className="space-y-4">
-              {droppedRoster.map((slot) => {
-                const school = slot.schools
-                // Calculate points earned only during tenure on roster
-                const pointsDuringTenure = droppedSchoolPoints
-                  .filter(p =>
-                    p.school_id === slot.school_id &&
-                    p.week_number >= slot.start_week &&
-                    p.week_number < (slot.end_week || currentWeek + 1)
-                  )
-                const totalPointsEarned = pointsDuringTenure.reduce((sum, p) => sum + Number(p.total_points), 0)
-                const weeksOnRoster = Array.from(
-                  { length: (slot.end_week || currentWeek) - slot.start_week },
-                  (_, i) => slot.start_week + i
-                )
-
-                return (
-                  <div
-                    key={slot.id}
-                    className="bg-gray-700/30 rounded-lg border border-gray-700 overflow-hidden"
-                  >
-                    {/* School Header */}
-                    <div className="flex items-center justify-between p-4 border-b border-gray-700/50">
-                      <div className="flex items-center gap-4">
-                        {school.logo_url ? (
-                          <img
-                            src={school.logo_url}
-                            alt={school.name}
-                            className="w-10 h-10 object-contain opacity-50 grayscale"
-                          />
-                        ) : (
-                          <div
-                            className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold opacity-50 grayscale"
-                            style={{ backgroundColor: school.primary_color }}
-                          >
-                            {school.abbreviation || school.name.substring(0, 2)}
-                          </div>
-                        )}
-                        <div>
-                          <p className="text-gray-400">{school.name}</p>
-                          <p className="text-gray-600 text-sm">{school.conference}</p>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-gray-300 font-semibold">{totalPointsEarned} pts</p>
-                        <p className="text-gray-500 text-xs">
-                          Weeks {slot.start_week} - {slot.end_week}
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* Weekly Points Breakdown */}
-                    <div className="p-3 overflow-x-auto">
-                      <div className="flex gap-2 min-w-max">
-                        {weeksOnRoster.map(week => {
-                          const weekPoints = pointsDuringTenure.find(p => p.week_number === week)
-                          return (
-                            <div key={week} className="text-center min-w-[45px]">
-                              <p className="text-gray-600 text-[10px]">W{week}</p>
-                              <p className={`text-sm font-medium ${weekPoints ? 'text-gray-400' : 'text-gray-700'}`}>
-                                {weekPoints ? weekPoints.total_points : '-'}
-                              </p>
-                            </div>
-                          )
-                        })}
-                      </div>
-                    </div>
                   </div>
                 )
               })}

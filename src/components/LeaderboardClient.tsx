@@ -280,8 +280,8 @@ export default function LeaderboardClient({
             <table className="min-w-max">
               <thead>
                 <tr className="bg-gray-700">
-                  <th className="px-2 md:px-4 py-3 text-left text-gray-400 font-medium sticky left-0 bg-gray-700 z-20 text-sm md:text-base">#</th>
-                  <th className="px-2 md:px-4 py-3 text-left text-gray-400 font-medium sticky left-6 md:left-10 bg-gray-700 z-20 text-sm md:text-base min-w-[150px] shadow-[2px_0_8px_rgba(0,0,0,0.3)]">Team</th>
+                  <th className="px-2 md:px-4 py-3 text-left text-gray-400 font-medium sticky left-0 bg-gray-700 z-30 text-sm md:text-base">#</th>
+                  <th className="px-2 md:px-4 py-3 text-left text-gray-400 font-medium sticky left-6 md:left-10 bg-gray-700 z-30 text-sm md:text-base min-w-[150px] shadow-[2px_0_8px_rgba(0,0,0,0.3)]">Team</th>
                   <th className="px-2 md:px-4 py-3 text-right text-gray-400 font-medium text-sm md:text-base">Total</th>
                   {/* Regular season weeks */}
                   {regularWeeks.map(week => (
