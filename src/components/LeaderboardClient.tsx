@@ -200,7 +200,13 @@ export default function LeaderboardClient({
     }
   }
 
+  // Only show weeks that have actual data
+  const weeksWithData = new Set<number>()
+  for (const wp of weeklyPoints) {
+    weeksWithData.add(wp.week_number)
+  }
   const weeksToShow = Array.from({ length: currentWeek }, (_, i) => i + 1)
+    .filter(week => weeksWithData.has(week))
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-900 to-gray-800">
@@ -258,9 +264,9 @@ export default function LeaderboardClient({
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
-                <tr className="bg-gray-700/50">
-                  <th className="px-2 md:px-4 py-3 text-left text-gray-400 font-medium sticky left-0 bg-gray-700/50 z-10 text-sm md:text-base">#</th>
-                  <th className="px-2 md:px-4 py-3 text-left text-gray-400 font-medium sticky left-6 md:left-10 bg-gray-700/50 z-10 text-sm md:text-base">Team</th>
+                <tr className="bg-gray-700">
+                  <th className="px-2 md:px-4 py-3 text-left text-gray-400 font-medium sticky left-0 bg-gray-700 z-20 text-sm md:text-base">#</th>
+                  <th className="px-2 md:px-4 py-3 text-left text-gray-400 font-medium sticky left-6 md:left-10 bg-gray-700 z-20 text-sm md:text-base min-w-[150px] shadow-[2px_0_8px_rgba(0,0,0,0.3)]">Team</th>
                   <th className="px-2 md:px-4 py-3 text-right text-gray-400 font-medium text-sm md:text-base">Total</th>
                   {weeksToShow.map(week => (
                     <th key={week} className="px-2 md:px-3 py-3 text-center text-gray-400 font-medium text-xs md:text-sm">
@@ -284,10 +290,10 @@ export default function LeaderboardClient({
                         isCurrentUser ? 'bg-blue-900/20' : 'hover:bg-gray-700/30'
                       }`}
                     >
-                      <td className="px-2 md:px-4 py-2 md:py-3 text-gray-400 sticky left-0 bg-inherit z-10 text-sm">
+                      <td className="px-2 md:px-4 py-2 md:py-3 text-gray-400 sticky left-0 z-20 text-sm bg-gray-800">
                         {index + 1}
                       </td>
-                      <td className="px-2 md:px-4 py-2 md:py-3 sticky left-6 md:left-10 bg-inherit z-10">
+                      <td className="px-2 md:px-4 py-2 md:py-3 sticky left-6 md:left-10 z-20 min-w-[150px] bg-gray-800 shadow-[2px_0_8px_rgba(0,0,0,0.3)]">
                         <div className="flex items-center gap-2 md:gap-3">
                           {team.image_url ? (
                             <img
