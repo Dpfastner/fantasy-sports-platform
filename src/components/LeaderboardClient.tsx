@@ -277,7 +277,7 @@ export default function LeaderboardClient({
             Scroll right for weekly breakdown
           </div>
           <div className="overflow-x-auto">
-            <table className="w-full">
+            <table className="min-w-max">
               <thead>
                 <tr className="bg-gray-700">
                   <th className="px-2 md:px-4 py-3 text-left text-gray-400 font-medium sticky left-0 bg-gray-700 z-20 text-sm md:text-base">#</th>

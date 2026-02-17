@@ -143,26 +143,26 @@ export default function EmbeddedLeaderboard({
     }
   }
 
-  // Only show weeks that have actual data
+  // Track which weeks have data for display purposes
   const weeksWithData = new Set<number>()
   for (const wp of weeklyPoints) {
     weeksWithData.add(wp.week_number)
   }
 
-  // Regular season weeks (0-16)
+  // Regular season weeks (0-16) - always show all weeks up to current week
   const regularWeeks = Array.from({ length: 17 }, (_, i) => i)
-    .filter(week => weeksWithData.has(week))
+    .filter(week => week <= currentWeek)
 
-  // Postseason categories (check if data exists)
-  const hasBowlData = weeksWithData.has(17)
-  const hasCFPData = weeksWithData.has(18)
-  const hasNattyData = weeksWithData.has(19)
-  const hasPostseasonData = hasBowlData || hasCFPData || hasNattyData
+  // Always show postseason columns after week 14
+  const showPostseason = currentWeek >= 15
 
   // Week label helper
   const getWeekLabel = (week: number): string => {
     if (week === 0) return 'W0'
     if (week >= 1 && week <= 16) return `W${week}`
+    if (week === 17) return 'Bowls'
+    if (week === 18) return 'CFP'
+    if (week === 19) return 'Natty'
     return `W${week}`
   }
 
@@ -207,7 +207,7 @@ export default function EmbeddedLeaderboard({
           Scroll right for weekly breakdown
         </div>
         <div className="overflow-x-auto">
-          <table className="w-full">
+          <table className="min-w-max">
             <thead>
               <tr className="bg-gray-700/50">
                 <th className="px-2 md:px-4 py-3 text-left text-gray-400 font-medium sticky left-0 bg-gray-700/50 z-10 text-sm">#</th>
@@ -219,18 +219,14 @@ export default function EmbeddedLeaderboard({
                     {getWeekLabel(week)}
                   </th>
                 ))}
-                {/* Postseason columns */}
-                {hasPostseasonData && (
-                  <th className="px-2 py-3 text-center text-purple-400 font-medium text-xs whitespace-nowrap">Heis</th>
-                )}
-                {hasBowlData && (
-                  <th className="px-2 py-3 text-center text-green-400 font-medium text-xs whitespace-nowrap">Bowls</th>
-                )}
-                {hasCFPData && (
-                  <th className="px-2 py-3 text-center text-orange-400 font-medium text-xs whitespace-nowrap">CFP</th>
-                )}
-                {hasNattyData && (
-                  <th className="px-2 py-3 text-center text-yellow-300 font-medium text-xs whitespace-nowrap">Natty</th>
+                {/* Postseason columns - show after week 14 */}
+                {showPostseason && (
+                  <>
+                    <th className="px-2 py-3 text-center text-purple-400 font-medium text-xs whitespace-nowrap">Heis</th>
+                    <th className="px-2 py-3 text-center text-green-400 font-medium text-xs whitespace-nowrap">Bowls</th>
+                    <th className="px-2 py-3 text-center text-orange-400 font-medium text-xs whitespace-nowrap">CFP</th>
+                    <th className="px-2 py-3 text-center text-yellow-300 font-medium text-xs whitespace-nowrap">Natty</th>
+                  </>
                 )}
               </tr>
             </thead>
@@ -301,37 +297,27 @@ export default function EmbeddedLeaderboard({
                         </td>
                       )
                     })}
-                    {/* Heisman column */}
-                    {hasPostseasonData && (
-                      <td className="px-1 py-2 text-center text-xs whitespace-nowrap">
-                        <span className="text-gray-600">-</span>
-                      </td>
-                    )}
-                    {/* Bowls column */}
-                    {hasBowlData && (() => {
-                      const wp = teamWeekly?.get(17)
+                    {/* Postseason columns */}
+                    {showPostseason && (() => {
+                      const heisPoints = teamWeekly?.get(20)
+                      const bowlsWp = teamWeekly?.get(17)
+                      const cfpWp = teamWeekly?.get(18)
+                      const nattyWp = teamWeekly?.get(19)
                       return (
-                        <td className="px-1 py-2 text-center text-xs whitespace-nowrap">
-                          {wp ? <span className="text-green-400">{wp.points}</span> : <span className="text-gray-600">-</span>}
-                        </td>
-                      )
-                    })()}
-                    {/* CFP column */}
-                    {hasCFPData && (() => {
-                      const wp = teamWeekly?.get(18)
-                      return (
-                        <td className="px-1 py-2 text-center text-xs whitespace-nowrap">
-                          {wp ? <span className="text-orange-400">{wp.points}</span> : <span className="text-gray-600">-</span>}
-                        </td>
-                      )
-                    })()}
-                    {/* Natty column */}
-                    {hasNattyData && (() => {
-                      const wp = teamWeekly?.get(19)
-                      return (
-                        <td className="px-1 py-2 text-center text-xs whitespace-nowrap">
-                          {wp ? <span className="text-yellow-300 font-semibold">{wp.points}</span> : <span className="text-gray-600">-</span>}
-                        </td>
+                        <>
+                          <td className="px-1 py-2 text-center text-xs whitespace-nowrap">
+                            {heisPoints ? <span className="text-purple-400">{heisPoints.points}</span> : <span className="text-gray-600">-</span>}
+                          </td>
+                          <td className="px-1 py-2 text-center text-xs whitespace-nowrap">
+                            {bowlsWp ? <span className="text-green-400">{bowlsWp.points}</span> : <span className="text-gray-600">-</span>}
+                          </td>
+                          <td className="px-1 py-2 text-center text-xs whitespace-nowrap">
+                            {cfpWp ? <span className="text-orange-400">{cfpWp.points}</span> : <span className="text-gray-600">-</span>}
+                          </td>
+                          <td className="px-1 py-2 text-center text-xs whitespace-nowrap">
+                            {nattyWp ? <span className="text-yellow-300 font-semibold">{nattyWp.points}</span> : <span className="text-gray-600">-</span>}
+                          </td>
+                        </>
                       )
                     })()}
                   </tr>
@@ -346,7 +332,7 @@ export default function EmbeddedLeaderboard({
       {settings?.high_points_enabled && (
         <div className="bg-gray-700/30 rounded-lg overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full">
+            <table className="min-w-max">
               <thead>
                 <tr className="bg-gray-700/50">
                   <th className="px-2 md:px-4 py-3 text-left text-gray-400 font-medium sticky left-0 bg-gray-700/50 z-10 text-sm">#</th>
@@ -363,18 +349,14 @@ export default function EmbeddedLeaderboard({
                       {getWeekLabel(week)}
                     </th>
                   ))}
-                  {/* Postseason columns */}
-                  {hasPostseasonData && (
-                    <th className="px-2 py-3 text-center text-purple-400 font-medium text-xs whitespace-nowrap">Heis</th>
-                  )}
-                  {hasBowlData && (
-                    <th className="px-2 py-3 text-center text-green-400 font-medium text-xs whitespace-nowrap">Bowls</th>
-                  )}
-                  {hasCFPData && (
-                    <th className="px-2 py-3 text-center text-orange-400 font-medium text-xs whitespace-nowrap">CFP</th>
-                  )}
-                  {hasNattyData && (
-                    <th className="px-2 py-3 text-center text-yellow-300 font-medium text-xs whitespace-nowrap">Natty</th>
+                  {/* Postseason columns - show after week 14 */}
+                  {showPostseason && (
+                    <>
+                      <th className="px-2 py-3 text-center text-purple-400 font-medium text-xs whitespace-nowrap">Heis</th>
+                      <th className="px-2 py-3 text-center text-green-400 font-medium text-xs whitespace-nowrap">Bowls</th>
+                      <th className="px-2 py-3 text-center text-orange-400 font-medium text-xs whitespace-nowrap">CFP</th>
+                      <th className="px-2 py-3 text-center text-yellow-300 font-medium text-xs whitespace-nowrap">Natty</th>
+                    </>
                   )}
                 </tr>
               </thead>
@@ -448,25 +430,21 @@ export default function EmbeddedLeaderboard({
                           )
                         })}
                         {/* Postseason columns - placeholder */}
-                        {hasPostseasonData && (
-                          <td className="px-1 py-2 text-center text-xs whitespace-nowrap">
-                            <span className="text-gray-600">-</span>
-                          </td>
-                        )}
-                        {hasBowlData && (
-                          <td className="px-1 py-2 text-center text-xs whitespace-nowrap">
-                            <span className="text-gray-600">-</span>
-                          </td>
-                        )}
-                        {hasCFPData && (
-                          <td className="px-1 py-2 text-center text-xs whitespace-nowrap">
-                            <span className="text-gray-600">-</span>
-                          </td>
-                        )}
-                        {hasNattyData && (
-                          <td className="px-1 py-2 text-center text-xs whitespace-nowrap">
-                            <span className="text-gray-600">-</span>
-                          </td>
+                        {showPostseason && (
+                          <>
+                            <td className="px-1 py-2 text-center text-xs whitespace-nowrap">
+                              <span className="text-gray-600">-</span>
+                            </td>
+                            <td className="px-1 py-2 text-center text-xs whitespace-nowrap">
+                              <span className="text-gray-600">-</span>
+                            </td>
+                            <td className="px-1 py-2 text-center text-xs whitespace-nowrap">
+                              <span className="text-gray-600">-</span>
+                            </td>
+                            <td className="px-1 py-2 text-center text-xs whitespace-nowrap">
+                              <span className="text-gray-600">-</span>
+                            </td>
+                          </>
                         )}
                       </tr>
                     )
