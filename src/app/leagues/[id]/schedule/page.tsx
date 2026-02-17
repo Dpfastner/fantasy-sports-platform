@@ -83,7 +83,10 @@ export default async function SchedulePage({ params, searchParams }: PageProps) 
   // Calculate current week (with sandbox override support)
   const currentWeek = await getCurrentWeek(year)
   const environment = getEnvironment()
-  const selectedWeek = weekParam ? parseInt(weekParam) : currentWeek
+
+  // Determine if selection is a category or week number
+  const isCategory = weekParam && ['bowls', 'cfp', 'natty'].includes(weekParam)
+  const selectedWeek = isCategory ? weekParam : (weekParam ? parseInt(weekParam) : currentWeek)
 
   // Get weeks that have games
   const { data: weeksWithGamesData } = await supabase
@@ -93,12 +96,29 @@ export default async function SchedulePage({ params, searchParams }: PageProps) 
 
   const weeksWithGames = [...new Set(weeksWithGamesData?.map(g => g.week_number) || [])].sort((a, b) => a - b)
 
-  // Get games for selected week
-  const { data: games } = await supabase
+  // Get games based on selection (week number or category)
+  let gamesQuery = supabase
     .from('games')
     .select('*')
     .eq('season_id', league.season_id)
-    .eq('week_number', selectedWeek)
+
+  if (isCategory) {
+    if (weekParam === 'bowls') {
+      // All postseason games (week 17+)
+      gamesQuery = gamesQuery.gte('week_number', 17)
+    } else if (weekParam === 'cfp') {
+      // Only CFP games (where is_playoff_game is true)
+      gamesQuery = gamesQuery.eq('is_playoff_game', true)
+    } else if (weekParam === 'natty') {
+      // Only championship game
+      gamesQuery = gamesQuery.eq('playoff_round', 'championship')
+    }
+  } else {
+    // Regular week selection
+    gamesQuery = gamesQuery.eq('week_number', selectedWeek)
+  }
+
+  const { data: games } = await gamesQuery
     .order('game_date', { ascending: true })
     .order('game_time', { ascending: true })
 

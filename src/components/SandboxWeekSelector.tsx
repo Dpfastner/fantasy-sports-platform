@@ -1,18 +1,40 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 
-// Cookie name must match the one in src/lib/week.ts
+// Cookie names must match the ones in src/lib/week.ts
 const WEEK_OVERRIDE_COOKIE = 'sandbox_week_override'
+const DATE_OVERRIDE_COOKIE = 'sandbox_date_override'
 
 interface Props {
   currentWeek: number
   environment: string
 }
 
+const DAYS = [
+  { key: 'tue', label: 'Tue', description: 'Tuesday (before games)' },
+  { key: 'thu', label: 'Thu', description: 'Thursday (some games started)' },
+  { key: 'sat', label: 'Sat', description: 'Saturday (main games)' },
+  { key: 'sun', label: 'Sun', description: 'Sunday (after most games)' },
+]
+
 export function SandboxWeekSelector({ currentWeek, environment }: Props) {
   const [isOpen, setIsOpen] = useState(false)
   const [selectedWeek, setSelectedWeek] = useState<number>(currentWeek)
+  const [selectedDay, setSelectedDay] = useState<string | null>(null)
+
+  // Read current day override from cookie on mount
+  useEffect(() => {
+    const cookies = document.cookie.split(';').reduce((acc, c) => {
+      const [key, val] = c.trim().split('=')
+      acc[key] = val
+      return acc
+    }, {} as Record<string, string>)
+
+    if (cookies[DATE_OVERRIDE_COOKIE]) {
+      setSelectedDay(cookies[DATE_OVERRIDE_COOKIE])
+    }
+  }, [])
 
   // Don't render in production
   if (environment === 'production') {
@@ -26,8 +48,16 @@ export function SandboxWeekSelector({ currentWeek, environment }: Props) {
     window.location.reload()
   }
 
+  const handleDayChange = (day: string) => {
+    setSelectedDay(day)
+    // Set cookie and reload
+    document.cookie = `${DATE_OVERRIDE_COOKIE}=${day}; path=/; max-age=${60 * 60 * 24 * 30}` // 30 days
+    window.location.reload()
+  }
+
   const handleClearOverride = () => {
     document.cookie = `${WEEK_OVERRIDE_COOKIE}=; path=/; max-age=0`
+    document.cookie = `${DATE_OVERRIDE_COOKIE}=; path=/; max-age=0`
     window.location.reload()
   }
 
@@ -37,6 +67,12 @@ export function SandboxWeekSelector({ currentWeek, environment }: Props) {
     18: 'CFP',
     19: 'Semis',
     20: 'Natty',
+  }
+
+  const getDayLabel = () => {
+    if (!selectedDay) return ''
+    const day = DAYS.find(d => d.key === selectedDay)
+    return day ? ` (${day.label})` : ''
   }
 
   return (
@@ -51,7 +87,7 @@ export function SandboxWeekSelector({ currentWeek, environment }: Props) {
         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
         </svg>
-        Week {currentWeek}
+        Week {currentWeek}{getDayLabel()}
         <svg
           className={`w-4 h-4 transition-transform ${isOpen ? 'rotate-180' : ''}`}
           fill="none"
@@ -64,9 +100,9 @@ export function SandboxWeekSelector({ currentWeek, environment }: Props) {
 
       {/* Dropdown panel */}
       {isOpen && (
-        <div className="absolute bottom-12 right-0 w-64 bg-gray-800 border border-gray-700 rounded-lg shadow-xl p-4">
+        <div className="absolute bottom-12 right-0 w-72 bg-gray-800 border border-gray-700 rounded-lg shadow-xl p-4">
           <div className="flex items-center justify-between mb-3">
-            <h3 className="text-white font-semibold text-sm">Sandbox Week Override</h3>
+            <h3 className="text-white font-semibold text-sm">Sandbox Time Override</h3>
             <span className={`text-xs px-2 py-0.5 rounded ${
               environment === 'sandbox' ? 'bg-yellow-600/30 text-yellow-400' : 'bg-blue-600/30 text-blue-400'
             }`}>
@@ -75,27 +111,58 @@ export function SandboxWeekSelector({ currentWeek, environment }: Props) {
           </div>
 
           <p className="text-gray-400 text-xs mb-3">
-            Override the current week for testing. This affects all pages.
+            Override week and day for testing deadlines and game states.
           </p>
 
           {/* Week grid */}
-          <div className="grid grid-cols-7 gap-1 mb-3">
-            {weeks.map(week => (
-              <button
-                key={week}
-                onClick={() => handleWeekChange(week)}
-                className={`p-1.5 text-xs rounded transition-colors ${
-                  week === currentWeek
-                    ? 'bg-blue-600 text-white'
-                    : week >= 17
-                      ? 'bg-orange-900/30 text-orange-400 hover:bg-orange-900/50'
+          <div className="mb-3">
+            <p className="text-gray-500 text-xs mb-1">Week</p>
+            <div className="grid grid-cols-7 gap-1">
+              {weeks.map(week => (
+                <button
+                  key={week}
+                  onClick={() => handleWeekChange(week)}
+                  className={`p-1.5 text-xs rounded transition-colors ${
+                    week === currentWeek
+                      ? 'bg-blue-600 text-white'
+                      : week >= 17
+                        ? 'bg-orange-900/30 text-orange-400 hover:bg-orange-900/50'
+                        : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                  }`}
+                  title={specialWeeks[week] || `Week ${week}`}
+                >
+                  {specialWeeks[week] ? specialWeeks[week].charAt(0) : week}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Day selector */}
+          <div className="mb-3">
+            <p className="text-gray-500 text-xs mb-1">Day (for deadline testing)</p>
+            <div className="grid grid-cols-4 gap-1">
+              {DAYS.map(day => (
+                <button
+                  key={day.key}
+                  onClick={() => handleDayChange(day.key)}
+                  className={`p-1.5 text-xs rounded transition-colors ${
+                    selectedDay === day.key
+                      ? 'bg-green-600 text-white'
                       : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-                }`}
-                title={specialWeeks[week] || `Week ${week}`}
-              >
-                {specialWeeks[week] ? specialWeeks[week].charAt(0) : week}
-              </button>
-            ))}
+                  }`}
+                  title={day.description}
+                >
+                  {day.label}
+                </button>
+              ))}
+            </div>
+            <p className="text-gray-500 text-[10px] mt-1">
+              {selectedDay === 'tue' && 'Before any games - 2X picks allowed'}
+              {selectedDay === 'thu' && 'Thursday games may have started'}
+              {selectedDay === 'sat' && 'Main gameday - most deadlines passed'}
+              {selectedDay === 'sun' && 'After weekend games'}
+              {!selectedDay && 'Select a day to test deadline behavior'}
+            </p>
           </div>
 
           {/* Legend */}

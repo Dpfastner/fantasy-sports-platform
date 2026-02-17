@@ -72,6 +72,7 @@ interface Props {
   opponentSchools: OpponentSchool[]
   doublePicks: DoublePick[]
   environment?: string
+  simulatedDateISO?: string
 }
 
 export function RosterList({
@@ -86,7 +87,8 @@ export function RosterList({
   maxDoublePicksPerSeason,
   opponentSchools,
   doublePicks,
-  environment = 'production'
+  environment = 'production',
+  simulatedDateISO
 }: Props) {
   const supabase = createClient()
   const [doublePickSchoolId, setDoublePickSchoolId] = useState<string | null>(null)
@@ -115,10 +117,8 @@ export function RosterList({
       }
     }
 
-    // Skip deadline check in sandbox/development mode for testing
-    if (environment === 'sandbox' || environment === 'development') {
-      return
-    }
+    // Check deadline - use simulated date if provided (for sandbox testing)
+    const checkDate = simulatedDateISO ? new Date(simulatedDateISO) : new Date()
 
     const schoolIds = roster.map(r => r.school_id)
     if (schoolIds.length > 0) {
@@ -131,7 +131,7 @@ export function RosterList({
 
       if (firstGame) {
         const gameTime = new Date(`${firstGame.game_date}T${firstGame.game_time || '12:00:00'}`)
-        if (firstGame.status === 'live' || firstGame.status === 'completed' || new Date() >= gameTime) {
+        if (firstGame.status === 'live' || firstGame.status === 'completed' || checkDate >= gameTime) {
           setCanPick(false)
         }
       }

@@ -4,7 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import { Header } from '@/components/Header'
 import { RosterList } from '@/components/RosterList'
 import { SandboxWeekSelector } from '@/components/SandboxWeekSelector'
-import { getCurrentWeek } from '@/lib/week'
+import { getCurrentWeek, getSimulatedDate } from '@/lib/week'
 import { getEnvironment } from '@/lib/env'
 
 interface PageProps {
@@ -175,6 +175,7 @@ export default async function TeamPage({ params }: PageProps) {
   const seasons = league.seasons as unknown as { year: number } | { year: number }[] | null
   const year = Array.isArray(seasons) ? seasons[0]?.year : seasons?.year || new Date().getFullYear()
   const currentWeek = await getCurrentWeek(year)
+  const simulatedDate = await getSimulatedDate(year)
   const environment = getEnvironment()
 
   // Get school IDs from roster
@@ -414,6 +415,7 @@ export default async function TeamPage({ params }: PageProps) {
               opponentSchools={opponentSchools}
               doublePicks={doublePicks}
               environment={environment}
+              simulatedDateISO={simulatedDate.toISOString()}
             />
           ) : (
             <p className="text-gray-500">No schools on roster yet. Complete the draft to build your team.</p>

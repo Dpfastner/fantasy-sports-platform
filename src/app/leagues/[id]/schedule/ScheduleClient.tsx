@@ -41,7 +41,7 @@ interface Props {
   seasonName: string
   year: number
   currentWeek: number
-  selectedWeek: number
+  selectedWeek: number | string
   initialGames: Game[]
   rosterSchoolIds: string[]
   weeksWithGames: number[]
@@ -88,12 +88,25 @@ export default function ScheduleClient({
           filter: `season_id=eq.${seasonId}`,
         },
         async () => {
-          // Refetch games on any change
-          const { data } = await supabase
+          // Refetch games based on selection type
+          let query = supabase
             .from('games')
             .select('*')
             .eq('season_id', seasonId)
-            .eq('week_number', selectedWeek)
+
+          if (typeof selectedWeek === 'string') {
+            if (selectedWeek === 'bowls') {
+              query = query.gte('week_number', 17)
+            } else if (selectedWeek === 'cfp') {
+              query = query.eq('is_playoff_game', true)
+            } else if (selectedWeek === 'natty') {
+              query = query.eq('playoff_round', 'championship')
+            }
+          } else {
+            query = query.eq('week_number', selectedWeek)
+          }
+
+          const { data } = await query
             .order('game_date', { ascending: true })
             .order('game_time', { ascending: true })
 
@@ -109,8 +122,8 @@ export default function ScheduleClient({
     }
   }, [seasonId, selectedWeek])
 
-  const handleWeekChange = (week: number) => {
-    router.push(`/leagues/${leagueId}/schedule?week=${week}`)
+  const handleWeekChange = (value: string) => {
+    router.push(`/leagues/${leagueId}/schedule?week=${value}`)
   }
 
   // Filter games
@@ -145,22 +158,34 @@ export default function ScheduleClient({
   ).length
 
   // Week label helper
-  const getWeekLabel = (week: number): string => {
+  const getWeekLabel = (week: number | string): string => {
+    if (typeof week === 'string') {
+      if (week === 'bowls') return 'Bowl Games'
+      if (week === 'cfp') return 'CFP Bracket Games'
+      if (week === 'natty') return 'National Championship'
+      return week
+    }
     if (week === 0) return 'Week 0 (Early)'
     if (week >= 1 && week <= 14) return `Week ${week}`
     if (week === 15) return 'Week 15 (Conf Champs)'
     if (week === 16) return 'Week 16 (Army-Navy)'
-    if (week === 17) return 'Bowl Games'
-    if (week === 18) return 'CFP Rounds'
-    if (week === 19) return 'National Championship'
     return `Week ${week}`
   }
 
-  // Show all weeks from 0 to currentWeek, plus any additional weeks with games (for postseason)
-  const allWeeks = Array.from({ length: 20 }, (_, i) => i) // 0-19
-  const weeks = allWeeks.filter(week =>
+  // Regular season weeks (0-16)
+  const regularWeeks = Array.from({ length: 17 }, (_, i) => i).filter(week =>
     week <= currentWeek || weeksWithGames.includes(week)
   )
+
+  // Check if there are postseason games
+  const hasPostseasonGames = weeksWithGames.some(w => w >= 17)
+
+  // Postseason categories
+  const postseasonCategories = hasPostseasonGames ? [
+    { value: 'bowls', label: 'Bowl Games (All)' },
+    { value: 'cfp', label: 'CFP Bracket Games' },
+    { value: 'natty', label: 'National Championship' },
+  ] : []
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-900 to-gray-800">
@@ -241,14 +266,25 @@ export default function ScheduleClient({
         <div className="flex flex-wrap items-center gap-4 mb-6">
           <select
             value={selectedWeek}
-            onChange={(e) => handleWeekChange(parseInt(e.target.value))}
+            onChange={(e) => handleWeekChange(e.target.value)}
             className="bg-gray-700 text-white text-sm rounded-lg px-4 py-2 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
-            {weeks.map((week) => (
-              <option key={week} value={week}>
-                {getWeekLabel(week)}{week === currentWeek ? ' (Current)' : ''}
-              </option>
-            ))}
+            <optgroup label="Regular Season">
+              {regularWeeks.map((week) => (
+                <option key={week} value={week}>
+                  {getWeekLabel(week)}{week === currentWeek ? ' (Current)' : ''}
+                </option>
+              ))}
+            </optgroup>
+            {postseasonCategories.length > 0 && (
+              <optgroup label="Postseason">
+                {postseasonCategories.map((cat) => (
+                  <option key={cat.value} value={cat.value}>
+                    {cat.label}
+                  </option>
+                ))}
+              </optgroup>
+            )}
           </select>
 
           <div className="flex gap-2">

@@ -210,8 +210,8 @@ export default function EmbeddedLeaderboard({
           <table className="min-w-max">
             <thead>
               <tr className="bg-gray-700/50">
-                <th className="px-2 md:px-4 py-3 text-left text-gray-400 font-medium sticky left-0 bg-gray-700/50 z-10 text-sm">#</th>
-                <th className="px-2 md:px-4 py-3 text-left text-gray-400 font-medium sticky left-6 md:left-10 bg-gray-700/50 z-10 text-sm">Team</th>
+                <th className="px-2 md:px-4 py-3 text-left text-gray-400 font-medium sticky left-0 z-20 text-sm" style={{ backgroundColor: '#374151' }}>#</th>
+                <th className="px-2 md:px-4 py-3 text-left text-gray-400 font-medium sticky left-6 md:left-10 z-20 text-sm" style={{ backgroundColor: '#374151' }}>Team</th>
                 <th className="px-2 md:px-4 py-3 text-right text-gray-400 font-medium text-sm">Total</th>
                 {/* Regular season weeks */}
                 {regularWeeks.map(week => (
@@ -234,8 +234,8 @@ export default function EmbeddedLeaderboard({
               {teams.map((team, index) => {
                 const isCurrentUser = team.user_id === currentUserId
                 const teamWeekly = weeklyPointsMap.get(team.id)
-                // Solid background for sticky cells
-                const stickyBg = isCurrentUser ? 'bg-[#1e2a3a]' : 'bg-gray-800'
+                // Solid background for sticky cells - use hex to ensure opacity
+                const stickyBgColor = isCurrentUser ? '#1e2a3a' : '#1f2937'
 
                 return (
                   <tr
@@ -244,10 +244,10 @@ export default function EmbeddedLeaderboard({
                       isCurrentUser ? 'bg-blue-900/20' : 'hover:bg-gray-700/30'
                     }`}
                   >
-                    <td className={`px-2 md:px-4 py-2 text-gray-400 sticky left-0 z-10 text-sm ${stickyBg}`}>
+                    <td className="px-2 md:px-4 py-2 text-gray-400 sticky left-0 z-10 text-sm" style={{ backgroundColor: stickyBgColor }}>
                       {index + 1}
                     </td>
-                    <td className={`px-2 md:px-4 py-2 sticky left-6 md:left-10 z-10 ${stickyBg}`}>
+                    <td className="px-2 md:px-4 py-2 sticky left-6 md:left-10 z-10" style={{ backgroundColor: stickyBgColor }}>
                       <div className="flex items-center gap-2">
                         {team.image_url ? (
                           <img
@@ -337,8 +337,8 @@ export default function EmbeddedLeaderboard({
             <table className="min-w-max">
               <thead>
                 <tr className="bg-gray-700/50">
-                  <th className="px-2 md:px-4 py-3 text-left text-gray-400 font-medium sticky left-0 bg-gray-700/50 z-10 text-sm">#</th>
-                  <th className="px-2 md:px-4 py-3 text-left text-gray-400 font-medium sticky left-6 md:left-10 bg-gray-700/50 z-10 text-sm">Team</th>
+                  <th className="px-2 md:px-4 py-3 text-left text-gray-400 font-medium sticky left-0 z-20 text-sm" style={{ backgroundColor: '#374151' }}>#</th>
+                  <th className="px-2 md:px-4 py-3 text-left text-gray-400 font-medium sticky left-6 md:left-10 z-20 text-sm" style={{ backgroundColor: '#374151' }}>Team</th>
                   <th className="px-2 md:px-4 py-3 text-center text-yellow-400 font-medium text-sm">
                     <div className="flex flex-col items-center">
                       <span className="text-[10px] text-yellow-400/70 leading-none">HP</span>
@@ -372,6 +372,8 @@ export default function EmbeddedLeaderboard({
                       return winners?.find(w => w.teamId === team.id)
                     }
                     const hasAnyWins = regularWeeks.some(week => getWinForWeek(week))
+                    // Solid background for sticky cells
+                    const hpStickyBgColor = isCurrentUser ? '#1e2a3a' : hasAnyWins ? '#2a2517' : '#1f2937'
 
                     return (
                       <tr
@@ -380,8 +382,8 @@ export default function EmbeddedLeaderboard({
                           isCurrentUser ? 'bg-blue-900/20' : hasAnyWins ? 'bg-yellow-900/10' : 'hover:bg-gray-700/30'
                         }`}
                       >
-                        <td className="px-2 md:px-4 py-2 text-gray-400 sticky left-0 bg-inherit z-10 text-sm">{index + 1}</td>
-                        <td className="px-2 md:px-4 py-2 sticky left-6 md:left-10 bg-inherit z-10">
+                        <td className="px-2 md:px-4 py-2 text-gray-400 sticky left-0 z-10 text-sm" style={{ backgroundColor: hpStickyBgColor }}>{index + 1}</td>
+                        <td className="px-2 md:px-4 py-2 sticky left-6 md:left-10 z-10" style={{ backgroundColor: hpStickyBgColor }}>
                           <div className="flex items-center gap-2">
                             {team.image_url ? (
                               <img
