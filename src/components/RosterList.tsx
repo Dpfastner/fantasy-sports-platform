@@ -166,6 +166,27 @@ export function RosterList({
     setSaving(false)
   }
 
+  const handleDoublePointsDeselect = async () => {
+    if (!canPick || saving || !doublePickSchoolId) return
+
+    setSaving(true)
+
+    try {
+      await supabase
+        .from('weekly_double_picks')
+        .delete()
+        .eq('fantasy_team_id', teamId)
+        .eq('week_number', currentWeek)
+
+      setDoublePickSchoolId(null)
+      setPicksUsed(prev => Math.max(0, prev - 1))
+    } catch (err) {
+      console.error('Error removing double pick:', err)
+    }
+
+    setSaving(false)
+  }
+
   // Build points by school
   const schoolPointsMap = new Map<string, Map<number, number>>()
   for (const sp of schoolPoints) {
@@ -343,8 +364,22 @@ export function RosterList({
                   <>
                     <div className="w-10 flex-shrink-0 flex justify-center">
                       {doublePickSchoolId === slot.school_id ? (
-                        <span className="bg-purple-600 text-white text-xs font-bold px-2 py-1 rounded">2x</span>
+                        // This school is selected - show clickable badge to deselect
+                        <button
+                          onClick={handleDoublePointsDeselect}
+                          disabled={!canPick || saving}
+                          className={`bg-purple-600 text-white text-xs font-bold px-2 py-1 rounded ${
+                            canPick && !saving ? 'hover:bg-purple-500 cursor-pointer' : 'opacity-75 cursor-not-allowed'
+                          } transition-colors`}
+                          title={canPick ? 'Click to remove 2x selection' : 'Cannot change after deadline'}
+                        >
+                          2x
+                        </button>
+                      ) : doublePickSchoolId ? (
+                        // Another school is selected - hide button
+                        <span className="text-gray-700 text-xs">-</span>
                       ) : canPick && !maxPicksReached && !saving ? (
+                        // No selection yet - show selectable button
                         <button
                           onClick={() => handleDoublePointsSelect(slot.school_id)}
                           className="text-purple-400 hover:text-purple-300 text-xs border border-purple-500 px-1.5 py-0.5 rounded hover:bg-purple-500/20 transition-colors"
@@ -462,14 +497,14 @@ export function RosterList({
                       <div
                         key={week}
                         className={`w-9 flex-shrink-0 py-1 text-center relative ${
-                          hadDoublePick ? 'bg-amber-600/30 border border-amber-500/50' :
+                          hadDoublePick ? 'bg-purple-600/30 border border-purple-500/50' :
                           isCurrent ? 'bg-blue-600/30' : ''
                         }`}
                       >
                         {wasOnRoster ? (
                           <div className="flex flex-col items-center">
                             {hadDoublePick && (
-                              <span className="text-amber-400 text-[8px] font-bold leading-none">2x</span>
+                              <span className="text-purple-400 text-[8px] font-bold leading-none">2x</span>
                             )}
                             <span className={`text-xs ${pts > 0 ? 'text-white font-medium' : 'text-gray-500'}`}>
                               {pts}
