@@ -6,7 +6,7 @@
     },
     {
       "path": "/api/cron/gameday-sync",
-      "schedule": "* * * * *"
+      "schedule": "0 17 * * 6"
     }
   ]
 }
