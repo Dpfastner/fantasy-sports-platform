@@ -263,9 +263,9 @@ export function RosterList({
   // Week columns configuration
   const regularWeeks = Array.from({ length: 17 }, (_, i) => i) // 0-16
   const specialColumns = [
-    { week: 17, label: 'Bowls', color: 'bg-green-600/20', textColor: 'text-green-400' },
+    { week: 17, label: 'Bowl', color: 'bg-green-600/20', textColor: 'text-green-400' },
     { week: 18, label: 'CFP', color: 'bg-orange-600/20', textColor: 'text-orange-400' },
-    { week: 19, label: 'Natty', color: 'bg-yellow-600/20', textColor: 'text-yellow-400' },
+    { week: 19, label: 'NC', color: 'bg-yellow-600/20', textColor: 'text-yellow-400' },
     { week: 20, label: 'Heis', color: 'bg-purple-600/20', textColor: 'text-purple-400' },
   ]
 
@@ -496,7 +496,7 @@ export function RosterList({
                 </div>
               ))}
               {specialColumns.map(({ week, label, textColor }) => (
-                <div key={week} className={`w-9 flex-shrink-0 text-center ${textColor}`}>
+                <div key={week} className={`w-11 flex-shrink-0 text-center ${textColor}`}>
                   {label}
                 </div>
               ))}
@@ -541,11 +541,11 @@ export function RosterList({
                     )
                   })}
 
-                  {/* Special columns (Heisman, Playoffs) */}
+                  {/* Special columns (Bowl, CFP, NC, Heisman) */}
                   {specialColumns.map(({ week, color }) => {
                     const pts = pointsMap.get(week) || 0
                     return (
-                      <div key={week} className={`w-9 flex-shrink-0 py-1 text-center ${color}`}>
+                      <div key={week} className={`w-11 flex-shrink-0 py-1 text-center ${color}`}>
                         <span className={`text-xs ${pts > 0 ? 'text-white font-medium' : 'text-gray-500'}`}>
                           {pts}
                         </span>
