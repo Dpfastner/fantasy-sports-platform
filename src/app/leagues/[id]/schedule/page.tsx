@@ -6,6 +6,9 @@ import { SandboxWeekSelector } from '@/components/SandboxWeekSelector'
 import { getCurrentWeek } from '@/lib/week'
 import { getEnvironment } from '@/lib/env'
 
+// Force dynamic rendering to ensure fresh data from database
+export const dynamic = 'force-dynamic'
+
 interface PageProps {
   params: Promise<{ id: string }>
   searchParams: Promise<{ week?: string }>

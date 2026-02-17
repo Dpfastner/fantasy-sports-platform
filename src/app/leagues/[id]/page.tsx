@@ -5,6 +5,9 @@ import { Header } from '@/components/Header'
 import DraftStatusSection from '@/components/DraftStatusSection'
 import EmbeddedLeaderboard from '@/components/EmbeddedLeaderboard'
 
+// Force dynamic rendering to ensure fresh data from database
+export const dynamic = 'force-dynamic'
+
 interface PageProps {
   params: Promise<{ id: string }>
 }

@@ -3,6 +3,9 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import StatsClient from './StatsClient'
 
+// Force dynamic rendering to ensure fresh data from database
+export const dynamic = 'force-dynamic'
+
 interface PageProps {
   params: Promise<{ id: string }>
   searchParams: Promise<{ week?: string }>
