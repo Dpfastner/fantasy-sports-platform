@@ -234,6 +234,8 @@ export default function EmbeddedLeaderboard({
               {teams.map((team, index) => {
                 const isCurrentUser = team.user_id === currentUserId
                 const teamWeekly = weeklyPointsMap.get(team.id)
+                // Solid background for sticky cells
+                const stickyBg = isCurrentUser ? 'bg-[#1e2a3a]' : 'bg-gray-800'
 
                 return (
                   <tr
@@ -242,10 +244,10 @@ export default function EmbeddedLeaderboard({
                       isCurrentUser ? 'bg-blue-900/20' : 'hover:bg-gray-700/30'
                     }`}
                   >
-                    <td className="px-2 md:px-4 py-2 text-gray-400 sticky left-0 bg-inherit z-10 text-sm">
+                    <td className={`px-2 md:px-4 py-2 text-gray-400 sticky left-0 z-10 text-sm ${stickyBg}`}>
                       {index + 1}
                     </td>
-                    <td className="px-2 md:px-4 py-2 sticky left-6 md:left-10 bg-inherit z-10">
+                    <td className={`px-2 md:px-4 py-2 sticky left-6 md:left-10 z-10 ${stickyBg}`}>
                       <div className="flex items-center gap-2">
                         {team.image_url ? (
                           <img
