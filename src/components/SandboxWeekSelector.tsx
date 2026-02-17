@@ -1,7 +1,9 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { getWeekOverrideCookieName } from '@/lib/week'
+import { useState } from 'react'
+
+// Cookie name must match the one in src/lib/week.ts
+const WEEK_OVERRIDE_COOKIE = 'sandbox_week_override'
 
 interface Props {
   currentWeek: number
@@ -20,12 +22,12 @@ export function SandboxWeekSelector({ currentWeek, environment }: Props) {
   const handleWeekChange = (week: number) => {
     setSelectedWeek(week)
     // Set cookie and reload
-    document.cookie = `${getWeekOverrideCookieName()}=${week}; path=/; max-age=${60 * 60 * 24 * 30}` // 30 days
+    document.cookie = `${WEEK_OVERRIDE_COOKIE}=${week}; path=/; max-age=${60 * 60 * 24 * 30}` // 30 days
     window.location.reload()
   }
 
   const handleClearOverride = () => {
-    document.cookie = `${getWeekOverrideCookieName()}=; path=/; max-age=0`
+    document.cookie = `${WEEK_OVERRIDE_COOKIE}=; path=/; max-age=0`
     window.location.reload()
   }
 
