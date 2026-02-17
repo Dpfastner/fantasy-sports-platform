@@ -1,6 +1,9 @@
 import { redirect, notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import LeaderboardClient from '@/components/LeaderboardClient'
+import { SandboxWeekSelector } from '@/components/SandboxWeekSelector'
+import { getCurrentWeek } from '@/lib/week'
+import { getEnvironment } from '@/lib/env'
 
 interface PageProps {
   params: Promise<{ id: string }>
@@ -113,13 +116,12 @@ export default async function LeaderboardPage({ params }: PageProps) {
 
   const weeklyPoints = weeklyPointsData as WeeklyPoints[] || []
 
-  // Calculate current week (extends to week 20 for postseason/bowls)
+  // Calculate current week (with sandbox override support)
   const seasons = league.seasons as unknown as { year: number; name: string } | { year: number; name: string }[] | null
   const year = Array.isArray(seasons) ? seasons[0]?.year : seasons?.year || new Date().getFullYear()
   const seasonName = Array.isArray(seasons) ? seasons[0]?.name : seasons?.name || `${year} Season`
-  const seasonStart = new Date(year, 7, 24) // August 24
-  const weeksDiff = Math.floor((Date.now() - seasonStart.getTime()) / (7 * 24 * 60 * 60 * 1000))
-  const currentWeek = Math.max(1, Math.min(weeksDiff + 1, 20))
+  const currentWeek = await getCurrentWeek(year)
+  const environment = getEnvironment()
 
   // Get league settings
   const settings = Array.isArray(league.league_settings)
@@ -127,20 +129,23 @@ export default async function LeaderboardPage({ params }: PageProps) {
     : league.league_settings as LeagueSettings | null
 
   return (
-    <LeaderboardClient
-      leagueId={leagueId}
-      leagueName={league.name}
-      seasonName={seasonName}
-      currentWeek={currentWeek}
-      currentUserId={user.id}
-      initialTeams={teams}
-      initialWeeklyPoints={weeklyPoints}
-      settings={settings ? {
-        high_points_enabled: settings.high_points_enabled,
-        high_points_weekly_amount: settings.high_points_weekly_amount,
-      } : null}
-      userName={profile?.display_name}
-      userEmail={user.email}
-    />
+    <>
+      <LeaderboardClient
+        leagueId={leagueId}
+        leagueName={league.name}
+        seasonName={seasonName}
+        currentWeek={currentWeek}
+        currentUserId={user.id}
+        initialTeams={teams}
+        initialWeeklyPoints={weeklyPoints}
+        settings={settings ? {
+          high_points_enabled: settings.high_points_enabled,
+          high_points_weekly_amount: settings.high_points_weekly_amount,
+        } : null}
+        userName={profile?.display_name}
+        userEmail={user.email}
+      />
+      <SandboxWeekSelector currentWeek={currentWeek} environment={environment} />
+    </>
   )
 }

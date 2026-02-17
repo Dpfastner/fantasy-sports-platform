@@ -219,6 +219,13 @@ export function RosterList({
     }
     doublePicksMap.get(pick.school_id)!.add(pick.week_number)
   }
+  // Include current week's selection (from state) so it reflects immediately
+  if (doublePickSchoolId) {
+    if (!doublePicksMap.has(doublePickSchoolId)) {
+      doublePicksMap.set(doublePickSchoolId, new Set())
+    }
+    doublePicksMap.get(doublePickSchoolId)!.add(currentWeek)
+  }
 
   // Conference abbreviation mapping
   const conferenceAbbreviations: Record<string, string> = {

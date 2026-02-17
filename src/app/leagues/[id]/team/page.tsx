@@ -3,6 +3,9 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { Header } from '@/components/Header'
 import { RosterList } from '@/components/RosterList'
+import { SandboxWeekSelector } from '@/components/SandboxWeekSelector'
+import { getCurrentWeek } from '@/lib/week'
+import { getEnvironment } from '@/lib/env'
 
 interface PageProps {
   params: Promise<{ id: string }>
@@ -168,13 +171,11 @@ export default async function TeamPage({ params }: PageProps) {
 
   const allRosterPeriods = allRosterPeriodsData as unknown as RosterSchool[] | null
 
-  // Calculate current week
+  // Calculate current week (with sandbox override support)
   const seasons = league.seasons as unknown as { year: number } | { year: number }[] | null
   const year = Array.isArray(seasons) ? seasons[0]?.year : seasons?.year || new Date().getFullYear()
-  // Calculate current week (extends to week 20 for postseason/bowls)
-  const seasonStart = new Date(year, 7, 24) // August 24
-  const weeksDiff = Math.floor((Date.now() - seasonStart.getTime()) / (7 * 24 * 60 * 60 * 1000))
-  const currentWeek = Math.max(0, Math.min(weeksDiff + 1, 20))
+  const currentWeek = await getCurrentWeek(year)
+  const environment = getEnvironment()
 
   // Get school IDs from roster
   const schoolIds = roster?.map(r => r.school_id) || []
@@ -587,6 +588,8 @@ export default async function TeamPage({ params }: PageProps) {
         )}
 
       </main>
+
+      <SandboxWeekSelector currentWeek={currentWeek} environment={environment} />
     </div>
   )
 }

@@ -330,15 +330,19 @@ async function handleBackfillAllGames(year: number) {
     }
   }
 
-  // Sync postseason (bowl games)
+  // Sync postseason (bowl games, CFP)
+  // ESPN postseason weeks: 1 = early bowls, 2-3 = bowl season + CFP first round, 4 = CFP QF/SF, 5 = Championship
+  // We map to: week 17 = Bowls, week 18 = CFP Quarterfinals, week 19 = CFP Semifinals, week 20 = Championship
   for (let week = 1; week <= 5; week++) {
     try {
       console.log(`Fetching postseason week ${week} games...`)
       const games = await fetchScoreboard(year, week, 3)
+      // Map postseason week 1 to our week 17 (Bowls), etc.
+      const targetWeek = 16 + week
       const weekResult = await syncWeekGames(
-        supabase, season.id, 15 + week, games, schoolMap, schoolConferenceMap, schoolLogoMap, 3
+        supabase, season.id, targetWeek, games, schoolMap, schoolConferenceMap, schoolLogoMap, 3
       )
-      results.push({ week: 15 + week, seasonType: 3, ...weekResult })
+      results.push({ week: targetWeek, seasonType: 3, ...weekResult })
 
       await new Promise(resolve => setTimeout(resolve, 300))
     } catch (err) {

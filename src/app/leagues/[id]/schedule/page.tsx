@@ -2,6 +2,9 @@ import { redirect, notFound } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import ScheduleClient from './ScheduleClient'
+import { SandboxWeekSelector } from '@/components/SandboxWeekSelector'
+import { getCurrentWeek } from '@/lib/week'
+import { getEnvironment } from '@/lib/env'
 
 interface PageProps {
   params: Promise<{ id: string }>
@@ -77,10 +80,9 @@ export default async function SchedulePage({ params, searchParams }: PageProps) 
   const year = Array.isArray(seasons) ? seasons[0]?.year : seasons?.year || new Date().getFullYear()
   const seasonName = Array.isArray(seasons) ? seasons[0]?.name : seasons?.name || `${year} Season`
 
-  // Calculate current week (extends to week 20 for postseason/bowls)
-  const seasonStart = new Date(year, 7, 24) // August 24
-  const weeksDiff = Math.floor((Date.now() - seasonStart.getTime()) / (7 * 24 * 60 * 60 * 1000))
-  const currentWeek = Math.max(1, Math.min(weeksDiff + 1, 20)) // Extended to 20 for postseason
+  // Calculate current week (with sandbox override support)
+  const currentWeek = await getCurrentWeek(year)
+  const environment = getEnvironment()
   const selectedWeek = weekParam ? parseInt(weekParam) : currentWeek
 
   // Get weeks that have games
@@ -101,19 +103,22 @@ export default async function SchedulePage({ params, searchParams }: PageProps) 
     .order('game_time', { ascending: true })
 
   return (
-    <ScheduleClient
-      leagueId={leagueId}
-      leagueName={league.name}
-      seasonId={league.season_id}
-      seasonName={seasonName}
-      year={year}
-      currentWeek={currentWeek}
-      selectedWeek={selectedWeek}
-      initialGames={games || []}
-      rosterSchoolIds={rosterSchoolIds}
-      weeksWithGames={weeksWithGames}
-      userName={profile?.display_name}
-      userEmail={user.email}
-    />
+    <>
+      <ScheduleClient
+        leagueId={leagueId}
+        leagueName={league.name}
+        seasonId={league.season_id}
+        seasonName={seasonName}
+        year={year}
+        currentWeek={currentWeek}
+        selectedWeek={selectedWeek}
+        initialGames={games || []}
+        rosterSchoolIds={rosterSchoolIds}
+        weeksWithGames={weeksWithGames}
+        userName={profile?.display_name}
+        userEmail={user.email}
+      />
+      <SandboxWeekSelector currentWeek={currentWeek} environment={environment} />
+    </>
   )
 }
