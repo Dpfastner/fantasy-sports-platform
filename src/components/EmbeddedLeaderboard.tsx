@@ -143,9 +143,13 @@ export default function EmbeddedLeaderboard({
     }
   }
 
-  // Show all regular season weeks (1-16) plus bonus columns
-  const maxRegularWeek = 16
-  const weeksToShow = Array.from({ length: Math.max(currentWeek, maxRegularWeek) }, (_, i) => i + 1)
+  // Only show weeks that have actual data
+  const weeksWithData = new Set<number>()
+  for (const wp of weeklyPoints) {
+    weeksWithData.add(wp.week_number)
+  }
+  const weeksToShow = Array.from({ length: currentWeek }, (_, i) => i + 1)
+    .filter(week => weeksWithData.has(week))
 
   // Additional scoring columns after regular season
   const bonusColumns = [

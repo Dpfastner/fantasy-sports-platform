@@ -44,6 +44,7 @@ interface Props {
   selectedWeek: number
   initialGames: Game[]
   rosterSchoolIds: string[]
+  weeksWithGames: number[]
   userName?: string | null
   userEmail?: string | null
 }
@@ -58,6 +59,7 @@ export default function ScheduleClient({
   selectedWeek,
   initialGames,
   rosterSchoolIds,
+  weeksWithGames,
   userName,
   userEmail,
 }: Props) {
@@ -142,8 +144,8 @@ export default function ScheduleClient({
     rosterSchoolIds.includes(g.away_school_id || '')
   ).length
 
-  // Weeks 1-15 regular season + weeks 16-20 postseason/bowls
-  const weeks = Array.from({ length: 20 }, (_, i) => i + 1)
+  // Only show weeks that have game data
+  const weeks = weeksWithGames.length > 0 ? weeksWithGames : [currentWeek]
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-900 to-gray-800">

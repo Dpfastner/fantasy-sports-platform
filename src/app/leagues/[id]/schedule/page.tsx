@@ -83,6 +83,14 @@ export default async function SchedulePage({ params, searchParams }: PageProps) 
   const currentWeek = Math.max(1, Math.min(weeksDiff + 1, 20)) // Extended to 20 for postseason
   const selectedWeek = weekParam ? parseInt(weekParam) : currentWeek
 
+  // Get weeks that have games
+  const { data: weeksWithGamesData } = await supabase
+    .from('games')
+    .select('week_number')
+    .eq('season_id', league.season_id)
+
+  const weeksWithGames = [...new Set(weeksWithGamesData?.map(g => g.week_number) || [])].sort((a, b) => a - b)
+
   // Get games for selected week
   const { data: games } = await supabase
     .from('games')
@@ -103,6 +111,7 @@ export default async function SchedulePage({ params, searchParams }: PageProps) 
       selectedWeek={selectedWeek}
       initialGames={games || []}
       rosterSchoolIds={rosterSchoolIds}
+      weeksWithGames={weeksWithGames}
       userName={profile?.display_name}
       userEmail={user.email}
     />
