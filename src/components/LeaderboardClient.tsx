@@ -200,20 +200,18 @@ export default function LeaderboardClient({
     }
   }
 
-  // Only show weeks that have actual data
+  // Track which weeks have data for display purposes
   const weeksWithData = new Set<number>()
   for (const wp of weeklyPoints) {
     weeksWithData.add(wp.week_number)
   }
 
-  // Regular season weeks (0-16)
+  // Regular season weeks (0-16) - always show all weeks up to current week
   const regularWeeks = Array.from({ length: 17 }, (_, i) => i)
-    .filter(week => weeksWithData.has(week))
+    .filter(week => week <= currentWeek)
 
-  // Postseason categories (check if data exists)
-  const hasBowlData = weeksWithData.has(17)
-  const hasCFPData = weeksWithData.has(18)
-  const hasNattyData = weeksWithData.has(19)
+  // Always show postseason columns (they appear after week 14)
+  const showPostseason = currentWeek >= 15
 
   // Week label helper
   const getWeekLabel = (week: number): string => {
@@ -291,19 +289,14 @@ export default function LeaderboardClient({
                       {getWeekLabel(week)}
                     </th>
                   ))}
-                  {/* Heisman column - always show if we have postseason data */}
-                  {(hasBowlData || hasCFPData || hasNattyData) && (
-                    <th className="px-2 md:px-3 py-3 text-center text-purple-400 font-medium text-xs md:text-sm">Heis</th>
-                  )}
-                  {/* Postseason columns */}
-                  {hasBowlData && (
-                    <th className="px-2 md:px-3 py-3 text-center text-green-400 font-medium text-xs md:text-sm">Bowls</th>
-                  )}
-                  {hasCFPData && (
-                    <th className="px-2 md:px-3 py-3 text-center text-orange-400 font-medium text-xs md:text-sm">CFP</th>
-                  )}
-                  {hasNattyData && (
-                    <th className="px-2 md:px-3 py-3 text-center text-yellow-300 font-medium text-xs md:text-sm">Natty</th>
+                  {/* Postseason columns - show after week 14 */}
+                  {showPostseason && (
+                    <>
+                      <th className="px-2 md:px-3 py-3 text-center text-purple-400 font-medium text-xs md:text-sm">Heis</th>
+                      <th className="px-2 md:px-3 py-3 text-center text-green-400 font-medium text-xs md:text-sm">Bowls</th>
+                      <th className="px-2 md:px-3 py-3 text-center text-orange-400 font-medium text-xs md:text-sm">CFP</th>
+                      <th className="px-2 md:px-3 py-3 text-center text-yellow-300 font-medium text-xs md:text-sm">Natty</th>
+                    </>
                   )}
                   {settings?.high_points_enabled && (
                     <th className="px-2 md:px-4 py-3 text-right text-yellow-400 font-medium text-sm md:text-base">HP $</th>
@@ -377,49 +370,43 @@ export default function LeaderboardClient({
                           </td>
                         )
                       })}
-                      {/* Heisman column */}
-                      {(hasBowlData || hasCFPData || hasNattyData) && (
-                        <td className="px-1 md:px-3 py-2 md:py-3 text-center text-xs md:text-sm">
-                          <span className="text-gray-600">-</span>
-                        </td>
-                      )}
-                      {/* Bowls column */}
-                      {hasBowlData && (() => {
-                        const wp = teamWeekly?.get(17)
+                      {/* Postseason columns */}
+                      {showPostseason && (() => {
+                        const heisPoints = teamWeekly?.get(20) // Heisman stored as week 20 if applicable
+                        const bowlsWp = teamWeekly?.get(17)
+                        const cfpWp = teamWeekly?.get(18)
+                        const nattyWp = teamWeekly?.get(19)
                         return (
-                          <td className="px-1 md:px-3 py-2 md:py-3 text-center text-xs md:text-sm">
-                            {wp ? (
-                              <span className="text-green-400">{wp.points}</span>
-                            ) : (
-                              <span className="text-gray-600">-</span>
-                            )}
-                          </td>
-                        )
-                      })()}
-                      {/* CFP column */}
-                      {hasCFPData && (() => {
-                        const wp = teamWeekly?.get(18)
-                        return (
-                          <td className="px-1 md:px-3 py-2 md:py-3 text-center text-xs md:text-sm">
-                            {wp ? (
-                              <span className="text-orange-400">{wp.points}</span>
-                            ) : (
-                              <span className="text-gray-600">-</span>
-                            )}
-                          </td>
-                        )
-                      })()}
-                      {/* Natty column */}
-                      {hasNattyData && (() => {
-                        const wp = teamWeekly?.get(19)
-                        return (
-                          <td className="px-1 md:px-3 py-2 md:py-3 text-center text-xs md:text-sm">
-                            {wp ? (
-                              <span className="text-yellow-300 font-semibold">{wp.points}</span>
-                            ) : (
-                              <span className="text-gray-600">-</span>
-                            )}
-                          </td>
+                          <>
+                            <td className="px-1 md:px-3 py-2 md:py-3 text-center text-xs md:text-sm">
+                              {heisPoints ? (
+                                <span className="text-purple-400">{heisPoints.points}</span>
+                              ) : (
+                                <span className="text-gray-600">-</span>
+                              )}
+                            </td>
+                            <td className="px-1 md:px-3 py-2 md:py-3 text-center text-xs md:text-sm">
+                              {bowlsWp ? (
+                                <span className="text-green-400">{bowlsWp.points}</span>
+                              ) : (
+                                <span className="text-gray-600">-</span>
+                              )}
+                            </td>
+                            <td className="px-1 md:px-3 py-2 md:py-3 text-center text-xs md:text-sm">
+                              {cfpWp ? (
+                                <span className="text-orange-400">{cfpWp.points}</span>
+                              ) : (
+                                <span className="text-gray-600">-</span>
+                              )}
+                            </td>
+                            <td className="px-1 md:px-3 py-2 md:py-3 text-center text-xs md:text-sm">
+                              {nattyWp ? (
+                                <span className="text-yellow-300 font-semibold">{nattyWp.points}</span>
+                              ) : (
+                                <span className="text-gray-600">-</span>
+                              )}
+                            </td>
+                          </>
                         )
                       })()}
                       {settings?.high_points_enabled && (

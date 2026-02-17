@@ -156,8 +156,11 @@ export default function ScheduleClient({
     return `Week ${week}`
   }
 
-  // Only show weeks that have game data
-  const weeks = weeksWithGames.length > 0 ? weeksWithGames : [currentWeek]
+  // Show all weeks from 0 to currentWeek, plus any additional weeks with games (for postseason)
+  const allWeeks = Array.from({ length: 20 }, (_, i) => i) // 0-19
+  const weeks = allWeeks.filter(week =>
+    week <= currentWeek || weeksWithGames.includes(week)
+  )
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-900 to-gray-800">
