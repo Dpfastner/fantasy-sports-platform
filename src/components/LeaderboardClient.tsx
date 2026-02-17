@@ -205,8 +205,25 @@ export default function LeaderboardClient({
   for (const wp of weeklyPoints) {
     weeksWithData.add(wp.week_number)
   }
-  const weeksToShow = Array.from({ length: currentWeek }, (_, i) => i + 1)
+
+  // Regular season weeks (0-16)
+  const regularWeeks = Array.from({ length: 17 }, (_, i) => i)
     .filter(week => weeksWithData.has(week))
+
+  // Postseason categories (check if data exists)
+  const hasBowlData = weeksWithData.has(17)
+  const hasCFPData = weeksWithData.has(18)
+  const hasNattyData = weeksWithData.has(19)
+
+  // Week label helper
+  const getWeekLabel = (week: number): string => {
+    if (week === 0) return 'W0'
+    if (week >= 1 && week <= 16) return `W${week}`
+    if (week === 17) return 'Bowls'
+    if (week === 18) return 'CFP'
+    if (week === 19) return 'Natty'
+    return `W${week}`
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-900 to-gray-800">
@@ -268,11 +285,26 @@ export default function LeaderboardClient({
                   <th className="px-2 md:px-4 py-3 text-left text-gray-400 font-medium sticky left-0 bg-gray-700 z-20 text-sm md:text-base">#</th>
                   <th className="px-2 md:px-4 py-3 text-left text-gray-400 font-medium sticky left-6 md:left-10 bg-gray-700 z-20 text-sm md:text-base min-w-[150px] shadow-[2px_0_8px_rgba(0,0,0,0.3)]">Team</th>
                   <th className="px-2 md:px-4 py-3 text-right text-gray-400 font-medium text-sm md:text-base">Total</th>
-                  {weeksToShow.map(week => (
+                  {/* Regular season weeks */}
+                  {regularWeeks.map(week => (
                     <th key={week} className="px-2 md:px-3 py-3 text-center text-gray-400 font-medium text-xs md:text-sm">
-                      W{week}
+                      {getWeekLabel(week)}
                     </th>
                   ))}
+                  {/* Heisman column - always show if we have postseason data */}
+                  {(hasBowlData || hasCFPData || hasNattyData) && (
+                    <th className="px-2 md:px-3 py-3 text-center text-purple-400 font-medium text-xs md:text-sm">Heis</th>
+                  )}
+                  {/* Postseason columns */}
+                  {hasBowlData && (
+                    <th className="px-2 md:px-3 py-3 text-center text-green-400 font-medium text-xs md:text-sm">Bowls</th>
+                  )}
+                  {hasCFPData && (
+                    <th className="px-2 md:px-3 py-3 text-center text-orange-400 font-medium text-xs md:text-sm">CFP</th>
+                  )}
+                  {hasNattyData && (
+                    <th className="px-2 md:px-3 py-3 text-center text-yellow-300 font-medium text-xs md:text-sm">Natty</th>
+                  )}
                   {settings?.high_points_enabled && (
                     <th className="px-2 md:px-4 py-3 text-right text-yellow-400 font-medium text-sm md:text-base">HP $</th>
                   )}
@@ -323,7 +355,8 @@ export default function LeaderboardClient({
                       <td className="px-2 md:px-4 py-2 md:py-3 text-right">
                         <span className="text-white font-bold text-base md:text-lg">{team.total_points}</span>
                       </td>
-                      {weeksToShow.map(week => {
+                      {/* Regular season weeks */}
+                      {regularWeeks.map(week => {
                         const wp = teamWeekly?.get(week)
                         const isHighPoints = wp?.is_high_points_winner
 
@@ -344,6 +377,51 @@ export default function LeaderboardClient({
                           </td>
                         )
                       })}
+                      {/* Heisman column */}
+                      {(hasBowlData || hasCFPData || hasNattyData) && (
+                        <td className="px-1 md:px-3 py-2 md:py-3 text-center text-xs md:text-sm">
+                          <span className="text-gray-600">-</span>
+                        </td>
+                      )}
+                      {/* Bowls column */}
+                      {hasBowlData && (() => {
+                        const wp = teamWeekly?.get(17)
+                        return (
+                          <td className="px-1 md:px-3 py-2 md:py-3 text-center text-xs md:text-sm">
+                            {wp ? (
+                              <span className="text-green-400">{wp.points}</span>
+                            ) : (
+                              <span className="text-gray-600">-</span>
+                            )}
+                          </td>
+                        )
+                      })()}
+                      {/* CFP column */}
+                      {hasCFPData && (() => {
+                        const wp = teamWeekly?.get(18)
+                        return (
+                          <td className="px-1 md:px-3 py-2 md:py-3 text-center text-xs md:text-sm">
+                            {wp ? (
+                              <span className="text-orange-400">{wp.points}</span>
+                            ) : (
+                              <span className="text-gray-600">-</span>
+                            )}
+                          </td>
+                        )
+                      })()}
+                      {/* Natty column */}
+                      {hasNattyData && (() => {
+                        const wp = teamWeekly?.get(19)
+                        return (
+                          <td className="px-1 md:px-3 py-2 md:py-3 text-center text-xs md:text-sm">
+                            {wp ? (
+                              <span className="text-yellow-300 font-semibold">{wp.points}</span>
+                            ) : (
+                              <span className="text-gray-600">-</span>
+                            )}
+                          </td>
+                        )
+                      })()}
                       {settings?.high_points_enabled && (
                         <td className="px-2 md:px-4 py-2 md:py-3 text-right">
                           {team.high_points_winnings > 0 ? (

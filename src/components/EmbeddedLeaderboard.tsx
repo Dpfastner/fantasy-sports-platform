@@ -148,15 +148,23 @@ export default function EmbeddedLeaderboard({
   for (const wp of weeklyPoints) {
     weeksWithData.add(wp.week_number)
   }
-  const weeksToShow = Array.from({ length: currentWeek }, (_, i) => i + 1)
+
+  // Regular season weeks (0-16)
+  const regularWeeks = Array.from({ length: 17 }, (_, i) => i)
     .filter(week => weeksWithData.has(week))
 
-  // Additional scoring columns after regular season
-  const bonusColumns = [
-    { key: 'bowls', label: 'Bowls' },
-    { key: 'playoffs', label: 'CFP' },
-    { key: 'heisman', label: 'Heis' },
-  ]
+  // Postseason categories (check if data exists)
+  const hasBowlData = weeksWithData.has(17)
+  const hasCFPData = weeksWithData.has(18)
+  const hasNattyData = weeksWithData.has(19)
+  const hasPostseasonData = hasBowlData || hasCFPData || hasNattyData
+
+  // Week label helper
+  const getWeekLabel = (week: number): string => {
+    if (week === 0) return 'W0'
+    if (week >= 1 && week <= 16) return `W${week}`
+    return `W${week}`
+  }
 
   return (
     <div className="space-y-6">
@@ -205,16 +213,25 @@ export default function EmbeddedLeaderboard({
                 <th className="px-2 md:px-4 py-3 text-left text-gray-400 font-medium sticky left-0 bg-gray-700/50 z-10 text-sm">#</th>
                 <th className="px-2 md:px-4 py-3 text-left text-gray-400 font-medium sticky left-6 md:left-10 bg-gray-700/50 z-10 text-sm">Team</th>
                 <th className="px-2 md:px-4 py-3 text-right text-gray-400 font-medium text-sm">Total</th>
-                {weeksToShow.map(week => (
+                {/* Regular season weeks */}
+                {regularWeeks.map(week => (
                   <th key={week} className="px-2 py-3 text-center text-gray-400 font-medium text-xs whitespace-nowrap">
-                    W{week}
+                    {getWeekLabel(week)}
                   </th>
                 ))}
-                {bonusColumns.map(col => (
-                  <th key={col.key} className="px-2 py-3 text-center text-purple-400 font-medium text-xs whitespace-nowrap">
-                    {col.label}
-                  </th>
-                ))}
+                {/* Postseason columns */}
+                {hasPostseasonData && (
+                  <th className="px-2 py-3 text-center text-purple-400 font-medium text-xs whitespace-nowrap">Heis</th>
+                )}
+                {hasBowlData && (
+                  <th className="px-2 py-3 text-center text-green-400 font-medium text-xs whitespace-nowrap">Bowls</th>
+                )}
+                {hasCFPData && (
+                  <th className="px-2 py-3 text-center text-orange-400 font-medium text-xs whitespace-nowrap">CFP</th>
+                )}
+                {hasNattyData && (
+                  <th className="px-2 py-3 text-center text-yellow-300 font-medium text-xs whitespace-nowrap">Natty</th>
+                )}
               </tr>
             </thead>
             <tbody>
@@ -262,7 +279,8 @@ export default function EmbeddedLeaderboard({
                     <td className="px-2 md:px-4 py-2 text-right">
                       <span className="text-white font-bold">{team.total_points}</span>
                     </td>
-                    {weeksToShow.map(week => {
+                    {/* Regular season weeks */}
+                    {regularWeeks.map(week => {
                       const wp = teamWeekly?.get(week)
                       const isHighPoints = wp?.is_high_points_winner
 
@@ -283,12 +301,39 @@ export default function EmbeddedLeaderboard({
                         </td>
                       )
                     })}
-                    {/* Bonus columns - placeholder for future data */}
-                    {bonusColumns.map(col => (
-                      <td key={col.key} className="px-1 py-2 text-center text-xs whitespace-nowrap">
+                    {/* Heisman column */}
+                    {hasPostseasonData && (
+                      <td className="px-1 py-2 text-center text-xs whitespace-nowrap">
                         <span className="text-gray-600">-</span>
                       </td>
-                    ))}
+                    )}
+                    {/* Bowls column */}
+                    {hasBowlData && (() => {
+                      const wp = teamWeekly?.get(17)
+                      return (
+                        <td className="px-1 py-2 text-center text-xs whitespace-nowrap">
+                          {wp ? <span className="text-green-400">{wp.points}</span> : <span className="text-gray-600">-</span>}
+                        </td>
+                      )
+                    })()}
+                    {/* CFP column */}
+                    {hasCFPData && (() => {
+                      const wp = teamWeekly?.get(18)
+                      return (
+                        <td className="px-1 py-2 text-center text-xs whitespace-nowrap">
+                          {wp ? <span className="text-orange-400">{wp.points}</span> : <span className="text-gray-600">-</span>}
+                        </td>
+                      )
+                    })()}
+                    {/* Natty column */}
+                    {hasNattyData && (() => {
+                      const wp = teamWeekly?.get(19)
+                      return (
+                        <td className="px-1 py-2 text-center text-xs whitespace-nowrap">
+                          {wp ? <span className="text-yellow-300 font-semibold">{wp.points}</span> : <span className="text-gray-600">-</span>}
+                        </td>
+                      )
+                    })()}
                   </tr>
                 )
               })}
@@ -312,16 +357,25 @@ export default function EmbeddedLeaderboard({
                       <span>Total</span>
                     </div>
                   </th>
-                  {weeksToShow.map(week => (
+                  {/* Regular season weeks */}
+                  {regularWeeks.map(week => (
                     <th key={week} className="px-2 py-3 text-center text-gray-400 font-medium text-xs whitespace-nowrap">
-                      W{week}
+                      {getWeekLabel(week)}
                     </th>
                   ))}
-                  {bonusColumns.map(col => (
-                    <th key={col.key} className="px-2 py-3 text-center text-purple-400 font-medium text-xs whitespace-nowrap">
-                      {col.label}
-                    </th>
-                  ))}
+                  {/* Postseason columns */}
+                  {hasPostseasonData && (
+                    <th className="px-2 py-3 text-center text-purple-400 font-medium text-xs whitespace-nowrap">Heis</th>
+                  )}
+                  {hasBowlData && (
+                    <th className="px-2 py-3 text-center text-green-400 font-medium text-xs whitespace-nowrap">Bowls</th>
+                  )}
+                  {hasCFPData && (
+                    <th className="px-2 py-3 text-center text-orange-400 font-medium text-xs whitespace-nowrap">CFP</th>
+                  )}
+                  {hasNattyData && (
+                    <th className="px-2 py-3 text-center text-yellow-300 font-medium text-xs whitespace-nowrap">Natty</th>
+                  )}
                 </tr>
               </thead>
               <tbody>
@@ -329,11 +383,11 @@ export default function EmbeddedLeaderboard({
                   .sort((a, b) => b.high_points_winnings - a.high_points_winnings)
                   .map((team, index) => {
                     const isCurrentUser = team.user_id === currentUserId
-                    const teamWins = weeksToShow.map(week => {
+                    const getWinForWeek = (week: number) => {
                       const winners = highPointsWinners.get(week)
                       return winners?.find(w => w.teamId === team.id)
-                    })
-                    const hasAnyWins = teamWins.some(w => w)
+                    }
+                    const hasAnyWins = regularWeeks.some(week => getWinForWeek(week))
 
                     return (
                       <tr
@@ -377,8 +431,9 @@ export default function EmbeddedLeaderboard({
                             <span className="text-gray-600">$0</span>
                           )}
                         </td>
-                        {weeksToShow.map(week => {
-                          const win = teamWins[week - 1]
+                        {/* Regular season weeks */}
+                        {regularWeeks.map(week => {
+                          const win = getWinForWeek(week)
                           return (
                             <td
                               key={week}
@@ -392,12 +447,27 @@ export default function EmbeddedLeaderboard({
                             </td>
                           )
                         })}
-                        {/* Bonus columns - placeholder for future data */}
-                        {bonusColumns.map(col => (
-                          <td key={col.key} className="px-1 py-2 text-center text-xs whitespace-nowrap">
+                        {/* Postseason columns - placeholder */}
+                        {hasPostseasonData && (
+                          <td className="px-1 py-2 text-center text-xs whitespace-nowrap">
                             <span className="text-gray-600">-</span>
                           </td>
-                        ))}
+                        )}
+                        {hasBowlData && (
+                          <td className="px-1 py-2 text-center text-xs whitespace-nowrap">
+                            <span className="text-gray-600">-</span>
+                          </td>
+                        )}
+                        {hasCFPData && (
+                          <td className="px-1 py-2 text-center text-xs whitespace-nowrap">
+                            <span className="text-gray-600">-</span>
+                          </td>
+                        )}
+                        {hasNattyData && (
+                          <td className="px-1 py-2 text-center text-xs whitespace-nowrap">
+                            <span className="text-gray-600">-</span>
+                          </td>
+                        )}
                       </tr>
                     )
                   })}

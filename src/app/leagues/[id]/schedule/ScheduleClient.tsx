@@ -144,6 +144,18 @@ export default function ScheduleClient({
     rosterSchoolIds.includes(g.away_school_id || '')
   ).length
 
+  // Week label helper
+  const getWeekLabel = (week: number): string => {
+    if (week === 0) return 'Week 0 (Early)'
+    if (week >= 1 && week <= 14) return `Week ${week}`
+    if (week === 15) return 'Week 15 (Conf Champs)'
+    if (week === 16) return 'Week 16 (Army-Navy)'
+    if (week === 17) return 'Bowl Games'
+    if (week === 18) return 'CFP Rounds'
+    if (week === 19) return 'National Championship'
+    return `Week ${week}`
+  }
+
   // Only show weeks that have game data
   const weeks = weeksWithGames.length > 0 ? weeksWithGames : [currentWeek]
 
@@ -231,7 +243,7 @@ export default function ScheduleClient({
           >
             {weeks.map((week) => (
               <option key={week} value={week}>
-                Week {week} {week === currentWeek ? '(Current)' : ''}
+                {getWeekLabel(week)}{week === currentWeek ? ' (Current)' : ''}
               </option>
             ))}
           </select>
