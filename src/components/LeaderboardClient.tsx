@@ -449,7 +449,7 @@ export default function LeaderboardClient({
               High Points Winners
             </h2>
             <div className="grid md:grid-cols-3 lg:grid-cols-5 gap-4">
-              {weeksToShow.map(week => {
+              {regularWeeks.map(week => {
                 const winners = highPointsWinners.get(week)
                 if (!winners || winners.length === 0) return null
 
@@ -458,7 +458,7 @@ export default function LeaderboardClient({
                     key={week}
                     className="bg-gray-700/50 rounded-lg p-4 border border-yellow-700/30"
                   >
-                    <p className="text-gray-400 text-sm mb-2">Week {week}</p>
+                    <p className="text-gray-400 text-sm mb-2">{getWeekLabel(week)}</p>
                     {winners.map(winner => {
                       const team = teams.find(t => t.id === winner.teamId)
                       return (
