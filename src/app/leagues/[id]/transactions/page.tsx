@@ -1,6 +1,9 @@
 import { redirect, notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import TransactionsClient from '@/components/TransactionsClient'
+import { SandboxWeekSelector } from '@/components/SandboxWeekSelector'
+import { getCurrentWeek, getSimulatedDate } from '@/lib/week'
+import { getEnvironment } from '@/lib/env'
 
 interface PageProps {
   params: Promise<{ id: string }>
@@ -178,12 +181,12 @@ export default async function TransactionsPage({ params }: PageProps) {
   }
 
   // Get current AP rankings
-  // Calculate current week (extends to week 20 for postseason/bowls)
+  // Calculate current week (extends to week 20 for postseason/bowls) - supports sandbox override
   const seasons = league.seasons as unknown as { year: number } | { year: number }[] | null
   const year = Array.isArray(seasons) ? seasons[0]?.year : seasons?.year || new Date().getFullYear()
-  const seasonStart = new Date(year, 7, 24) // August 24
-  const weeksDiff = Math.floor((Date.now() - seasonStart.getTime()) / (7 * 24 * 60 * 60 * 1000))
-  const currentWeek = Math.max(1, Math.min(weeksDiff + 1, 20))
+  const currentWeek = await getCurrentWeek(year)
+  const simulatedDate = await getSimulatedDate(year)
+  const environment = getEnvironment()
 
   // Get the most recent rankings - try current week first, then find latest available
   let { data: rankings } = await supabase
@@ -279,36 +282,39 @@ export default async function TransactionsPage({ params }: PageProps) {
     ? league.league_settings[0]
     : league.league_settings as LeagueSettings | null
 
-  // Check if transactions are locked
+  // Check if transactions are locked - uses simulated date in sandbox
   const addDropDeadline = settings?.add_drop_deadline
     ? new Date(settings.add_drop_deadline)
     : null
-  const isDeadlinePassed = addDropDeadline ? new Date() > addDropDeadline : false
+  const isDeadlinePassed = addDropDeadline ? simulatedDate > addDropDeadline : false
   const hasRemainingTransactions = (team.add_drops_used || 0) < (settings?.max_add_drops_per_season || 50)
 
   return (
-    <TransactionsClient
-      leagueId={leagueId}
-      leagueName={league.name}
-      seasonId={league.season_id}
-      teamId={team.id}
-      teamName={team.name}
-      currentWeek={currentWeek}
-      roster={roster}
-      allSchools={allSchools}
-      schoolPointsMap={Object.fromEntries(schoolPointsMap)}
-      rankingsMap={Object.fromEntries(rankingsMap)}
-      schoolRecordsMap={Object.fromEntries(schoolRecordsMap)}
-      schoolSelectionCounts={Object.fromEntries(schoolSelectionCounts)}
-      transactionHistory={transactionHistory || []}
-      addDropsUsed={team.add_drops_used || 0}
-      maxAddDrops={settings?.max_add_drops_per_season || 50}
-      maxSelectionsPerSchool={settings?.max_school_selections_total || 3}
-      addDropDeadline={addDropDeadline?.toISOString() || null}
-      isDeadlinePassed={isDeadlinePassed}
-      canMakeTransactions={hasRemainingTransactions && !isDeadlinePassed}
-      userName={profile?.display_name}
-      userEmail={user.email}
-    />
+    <>
+      <TransactionsClient
+        leagueId={leagueId}
+        leagueName={league.name}
+        seasonId={league.season_id}
+        teamId={team.id}
+        teamName={team.name}
+        currentWeek={currentWeek}
+        roster={roster}
+        allSchools={allSchools}
+        schoolPointsMap={Object.fromEntries(schoolPointsMap)}
+        rankingsMap={Object.fromEntries(rankingsMap)}
+        schoolRecordsMap={Object.fromEntries(schoolRecordsMap)}
+        schoolSelectionCounts={Object.fromEntries(schoolSelectionCounts)}
+        transactionHistory={transactionHistory || []}
+        addDropsUsed={team.add_drops_used || 0}
+        maxAddDrops={settings?.max_add_drops_per_season || 50}
+        maxSelectionsPerSchool={settings?.max_school_selections_total || 3}
+        addDropDeadline={addDropDeadline?.toISOString() || null}
+        isDeadlinePassed={isDeadlinePassed}
+        canMakeTransactions={hasRemainingTransactions && !isDeadlinePassed}
+        userName={profile?.display_name}
+        userEmail={user.email}
+      />
+      <SandboxWeekSelector currentWeek={currentWeek} environment={environment} />
+    </>
   )
 }

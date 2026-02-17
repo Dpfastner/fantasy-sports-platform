@@ -5,6 +5,7 @@ import { useState, useEffect } from 'react'
 // Cookie names must match the ones in src/lib/week.ts
 const WEEK_OVERRIDE_COOKIE = 'sandbox_week_override'
 const DATE_OVERRIDE_COOKIE = 'sandbox_date_override'
+const TIME_OVERRIDE_COOKIE = 'sandbox_time_override'
 
 interface Props {
   currentWeek: number
@@ -12,18 +13,30 @@ interface Props {
 }
 
 const DAYS = [
+  { key: 'mon', label: 'Mon', description: 'Monday (start of week)' },
   { key: 'tue', label: 'Tue', description: 'Tuesday (before games)' },
+  { key: 'wed', label: 'Wed', description: 'Wednesday (mid-week)' },
   { key: 'thu', label: 'Thu', description: 'Thursday (some games started)' },
-  { key: 'sat', label: 'Sat', description: 'Saturday (main games)' },
+  { key: 'fri', label: 'Fri', description: 'Friday (FCS/some FBS games)' },
+  { key: 'sat', label: 'Sat', description: 'Saturday (main gameday)' },
   { key: 'sun', label: 'Sun', description: 'Sunday (after most games)' },
+]
+
+const TIME_PRESETS = [
+  { key: '08:00', label: '8 AM', description: 'Early morning' },
+  { key: '12:00', label: '12 PM', description: 'Noon (before kickoffs)' },
+  { key: '15:00', label: '3 PM', description: 'Afternoon (games starting)' },
+  { key: '19:00', label: '7 PM', description: 'Prime time' },
+  { key: '23:00', label: '11 PM', description: 'Late night' },
 ]
 
 export function SandboxWeekSelector({ currentWeek, environment }: Props) {
   const [isOpen, setIsOpen] = useState(false)
   const [selectedWeek, setSelectedWeek] = useState<number>(currentWeek)
   const [selectedDay, setSelectedDay] = useState<string | null>(null)
+  const [selectedTime, setSelectedTime] = useState<string | null>(null)
 
-  // Read current day override from cookie on mount
+  // Read current overrides from cookies on mount
   useEffect(() => {
     const cookies = document.cookie.split(';').reduce((acc, c) => {
       const [key, val] = c.trim().split('=')
@@ -33,6 +46,9 @@ export function SandboxWeekSelector({ currentWeek, environment }: Props) {
 
     if (cookies[DATE_OVERRIDE_COOKIE]) {
       setSelectedDay(cookies[DATE_OVERRIDE_COOKIE])
+    }
+    if (cookies[TIME_OVERRIDE_COOKIE]) {
+      setSelectedTime(cookies[TIME_OVERRIDE_COOKIE])
     }
   }, [])
 
@@ -55,9 +71,17 @@ export function SandboxWeekSelector({ currentWeek, environment }: Props) {
     window.location.reload()
   }
 
+  const handleTimeChange = (time: string) => {
+    setSelectedTime(time)
+    // Set cookie and reload
+    document.cookie = `${TIME_OVERRIDE_COOKIE}=${time}; path=/; max-age=${60 * 60 * 24 * 30}` // 30 days
+    window.location.reload()
+  }
+
   const handleClearOverride = () => {
     document.cookie = `${WEEK_OVERRIDE_COOKIE}=; path=/; max-age=0`
     document.cookie = `${DATE_OVERRIDE_COOKIE}=; path=/; max-age=0`
+    document.cookie = `${TIME_OVERRIDE_COOKIE}=; path=/; max-age=0`
     window.location.reload()
   }
 
@@ -72,7 +96,8 @@ export function SandboxWeekSelector({ currentWeek, environment }: Props) {
   const getDayLabel = () => {
     if (!selectedDay) return ''
     const day = DAYS.find(d => d.key === selectedDay)
-    return day ? ` (${day.label})` : ''
+    const timeLabel = selectedTime ? ` ${selectedTime.replace(':00', '')}` : ''
+    return day ? ` (${day.label}${timeLabel})` : ''
   }
 
   return (
@@ -140,7 +165,7 @@ export function SandboxWeekSelector({ currentWeek, environment }: Props) {
           {/* Day selector */}
           <div className="mb-3">
             <p className="text-gray-500 text-xs mb-1">Day (for deadline testing)</p>
-            <div className="grid grid-cols-4 gap-1">
+            <div className="grid grid-cols-7 gap-1">
               {DAYS.map(day => (
                 <button
                   key={day.key}
@@ -157,11 +182,39 @@ export function SandboxWeekSelector({ currentWeek, environment }: Props) {
               ))}
             </div>
             <p className="text-gray-500 text-[10px] mt-1">
-              {selectedDay === 'tue' && 'Before any games - 2X picks allowed'}
-              {selectedDay === 'thu' && 'Thursday games may have started'}
-              {selectedDay === 'sat' && 'Main gameday - most deadlines passed'}
-              {selectedDay === 'sun' && 'After weekend games'}
+              {selectedDay === 'mon' && 'Monday - start of week'}
+              {selectedDay === 'tue' && 'Tuesday - before any games'}
+              {selectedDay === 'wed' && 'Wednesday - mid-week'}
+              {selectedDay === 'thu' && 'Thursday - some games started'}
+              {selectedDay === 'fri' && 'Friday - FCS/some FBS games'}
+              {selectedDay === 'sat' && 'Saturday - main gameday'}
+              {selectedDay === 'sun' && 'Sunday - after most games'}
               {!selectedDay && 'Select a day to test deadline behavior'}
+            </p>
+          </div>
+
+          {/* Time selector */}
+          <div className="mb-3">
+            <p className="text-gray-500 text-xs mb-1">Time (optional)</p>
+            <div className="grid grid-cols-5 gap-1">
+              {TIME_PRESETS.map(time => (
+                <button
+                  key={time.key}
+                  onClick={() => handleTimeChange(time.key)}
+                  className={`p-1.5 text-xs rounded transition-colors ${
+                    selectedTime === time.key
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                  }`}
+                  title={time.description}
+                >
+                  {time.label}
+                </button>
+              ))}
+            </div>
+            <p className="text-gray-500 text-[10px] mt-1">
+              {selectedTime && `Simulating ${selectedTime.replace(':00', ':00')} local time`}
+              {!selectedTime && 'Defaults to 12 PM if not set'}
             </p>
           </div>
 

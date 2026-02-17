@@ -3,11 +3,15 @@ import { getEnvironment } from './env'
 
 export const WEEK_OVERRIDE_COOKIE = 'sandbox_week_override'
 export const DATE_OVERRIDE_COOKIE = 'sandbox_date_override'
+export const TIME_OVERRIDE_COOKIE = 'sandbox_time_override'
 
 // Day offsets from Monday (week starts on Monday)
 const DAY_OFFSETS: Record<string, number> = {
+  'mon': 0,  // Monday
   'tue': 1,  // Tuesday = Monday + 1
+  'wed': 2,  // Wednesday = Monday + 2
   'thu': 3,  // Thursday = Monday + 3
+  'fri': 4,  // Friday = Monday + 4
   'sat': 5,  // Saturday = Monday + 5
   'sun': 6,  // Sunday = Monday + 6
 }
@@ -51,6 +55,7 @@ export async function getSimulatedDate(seasonYear: number): Promise<Date> {
     const cookieStore = await cookies()
     const weekOverride = cookieStore.get(WEEK_OVERRIDE_COOKIE)
     const dayOverride = cookieStore.get(DATE_OVERRIDE_COOKIE)
+    const timeOverride = cookieStore.get(TIME_OVERRIDE_COOKIE)
 
     if (weekOverride?.value && dayOverride?.value) {
       const week = parseInt(weekOverride.value, 10)
@@ -74,8 +79,21 @@ export async function getSimulatedDate(seasonYear: number): Promise<Date> {
         const simulatedDate = new Date(targetMonday)
         simulatedDate.setDate(targetMonday.getDate() + DAY_OFFSETS[dayKey])
 
-        // Set time to noon to avoid timezone issues
-        simulatedDate.setHours(12, 0, 0, 0)
+        // Parse time override if present (format: "HH:MM" or "HH:MM:SS")
+        if (timeOverride?.value) {
+          const timeParts = timeOverride.value.split(':')
+          const hours = parseInt(timeParts[0], 10)
+          const minutes = parseInt(timeParts[1] || '0', 10)
+          if (!isNaN(hours) && hours >= 0 && hours <= 23) {
+            simulatedDate.setHours(hours, minutes, 0, 0)
+          } else {
+            // Default to noon if time is invalid
+            simulatedDate.setHours(12, 0, 0, 0)
+          }
+        } else {
+          // Default to noon to avoid timezone issues
+          simulatedDate.setHours(12, 0, 0, 0)
+        }
 
         return simulatedDate
       }

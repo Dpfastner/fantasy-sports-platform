@@ -119,6 +119,7 @@ export function RosterList({
 
     // Check deadline - use simulated date if provided (for sandbox testing)
     const checkDate = simulatedDateISO ? new Date(simulatedDateISO) : new Date()
+    const isSimulated = !!simulatedDateISO && (environment === 'sandbox' || environment === 'development')
 
     const schoolIds = roster.map(r => r.school_id)
     if (schoolIds.length > 0) {
@@ -131,8 +132,18 @@ export function RosterList({
 
       if (firstGame) {
         const gameTime = new Date(`${firstGame.game_date}T${firstGame.game_time || '12:00:00'}`)
-        if (firstGame.status === 'live' || firstGame.status === 'completed' || checkDate >= gameTime) {
-          setCanPick(false)
+        // In sandbox with simulated date, only check date comparison (ignore actual game status)
+        // In production, check both game status and current time
+        if (isSimulated) {
+          // Only use simulated date vs game time comparison
+          if (checkDate >= gameTime) {
+            setCanPick(false)
+          }
+        } else {
+          // Production: check actual game status or current time
+          if (firstGame.status === 'live' || firstGame.status === 'completed' || checkDate >= gameTime) {
+            setCanPick(false)
+          }
         }
       }
     }
