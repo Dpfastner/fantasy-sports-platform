@@ -240,8 +240,9 @@ export async function GET() {
 function determinePlayoffRound(notesHeadline: string): string | null {
   const name = notesHeadline.toLowerCase()
 
-  // Only process if it's actually a CFP game
-  if (!name.includes('college football playoff') && !name.includes('cfp')) {
+  // Must contain "college football playoff" - just "cfp" alone is too ambiguous
+  // as some bowl names might include "cfp" for promotional reasons
+  if (!name.includes('college football playoff')) {
     return null
   }
 
@@ -259,8 +260,9 @@ function determinePlayoffRound(notesHeadline: string): string | null {
     return 'first_round'
   }
 
-  // Generic CFP game - shouldn't happen but fallback to first_round
-  return 'first_round'
+  // If it has "college football playoff" but no specific round, it's not a real CFP game
+  // This catches cases like promotional text in regular bowl names
+  return null
 }
 
 /**

@@ -71,6 +71,7 @@ interface Props {
   maxDoublePicksPerSeason: number
   opponentSchools: OpponentSchool[]
   doublePicks: DoublePick[]
+  environment?: string
 }
 
 export function RosterList({
@@ -84,7 +85,8 @@ export function RosterList({
   doublePointsEnabled,
   maxDoublePicksPerSeason,
   opponentSchools,
-  doublePicks
+  doublePicks,
+  environment = 'production'
 }: Props) {
   const supabase = createClient()
   const [doublePickSchoolId, setDoublePickSchoolId] = useState<string | null>(null)
@@ -111,6 +113,11 @@ export function RosterList({
       if (thisWeekPick) {
         setDoublePickSchoolId(thisWeekPick.school_id)
       }
+    }
+
+    // Skip deadline check in sandbox/development mode for testing
+    if (environment === 'sandbox' || environment === 'development') {
+      return
     }
 
     const schoolIds = roster.map(r => r.school_id)
@@ -417,7 +424,7 @@ export function RosterList({
                       <div className="flex flex-col min-w-0 flex-1">
                         <span className="text-gray-300 text-xs truncate">
                           <span className="text-gray-400">{isHome ? 'vs' : '@'} </span>
-                          {opponentRank && <span className="text-gray-500">#{opponentRank} </span>}
+                          {opponentRank && opponentRank <= 25 && <span className="text-gray-500">#{opponentRank} </span>}
                           {opponentName}
                           {opponentConfAbbr && <span className="text-gray-500"> {opponentConfAbbr}</span>}
                         </span>

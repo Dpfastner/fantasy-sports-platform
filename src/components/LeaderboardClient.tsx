@@ -308,8 +308,8 @@ export default function LeaderboardClient({
                   const isCurrentUser = team.user_id === currentUserId
                   const teamWeekly = weeklyPointsMap.get(team.id)
 
-                  // Solid background for sticky cells - slightly tinted for current user
-                  const stickyBg = isCurrentUser ? 'bg-[#1e2a3a]' : 'bg-gray-800'
+                  // Solid background color for sticky cells - hex values to ensure opacity
+                  const stickyBgColor = isCurrentUser ? '#1e2a3a' : '#1f2937'
 
                   return (
                     <tr
@@ -318,10 +318,16 @@ export default function LeaderboardClient({
                         isCurrentUser ? 'bg-blue-900/20' : 'hover:bg-gray-700/30'
                       }`}
                     >
-                      <td className={`px-2 md:px-4 py-2 md:py-3 text-gray-400 sticky left-0 z-20 text-sm ${stickyBg}`}>
+                      <td
+                        className="px-2 md:px-4 py-2 md:py-3 text-gray-400 sticky left-0 z-20 text-sm"
+                        style={{ backgroundColor: stickyBgColor }}
+                      >
                         {index + 1}
                       </td>
-                      <td className={`px-2 md:px-4 py-2 md:py-3 sticky left-6 md:left-10 z-20 min-w-[150px] ${stickyBg} shadow-[2px_0_8px_rgba(0,0,0,0.3)]`}>
+                      <td
+                        className="px-2 md:px-4 py-2 md:py-3 sticky left-6 md:left-10 z-20 min-w-[150px] shadow-[2px_0_8px_rgba(0,0,0,0.3)]"
+                        style={{ backgroundColor: stickyBgColor }}
+                      >
                         <div className="flex items-center gap-2 md:gap-3">
                           {team.image_url ? (
                             <img

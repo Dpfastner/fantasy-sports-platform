@@ -73,9 +73,51 @@
 **Implementation Details:**
 - ESPN client: `src/lib/api/espn.ts` (teams, scoreboard, rankings)
 - Sync routes: `/api/sync/schools`, `/api/sync/games`, `/api/sync/rankings`, `/api/sync/bulk`
-- Cron jobs: `/api/cron/daily-sync` (6 AM ET), `/api/cron/gameday-sync` (every 15 min on Saturdays)
 - Admin UI: `/admin/sync` with all sync options
 - Bowl/playoff detection in bulk sync
+
+**Cron Job Configuration (vercel.json):**
+```json
+{
+  "crons": [
+    {
+      "path": "/api/cron/daily-sync",
+      "schedule": "0 10 * * *"
+    },
+    {
+      "path": "/api/cron/gameday-sync",
+      "schedule": "* * * * *"
+    }
+  ]
+}
+```
+
+**Daily Sync** (`/api/cron/daily-sync`) - Runs once daily at 10 AM UTC:
+- Syncs AP Rankings for current week
+- Syncs current week games from ESPN
+- **FAILSAFE**: Recalculates points for games completed in past 2 days (catches any missed completions)
+- Calculates points for current week if games were synced
+
+**Gameday Sync** (`/api/cron/gameday-sync`) - Runs every minute with smart skip logic:
+- Checks if there are games today → skips instantly if no games
+- Checks if all games are complete → skips if nothing active
+- Checks if current time is within game window (30 min before first game → 4 hours after last game starts) → skips if outside window
+- Only calls ESPN API when actually in game window with active games
+- Updates live scores and game status
+- Calculates points when games complete
+
+**Why Every Minute:**
+- CFB games can end at any time
+- Smart window logic means ~95% of calls skip instantly (no API usage)
+- Only ~5% actually hit ESPN API (during actual game hours)
+- Vercel free tier allows this because skips are fast/cheap
+
+**Week Calculation:**
+```typescript
+const seasonStart = new Date(year, 7, 24) // August 24
+const weeksDiff = Math.floor((now.getTime() - seasonStart.getTime()) / (7 * 24 * 60 * 60 * 1000))
+const currentWeek = Math.max(0, Math.min(weeksDiff + 1, 20)) // Weeks 0-20 (including postseason)
+```
 
 ---
 
@@ -268,16 +310,139 @@
 
 ---
 
-## Future Phases (Post-Launch)
+## Phase 11: Environment Separation
+*Production vs Sandbox for safe testing*
+
+| Task | Description | Status |
+|------|-------------|--------|
+| 11.1 | Create separate Supabase project for production | Pending |
+| 11.2 | Create environment variable templates (.env.example) | **DONE** |
+| 11.3 | Add environment detection utilities | **DONE** |
+| 11.4 | Add environment badge UI component | **DONE** |
+| 11.5 | Update crons to skip in non-production | **DONE** |
+| 11.6 | Document environment switching process | **DONE** |
+| 11.7 | Set up Vercel environment variables | Pending |
+| 11.8 | Run migrations on production database | Pending |
+| 11.9 | Seed production with 2026 schools | Pending |
+
+**Deliverable:** Two environments - production (2026 real season) and sandbox (2025 test data) that can be used independently.
+
+**Status: IN PROGRESS**
+
+**Completed Work:**
+- Environment detection: `src/lib/env.ts` with helpers like `isProduction()`, `areCronsEnabled()`
+- Environment badge: `src/components/EnvironmentBadge.tsx` (floating badge in sandbox/dev)
+- Cron protection: All 4 cron routes skip execution in non-production environments
+- Documentation: `docs/ENVIRONMENT_SETUP.md` with full setup instructions
+- Env template: `.env.local.example` with all variables documented
+
+**Remaining (Manual Steps):**
+1. Create production Supabase project
+2. Configure Vercel environment variables (production vs preview)
+3. Run migrations on production database
+4. Sync 2026 FBS schools to production
+
+**Why This Matters:**
+- Test changes without affecting production data
+- Simulate game days and score updates safely
+- Develop new features against real-ish data
+- Practice cron job timing before real season
+
+---
+
+## Phase 12: Error Tracking & Monitoring
+*Know when things break*
+
+| Task | Description |
+|------|-------------|
+| 12.1 | Add Sentry for error tracking (free tier) |
+| 12.2 | Configure Sentry for both client and server errors |
+| 12.3 | Set up Vercel Analytics (free, included) |
+| 12.4 | Add health check endpoint for monitoring |
+| 12.5 | Create cron job success/failure alerting |
+
+**Deliverable:** Get notified when errors occur, track performance, know if cron jobs fail.
+
+**Status: NOT STARTED**
+
+**Why This Matters:**
+- Currently errors happen silently during cron jobs
+- No visibility into API failures or slow pages
+- Critical during live game days when issues need quick fixes
+
+---
+
+## Phase 13: Database Backups & Recovery
+*Protect user data*
+
+| Task | Description |
+|------|-------------|
+| 13.1 | Enable Supabase daily backups (included in Pro) |
+| 13.2 | Document manual backup procedure for free tier |
+| 13.3 | Create backup script for critical tables |
+| 13.4 | Test restore procedure |
+| 13.5 | Set up pre-season backup checklist |
+
+**Deliverable:** Regular backups with tested recovery process.
+
+**Status: NOT STARTED**
+
+**Why This Matters:**
+- All rosters, picks, and season data are in the database
+- One bad migration or accidental deletion could lose everything
+- Free tier doesn't auto-backup - need manual process
+
+---
+
+## Phase 14: Testing Infrastructure
+*Catch bugs before production*
+
+| Task | Description |
+|------|-------------|
+| 14.1 | Set up Jest or Vitest for unit tests |
+| 14.2 | Write tests for points calculator (most critical logic) |
+| 14.3 | Write tests for week calculation across components |
+| 14.4 | Add tests for cron job verification logic |
+| 14.5 | Set up CI to run tests on pull requests |
+
+**Deliverable:** Critical business logic is tested, CI catches regressions.
+
+**Status: NOT STARTED**
+
+**Why This Matters:**
+- Points calculator affects everyone's standings
+- Week calculation is duplicated in many files
+- Changes to one area can break another
+
+---
+
+## Phase 15: Documentation
+*Make the project maintainable*
+
+| Task | Description |
+|------|-------------|
+| 15.1 | Create README with setup instructions |
+| 15.2 | Document environment variables and their purposes |
+| 15.3 | Create deployment checklist (pre-season, mid-season) |
+| 15.4 | Document cron job schedule and what each does |
+| 15.5 | Create troubleshooting guide for common issues |
+
+**Deliverable:** Anyone (including future you) can understand and maintain the project.
+
+**Status: NOT STARTED**
+
+---
+
+## Future Phases (Post-Operations)
 
 | Phase | Features |
 |-------|----------|
-| **Phase 11** | Auto-pick for draft, draft pause/resume |
-| **Phase 12** | Email/push notifications |
-| **Phase 13** | Historical season caching, returning user experience |
-| **Phase 14** | Multi-sport expansion (hockey, baseball, etc.) |
-| **Phase 15** | Team-to-team trading |
-| **Phase 16** | Charity/donation pooling feature |
+| **Phase 16** | Auto-pick for draft, draft pause/resume |
+| **Phase 17** | Email/push notifications |
+| **Phase 18** | Historical season caching, returning user experience |
+| **Phase 19** | Multi-sport expansion (hockey, baseball, etc.) |
+| **Phase 20** | Team-to-team trading |
+| **Phase 21** | Charity/donation pooling feature |
 
 ---
 
@@ -304,5 +469,30 @@ Phase 8 (Polish)         ████████████  COMPLETE
         ↓
 Phase 9 (Double Points)  ████████████  COMPLETE
         ↓
-Phase 10 (Bracket)       ████████████  COMPLETE ← USER TESTING READY
+Phase 10 (Bracket)       ████████████  COMPLETE ← CORE FEATURES DONE
+
+====== OPERATIONS & INFRASTRUCTURE (Pre-Season) ======
+
+Phase 11 (Environments)  ████████░░░░  IN PROGRESS ← CODE DONE, MANUAL SETUP NEEDED
+        ↓
+Phase 12 (Monitoring)    ░░░░░░░░░░░░  NOT STARTED
+        ↓
+Phase 13 (Backups)       ░░░░░░░░░░░░  NOT STARTED
+        ↓
+Phase 14 (Testing)       ░░░░░░░░░░░░  NOT STARTED
+        ↓
+Phase 15 (Documentation) ░░░░░░░░░░░░  NOT STARTED
 ```
+
+## Recommended Priority
+
+**Before 2026 Season (Immediate):**
+1. Phase 11 - Environment Separation (protect production, enable testing)
+2. Phase 13 - Database Backups (protect user data)
+
+**During Offseason (Soon):**
+3. Phase 12 - Error Tracking (know when crons fail)
+4. Phase 15 - Documentation (remember how things work)
+
+**When Time Allows:**
+5. Phase 14 - Testing (catch bugs before they hit production)

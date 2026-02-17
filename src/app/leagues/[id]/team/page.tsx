@@ -413,6 +413,7 @@ export default async function TeamPage({ params }: PageProps) {
               maxDoublePicksPerSeason={settings?.max_double_picks_per_season || 0}
               opponentSchools={opponentSchools}
               doublePicks={doublePicks}
+              environment={environment}
             />
           ) : (
             <p className="text-gray-500">No schools on roster yet. Complete the draft to build your team.</p>
