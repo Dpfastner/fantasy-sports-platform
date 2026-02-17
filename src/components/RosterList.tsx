@@ -263,11 +263,10 @@ export function RosterList({
   // Week columns configuration
   const regularWeeks = Array.from({ length: 17 }, (_, i) => i) // 0-16
   const specialColumns = [
-    { week: 99, label: 'Heis', color: 'bg-yellow-600/20', textColor: 'text-yellow-400' },
-    { week: 17, label: 'R1', color: 'bg-orange-600/20', textColor: 'text-orange-400' },
-    { week: 18, label: 'QF', color: 'bg-orange-600/20', textColor: 'text-orange-400' },
-    { week: 19, label: 'SF', color: 'bg-orange-600/20', textColor: 'text-orange-400' },
-    { week: 20, label: 'NC', color: 'bg-orange-600/20', textColor: 'text-orange-400' },
+    { week: 17, label: 'Bowls', color: 'bg-green-600/20', textColor: 'text-green-400' },
+    { week: 18, label: 'CFP', color: 'bg-orange-600/20', textColor: 'text-orange-400' },
+    { week: 19, label: 'Natty', color: 'bg-yellow-600/20', textColor: 'text-yellow-400' },
+    { week: 20, label: 'Heis', color: 'bg-purple-600/20', textColor: 'text-purple-400' },
   ]
 
   return (
