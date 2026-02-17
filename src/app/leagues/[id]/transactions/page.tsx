@@ -45,6 +45,13 @@ export default async function TransactionsPage({ params }: PageProps) {
     redirect('/login')
   }
 
+  // Get user profile for header
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('display_name')
+    .eq('id', user.id)
+    .single()
+
   // Get league info
   const { data: league } = await supabase
     .from('leagues')
@@ -171,11 +178,12 @@ export default async function TransactionsPage({ params }: PageProps) {
   }
 
   // Get current AP rankings
+  // Calculate current week (extends to week 20 for postseason/bowls)
   const seasons = league.seasons as unknown as { year: number } | { year: number }[] | null
   const year = Array.isArray(seasons) ? seasons[0]?.year : seasons?.year || new Date().getFullYear()
-  const seasonStart = new Date(year, 7, 24)
+  const seasonStart = new Date(year, 7, 24) // August 24
   const weeksDiff = Math.floor((Date.now() - seasonStart.getTime()) / (7 * 24 * 60 * 60 * 1000))
-  const currentWeek = Math.max(1, Math.min(weeksDiff + 1, 15))
+  const currentWeek = Math.max(1, Math.min(weeksDiff + 1, 20))
 
   // Get the most recent rankings - try current week first, then find latest available
   let { data: rankings } = await supabase
@@ -299,6 +307,8 @@ export default async function TransactionsPage({ params }: PageProps) {
       addDropDeadline={addDropDeadline?.toISOString() || null}
       isDeadlinePassed={isDeadlinePassed}
       canMakeTransactions={hasRemainingTransactions && !isDeadlinePassed}
+      userName={profile?.display_name}
+      userEmail={user.email}
     />
   )
 }

@@ -3,6 +3,7 @@
 import { useState, useMemo } from 'react'
 import Link from 'next/link'
 import { useToast } from './Toast'
+import { Header } from './Header'
 
 interface RosterSchool {
   id: string
@@ -58,6 +59,8 @@ interface TransactionsClientProps {
   addDropDeadline: string | null
   isDeadlinePassed: boolean
   canMakeTransactions: boolean
+  userName?: string | null
+  userEmail?: string | null
 }
 
 type TransactionStep = 'select-drop' | 'select-add' | 'confirm'
@@ -82,6 +85,8 @@ export default function TransactionsClient({
   addDropDeadline,
   isDeadlinePassed,
   canMakeTransactions,
+  userName,
+  userEmail,
 }: TransactionsClientProps) {
   const { addToast } = useToast()
   const [step, setStep] = useState<TransactionStep>('select-drop')
@@ -245,31 +250,23 @@ export default function TransactionsClient({
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-900 to-gray-800">
-      {/* Header */}
-      <header className="bg-gray-800/50 border-b border-gray-700">
-        <div className="container mx-auto px-3 md:px-4 py-3 md:py-4 flex justify-between items-center">
-          <Link href="/dashboard" className="text-lg md:text-2xl font-bold text-white">
-            Fantasy Sports Platform
-          </Link>
-          <div className="flex items-center gap-2 md:gap-4">
-            <Link
-              href={`/leagues/${leagueId}/team`}
-              className="text-gray-400 hover:text-white transition-colors text-sm md:text-base"
-            >
-              My Roster
-            </Link>
-            <Link
-              href={`/leagues/${leagueId}`}
-              className="text-gray-400 hover:text-white transition-colors text-sm md:text-base truncate max-w-[100px] md:max-w-none"
-            >
-              {leagueName}
-            </Link>
-            <Link href="/dashboard" className="text-gray-400 hover:text-white transition-colors text-sm md:text-base">
-              My Leagues
-            </Link>
-          </div>
-        </div>
-      </header>
+      <Header userName={userName} userEmail={userEmail}>
+        <Link
+          href={`/leagues/${leagueId}/team`}
+          className="text-gray-400 hover:text-white transition-colors text-sm md:text-base"
+        >
+          My Roster
+        </Link>
+        <Link
+          href={`/leagues/${leagueId}`}
+          className="text-gray-400 hover:text-white transition-colors text-sm md:text-base truncate max-w-[100px] md:max-w-none"
+        >
+          {leagueName}
+        </Link>
+        <Link href="/dashboard" className="text-gray-400 hover:text-white transition-colors text-sm md:text-base">
+          My Leagues
+        </Link>
+      </Header>
 
       <main className="container mx-auto px-3 md:px-4 py-4 md:py-8">
         {/* Quick Nav */}

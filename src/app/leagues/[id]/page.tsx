@@ -1,6 +1,7 @@
 import { redirect, notFound } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
+import { Header } from '@/components/Header'
 import DraftStatusSection from '@/components/DraftStatusSection'
 import EmbeddedLeaderboard from '@/components/EmbeddedLeaderboard'
 
@@ -67,6 +68,13 @@ export default async function LeaguePage({ params }: PageProps) {
     redirect('/login')
   }
 
+  // Get user profile for header
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('display_name')
+    .eq('id', user.id)
+    .single()
+
   // Get league details
   const { data: leagueData, error: leagueError } = await supabase
     .from('leagues')
@@ -128,12 +136,12 @@ export default async function LeaguePage({ params }: PageProps) {
   const draft = Array.isArray(league.drafts) ? league.drafts[0] : league.drafts
   const isDraftComplete = draft?.status === 'completed'
 
-  // Calculate current week
+  // Calculate current week (extends to week 20 for postseason/bowls)
   const seasons = league.seasons as unknown as { year: number; name: string } | null
   const year = seasons?.year || new Date().getFullYear()
-  const seasonStart = new Date(year, 7, 24)
+  const seasonStart = new Date(year, 7, 24) // August 24
   const weeksDiff = Math.floor((Date.now() - seasonStart.getTime()) / (7 * 24 * 60 * 60 * 1000))
-  const currentWeek = Math.max(1, Math.min(weeksDiff + 1, 15))
+  const currentWeek = Math.max(1, Math.min(weeksDiff + 1, 20))
 
   // Get weekly points for leaderboard (only if draft complete)
   let weeklyPoints: WeeklyPoints[] = []
@@ -159,27 +167,19 @@ export default async function LeaguePage({ params }: PageProps) {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-900 to-gray-800">
-      {/* Header */}
-      <header className="bg-gray-800/50 border-b border-gray-700">
-        <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-          <Link href="/dashboard" className="text-2xl font-bold text-white">
-            Fantasy Sports Platform
+      <Header userName={profile?.display_name} userEmail={user.email}>
+        {isDraftComplete && userTeam && (
+          <Link
+            href={`/leagues/${id}/team`}
+            className="text-blue-400 hover:text-blue-300 transition-colors font-medium"
+          >
+            My Roster
           </Link>
-          <div className="flex items-center gap-4">
-            {isDraftComplete && userTeam && (
-              <Link
-                href={`/leagues/${id}/team`}
-                className="text-blue-400 hover:text-blue-300 transition-colors font-medium"
-              >
-                My Roster
-              </Link>
-            )}
-            <Link href="/dashboard" className="text-gray-400 hover:text-white transition-colors">
-              My Leagues
-            </Link>
-          </div>
-        </div>
-      </header>
+        )}
+        <Link href="/dashboard" className="text-gray-400 hover:text-white transition-colors">
+          My Leagues
+        </Link>
+      </Header>
 
       <main className="container mx-auto px-4 py-6">
         {/* League Header */}

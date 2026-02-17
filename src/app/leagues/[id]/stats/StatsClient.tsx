@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { Header } from '@/components/Header'
 
 interface SchoolRecord {
   id: string
@@ -93,6 +94,8 @@ interface Props {
   apRankings: unknown
   heismanWinner: unknown
   statsData: StatsData | null
+  userName?: string | null
+  userEmail?: string | null
 }
 
 export default function StatsClient({
@@ -108,6 +111,8 @@ export default function StatsClient({
   apRankings,
   heismanWinner,
   statsData,
+  userName,
+  userEmail,
 }: Props) {
   const router = useRouter()
   const [activeSection, setActiveSection] = useState<'standings' | 'stats'>('standings')
@@ -129,31 +134,23 @@ export default function StatsClient({
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-900 to-gray-800">
-      {/* Header */}
-      <header className="bg-gray-800/50 border-b border-gray-700">
-        <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-          <Link href="/dashboard" className="text-2xl font-bold text-white">
-            Fantasy Sports Platform
-          </Link>
-          <div className="flex items-center gap-4">
-            <Link
-              href={`/leagues/${leagueId}/team`}
-              className="text-gray-400 hover:text-white transition-colors"
-            >
-              My Roster
-            </Link>
-            <Link
-              href={`/leagues/${leagueId}`}
-              className="text-gray-400 hover:text-white transition-colors"
-            >
-              {leagueName}
-            </Link>
-            <Link href="/dashboard" className="text-gray-400 hover:text-white transition-colors">
-              My Leagues
-            </Link>
-          </div>
-        </div>
-      </header>
+      <Header userName={userName} userEmail={userEmail}>
+        <Link
+          href={`/leagues/${leagueId}/team`}
+          className="text-gray-400 hover:text-white transition-colors"
+        >
+          My Roster
+        </Link>
+        <Link
+          href={`/leagues/${leagueId}`}
+          className="text-gray-400 hover:text-white transition-colors"
+        >
+          {leagueName}
+        </Link>
+        <Link href="/dashboard" className="text-gray-400 hover:text-white transition-colors">
+          My Leagues
+        </Link>
+      </Header>
 
       <main className="container mx-auto px-4 py-6">
         {/* Page Header */}

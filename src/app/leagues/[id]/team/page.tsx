@@ -1,6 +1,7 @@
 import { redirect, notFound } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
+import { Header } from '@/components/Header'
 import { RosterList } from '@/components/RosterList'
 
 interface PageProps {
@@ -59,6 +60,13 @@ export default async function TeamPage({ params }: PageProps) {
   if (!user) {
     redirect('/login')
   }
+
+  // Get user profile for header
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('display_name')
+    .eq('id', user.id)
+    .single()
 
   // Get league info
   const { data: league } = await supabase
@@ -143,9 +151,10 @@ export default async function TeamPage({ params }: PageProps) {
   // Calculate current week
   const seasons = league.seasons as unknown as { year: number } | { year: number }[] | null
   const year = Array.isArray(seasons) ? seasons[0]?.year : seasons?.year || new Date().getFullYear()
-  const seasonStart = new Date(year, 7, 24)
+  // Calculate current week (extends to week 20 for postseason/bowls)
+  const seasonStart = new Date(year, 7, 24) // August 24
   const weeksDiff = Math.floor((Date.now() - seasonStart.getTime()) / (7 * 24 * 60 * 60 * 1000))
-  const currentWeek = Math.max(0, Math.min(weeksDiff + 1, 15))
+  const currentWeek = Math.max(0, Math.min(weeksDiff + 1, 20))
 
   // Get school IDs from roster
   const schoolIds = roster?.map(r => r.school_id) || []
@@ -247,25 +256,17 @@ export default async function TeamPage({ params }: PageProps) {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-900 to-gray-800">
-      {/* Header */}
-      <header className="bg-gray-800/50 border-b border-gray-700">
-        <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-          <Link href="/dashboard" className="text-2xl font-bold text-white">
-            Fantasy Sports Platform
-          </Link>
-          <div className="flex items-center gap-4">
-            <Link
-              href={`/leagues/${leagueId}`}
-              className="text-gray-400 hover:text-white transition-colors"
-            >
-              {league.name}
-            </Link>
-            <Link href="/dashboard" className="text-gray-400 hover:text-white transition-colors">
-              My Leagues
-            </Link>
-          </div>
-        </div>
-      </header>
+      <Header userName={profile?.display_name} userEmail={user.email}>
+        <Link
+          href={`/leagues/${leagueId}`}
+          className="text-gray-400 hover:text-white transition-colors"
+        >
+          {league.name}
+        </Link>
+        <Link href="/dashboard" className="text-gray-400 hover:text-white transition-colors">
+          My Leagues
+        </Link>
+      </Header>
 
       <main className="container mx-auto px-4 py-8">
         {/* Quick Nav */}

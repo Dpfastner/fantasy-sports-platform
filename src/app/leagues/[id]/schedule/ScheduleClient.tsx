@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
+import { Header } from '@/components/Header'
 import { PlayoffBracket } from '@/components/PlayoffBracket'
 
 interface Game {
@@ -43,6 +44,8 @@ interface Props {
   selectedWeek: number
   initialGames: Game[]
   rosterSchoolIds: string[]
+  userName?: string | null
+  userEmail?: string | null
 }
 
 export default function ScheduleClient({
@@ -55,6 +58,8 @@ export default function ScheduleClient({
   selectedWeek,
   initialGames,
   rosterSchoolIds,
+  userName,
+  userEmail,
 }: Props) {
   const router = useRouter()
   const [games, setGames] = useState<Game[]>(initialGames)
@@ -137,35 +142,28 @@ export default function ScheduleClient({
     rosterSchoolIds.includes(g.away_school_id || '')
   ).length
 
-  const weeks = Array.from({ length: 15 }, (_, i) => i + 1)
+  // Weeks 1-15 regular season + weeks 16-20 postseason/bowls
+  const weeks = Array.from({ length: 20 }, (_, i) => i + 1)
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-900 to-gray-800">
-      {/* Header */}
-      <header className="bg-gray-800/50 border-b border-gray-700">
-        <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-          <Link href="/dashboard" className="text-2xl font-bold text-white">
-            Fantasy Sports Platform
-          </Link>
-          <div className="flex items-center gap-4">
-            <Link
-              href={`/leagues/${leagueId}/team`}
-              className="text-gray-400 hover:text-white transition-colors"
-            >
-              My Roster
-            </Link>
-            <Link
-              href={`/leagues/${leagueId}`}
-              className="text-gray-400 hover:text-white transition-colors"
-            >
-              {leagueName}
-            </Link>
-            <Link href="/dashboard" className="text-gray-400 hover:text-white transition-colors">
-              My Leagues
-            </Link>
-          </div>
-        </div>
-      </header>
+      <Header userName={userName} userEmail={userEmail}>
+        <Link
+          href={`/leagues/${leagueId}/team`}
+          className="text-gray-400 hover:text-white transition-colors"
+        >
+          My Roster
+        </Link>
+        <Link
+          href={`/leagues/${leagueId}`}
+          className="text-gray-400 hover:text-white transition-colors"
+        >
+          {leagueName}
+        </Link>
+        <Link href="/dashboard" className="text-gray-400 hover:text-white transition-colors">
+          My Leagues
+        </Link>
+      </Header>
 
       <main className="container mx-auto px-4 py-6">
         {/* Page Header */}

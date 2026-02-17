@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
-import { LogoutButton } from '@/components/LogoutButton'
+import { Header } from '@/components/Header'
 
 export default async function DashboardPage() {
   const supabase = await createClient()
@@ -58,20 +58,7 @@ export default async function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-900 to-gray-800">
-      {/* Header */}
-      <header className="bg-gray-800/50 border-b border-gray-700">
-        <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-          <Link href="/dashboard" className="text-2xl font-bold text-white">
-            Fantasy Sports Platform
-          </Link>
-          <div className="flex items-center gap-4">
-            <span className="text-gray-300">
-              {profile?.display_name || user.email}
-            </span>
-            <LogoutButton />
-          </div>
-        </div>
-      </header>
+      <Header userName={profile?.display_name} userEmail={user.email} />
 
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8">

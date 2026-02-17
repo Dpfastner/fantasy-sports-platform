@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
+import { Header } from '@/components/Header'
 
 interface TeamData {
   id: string
@@ -38,6 +39,8 @@ interface LeaderboardClientProps {
   initialTeams: TeamData[]
   initialWeeklyPoints: WeeklyPoints[]
   settings: LeagueSettings | null
+  userName?: string | null
+  userEmail?: string | null
 }
 
 interface IdealTeamSchool {
@@ -69,6 +72,8 @@ export default function LeaderboardClient({
   initialTeams,
   initialWeeklyPoints,
   settings,
+  userName,
+  userEmail,
 }: LeaderboardClientProps) {
   const [teams, setTeams] = useState<TeamData[]>(initialTeams)
   const [weeklyPoints, setWeeklyPoints] = useState<WeeklyPoints[]>(initialWeeklyPoints)
@@ -199,22 +204,17 @@ export default function LeaderboardClient({
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-900 to-gray-800">
-      {/* Header */}
-      <header className="bg-gray-800/50 border-b border-gray-700">
-        <div className="container mx-auto px-3 md:px-4 py-3 md:py-4 flex justify-between items-center">
-          <Link href="/dashboard" className="text-lg md:text-2xl font-bold text-white">
-            Fantasy Sports
-          </Link>
-          <div className="flex items-center gap-2 md:gap-4">
-            <Link
-              href={`/leagues/${leagueId}`}
-              className="text-gray-400 hover:text-white transition-colors text-sm md:text-base truncate max-w-[120px] md:max-w-none"
-            >
-              {leagueName}
-            </Link>
-          </div>
-        </div>
-      </header>
+      <Header userName={userName} userEmail={userEmail}>
+        <Link
+          href={`/leagues/${leagueId}`}
+          className="text-gray-400 hover:text-white transition-colors text-sm md:text-base truncate max-w-[120px] md:max-w-none"
+        >
+          {leagueName}
+        </Link>
+        <Link href="/dashboard" className="text-gray-400 hover:text-white transition-colors">
+          My Leagues
+        </Link>
+      </Header>
 
       <main className="container mx-auto px-3 md:px-4 py-4 md:py-8">
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-6 md:mb-8">
