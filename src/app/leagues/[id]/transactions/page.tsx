@@ -39,6 +39,15 @@ interface LeagueSettings {
   max_add_drops_per_season: number
   add_drop_deadline: string | null
   max_school_selections_total: number
+  points_bowl_appearance?: number
+  points_playoff_first_round?: number
+  points_playoff_quarterfinal?: number
+  points_playoff_semifinal?: number
+  points_championship_win?: number
+  points_championship_loss?: number
+  points_conference_championship_win?: number
+  points_conference_championship_loss?: number
+  points_heisman_winner?: number
 }
 
 interface Game {
@@ -86,7 +95,16 @@ export default async function TransactionsPage({ params }: PageProps) {
       league_settings (
         max_add_drops_per_season,
         add_drop_deadline,
-        max_school_selections_total
+        max_school_selections_total,
+        points_bowl_appearance,
+        points_playoff_first_round,
+        points_playoff_quarterfinal,
+        points_playoff_semifinal,
+        points_championship_win,
+        points_championship_loss,
+        points_conference_championship_win,
+        points_conference_championship_loss,
+        points_heisman_winner
       )
     `)
     .eq('id', leagueId)
@@ -348,6 +366,17 @@ export default async function TransactionsPage({ params }: PageProps) {
         canMakeTransactions={hasRemainingTransactions && !isDeadlinePassed}
         userName={profile?.display_name}
         userEmail={user.email}
+        specialEventSettings={{
+          bowlAppearance: settings?.points_bowl_appearance || 0,
+          playoffFirstRound: settings?.points_playoff_first_round || 0,
+          playoffQuarterfinal: settings?.points_playoff_quarterfinal || 0,
+          playoffSemifinal: settings?.points_playoff_semifinal || 0,
+          championshipWin: settings?.points_championship_win || 0,
+          championshipLoss: settings?.points_championship_loss || 0,
+          confChampWin: settings?.points_conference_championship_win || 0,
+          confChampLoss: settings?.points_conference_championship_loss || 0,
+          heismanWinner: settings?.points_heisman_winner || 0,
+        }}
       />
       <SandboxWeekSelector currentWeek={currentWeek} environment={environment} />
     </>

@@ -56,6 +56,18 @@ interface Game {
   is_playoff_game?: boolean
 }
 
+interface SpecialEventSettings {
+  bowlAppearance: number
+  playoffFirstRound: number
+  playoffQuarterfinal: number
+  playoffSemifinal: number
+  championshipWin: number
+  championshipLoss: number
+  confChampWin: number
+  confChampLoss: number
+  heismanWinner: number
+}
+
 interface TransactionsClientProps {
   leagueId: string
   leagueName: string
@@ -79,6 +91,7 @@ interface TransactionsClientProps {
   canMakeTransactions: boolean
   userName?: string | null
   userEmail?: string | null
+  specialEventSettings?: SpecialEventSettings
 }
 
 type TransactionStep = 'select-drop' | 'select-add' | 'confirm'
@@ -106,6 +119,7 @@ export default function TransactionsClient({
   canMakeTransactions,
   userName,
   userEmail,
+  specialEventSettings,
 }: TransactionsClientProps) {
   const { addToast } = useToast()
   const [step, setStep] = useState<TransactionStep>('select-drop')
@@ -958,8 +972,55 @@ export default function TransactionsClient({
                   // Calculate per-game points
                   const gamePoints = calculateGamePoints(game, selectedSchoolForSchedule.id)
 
+                  // Calculate special event bonus (team-level bonuses for having this school)
+                  let eventBonus = 0
+                  let eventLabel = ''
+                  if (specialEventSettings && game.status === 'completed') {
+                    // Week 15: Conference Championship
+                    if (game.week_number === 15) {
+                      if (isWin) {
+                        eventBonus = specialEventSettings.confChampWin
+                        eventLabel = 'Conf Champ Win'
+                      } else if (isLoss) {
+                        eventBonus = specialEventSettings.confChampLoss
+                        eventLabel = 'Conf Champ Loss'
+                      }
+                    }
+                    // Week 17: Bowl Appearance
+                    else if (game.week_number === 17 && game.is_bowl_game) {
+                      eventBonus = specialEventSettings.bowlAppearance
+                      eventLabel = 'Bowl'
+                    }
+                    // Week 18: CFP First Round / Quarterfinal
+                    else if (game.week_number === 18 && game.is_playoff_game) {
+                      eventBonus = specialEventSettings.playoffQuarterfinal
+                      eventLabel = 'CFP QF'
+                    }
+                    // Week 19: Semifinal / Championship
+                    else if (game.week_number === 19 && game.is_playoff_game) {
+                      const week19Games = games.filter(g => g.week_number === 19 && g.is_playoff_game)
+                      const isChampionship = week19Games.length === 1 ||
+                        (game.game_date === week19Games.sort((a, b) => b.game_date.localeCompare(a.game_date))[0]?.game_date)
+
+                      if (isChampionship) {
+                        if (isWin) {
+                          eventBonus = specialEventSettings.championshipWin
+                          eventLabel = 'Natl Champ'
+                        } else {
+                          eventBonus = specialEventSettings.championshipLoss
+                          eventLabel = 'Runner-up'
+                        }
+                      } else {
+                        eventBonus = specialEventSettings.playoffSemifinal
+                        eventLabel = 'CFP Semi'
+                      }
+                    }
+                  }
+
                   // Week label
-                  const weekLabel = game.week_number <= 16 ? `Week ${game.week_number}` :
+                  const weekLabel = game.week_number <= 14 ? `Week ${game.week_number}` :
+                    game.week_number === 15 ? 'Conf Champ' :
+                    game.week_number === 16 ? 'Week 16' :
                     game.week_number === 17 ? 'Bowl' :
                     game.week_number === 18 ? 'CFP' :
                     game.week_number === 19 ? 'Championship' : `Week ${game.week_number}`
@@ -973,7 +1034,7 @@ export default function TransactionsClient({
                       }`}
                     >
                       {/* Week */}
-                      <div className="w-16 flex-shrink-0">
+                      <div className="w-20 flex-shrink-0">
                         <span className={`text-xs font-medium ${isCurrentWeek ? 'text-blue-400' : 'text-gray-400'}`}>
                           {weekLabel}
                         </span>
@@ -994,7 +1055,7 @@ export default function TransactionsClient({
                       </div>
 
                       {/* Result/Status + Points */}
-                      <div className="w-28 text-right flex-shrink-0">
+                      <div className="w-36 text-right flex-shrink-0">
                         {game.status === 'completed' ? (
                           <div className="flex flex-col items-end">
                             <span className={`text-sm font-semibold ${
@@ -1002,7 +1063,14 @@ export default function TransactionsClient({
                             }`}>
                               {isWin ? 'W' : isLoss ? 'L' : 'T'} {myScore}-{oppScore}
                             </span>
-                            {gamePoints > 0 && <span className="text-xs text-blue-400">+{gamePoints} pts</span>}
+                            <div className="flex items-center gap-2">
+                              {gamePoints > 0 && <span className="text-xs text-blue-400">+{gamePoints} pts</span>}
+                              {eventBonus > 0 && (
+                                <span className="text-xs text-purple-400" title={eventLabel}>
+                                  +{eventBonus} {eventLabel}
+                                </span>
+                              )}
+                            </div>
                           </div>
                         ) : game.status === 'live' ? (
                           <span className="text-yellow-400 text-sm animate-pulse">LIVE</span>

@@ -97,10 +97,24 @@ export default async function TeamPage({ params }: PageProps) {
     redirect(`/leagues/${leagueId}`)
   }
 
-  // Get league settings
+  // Get league settings (including special event bonuses)
   const { data: settings } = await supabase
     .from('league_settings')
-    .select('max_add_drops_per_season, add_drop_deadline, double_points_enabled, max_double_picks_per_season')
+    .select(`
+      max_add_drops_per_season,
+      add_drop_deadline,
+      double_points_enabled,
+      max_double_picks_per_season,
+      points_bowl_appearance,
+      points_playoff_first_round,
+      points_playoff_quarterfinal,
+      points_playoff_semifinal,
+      points_championship_win,
+      points_championship_loss,
+      points_conference_championship_win,
+      points_conference_championship_loss,
+      points_heisman_winner
+    `)
     .eq('league_id', leagueId)
     .single()
 
@@ -425,6 +439,17 @@ export default async function TeamPage({ params }: PageProps) {
               doublePicks={doublePicks}
               environment={environment}
               simulatedDateISO={simulatedDate.toISOString()}
+              specialEventSettings={{
+                bowlAppearance: settings?.points_bowl_appearance || 0,
+                playoffFirstRound: settings?.points_playoff_first_round || 0,
+                playoffQuarterfinal: settings?.points_playoff_quarterfinal || 0,
+                playoffSemifinal: settings?.points_playoff_semifinal || 0,
+                championshipWin: settings?.points_championship_win || 0,
+                championshipLoss: settings?.points_championship_loss || 0,
+                confChampWin: settings?.points_conference_championship_win || 0,
+                confChampLoss: settings?.points_conference_championship_loss || 0,
+                heismanWinner: settings?.points_heisman_winner || 0,
+              }}
             />
           ) : (
             <p className="text-gray-500">No schools on roster yet. Complete the draft to build your team.</p>
