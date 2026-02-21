@@ -38,6 +38,9 @@ interface Game {
   clock: string | null
   game_date: string
   game_time: string | null
+  is_conference_game?: boolean
+  is_bowl_game?: boolean
+  is_playoff_game?: boolean
 }
 
 interface SchoolPoints {
@@ -285,6 +288,52 @@ export function RosterList({
     return games
       .filter(g => g.home_school_id === schoolId || g.away_school_id === schoolId)
       .sort((a, b) => a.week_number - b.week_number)
+  }
+
+  // Calculate per-game points for a school
+  const calculateGamePoints = (game: Game, schoolId: string): number => {
+    if (game.status !== 'completed' || game.home_score === null || game.away_score === null) {
+      return 0
+    }
+
+    const isHome = game.home_school_id === schoolId
+    const teamScore = isHome ? game.home_score : game.away_score
+    const opponentScore = isHome ? game.away_score : game.home_score
+    // Ranked bonus is for BEATING a ranked opponent
+    const opponentRank = isHome ? game.away_rank : game.home_rank
+    const isWin = teamScore > opponentScore
+    const isPlayoff = game.is_playoff_game || false
+
+    if (!isWin) return 0 // Only wins earn points
+
+    let points = 1 // Base win points
+
+    // Conference game bonus (not for bowl/playoff games)
+    if (game.is_conference_game && !game.is_bowl_game && !isPlayoff) points += 1
+
+    // 50+ points bonus
+    if (teamScore >= 50) points += 1
+
+    // Shutout bonus
+    if (opponentScore === 0) points += 1
+
+    // Ranked opponent bonus (for beating a ranked opponent)
+    if (opponentRank) {
+      const isBowl = game.is_bowl_game || false
+      if (isBowl || isPlayoff) {
+        // Bowls & Playoffs: only ranks 1-12 get the bonus (+2)
+        if (opponentRank <= 12) points += 2
+      } else {
+        // Regular season: beating ranks 1-10 gets higher bonus, 11-25 gets lower bonus
+        if (opponentRank <= 10) {
+          points += 2
+        } else if (opponentRank <= 25) {
+          points += 1
+        }
+      }
+    }
+
+    return points
   }
 
   return (
@@ -679,80 +728,83 @@ export function RosterList({
             <div className="overflow-y-auto max-h-[60vh] p-4">
               <h3 className="text-gray-400 text-xs uppercase tracking-wide mb-3">Season Schedule</h3>
               <div className="space-y-2">
-                {getSchoolGames(selectedSchool.id).map((game) => {
-                  const isHome = game.home_school_id === selectedSchool.id
-                  const opponentId = isHome ? game.away_school_id : game.home_school_id
-                  const opponent = opponentId ? opponentSchoolsMap.get(opponentId) : null
-                  const opponentName = opponent?.name || game[isHome ? 'away_team_name' : 'home_team_name'] || 'TBD'
-                  const opponentLogo = opponent?.logo_url || game[isHome ? 'away_team_logo_url' : 'home_team_logo_url']
-                  const opponentRank = isHome ? game.away_rank : game.home_rank
-                  const myScore = isHome ? game.home_score : game.away_score
-                  const oppScore = isHome ? game.away_score : game.home_score
-                  const isCurrentWeek = game.week_number === currentWeek
-                  const isPast = game.status === 'completed'
-                  const isWin = isPast && myScore !== null && oppScore !== null && myScore > oppScore
-                  const isLoss = isPast && myScore !== null && oppScore !== null && myScore < oppScore
+                {(() => {
+                  const schoolGames = getSchoolGames(selectedSchool.id)
+                  return schoolGames.map((game, index) => {
+                    const isHome = game.home_school_id === selectedSchool.id
+                    const opponentId = isHome ? game.away_school_id : game.home_school_id
+                    const opponent = opponentId ? opponentSchoolsMap.get(opponentId) : null
+                    const opponentName = opponent?.name || game[isHome ? 'away_team_name' : 'home_team_name'] || 'TBD'
+                    const opponentLogo = opponent?.logo_url || game[isHome ? 'away_team_logo_url' : 'home_team_logo_url']
+                    const opponentRank = isHome ? game.away_rank : game.home_rank
+                    const myScore = isHome ? game.home_score : game.away_score
+                    const oppScore = isHome ? game.away_score : game.home_score
+                    const isCurrentWeek = game.week_number === currentWeek
+                    const isPast = game.status === 'completed'
+                    const isWin = isPast && myScore !== null && oppScore !== null && myScore > oppScore
+                    const isLoss = isPast && myScore !== null && oppScore !== null && myScore < oppScore
 
-                  // Get points for this week
-                  const weekPoints = schoolPointsMap.get(selectedSchool.id)?.get(game.week_number) || 0
+                    // Calculate per-game points
+                    const gamePoints = calculateGamePoints(game, selectedSchool.id)
 
-                  // Week label
-                  const weekLabel = game.week_number <= 16 ? `Week ${game.week_number}` :
-                    game.week_number === 17 ? 'Bowl' :
-                    game.week_number === 18 ? 'CFP' :
-                    game.week_number === 19 ? 'Championship' : `Week ${game.week_number}`
+                    // Week label
+                    const weekLabel = game.week_number <= 16 ? `Week ${game.week_number}` :
+                      game.week_number === 17 ? 'Bowl' :
+                      game.week_number === 18 ? 'CFP' :
+                      game.week_number === 19 ? 'Championship' : `Week ${game.week_number}`
 
-                  return (
-                    <div
-                      key={game.id}
-                      className={`flex items-center gap-3 p-3 rounded-lg ${
-                        isCurrentWeek ? 'bg-blue-600/20 border border-blue-500/50' :
-                        isPast ? 'bg-gray-700/30' : 'bg-gray-700/50'
-                      }`}
-                    >
-                      {/* Week */}
-                      <div className="w-16 flex-shrink-0">
-                        <span className={`text-xs font-medium ${isCurrentWeek ? 'text-blue-400' : 'text-gray-400'}`}>
-                          {weekLabel}
-                        </span>
-                      </div>
-
-                      {/* Opponent */}
-                      <div className="flex items-center gap-2 flex-1 min-w-0">
-                        <span className="text-gray-400 text-xs w-6">{isHome ? 'vs' : '@'}</span>
-                        {opponentLogo ? (
-                          <img src={opponentLogo} alt="" className="w-6 h-6 object-contain flex-shrink-0" />
-                        ) : (
-                          <div className="w-6 h-6 bg-gray-600 rounded-full flex-shrink-0" />
-                        )}
-                        <span className="text-white text-sm truncate">
-                          {opponentRank && opponentRank <= 25 && <span className="text-gray-500">#{opponentRank} </span>}
-                          {opponentName}
-                        </span>
-                      </div>
-
-                      {/* Result/Status + Points */}
-                      <div className="w-28 text-right flex-shrink-0">
-                        {game.status === 'completed' ? (
-                          <div className="flex flex-col items-end">
-                            <span className={`text-sm font-semibold ${
-                              isWin ? 'text-green-400' : isLoss ? 'text-red-400' : 'text-gray-400'
-                            }`}>
-                              {isWin ? 'W' : isLoss ? 'L' : 'T'} {myScore}-{oppScore}
-                            </span>
-                            <span className="text-xs text-blue-400">{weekPoints} pts</span>
-                          </div>
-                        ) : game.status === 'live' ? (
-                          <span className="text-yellow-400 text-sm animate-pulse">LIVE</span>
-                        ) : (
-                          <span className="text-gray-500 text-xs">
-                            {new Date(`${game.game_date}T${game.game_time || '12:00:00'}`).toLocaleDateString('en-US', { month: 'numeric', day: 'numeric' })}
+                    return (
+                      <div
+                        key={game.id}
+                        className={`flex items-center gap-3 p-3 rounded-lg ${
+                          isCurrentWeek ? 'bg-blue-600/20 border border-blue-500/50' :
+                          isPast ? 'bg-gray-700/30' : 'bg-gray-700/50'
+                        }`}
+                      >
+                        {/* Week */}
+                        <div className="w-16 flex-shrink-0">
+                          <span className={`text-xs font-medium ${isCurrentWeek ? 'text-blue-400' : 'text-gray-400'}`}>
+                            {weekLabel}
                           </span>
-                        )}
+                        </div>
+
+                        {/* Opponent */}
+                        <div className="flex items-center gap-2 flex-1 min-w-0">
+                          <span className="text-gray-400 text-xs w-6">{isHome ? 'vs' : '@'}</span>
+                          {opponentLogo ? (
+                            <img src={opponentLogo} alt="" className="w-6 h-6 object-contain flex-shrink-0" />
+                          ) : (
+                            <div className="w-6 h-6 bg-gray-600 rounded-full flex-shrink-0" />
+                          )}
+                          <span className="text-white text-sm truncate">
+                            {opponentRank && opponentRank <= 25 && <span className="text-gray-500">#{opponentRank} </span>}
+                            {opponentName}
+                          </span>
+                        </div>
+
+                        {/* Result/Status + Points */}
+                        <div className="w-28 text-right flex-shrink-0">
+                          {game.status === 'completed' ? (
+                            <div className="flex flex-col items-end">
+                              <span className={`text-sm font-semibold ${
+                                isWin ? 'text-green-400' : isLoss ? 'text-red-400' : 'text-gray-400'
+                              }`}>
+                                {isWin ? 'W' : isLoss ? 'L' : 'T'} {myScore}-{oppScore}
+                              </span>
+                              {gamePoints > 0 && <span className="text-xs text-blue-400">+{gamePoints} pts</span>}
+                            </div>
+                          ) : game.status === 'live' ? (
+                            <span className="text-yellow-400 text-sm animate-pulse">LIVE</span>
+                          ) : (
+                            <span className="text-gray-500 text-xs">
+                              {new Date(`${game.game_date}T${game.game_time || '12:00:00'}`).toLocaleDateString('en-US', { month: 'numeric', day: 'numeric' })}
+                            </span>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  )
-                })}
+                    )
+                  })
+                })()}
 
                 {getSchoolGames(selectedSchool.id).length === 0 && (
                   <p className="text-gray-500 text-sm text-center py-4">No games scheduled</p>

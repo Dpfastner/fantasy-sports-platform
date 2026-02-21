@@ -41,6 +41,7 @@ interface Game {
   away_rank: number | null
   status: string
   is_conference_game: boolean
+  is_bowl_game: boolean
   is_playoff_game: boolean
 }
 
@@ -77,12 +78,18 @@ const DEFAULT_SCORING: LeagueSettings = {
 
 /**
  * Calculate points for a single school in a single game
+ * @param game - The game data
+ * @param schoolId - The school we're calculating points for
+ * @param opponentRank - The AP rank of the OPPONENT (not the school itself)
+ * @param scoring - League scoring settings
+ * @param isBowlGame - Whether this is a bowl game (no conference bonus)
  */
 export function calculateSchoolGamePoints(
   game: Game,
   schoolId: string,
-  schoolRank: number | null,
-  scoring: LeagueSettings = DEFAULT_SCORING
+  opponentRank: number | null,
+  scoring: LeagueSettings = DEFAULT_SCORING,
+  isBowlGame: boolean = false
 ): SchoolPointsBreakdown {
   const isHome = game.home_school_id === schoolId
   const teamScore = isHome ? game.home_score : game.away_score
@@ -99,37 +106,46 @@ export function calculateSchoolGamePoints(
 
   if (isWin) {
     basePoints = scoring.points_win
-    if (game.is_conference_game) conferenceBonus = scoring.points_conference_game
+    // Conference bonus only applies to regular season games (not bowls or playoffs)
+    if (game.is_conference_game && !isBowlGame && !game.is_playoff_game) {
+      conferenceBonus = scoring.points_conference_game
+    }
     if (teamScore >= 50) over50Bonus = scoring.points_over_50
     if (opponentScore === 0) shutoutBonus = scoring.points_shutout
-    // Ranked bonuses are mutually exclusive (not cumulative)
-    // During playoffs, ranks 1-12 get the top-10 bonus (since playoffs only have 12 seeds)
-    if (schoolRank) {
-      if (game.is_playoff_game) {
-        // Playoffs: ranks 1-12 get the higher bonus
-        if (schoolRank <= 12) ranked10Bonus = scoring.points_ranked_10
+    // Ranked bonuses are for BEATING a ranked OPPONENT (mutually exclusive)
+    // Bowls/Playoffs: beating ranks 1-12 gets +2 (12-team CFP)
+    // Regular season: beating ranks 1-10 gets +2, 11-25 gets +1
+    if (opponentRank) {
+      if (isBowlGame || game.is_playoff_game) {
+        // Bowls & Playoffs: only ranks 1-12 get the bonus
+        if (opponentRank <= 12) ranked10Bonus = scoring.points_ranked_10
       } else {
-        // Regular season: ranks 1-10 get higher bonus, 11-25 get lower bonus
-        if (schoolRank <= 10) {
+        // Regular season: 1-10 gets higher bonus, 11-25 gets lower bonus
+        if (opponentRank <= 10) {
           ranked10Bonus = scoring.points_ranked_10
-        } else if (schoolRank <= 25) {
+        } else if (opponentRank <= 25) {
           ranked25Bonus = scoring.points_ranked_25
         }
       }
     }
   } else {
     basePoints = scoring.points_loss
-    if (game.is_conference_game) conferenceBonus = scoring.points_conference_game_loss
+    // Conference bonus only applies to regular season games (not bowls or playoffs)
+    if (game.is_conference_game && !isBowlGame && !game.is_playoff_game) {
+      conferenceBonus = scoring.points_conference_game_loss
+    }
     if (teamScore >= 50) over50Bonus = scoring.points_over_50_loss
     if (opponentScore === 0) shutoutBonus = scoring.points_shutout_loss
-    // Ranked bonuses are mutually exclusive (not cumulative)
-    if (schoolRank) {
-      if (game.is_playoff_game) {
-        if (schoolRank <= 12) ranked10Bonus = scoring.points_ranked_10_loss
+    // Ranked bonuses are for LOSING TO a ranked OPPONENT (mutually exclusive)
+    if (opponentRank) {
+      if (isBowlGame || game.is_playoff_game) {
+        // Bowls & Playoffs: only ranks 1-12 get the bonus
+        if (opponentRank <= 12) ranked10Bonus = scoring.points_ranked_10_loss
       } else {
-        if (schoolRank <= 10) {
+        // Regular season: 1-10 gets higher bonus, 11-25 gets lower bonus
+        if (opponentRank <= 10) {
           ranked10Bonus = scoring.points_ranked_10_loss
-        } else if (schoolRank <= 25) {
+        } else if (opponentRank <= 25) {
           ranked25Bonus = scoring.points_ranked_25_loss
         }
       }
@@ -223,13 +239,18 @@ export async function calculateWeeklySchoolPoints(
     const gameWithConf: Game = {
       ...game,
       is_conference_game: isConferenceGame,
+      is_bowl_game: game.is_bowl_game || false,
       is_playoff_game: game.is_playoff_game || false,
     }
 
+    // Determine if this is a bowl game (for excluding conference bonus)
+    const isBowlGame = game.is_bowl_game || false
+
     // Calculate points for home team if FBS
     if (game.home_school_id) {
-      const homeRank = rankingsMap.get(game.home_school_id) || null
-      const homePoints = calculateSchoolGamePoints(gameWithConf, game.home_school_id, homeRank)
+      // Get OPPONENT's rank (away team's rank) for the ranked bonus
+      const awayTeamRank = game.away_school_id ? rankingsMap.get(game.away_school_id) || null : null
+      const homePoints = calculateSchoolGamePoints(gameWithConf, game.home_school_id, awayTeamRank, DEFAULT_SCORING, isBowlGame)
 
       const { error: upsertError } = await client
         .from('school_weekly_points')
@@ -260,8 +281,9 @@ export async function calculateWeeklySchoolPoints(
 
     // Calculate points for away team if FBS
     if (game.away_school_id) {
-      const awayRank = rankingsMap.get(game.away_school_id) || null
-      const awayPoints = calculateSchoolGamePoints(gameWithConf, game.away_school_id, awayRank)
+      // Get OPPONENT's rank (home team's rank) for the ranked bonus
+      const homeTeamRank = game.home_school_id ? rankingsMap.get(game.home_school_id) || null : null
+      const awayPoints = calculateSchoolGamePoints(gameWithConf, game.away_school_id, homeTeamRank, DEFAULT_SCORING, isBowlGame)
 
       const { error: upsertError } = await client
         .from('school_weekly_points')
