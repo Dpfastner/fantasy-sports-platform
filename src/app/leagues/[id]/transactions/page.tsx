@@ -41,6 +41,23 @@ interface LeagueSettings {
   max_school_selections_total: number
 }
 
+interface Game {
+  id: string
+  week_number: number
+  status: string
+  home_school_id: string | null
+  away_school_id: string | null
+  home_score: number | null
+  away_score: number | null
+  home_rank: number | null
+  away_rank: number | null
+  game_date: string
+  game_time: string | null
+  is_conference_game: boolean
+  is_bowl_game: boolean
+  is_playoff_game: boolean
+}
+
 export default async function TransactionsPage({ params }: PageProps) {
   const { id: leagueId } = await params
   const supabase = await createClient()
@@ -179,6 +196,14 @@ export default async function TransactionsPage({ params }: PageProps) {
     schoolRecordsMap.set(game.away_school_id, awayRecord)
   }
 
+  // Get full game data for school schedule modal
+  const { data: fullGamesData } = await supabase
+    .from('games')
+    .select('*')
+    .eq('season_id', league.season_id)
+
+  const games = (fullGamesData || []) as Game[]
+
   // Get school points for this season (only up to simulated week)
   const { data: schoolPointsData } = await supabase
     .from('school_weekly_points')
@@ -309,6 +334,7 @@ export default async function TransactionsPage({ params }: PageProps) {
         currentWeek={currentWeek}
         roster={roster}
         allSchools={allSchools}
+        games={games}
         schoolPointsMap={Object.fromEntries(schoolPointsMap)}
         rankingsMap={Object.fromEntries(rankingsMap)}
         schoolRecordsMap={Object.fromEntries(schoolRecordsMap)}
