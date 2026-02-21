@@ -30,7 +30,7 @@ export async function getCurrentWeek(seasonYear: number): Promise<number> {
     const override = cookieStore.get(WEEK_OVERRIDE_COOKIE)
     if (override?.value) {
       const overrideWeek = parseInt(override.value, 10)
-      if (!isNaN(overrideWeek) && overrideWeek >= 0 && overrideWeek <= 20) {
+      if (!isNaN(overrideWeek) && overrideWeek >= 0 && overrideWeek <= 21) {
         return overrideWeek
       }
     }
@@ -39,7 +39,7 @@ export async function getCurrentWeek(seasonYear: number): Promise<number> {
   // Calculate current week based on date
   const seasonStart = new Date(seasonYear, 7, 24) // August 24
   const weeksDiff = Math.floor((Date.now() - seasonStart.getTime()) / (7 * 24 * 60 * 60 * 1000))
-  return Math.max(0, Math.min(weeksDiff + 1, 20))
+  return Math.max(0, Math.min(weeksDiff + 1, 21)) // Extended to week 21 for CFP championship
 }
 
 /**
@@ -61,7 +61,7 @@ export async function getSimulatedDate(seasonYear: number): Promise<Date> {
       const week = parseInt(weekOverride.value, 10)
       const dayKey = dayOverride.value.toLowerCase()
 
-      if (!isNaN(week) && week >= 0 && week <= 20 && DAY_OFFSETS[dayKey] !== undefined) {
+      if (!isNaN(week) && week >= 0 && week <= 21 && DAY_OFFSETS[dayKey] !== undefined) {
         // Calculate the Monday of the given week
         // Season starts August 24, Week 0 is that week
         const seasonStart = new Date(seasonYear, 7, 24) // August 24
