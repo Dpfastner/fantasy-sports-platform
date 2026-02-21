@@ -693,6 +693,9 @@ export function RosterList({
                   const isWin = isPast && myScore !== null && oppScore !== null && myScore > oppScore
                   const isLoss = isPast && myScore !== null && oppScore !== null && myScore < oppScore
 
+                  // Get points for this week
+                  const weekPoints = schoolPointsMap.get(selectedSchool.id)?.get(game.week_number) || 0
+
                   // Week label
                   const weekLabel = game.week_number <= 16 ? `Week ${game.week_number}` :
                     game.week_number === 17 ? 'Bowl' :
@@ -728,14 +731,17 @@ export function RosterList({
                         </span>
                       </div>
 
-                      {/* Result/Status */}
-                      <div className="w-20 text-right flex-shrink-0">
+                      {/* Result/Status + Points */}
+                      <div className="w-28 text-right flex-shrink-0">
                         {game.status === 'completed' ? (
-                          <span className={`text-sm font-semibold ${
-                            isWin ? 'text-green-400' : isLoss ? 'text-red-400' : 'text-gray-400'
-                          }`}>
-                            {isWin ? 'W' : isLoss ? 'L' : 'T'} {myScore}-{oppScore}
-                          </span>
+                          <div className="flex flex-col items-end">
+                            <span className={`text-sm font-semibold ${
+                              isWin ? 'text-green-400' : isLoss ? 'text-red-400' : 'text-gray-400'
+                            }`}>
+                              {isWin ? 'W' : isLoss ? 'L' : 'T'} {myScore}-{oppScore}
+                            </span>
+                            <span className="text-xs text-blue-400">{weekPoints} pts</span>
+                          </div>
                         ) : game.status === 'live' ? (
                           <span className="text-yellow-400 text-sm animate-pulse">LIVE</span>
                         ) : (
