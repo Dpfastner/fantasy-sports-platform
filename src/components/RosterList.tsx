@@ -292,13 +292,14 @@ export function RosterList({
   const regularWeeks = Array.from({ length: 17 }, (_, i) => i) // 0-16
   const specialColumns = [
     { week: 17, label: 'Bowl', color: 'bg-green-600/20', textColor: 'text-green-400' },
-    { week: 18, label: 'CFP', color: 'bg-orange-600/20', textColor: 'text-orange-400' },
-    { week: 19, label: 'NC', color: 'bg-yellow-600/20', textColor: 'text-yellow-400' },
-    { week: 20, label: 'Heis', color: 'bg-purple-600/20', textColor: 'text-purple-400' },
+    { week: 18, label: 'R1', color: 'bg-orange-600/20', textColor: 'text-orange-400' },    // CFP First Round
+    { week: 19, label: 'QF', color: 'bg-orange-600/20', textColor: 'text-orange-400' },    // CFP Quarterfinals
+    { week: 20, label: 'SF', color: 'bg-orange-600/20', textColor: 'text-orange-400' },    // CFP Semifinals
+    { week: 21, label: 'NC', color: 'bg-yellow-600/20', textColor: 'text-yellow-400' },    // National Championship
   ]
 
-  // Generate available weeks for preview (0-20 for full season including postseason)
-  const availableWeeks = Array.from({ length: 21 }, (_, i) => i)
+  // Generate available weeks for preview (0-21 for full season including CFP championship)
+  const availableWeeks = Array.from({ length: 22 }, (_, i) => i)
 
   const handleSchoolClick = (school: School) => {
     setSelectedSchool(school)
@@ -376,9 +377,10 @@ export function RosterList({
                 <option key={week} value={week}>
                   {week === currentWeek ? `Week ${week} (Current)` :
                    week === 17 ? 'Week 17 (Bowls)' :
-                   week === 18 ? 'Week 18 (CFP)' :
-                   week === 19 ? 'Week 19 (NC)' :
-                   week === 20 ? 'Week 20 (Heisman)' :
+                   week === 18 ? 'Week 18 (CFP R1)' :
+                   week === 19 ? 'Week 19 (CFP QF)' :
+                   week === 20 ? 'Week 20 (CFP SF)' :
+                   week === 21 ? 'Week 21 (NC)' :
                    `Week ${week}`}
                 </option>
               ))}
