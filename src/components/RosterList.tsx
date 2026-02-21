@@ -759,6 +759,7 @@ export function RosterList({
                     const opponentName = opponent?.name || game[isHome ? 'away_team_name' : 'home_team_name'] || 'TBD'
                     const opponentLogo = opponent?.logo_url || game[isHome ? 'away_team_logo_url' : 'home_team_logo_url']
                     const opponentRank = isHome ? game.away_rank : game.home_rank
+                    const myRank = isHome ? game.home_rank : game.away_rank
                     const myScore = isHome ? game.home_score : game.away_score
                     const oppScore = isHome ? game.away_score : game.home_score
                     const isCurrentWeek = game.week_number === currentWeek
@@ -794,10 +795,12 @@ export function RosterList({
                             eventBonuses.push({ label: 'CFP R1', points: specialEventSettings.playoffFirstRound })
                           }
                         }
-                        // Quarterfinal: for bye teams (seeds 1-4), this is their first CFP game
-                        // so they get BOTH CFP R1 bonus AND CFP QF bonus
+                        // Quarterfinal: bye teams (seeds 1-4) get CFP R1 bonus here (their first CFP game)
+                        // Non-bye teams (seeds 5-12) already got CFP R1 in first_round, so only get CFP QF
                         else if (game.playoff_round === 'quarterfinal') {
-                          if (specialEventSettings.playoffFirstRound > 0) {
+                          // Only give CFP R1 bonus to bye teams (rank 1-4)
+                          const isByeTeam = myRank && myRank <= 4
+                          if (isByeTeam && specialEventSettings.playoffFirstRound > 0) {
                             eventBonuses.push({ label: 'CFP R1', points: specialEventSettings.playoffFirstRound })
                           }
                           if (specialEventSettings.playoffQuarterfinal > 0) {
