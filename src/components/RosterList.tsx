@@ -96,6 +96,9 @@ export function RosterList({
   const [picksUsed, setPicksUsed] = useState(0)
   const [saving, setSaving] = useState(false)
   const [expanded, setExpanded] = useState(true)
+  const [previewWeek, setPreviewWeek] = useState(currentWeek)
+  const [selectedSchool, setSelectedSchool] = useState<School | null>(null)
+  const [showScheduleModal, setShowScheduleModal] = useState(false)
 
   useEffect(() => {
     if (doublePointsEnabled) {
@@ -269,11 +272,56 @@ export function RosterList({
     { week: 20, label: 'Heis', color: 'bg-purple-600/20', textColor: 'text-purple-400' },
   ]
 
+  // Generate available weeks for preview (0-20 for full season including postseason)
+  const availableWeeks = Array.from({ length: 21 }, (_, i) => i)
+
+  const handleSchoolClick = (school: School) => {
+    setSelectedSchool(school)
+    setShowScheduleModal(true)
+  }
+
+  // Get all games for selected school (for modal)
+  const getSchoolGames = (schoolId: string) => {
+    return games
+      .filter(g => g.home_school_id === schoolId || g.away_school_id === schoolId)
+      .sort((a, b) => a.week_number - b.week_number)
+  }
+
   return (
     <div className="space-y-2">
-      {/* Header with expand button */}
+      {/* Header with week preview and expand button */}
       <div className="flex items-center justify-between px-3 py-2 text-xs text-gray-500 uppercase tracking-wide border-b border-gray-700">
-        <span>Roster</span>
+        <div className="flex items-center gap-3">
+          <span>Roster</span>
+          {/* Week Preview Dropdown */}
+          <div className="flex items-center gap-2">
+            <span className="text-gray-400 normal-case text-xs">Preview Week:</span>
+            <select
+              value={previewWeek}
+              onChange={(e) => setPreviewWeek(parseInt(e.target.value))}
+              className="bg-gray-700 text-gray-200 text-xs rounded px-2 py-1 border border-gray-600 focus:border-blue-500 focus:outline-none"
+            >
+              {availableWeeks.map(week => (
+                <option key={week} value={week}>
+                  {week === currentWeek ? `Week ${week} (Current)` :
+                   week === 17 ? 'Week 17 (Bowls)' :
+                   week === 18 ? 'Week 18 (CFP)' :
+                   week === 19 ? 'Week 19 (NC)' :
+                   week === 20 ? 'Week 20 (Heisman)' :
+                   `Week ${week}`}
+                </option>
+              ))}
+            </select>
+            {previewWeek !== currentWeek && (
+              <button
+                onClick={() => setPreviewWeek(currentWeek)}
+                className="text-blue-400 hover:text-blue-300 text-xs"
+              >
+                Reset
+              </button>
+            )}
+          </div>
+        </div>
         <button
           onClick={() => setExpanded(!expanded)}
           className="flex items-center gap-1 px-2 py-1 bg-gray-700 hover:bg-gray-600 rounded text-gray-300 transition-colors"
@@ -306,7 +354,9 @@ export function RosterList({
                 <span className="w-px mx-1 h-5 bg-gray-700"></span>
               </>
             )}
-            <span className="w-48">Opponent</span>
+            <span className="w-48">
+              {previewWeek === currentWeek ? 'Opponent' : `Week ${previewWeek} Matchup`}
+            </span>
             <span className="w-px mx-1 h-5 bg-gray-700"></span>
             <span className="w-20 text-center">Status</span>
             <span className="w-px mx-1 h-5 bg-gray-700"></span>
@@ -316,8 +366,9 @@ export function RosterList({
           {/* Data rows - fixed section */}
           {roster.map((slot, index) => {
             const school = slot.schools
+            // Use previewWeek for opponent display (allows looking ahead/behind)
             const thisWeekGame = games.find(
-              g => g.week_number === currentWeek &&
+              g => g.week_number === previewWeek &&
                    (g.home_school_id === slot.school_id || g.away_school_id === slot.school_id)
             )
             const total = schoolTotals.get(slot.school_id) || 0
@@ -362,10 +413,16 @@ export function RosterList({
                   )}
                 </div>
 
-                {/* School Name + Record */}
+                {/* School Name + Record - Clickable */}
                 <div className="w-32 flex-shrink-0 overflow-hidden">
                   <div className="flex items-center gap-1">
-                    <p className="text-white font-medium text-sm truncate">{school.name}</p>
+                    <button
+                      onClick={() => handleSchoolClick(school)}
+                      className="text-white font-medium text-sm truncate hover:text-blue-400 transition-colors text-left"
+                      title="Click to view schedule"
+                    >
+                      {school.name}
+                    </button>
                     {schoolRecordsMap[slot.school_id] && (
                       <span className={`text-xs flex-shrink-0 ${
                         schoolRecordsMap[slot.school_id].wins > schoolRecordsMap[slot.school_id].losses
@@ -572,6 +629,143 @@ export function RosterList({
           <span>Double Points: Disabled</span>
         )}
       </div>
+
+      {/* School Schedule Modal */}
+      {showScheduleModal && selectedSchool && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+          <div className="bg-gray-800 rounded-lg max-w-2xl w-full max-h-[80vh] overflow-hidden shadow-xl">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between p-4 border-b border-gray-700">
+              <div className="flex items-center gap-3">
+                {selectedSchool.logo_url ? (
+                  <img src={selectedSchool.logo_url} alt={selectedSchool.name} className="w-10 h-10 object-contain" />
+                ) : (
+                  <div
+                    className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold"
+                    style={{ backgroundColor: selectedSchool.primary_color }}
+                  >
+                    {selectedSchool.abbreviation || selectedSchool.name.substring(0, 2)}
+                  </div>
+                )}
+                <div>
+                  <h2 className="text-white font-bold text-lg">{selectedSchool.name}</h2>
+                  <p className="text-gray-400 text-sm">
+                    {selectedSchool.conference}
+                    {schoolRecordsMap[selectedSchool.id] && (
+                      <span className={`ml-2 ${
+                        schoolRecordsMap[selectedSchool.id].wins > schoolRecordsMap[selectedSchool.id].losses
+                          ? 'text-green-400'
+                          : schoolRecordsMap[selectedSchool.id].wins < schoolRecordsMap[selectedSchool.id].losses
+                            ? 'text-red-400'
+                            : 'text-gray-400'
+                      }`}>
+                        ({schoolRecordsMap[selectedSchool.id].wins}-{schoolRecordsMap[selectedSchool.id].losses})
+                      </span>
+                    )}
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowScheduleModal(false)}
+                className="text-gray-400 hover:text-white p-2 rounded-lg hover:bg-gray-700 transition-colors"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            {/* Schedule List */}
+            <div className="overflow-y-auto max-h-[60vh] p-4">
+              <h3 className="text-gray-400 text-xs uppercase tracking-wide mb-3">Season Schedule</h3>
+              <div className="space-y-2">
+                {getSchoolGames(selectedSchool.id).map((game) => {
+                  const isHome = game.home_school_id === selectedSchool.id
+                  const opponentId = isHome ? game.away_school_id : game.home_school_id
+                  const opponent = opponentId ? opponentSchoolsMap.get(opponentId) : null
+                  const opponentName = opponent?.name || game[isHome ? 'away_team_name' : 'home_team_name'] || 'TBD'
+                  const opponentLogo = opponent?.logo_url || game[isHome ? 'away_team_logo_url' : 'home_team_logo_url']
+                  const opponentRank = isHome ? game.away_rank : game.home_rank
+                  const myScore = isHome ? game.home_score : game.away_score
+                  const oppScore = isHome ? game.away_score : game.home_score
+                  const isCurrentWeek = game.week_number === currentWeek
+                  const isPast = game.status === 'completed'
+                  const isWin = isPast && myScore !== null && oppScore !== null && myScore > oppScore
+                  const isLoss = isPast && myScore !== null && oppScore !== null && myScore < oppScore
+
+                  // Week label
+                  const weekLabel = game.week_number <= 16 ? `Week ${game.week_number}` :
+                    game.week_number === 17 ? 'Bowl' :
+                    game.week_number === 18 ? 'CFP' :
+                    game.week_number === 19 ? 'Championship' : `Week ${game.week_number}`
+
+                  return (
+                    <div
+                      key={game.id}
+                      className={`flex items-center gap-3 p-3 rounded-lg ${
+                        isCurrentWeek ? 'bg-blue-600/20 border border-blue-500/50' :
+                        isPast ? 'bg-gray-700/30' : 'bg-gray-700/50'
+                      }`}
+                    >
+                      {/* Week */}
+                      <div className="w-16 flex-shrink-0">
+                        <span className={`text-xs font-medium ${isCurrentWeek ? 'text-blue-400' : 'text-gray-400'}`}>
+                          {weekLabel}
+                        </span>
+                      </div>
+
+                      {/* Opponent */}
+                      <div className="flex items-center gap-2 flex-1 min-w-0">
+                        <span className="text-gray-400 text-xs w-6">{isHome ? 'vs' : '@'}</span>
+                        {opponentLogo ? (
+                          <img src={opponentLogo} alt="" className="w-6 h-6 object-contain flex-shrink-0" />
+                        ) : (
+                          <div className="w-6 h-6 bg-gray-600 rounded-full flex-shrink-0" />
+                        )}
+                        <span className="text-white text-sm truncate">
+                          {opponentRank && opponentRank <= 25 && <span className="text-gray-500">#{opponentRank} </span>}
+                          {opponentName}
+                        </span>
+                      </div>
+
+                      {/* Result/Status */}
+                      <div className="w-20 text-right flex-shrink-0">
+                        {game.status === 'completed' ? (
+                          <span className={`text-sm font-semibold ${
+                            isWin ? 'text-green-400' : isLoss ? 'text-red-400' : 'text-gray-400'
+                          }`}>
+                            {isWin ? 'W' : isLoss ? 'L' : 'T'} {myScore}-{oppScore}
+                          </span>
+                        ) : game.status === 'live' ? (
+                          <span className="text-yellow-400 text-sm animate-pulse">LIVE</span>
+                        ) : (
+                          <span className="text-gray-500 text-xs">
+                            {new Date(`${game.game_date}T${game.game_time || '12:00:00'}`).toLocaleDateString('en-US', { month: 'numeric', day: 'numeric' })}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  )
+                })}
+
+                {getSchoolGames(selectedSchool.id).length === 0 && (
+                  <p className="text-gray-500 text-sm text-center py-4">No games scheduled</p>
+                )}
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="p-4 border-t border-gray-700 bg-gray-800/50">
+              <button
+                onClick={() => setShowScheduleModal(false)}
+                className="w-full py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors text-sm"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
