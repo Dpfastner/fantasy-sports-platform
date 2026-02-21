@@ -70,6 +70,7 @@ export async function GET(
     const maxSelections = settings?.max_school_selections_total || 3
 
     // Get all school weekly points for this season
+    // Note: Must specify limit > 1000 to override Supabase default limit
     const { data: schoolPoints, error: pointsError } = await supabase
       .from('school_weekly_points')
       .select(`
@@ -78,6 +79,7 @@ export async function GET(
         total_points
       `)
       .eq('season_id', league.season_id)
+      .limit(5000)
 
     if (pointsError) {
       return NextResponse.json(

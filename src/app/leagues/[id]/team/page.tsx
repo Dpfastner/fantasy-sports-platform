@@ -225,12 +225,14 @@ export default async function TeamPage({ params }: PageProps) {
   const schoolIds = roster?.map(r => r.school_id) || []
 
   // Get weekly points for roster schools (only up to simulated week) - include full breakdown
+  // Note: Must specify limit > 1000 to override Supabase default limit
   const { data: schoolPointsData } = await supabase
     .from('school_weekly_points')
     .select('school_id, week_number, total_points, game_id, base_points, conference_bonus, over_50_bonus, shutout_bonus, ranked_25_bonus, ranked_10_bonus')
     .eq('season_id', league.season_id)
     .in('school_id', schoolIds.length > 0 ? schoolIds : ['none'])
     .lte('week_number', currentWeek)
+    .limit(5000)
 
   const schoolPoints = (schoolPointsData || []) as SchoolPoints[]
 
@@ -244,6 +246,7 @@ export default async function TeamPage({ params }: PageProps) {
       .eq('season_id', league.season_id)
       .in('school_id', droppedSchoolIds)
       .lte('week_number', currentWeek)
+      .limit(5000)
     droppedSchoolPoints = (droppedPointsData || []) as SchoolPoints[]
   }
 

@@ -227,11 +227,13 @@ export default async function StatsPage({ params, searchParams }: PageProps) {
     .single()
 
   // Fetch school weekly points directly for ideal team calculation (only up to simulated week)
+  // Note: Must specify limit > 1000 to override Supabase default limit
   const { data: schoolPoints } = await supabase
     .from('school_weekly_points')
     .select('school_id, week_number, total_points')
     .eq('season_id', league.season_id)
     .lte('week_number', currentWeek)
+    .limit(5000)
 
   // Calculate total points per school
   const schoolTotals = new Map<string, { points: number; weeks: number }>()
