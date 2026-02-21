@@ -54,6 +54,13 @@ interface Game {
   is_conference_game?: boolean
   is_bowl_game?: boolean
   is_playoff_game?: boolean
+  playoff_round?: string | null // 'first', 'quarter', 'semi', 'championship'
+}
+
+interface SchoolGamePoints {
+  game_id: string
+  school_id: string
+  total_points: number
 }
 
 interface SpecialEventSettings {
@@ -82,6 +89,7 @@ interface TransactionsClientProps {
   rankingsMap: Record<string, number>
   schoolRecordsMap: Record<string, { wins: number; losses: number; confWins: number; confLosses: number }>
   schoolSelectionCounts: Record<string, number>
+  schoolGamePoints: SchoolGamePoints[]
   transactionHistory: Transaction[]
   addDropsUsed: number
   maxAddDrops: number
@@ -110,6 +118,7 @@ export default function TransactionsClient({
   rankingsMap,
   schoolRecordsMap,
   schoolSelectionCounts,
+  schoolGamePoints,
   transactionHistory,
   addDropsUsed,
   maxAddDrops,
@@ -969,61 +978,73 @@ export default function TransactionsClient({
                   const isWin = isPast && myScore !== null && oppScore !== null && myScore > oppScore
                   const isLoss = isPast && myScore !== null && oppScore !== null && myScore < oppScore
 
-                  // Calculate per-game points
-                  const gamePoints = calculateGamePoints(game, selectedSchoolForSchedule.id)
+                  // Get points from database (authoritative source) instead of calculating
+                  const dbPoints = schoolGamePoints.find(sp => sp.game_id === game.id && sp.school_id === selectedSchoolForSchedule.id)
+                  const gamePoints = dbPoints?.total_points || 0
 
-                  // Calculate special event bonus (team-level bonuses for having this school)
-                  let eventBonus = 0
-                  let eventLabel = ''
+                  // Calculate special event bonuses (team-level bonuses for having this school)
+                  // Use array to support multiple bonuses (e.g., CFP R1 + QF for bye teams)
+                  let eventBonuses: { label: string; points: number }[] = []
                   if (specialEventSettings && game.status === 'completed') {
                     // Week 15: Conference Championship
                     if (game.week_number === 15) {
-                      if (isWin) {
-                        eventBonus = specialEventSettings.confChampWin
-                        eventLabel = 'Conf Champ Win'
-                      } else if (isLoss) {
-                        eventBonus = specialEventSettings.confChampLoss
-                        eventLabel = 'Conf Champ Loss'
+                      if (isWin && specialEventSettings.confChampWin > 0) {
+                        eventBonuses.push({ label: 'Conf Champ Win', points: specialEventSettings.confChampWin })
+                      } else if (isLoss && specialEventSettings.confChampLoss > 0) {
+                        eventBonuses.push({ label: 'Conf Champ Loss', points: specialEventSettings.confChampLoss })
                       }
                     }
                     // Week 17: Bowl Appearance
                     else if (game.week_number === 17 && game.is_bowl_game) {
-                      eventBonus = specialEventSettings.bowlAppearance
-                      eventLabel = 'Bowl'
+                      if (specialEventSettings.bowlAppearance > 0) {
+                        eventBonuses.push({ label: 'Bowl', points: specialEventSettings.bowlAppearance })
+                      }
                     }
-                    // Week 18: CFP First Round / Quarterfinal
-                    else if (game.week_number === 18 && game.is_playoff_game) {
-                      eventBonus = specialEventSettings.playoffQuarterfinal
-                      eventLabel = 'CFP QF'
-                    }
-                    // Week 19: Semifinal / Championship
-                    else if (game.week_number === 19 && game.is_playoff_game) {
-                      const week19Games = games.filter(g => g.week_number === 19 && g.is_playoff_game)
-                      const isChampionship = week19Games.length === 1 ||
-                        (game.game_date === week19Games.sort((a, b) => b.game_date.localeCompare(a.game_date))[0]?.game_date)
-
-                      if (isChampionship) {
-                        if (isWin) {
-                          eventBonus = specialEventSettings.championshipWin
-                          eventLabel = 'Natl Champ'
-                        } else {
-                          eventBonus = specialEventSettings.championshipLoss
-                          eventLabel = 'Runner-up'
+                    // CFP games: Use playoff_round field for accurate labeling
+                    else if (game.is_playoff_game && game.playoff_round) {
+                      // For CFP bye teams (seeds 1-4), they get First Round bonus + their actual round bonus
+                      // Quarterfinal is their first game, so add R1 bonus too
+                      if (game.playoff_round === 'quarter') {
+                        if (specialEventSettings.playoffFirstRound > 0) {
+                          eventBonuses.push({ label: 'CFP R1', points: specialEventSettings.playoffFirstRound })
                         }
-                      } else {
-                        eventBonus = specialEventSettings.playoffSemifinal
-                        eventLabel = 'CFP Semi'
+                        if (specialEventSettings.playoffQuarterfinal > 0) {
+                          eventBonuses.push({ label: 'CFP QF', points: specialEventSettings.playoffQuarterfinal })
+                        }
+                      } else if (game.playoff_round === 'first') {
+                        if (specialEventSettings.playoffFirstRound > 0) {
+                          eventBonuses.push({ label: 'CFP R1', points: specialEventSettings.playoffFirstRound })
+                        }
+                      } else if (game.playoff_round === 'semi') {
+                        if (specialEventSettings.playoffSemifinal > 0) {
+                          eventBonuses.push({ label: 'CFP Semi', points: specialEventSettings.playoffSemifinal })
+                        }
+                      } else if (game.playoff_round === 'championship') {
+                        if (isWin && specialEventSettings.championshipWin > 0) {
+                          eventBonuses.push({ label: 'Natl Champ', points: specialEventSettings.championshipWin })
+                        } else if (isLoss && specialEventSettings.championshipLoss > 0) {
+                          eventBonuses.push({ label: 'Runner-up', points: specialEventSettings.championshipLoss })
+                        }
                       }
                     }
                   }
 
-                  // Week label
-                  const weekLabel = game.week_number <= 14 ? `Week ${game.week_number}` :
+                  // Week label - use playoff_round for accurate CFP labeling
+                  let weekLabel = game.week_number <= 14 ? `Week ${game.week_number}` :
                     game.week_number === 15 ? 'Conf Champ' :
                     game.week_number === 16 ? 'Week 16' :
-                    game.week_number === 17 ? 'Bowl' :
-                    game.week_number === 18 ? 'CFP' :
-                    game.week_number === 19 ? 'Championship' : `Week ${game.week_number}`
+                    game.week_number === 17 ? 'Bowl' : `Week ${game.week_number}`
+
+                  // Override with accurate playoff round if available
+                  if (game.is_playoff_game && game.playoff_round) {
+                    const roundLabels: Record<string, string> = {
+                      'first': 'CFP R1',
+                      'quarter': 'CFP QF',
+                      'semi': 'CFP Semi',
+                      'championship': 'Natl Champ'
+                    }
+                    weekLabel = roundLabels[game.playoff_round] || 'CFP'
+                  }
 
                   return (
                     <div
@@ -1055,7 +1076,7 @@ export default function TransactionsClient({
                       </div>
 
                       {/* Result/Status + Points */}
-                      <div className="w-36 text-right flex-shrink-0">
+                      <div className="w-40 text-right flex-shrink-0">
                         {game.status === 'completed' ? (
                           <div className="flex flex-col items-end">
                             <span className={`text-sm font-semibold ${
@@ -1063,13 +1084,13 @@ export default function TransactionsClient({
                             }`}>
                               {isWin ? 'W' : isLoss ? 'L' : 'T'} {myScore}-{oppScore}
                             </span>
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-1 flex-wrap justify-end">
                               {gamePoints > 0 && <span className="text-xs text-blue-400">+{gamePoints} pts</span>}
-                              {eventBonus > 0 && (
-                                <span className="text-xs text-purple-400" title={eventLabel}>
-                                  +{eventBonus} {eventLabel}
+                              {eventBonuses.map((bonus, idx) => (
+                                <span key={idx} className="text-xs text-purple-400">
+                                  +{bonus.points} {bonus.label}
                                 </span>
-                              )}
+                              ))}
                             </div>
                           </div>
                         ) : game.status === 'live' ? (

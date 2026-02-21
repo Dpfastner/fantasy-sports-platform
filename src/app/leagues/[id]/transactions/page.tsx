@@ -65,6 +65,13 @@ interface Game {
   is_conference_game: boolean
   is_bowl_game: boolean
   is_playoff_game: boolean
+  playoff_round: string | null
+}
+
+interface SchoolGamePoints {
+  game_id: string
+  school_id: string
+  total_points: number
 }
 
 export default async function TransactionsPage({ params }: PageProps) {
@@ -225,16 +232,23 @@ export default async function TransactionsPage({ params }: PageProps) {
   // Get school points for this season (only up to simulated week)
   const { data: schoolPointsData } = await supabase
     .from('school_weekly_points')
-    .select('school_id, total_points')
+    .select('school_id, total_points, game_id')
     .eq('season_id', league.season_id)
     .lte('week_number', currentWeek)
 
-  // Aggregate points per school
+  // Aggregate points per school (for display in add/drop list)
   const schoolPointsMap = new Map<string, number>()
   for (const sp of schoolPointsData || []) {
     const current = schoolPointsMap.get(sp.school_id) || 0
     schoolPointsMap.set(sp.school_id, current + Number(sp.total_points))
   }
+
+  // Keep per-game points for modal display
+  const schoolGamePoints = (schoolPointsData || []).map(sp => ({
+    game_id: sp.game_id,
+    school_id: sp.school_id,
+    total_points: Number(sp.total_points)
+  })) as SchoolGamePoints[]
 
   // Get current AP rankings
   // Get the most recent rankings - try current week first, then find latest available
@@ -357,6 +371,7 @@ export default async function TransactionsPage({ params }: PageProps) {
         rankingsMap={Object.fromEntries(rankingsMap)}
         schoolRecordsMap={Object.fromEntries(schoolRecordsMap)}
         schoolSelectionCounts={Object.fromEntries(schoolSelectionCounts)}
+        schoolGamePoints={schoolGamePoints}
         transactionHistory={transactionHistory || []}
         addDropsUsed={team.add_drops_used || 0}
         maxAddDrops={settings?.max_add_drops_per_season || 50}

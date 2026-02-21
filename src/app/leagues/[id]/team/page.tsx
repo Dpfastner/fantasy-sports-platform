@@ -35,6 +35,13 @@ interface SchoolPoints {
   school_id: string
   week_number: number
   total_points: number
+  game_id: string | null
+  base_points: number
+  conference_bonus: number
+  over_50_bonus: number
+  shutout_bonus: number
+  ranked_25_bonus: number
+  ranked_10_bonus: number
 }
 
 interface Game {
@@ -55,6 +62,21 @@ interface Game {
   away_team_logo_url: string | null
   quarter: string | null
   clock: string | null
+  is_bowl_game: boolean
+  is_playoff_game: boolean
+  playoff_round: string | null // 'first', 'quarter', 'semi', 'championship'
+}
+
+interface GamePoints {
+  game_id: string
+  school_id: string
+  total_points: number
+  base_points: number
+  conference_bonus: number
+  over_50_bonus: number
+  shutout_bonus: number
+  ranked_25_bonus: number
+  ranked_10_bonus: number
 }
 
 export default async function TeamPage({ params }: PageProps) {
@@ -202,10 +224,10 @@ export default async function TeamPage({ params }: PageProps) {
   // Get school IDs from roster
   const schoolIds = roster?.map(r => r.school_id) || []
 
-  // Get weekly points for roster schools (only up to simulated week)
+  // Get weekly points for roster schools (only up to simulated week) - include full breakdown
   const { data: schoolPointsData } = await supabase
     .from('school_weekly_points')
-    .select('school_id, week_number, total_points')
+    .select('school_id, week_number, total_points, game_id, base_points, conference_bonus, over_50_bonus, shutout_bonus, ranked_25_bonus, ranked_10_bonus')
     .eq('season_id', league.season_id)
     .in('school_id', schoolIds.length > 0 ? schoolIds : ['none'])
     .lte('week_number', currentWeek)
@@ -218,7 +240,7 @@ export default async function TeamPage({ params }: PageProps) {
   if (droppedSchoolIds.length > 0) {
     const { data: droppedPointsData } = await supabase
       .from('school_weekly_points')
-      .select('school_id, week_number, total_points')
+      .select('school_id, week_number, total_points, game_id, base_points, conference_bonus, over_50_bonus, shutout_bonus, ranked_25_bonus, ranked_10_bonus')
       .eq('season_id', league.season_id)
       .in('school_id', droppedSchoolIds)
       .lte('week_number', currentWeek)

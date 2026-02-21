@@ -41,12 +41,20 @@ interface Game {
   is_conference_game?: boolean
   is_bowl_game?: boolean
   is_playoff_game?: boolean
+  playoff_round?: string | null // 'first', 'quarter', 'semi', 'championship'
 }
 
 interface SchoolPoints {
   school_id: string
   week_number: number
   total_points: number
+  game_id: string | null
+  base_points: number
+  conference_bonus: number
+  over_50_bonus: number
+  shutout_bonus: number
+  ranked_25_bonus: number
+  ranked_10_bonus: number
 }
 
 interface OpponentSchool {
@@ -758,64 +766,67 @@ export function RosterList({
                     const isWin = isPast && myScore !== null && oppScore !== null && myScore > oppScore
                     const isLoss = isPast && myScore !== null && oppScore !== null && myScore < oppScore
 
-                    // Calculate per-game points
-                    const gamePoints = calculateGamePoints(game, selectedSchool.id)
+                    // Get points from database (authoritative source) instead of calculating
+                    const dbPoints = schoolPoints.find(sp => sp.game_id === game.id && sp.school_id === selectedSchool.id)
+                    const gamePoints = dbPoints?.total_points || 0
 
                     // Calculate special event bonus (team-level bonuses for having this school)
-                    let eventBonus = 0
-                    let eventLabel = ''
+                    let eventBonuses: { label: string; points: number }[] = []
                     if (specialEventSettings && game.status === 'completed') {
                       // Week 15: Conference Championship
                       if (game.week_number === 15) {
-                        if (isWin) {
-                          eventBonus = specialEventSettings.confChampWin
-                          eventLabel = 'Conf Champ Win'
-                        } else if (isLoss) {
-                          eventBonus = specialEventSettings.confChampLoss
-                          eventLabel = 'Conf Champ Loss'
+                        if (isWin && specialEventSettings.confChampWin > 0) {
+                          eventBonuses.push({ label: 'Conf Champ', points: specialEventSettings.confChampWin })
+                        } else if (isLoss && specialEventSettings.confChampLoss > 0) {
+                          eventBonuses.push({ label: 'Conf Champ', points: specialEventSettings.confChampLoss })
                         }
                       }
                       // Week 17: Bowl Appearance
-                      else if (game.week_number === 17 && game.is_bowl_game) {
-                        eventBonus = specialEventSettings.bowlAppearance
-                        eventLabel = 'Bowl'
+                      else if (game.week_number === 17 && game.is_bowl_game && specialEventSettings.bowlAppearance > 0) {
+                        eventBonuses.push({ label: 'Bowl', points: specialEventSettings.bowlAppearance })
                       }
-                      // Week 18: CFP First Round / Quarterfinal
-                      else if (game.week_number === 18 && game.is_playoff_game) {
-                        // First round is the first CFP game, quarterfinal is typically higher seeds
-                        // For simplicity, show quarterfinal bonus (they stack in calculate-special-events)
-                        eventBonus = specialEventSettings.playoffQuarterfinal
-                        eventLabel = 'CFP QF'
-                      }
-                      // Week 19: Semifinal / Championship
-                      else if (game.week_number === 19 && game.is_playoff_game) {
-                        // Check if this is likely the championship (final game of week 19)
-                        const week19Games = games.filter(g => g.week_number === 19 && g.is_playoff_game)
-                        const isChampionship = week19Games.length === 1 ||
-                          (game.game_date === week19Games.sort((a, b) => b.game_date.localeCompare(a.game_date))[0]?.game_date)
-
-                        if (isChampionship) {
-                          if (isWin) {
-                            eventBonus = specialEventSettings.championshipWin
-                            eventLabel = 'Natl Champ'
-                          } else {
-                            eventBonus = specialEventSettings.championshipLoss
-                            eventLabel = 'Runner-up'
+                      // CFP Games - use playoff_round field for accurate labeling
+                      else if (game.is_playoff_game && game.playoff_round) {
+                        // First Round bonus applies to ALL CFP teams (including those with byes)
+                        if (specialEventSettings.playoffFirstRound > 0) {
+                          eventBonuses.push({ label: 'CFP R1', points: specialEventSettings.playoffFirstRound })
+                        }
+                        // Then add round-specific bonuses
+                        if (game.playoff_round === 'quarter' && specialEventSettings.playoffQuarterfinal > 0) {
+                          eventBonuses.push({ label: 'CFP QF', points: specialEventSettings.playoffQuarterfinal })
+                        } else if (game.playoff_round === 'semi' && specialEventSettings.playoffSemifinal > 0) {
+                          eventBonuses.push({ label: 'CFP Semi', points: specialEventSettings.playoffSemifinal })
+                        } else if (game.playoff_round === 'championship') {
+                          if (isWin && specialEventSettings.championshipWin > 0) {
+                            eventBonuses.push({ label: 'Natl Champ', points: specialEventSettings.championshipWin })
+                          } else if (isLoss && specialEventSettings.championshipLoss > 0) {
+                            eventBonuses.push({ label: 'Runner-up', points: specialEventSettings.championshipLoss })
                           }
-                        } else {
-                          eventBonus = specialEventSettings.playoffSemifinal
-                          eventLabel = 'CFP Semi'
                         }
                       }
                     }
 
-                    // Week label
-                    const weekLabel = game.week_number <= 14 ? `Week ${game.week_number}` :
-                      game.week_number === 15 ? 'Conf Champ' :
-                      game.week_number === 16 ? 'Week 16' :
-                      game.week_number === 17 ? 'Bowl' :
-                      game.week_number === 18 ? 'CFP' :
-                      game.week_number === 19 ? 'Championship' : `Week ${game.week_number}`
+                    // Week label - use playoff_round for accurate CFP labels
+                    let weekLabel = ''
+                    if (game.is_playoff_game && game.playoff_round) {
+                      const roundLabels: Record<string, string> = {
+                        'first': 'CFP R1',
+                        'quarter': 'CFP QF',
+                        'semi': 'CFP Semi',
+                        'championship': 'Natl Champ'
+                      }
+                      weekLabel = roundLabels[game.playoff_round] || 'CFP'
+                    } else if (game.week_number <= 14) {
+                      weekLabel = `Week ${game.week_number}`
+                    } else if (game.week_number === 15) {
+                      weekLabel = 'Conf Champ'
+                    } else if (game.week_number === 16) {
+                      weekLabel = 'Week 16'
+                    } else if (game.week_number === 17) {
+                      weekLabel = 'Bowl'
+                    } else {
+                      weekLabel = `Week ${game.week_number}`
+                    }
 
                     return (
                       <div
@@ -847,7 +858,7 @@ export function RosterList({
                         </div>
 
                         {/* Result/Status + Points */}
-                        <div className="w-36 text-right flex-shrink-0">
+                        <div className="w-44 text-right flex-shrink-0">
                           {game.status === 'completed' ? (
                             <div className="flex flex-col items-end">
                               <span className={`text-sm font-semibold ${
@@ -855,13 +866,13 @@ export function RosterList({
                               }`}>
                                 {isWin ? 'W' : isLoss ? 'L' : 'T'} {myScore}-{oppScore}
                               </span>
-                              <div className="flex items-center gap-2">
+                              <div className="flex flex-wrap items-center justify-end gap-1">
                                 {gamePoints > 0 && <span className="text-xs text-blue-400">+{gamePoints} pts</span>}
-                                {eventBonus > 0 && (
-                                  <span className="text-xs text-purple-400" title={eventLabel}>
-                                    +{eventBonus} {eventLabel}
+                                {eventBonuses.map((eb, i) => (
+                                  <span key={i} className="text-xs text-purple-400">
+                                    +{eb.points} {eb.label}
                                   </span>
-                                )}
+                                ))}
                               </div>
                             </div>
                           ) : game.status === 'live' ? (
