@@ -978,9 +978,8 @@ export default function TransactionsClient({
                   const isWin = isPast && myScore !== null && oppScore !== null && myScore > oppScore
                   const isLoss = isPast && myScore !== null && oppScore !== null && myScore < oppScore
 
-                  // Get points from database (authoritative source) instead of calculating
-                  const dbPoints = schoolGamePoints.find(sp => sp.game_id === game.id && sp.school_id === selectedSchoolForSchedule.id)
-                  const gamePoints = dbPoints?.total_points || 0
+                  // Calculate per-game points for display (using the authoritative calculation logic)
+                  const gamePoints = calculateGamePoints(game, selectedSchoolForSchedule.id)
 
                   // Calculate special event bonuses (team-level bonuses for having this school)
                   // Use array to support multiple bonuses (e.g., CFP R1 + QF for bye teams)

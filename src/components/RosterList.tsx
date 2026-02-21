@@ -766,9 +766,8 @@ export function RosterList({
                     const isWin = isPast && myScore !== null && oppScore !== null && myScore > oppScore
                     const isLoss = isPast && myScore !== null && oppScore !== null && myScore < oppScore
 
-                    // Get points from database (authoritative source) instead of calculating
-                    const dbPoints = schoolPoints.find(sp => sp.game_id === game.id && sp.school_id === selectedSchool.id)
-                    const gamePoints = dbPoints?.total_points || 0
+                    // Calculate per-game points for display (using the authoritative calculation logic)
+                    const gamePoints = calculateGamePoints(game, selectedSchool.id)
 
                     // Calculate special event bonus (team-level bonuses for having this school)
                     let eventBonuses: { label: string; points: number }[] = []
