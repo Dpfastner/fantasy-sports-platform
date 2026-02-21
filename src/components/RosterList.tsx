@@ -41,7 +41,7 @@ interface Game {
   is_conference_game?: boolean
   is_bowl_game?: boolean
   is_playoff_game?: boolean
-  playoff_round?: string | null // 'first', 'quarter', 'semi', 'championship'
+  playoff_round?: string | null // 'first_round', 'quarterfinal', 'semifinal', 'championship'
 }
 
 interface SchoolPoints {
@@ -786,17 +786,32 @@ export function RosterList({
                         eventBonuses.push({ label: 'Bowl', points: specialEventSettings.bowlAppearance })
                       }
                       // CFP Games - use playoff_round field for accurate labeling
+                      // Database values: 'first_round', 'quarterfinal', 'semifinal', 'championship'
                       else if (game.is_playoff_game && game.playoff_round) {
-                        // First Round bonus applies to ALL CFP teams (including those with byes)
-                        if (specialEventSettings.playoffFirstRound > 0) {
-                          eventBonuses.push({ label: 'CFP R1', points: specialEventSettings.playoffFirstRound })
+                        // First Round: teams that play in first round (seeds 5-12)
+                        if (game.playoff_round === 'first_round') {
+                          if (specialEventSettings.playoffFirstRound > 0) {
+                            eventBonuses.push({ label: 'CFP R1', points: specialEventSettings.playoffFirstRound })
+                          }
                         }
-                        // Then add round-specific bonuses
-                        if (game.playoff_round === 'quarter' && specialEventSettings.playoffQuarterfinal > 0) {
-                          eventBonuses.push({ label: 'CFP QF', points: specialEventSettings.playoffQuarterfinal })
-                        } else if (game.playoff_round === 'semi' && specialEventSettings.playoffSemifinal > 0) {
-                          eventBonuses.push({ label: 'CFP Semi', points: specialEventSettings.playoffSemifinal })
-                        } else if (game.playoff_round === 'championship') {
+                        // Quarterfinal: for bye teams (seeds 1-4), this is their first CFP game
+                        // so they get BOTH CFP R1 bonus AND CFP QF bonus
+                        else if (game.playoff_round === 'quarterfinal') {
+                          if (specialEventSettings.playoffFirstRound > 0) {
+                            eventBonuses.push({ label: 'CFP R1', points: specialEventSettings.playoffFirstRound })
+                          }
+                          if (specialEventSettings.playoffQuarterfinal > 0) {
+                            eventBonuses.push({ label: 'CFP QF', points: specialEventSettings.playoffQuarterfinal })
+                          }
+                        }
+                        // Semifinal
+                        else if (game.playoff_round === 'semifinal') {
+                          if (specialEventSettings.playoffSemifinal > 0) {
+                            eventBonuses.push({ label: 'CFP Semi', points: specialEventSettings.playoffSemifinal })
+                          }
+                        }
+                        // Championship
+                        else if (game.playoff_round === 'championship') {
                           if (isWin && specialEventSettings.championshipWin > 0) {
                             eventBonuses.push({ label: 'Natl Champ', points: specialEventSettings.championshipWin })
                           } else if (isLoss && specialEventSettings.championshipLoss > 0) {
@@ -807,12 +822,13 @@ export function RosterList({
                     }
 
                     // Week label - use playoff_round for accurate CFP labels
+                    // Database values: 'first_round', 'quarterfinal', 'semifinal', 'championship'
                     let weekLabel = ''
                     if (game.is_playoff_game && game.playoff_round) {
                       const roundLabels: Record<string, string> = {
-                        'first': 'CFP R1',
-                        'quarter': 'CFP QF',
-                        'semi': 'CFP Semi',
+                        'first_round': 'CFP R1',
+                        'quarterfinal': 'CFP QF',
+                        'semifinal': 'CFP Semi',
                         'championship': 'Natl Champ'
                       }
                       weekLabel = roundLabels[game.playoff_round] || 'CFP'

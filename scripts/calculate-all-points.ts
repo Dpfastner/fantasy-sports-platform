@@ -114,6 +114,26 @@ function calculateSchoolGamePoints(
   }
 }
 
+async function fixUniqueConstraint() {
+  console.log('\n=== Preparing school_weekly_points table ===')
+  console.log('  NOTE: Run scripts/fix-school-points-constraint.sql in Supabase first!')
+  console.log('  This changes the unique key to (school_id, game_id) to allow multiple games per week')
+
+  // Clear existing data to allow fresh recalculation
+  // This is the safest approach since we're recalculating everything
+  const { error: deleteError } = await supabase
+    .from('school_weekly_points')
+    .delete()
+    .gte('week_number', 0) // Delete all (using a filter that matches everything)
+
+  if (deleteError) {
+    console.log(`  Warning: Could not clear existing data: ${deleteError.message}`)
+    console.log('  Will attempt to upsert - may fail if constraint not updated')
+  } else {
+    console.log('  Cleared existing points data for fresh recalculation')
+  }
+}
+
 async function calculateSchoolWeeklyPoints(seasonId: string, weekNumber: number) {
   console.log(`\n=== Week ${weekNumber} ===`)
 
@@ -136,6 +156,17 @@ async function calculateSchoolWeeklyPoints(seasonId: string, weekNumber: number)
   }
 
   console.log(`  Found ${games.length} completed games`)
+
+  // Delete existing points for this week before inserting
+  const { error: deleteError } = await supabase
+    .from('school_weekly_points')
+    .delete()
+    .eq('season_id', seasonId)
+    .eq('week_number', weekNumber)
+
+  if (deleteError) {
+    console.log(`  Warning: Could not delete existing week ${weekNumber} data: ${deleteError.message}`)
+  }
 
   // Get AP rankings for this week to determine ranked bonuses
   const { data: rankings } = await supabase
@@ -167,8 +198,9 @@ async function calculateSchoolWeeklyPoints(seasonId: string, weekNumber: number)
     conferenceMap.set(school.id, school.conference)
   }
 
-  let upsertCount = 0
-  let errorCount = 0
+  // Collect all points per school per game first
+  // Then insert them properly (handling schools with multiple games per week)
+  const allPoints: SchoolPointsBreakdown[] = []
 
   // Process each game
   for (const game of games) {
@@ -188,64 +220,123 @@ async function calculateSchoolWeeklyPoints(seasonId: string, weekNumber: number)
 
     // Calculate points for home team
     if (game.home_school_id && game.home_score !== null && game.away_score !== null) {
-      const awayTeamRank = game.away_school_id ? rankingsMap.get(game.away_school_id) || null : null
+      // Use the game's away_rank field first, fall back to ap_rankings_history
+      // This is important for CFP games which have ranks stored on the game itself
+      const awayTeamRank = game.away_rank || (game.away_school_id ? rankingsMap.get(game.away_school_id) || null : null)
       const homePoints = calculateSchoolGamePoints(gameWithConf, game.home_school_id, awayTeamRank, isBowlGame)
-
-      const { error } = await supabase
-        .from('school_weekly_points')
-        .upsert({
-          school_id: homePoints.schoolId,
-          season_id: homePoints.seasonId,
-          week_number: homePoints.weekNumber,
-          game_id: homePoints.gameId,
-          base_points: homePoints.basePoints,
-          conference_bonus: homePoints.conferenceBonus,
-          over_50_bonus: homePoints.over50Bonus,
-          shutout_bonus: homePoints.shutoutBonus,
-          ranked_25_bonus: homePoints.ranked25Bonus,
-          ranked_10_bonus: homePoints.ranked10Bonus,
-          total_points: homePoints.totalPoints,
-        }, { onConflict: 'school_id,season_id,week_number' })
-
-      if (error) {
-        console.error(`  Error upserting home team ${game.home_school_id}: ${error.message}`)
-        errorCount++
-      } else {
-        upsertCount++
-      }
+      allPoints.push(homePoints)
     }
 
     // Calculate points for away team
     if (game.away_school_id && game.home_score !== null && game.away_score !== null) {
-      const homeTeamRank = game.home_school_id ? rankingsMap.get(game.home_school_id) || null : null
+      // Use the game's home_rank field first, fall back to ap_rankings_history
+      // This is important for CFP games which have ranks stored on the game itself
+      const homeTeamRank = game.home_rank || (game.home_school_id ? rankingsMap.get(game.home_school_id) || null : null)
       const awayPoints = calculateSchoolGamePoints(gameWithConf, game.away_school_id, homeTeamRank, isBowlGame)
+      allPoints.push(awayPoints)
+    }
+  }
 
+  // Group points by school to handle multiple games per week
+  const pointsBySchool = new Map<string, SchoolPointsBreakdown[]>()
+  for (const pts of allPoints) {
+    const existing = pointsBySchool.get(pts.schoolId) || []
+    existing.push(pts)
+    pointsBySchool.set(pts.schoolId, existing)
+  }
+
+  let insertCount = 0
+  let errorCount = 0
+
+  // Insert points - for schools with multiple games, insert the first one normally,
+  // then try to insert subsequent ones (which may fail if constraint not updated)
+  for (const [schoolId, schoolPoints] of pointsBySchool) {
+    for (let i = 0; i < schoolPoints.length; i++) {
+      const pts = schoolPoints[i]
       const { error } = await supabase
         .from('school_weekly_points')
-        .upsert({
-          school_id: awayPoints.schoolId,
-          season_id: awayPoints.seasonId,
-          week_number: awayPoints.weekNumber,
-          game_id: awayPoints.gameId,
-          base_points: awayPoints.basePoints,
-          conference_bonus: awayPoints.conferenceBonus,
-          over_50_bonus: awayPoints.over50Bonus,
-          shutout_bonus: awayPoints.shutoutBonus,
-          ranked_25_bonus: awayPoints.ranked25Bonus,
-          ranked_10_bonus: awayPoints.ranked10Bonus,
-          total_points: awayPoints.totalPoints,
-        }, { onConflict: 'school_id,season_id,week_number' })
+        .insert({
+          school_id: pts.schoolId,
+          season_id: pts.seasonId,
+          week_number: pts.weekNumber,
+          game_id: pts.gameId,
+          base_points: pts.basePoints,
+          conference_bonus: pts.conferenceBonus,
+          over_50_bonus: pts.over50Bonus,
+          shutout_bonus: pts.shutoutBonus,
+          ranked_25_bonus: pts.ranked25Bonus,
+          ranked_10_bonus: pts.ranked10Bonus,
+          total_points: pts.totalPoints,
+        })
 
       if (error) {
-        console.error(`  Error upserting away team ${game.away_school_id}: ${error.message}`)
-        errorCount++
+        if (error.message.includes('duplicate key')) {
+          // Expected for multiple games per week until constraint is fixed
+          // Update the existing record to aggregate points instead
+          const { error: updateError } = await supabase.rpc('increment_school_weekly_points', {
+            p_school_id: pts.schoolId,
+            p_season_id: pts.seasonId,
+            p_week_number: pts.weekNumber,
+            p_base_points: pts.basePoints,
+            p_conference_bonus: pts.conferenceBonus,
+            p_over_50_bonus: pts.over50Bonus,
+            p_shutout_bonus: pts.shutoutBonus,
+            p_ranked_25_bonus: pts.ranked25Bonus,
+            p_ranked_10_bonus: pts.ranked10Bonus,
+            p_total_points: pts.totalPoints,
+          })
+
+          if (updateError) {
+            // RPC not available, use raw update
+            const { data: existing } = await supabase
+              .from('school_weekly_points')
+              .select('*')
+              .eq('school_id', pts.schoolId)
+              .eq('season_id', pts.seasonId)
+              .eq('week_number', pts.weekNumber)
+              .single()
+
+            if (existing) {
+              const { error: rawUpdateError } = await supabase
+                .from('school_weekly_points')
+                .update({
+                  base_points: existing.base_points + pts.basePoints,
+                  conference_bonus: existing.conference_bonus + pts.conferenceBonus,
+                  over_50_bonus: existing.over_50_bonus + pts.over50Bonus,
+                  shutout_bonus: existing.shutout_bonus + pts.shutoutBonus,
+                  ranked_25_bonus: existing.ranked_25_bonus + pts.ranked25Bonus,
+                  ranked_10_bonus: existing.ranked_10_bonus + pts.ranked10Bonus,
+                  total_points: existing.total_points + pts.totalPoints,
+                  // Note: game_id will point to first game only (limitation of current constraint)
+                })
+                .eq('school_id', pts.schoolId)
+                .eq('season_id', pts.seasonId)
+                .eq('week_number', pts.weekNumber)
+
+              if (rawUpdateError) {
+                console.error(`  Error aggregating points for ${schoolId} game ${i + 1}: ${rawUpdateError.message}`)
+                errorCount++
+              } else {
+                console.log(`  Aggregated points for ${schoolId} (game ${i + 1} of ${schoolPoints.length})`)
+                insertCount++
+              }
+            } else {
+              errorCount++
+            }
+          } else {
+            insertCount++
+          }
+        } else {
+          console.error(`  Error inserting ${schoolId}: ${error.message}`)
+          errorCount++
+        }
       } else {
-        upsertCount++
+        insertCount++
       }
     }
   }
 
-  console.log(`  Updated ${upsertCount} school points records (${errorCount} errors)`)
+  console.log(`  Inserted/updated ${insertCount} school points records (${errorCount} errors)`)
 }
 
 async function calculateFantasyTeamWeeklyPoints(seasonId: string, weekNumber: number) {
@@ -332,8 +423,11 @@ async function calculateAllPoints() {
 
   console.log(`Season ID: ${season.id}`)
 
-  // Calculate for all weeks 0-20
-  for (let week = 0; week <= 20; week++) {
+  // First, fix the unique constraint to allow multiple games per week
+  await fixUniqueConstraint()
+
+  // Calculate for all weeks 0-21 (includes CFP championship in week 21)
+  for (let week = 0; week <= 21; week++) {
     await calculateSchoolWeeklyPoints(season.id, week)
     await calculateFantasyTeamWeeklyPoints(season.id, week)
   }

@@ -54,7 +54,7 @@ interface Game {
   is_conference_game?: boolean
   is_bowl_game?: boolean
   is_playoff_game?: boolean
-  playoff_round?: string | null // 'first', 'quarter', 'semi', 'championship'
+  playoff_round?: string | null // 'first_round', 'quarterfinal', 'semifinal', 'championship'
 }
 
 interface SchoolGamePoints {
@@ -1001,25 +1001,32 @@ export default function TransactionsClient({
                       }
                     }
                     // CFP games: Use playoff_round field for accurate labeling
+                    // Database values: 'first_round', 'quarterfinal', 'semifinal', 'championship'
                     else if (game.is_playoff_game && game.playoff_round) {
-                      // For CFP bye teams (seeds 1-4), they get First Round bonus + their actual round bonus
-                      // Quarterfinal is their first game, so add R1 bonus too
-                      if (game.playoff_round === 'quarter') {
+                      // First Round: teams that play in first round (seeds 5-12)
+                      if (game.playoff_round === 'first_round') {
+                        if (specialEventSettings.playoffFirstRound > 0) {
+                          eventBonuses.push({ label: 'CFP R1', points: specialEventSettings.playoffFirstRound })
+                        }
+                      }
+                      // Quarterfinal: for CFP bye teams (seeds 1-4), this is their first CFP game
+                      // so they get BOTH CFP R1 bonus AND CFP QF bonus
+                      else if (game.playoff_round === 'quarterfinal') {
                         if (specialEventSettings.playoffFirstRound > 0) {
                           eventBonuses.push({ label: 'CFP R1', points: specialEventSettings.playoffFirstRound })
                         }
                         if (specialEventSettings.playoffQuarterfinal > 0) {
                           eventBonuses.push({ label: 'CFP QF', points: specialEventSettings.playoffQuarterfinal })
                         }
-                      } else if (game.playoff_round === 'first') {
-                        if (specialEventSettings.playoffFirstRound > 0) {
-                          eventBonuses.push({ label: 'CFP R1', points: specialEventSettings.playoffFirstRound })
-                        }
-                      } else if (game.playoff_round === 'semi') {
+                      }
+                      // Semifinal
+                      else if (game.playoff_round === 'semifinal') {
                         if (specialEventSettings.playoffSemifinal > 0) {
                           eventBonuses.push({ label: 'CFP Semi', points: specialEventSettings.playoffSemifinal })
                         }
-                      } else if (game.playoff_round === 'championship') {
+                      }
+                      // Championship
+                      else if (game.playoff_round === 'championship') {
                         if (isWin && specialEventSettings.championshipWin > 0) {
                           eventBonuses.push({ label: 'Natl Champ', points: specialEventSettings.championshipWin })
                         } else if (isLoss && specialEventSettings.championshipLoss > 0) {
@@ -1036,11 +1043,12 @@ export default function TransactionsClient({
                     game.week_number === 17 ? 'Bowl' : `Week ${game.week_number}`
 
                   // Override with accurate playoff round if available
+                  // Database values: 'first_round', 'quarterfinal', 'semifinal', 'championship'
                   if (game.is_playoff_game && game.playoff_round) {
                     const roundLabels: Record<string, string> = {
-                      'first': 'CFP R1',
-                      'quarter': 'CFP QF',
-                      'semi': 'CFP Semi',
+                      'first_round': 'CFP R1',
+                      'quarterfinal': 'CFP QF',
+                      'semifinal': 'CFP Semi',
                       'championship': 'Natl Champ'
                     }
                     weekLabel = roundLabels[game.playoff_round] || 'CFP'
