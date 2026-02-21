@@ -2,6 +2,9 @@ import { redirect, notFound } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import StatsClient from './StatsClient'
+import { SandboxWeekSelector } from '@/components/SandboxWeekSelector'
+import { getCurrentWeek } from '@/lib/week'
+import { getEnvironment } from '@/lib/env'
 
 // Force dynamic rendering to ensure fresh data from database
 export const dynamic = 'force-dynamic'
@@ -77,14 +80,14 @@ export default async function StatsPage({ params, searchParams }: PageProps) {
     redirect('/dashboard')
   }
 
-  // Calculate current week (extends to week 20 for postseason/bowls)
+  // Calculate current week (with sandbox override support)
   const seasons = league.seasons as { year: number; name: string } | { year: number; name: string }[] | null
   const year = Array.isArray(seasons) ? seasons[0]?.year : seasons?.year || new Date().getFullYear()
   const seasonName = Array.isArray(seasons) ? seasons[0]?.name : seasons?.name || `${year} Season`
-  const seasonStart = new Date(year, 7, 24) // August 24
-  const weeksDiff = Math.floor((Date.now() - seasonStart.getTime()) / (7 * 24 * 60 * 60 * 1000))
-  const currentWeek = Math.max(1, Math.min(weeksDiff + 1, 20))
-  const selectedWeek = weekParam ? parseInt(weekParam) : currentWeek
+  const currentWeek = await getCurrentWeek(year)
+  const environment = getEnvironment()
+  // Allow selected week up to current simulated week
+  const selectedWeek = weekParam ? Math.min(parseInt(weekParam), currentWeek) : currentWeek
 
   const settings = Array.isArray(league.league_settings)
     ? league.league_settings[0]
@@ -97,12 +100,13 @@ export default async function StatsPage({ params, searchParams }: PageProps) {
     .select('id, name, abbreviation, logo_url, conference')
     .eq('is_active', true)
 
-  // Get all completed games for record calculation
+  // Get all completed games for record calculation (only up to simulated week)
   const { data: games } = await supabase
     .from('games')
-    .select('home_school_id, away_school_id, home_score, away_score, is_conference_game, status')
+    .select('home_school_id, away_school_id, home_score, away_score, is_conference_game, status, week_number')
     .eq('season_id', league.season_id)
     .eq('status', 'completed')
+    .lte('week_number', currentWeek)
 
   // Calculate W-L records for each school
   const schoolRecords = new Map<string, { wins: number; losses: number; confWins: number; confLosses: number }>()
@@ -199,11 +203,12 @@ export default async function StatsPage({ params, searchParams }: PageProps) {
     .order('rank', { ascending: true })
     .limit(25)
 
-  // Get available weeks for AP rankings
+  // Get available weeks for AP rankings (only up to simulated week)
   const { data: availableWeeks } = await supabase
     .from('ap_rankings_history')
     .select('week_number')
     .eq('season_id', league.season_id)
+    .lte('week_number', currentWeek)
     .order('week_number', { ascending: true })
 
   const uniqueWeeks = [...new Set(availableWeeks?.map(w => w.week_number) || [])]
@@ -221,11 +226,12 @@ export default async function StatsPage({ params, searchParams }: PageProps) {
     .eq('season_id', league.season_id)
     .single()
 
-  // Fetch school weekly points directly for ideal team calculation
+  // Fetch school weekly points directly for ideal team calculation (only up to simulated week)
   const { data: schoolPoints } = await supabase
     .from('school_weekly_points')
     .select('school_id, week_number, total_points')
     .eq('season_id', league.season_id)
+    .lte('week_number', currentWeek)
 
   // Calculate total points per school
   const schoolTotals = new Map<string, { points: number; weeks: number }>()
@@ -319,21 +325,24 @@ export default async function StatsPage({ params, searchParams }: PageProps) {
   } : null
 
   return (
-    <StatsClient
-      leagueId={leagueId}
-      leagueName={league.name}
-      seasonName={seasonName}
-      year={year}
-      currentWeek={currentWeek}
-      selectedWeek={selectedWeek}
-      availableWeeks={uniqueWeeks}
-      schoolsPerTeam={schoolsPerTeam}
-      conferenceStandings={conferenceStandings}
-      apRankings={apRankings}
-      heismanWinner={heismanWinner}
-      statsData={statsData}
-      userName={profile?.display_name}
-      userEmail={user.email}
-    />
+    <>
+      <StatsClient
+        leagueId={leagueId}
+        leagueName={league.name}
+        seasonName={seasonName}
+        year={year}
+        currentWeek={currentWeek}
+        selectedWeek={selectedWeek}
+        availableWeeks={uniqueWeeks}
+        schoolsPerTeam={schoolsPerTeam}
+        conferenceStandings={conferenceStandings}
+        apRankings={apRankings}
+        heismanWinner={heismanWinner}
+        statsData={statsData}
+        userName={profile?.display_name}
+        userEmail={user.email}
+      />
+      <SandboxWeekSelector currentWeek={currentWeek} environment={environment} />
+    </>
   )
 }

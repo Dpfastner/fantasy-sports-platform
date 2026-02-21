@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { getCurrentWeek } from '@/lib/week'
 
 // Create admin client
 function getSupabaseAdmin() {
@@ -40,7 +41,7 @@ export async function GET(
     // Get league with season info
     const { data: league, error: leagueError } = await supabase
       .from('leagues')
-      .select('id, name, season_id')
+      .select('id, name, season_id, seasons(year)')
       .eq('id', leagueId)
       .single()
 
@@ -50,6 +51,11 @@ export async function GET(
         { status: 404 }
       )
     }
+
+    // Get current week (respects sandbox override)
+    const seasonData = league.seasons as unknown as { year: number } | { year: number }[] | null
+    const seasonYear = Array.isArray(seasonData) ? seasonData[0]?.year : seasonData?.year || new Date().getFullYear()
+    const currentWeek = await getCurrentWeek(seasonYear)
 
     // Get all fantasy teams with their points
     const { data: teams, error: teamsError } = await supabase
@@ -72,25 +78,36 @@ export async function GET(
       )
     }
 
-    // Get weekly points for all teams
+    // Get weekly points for all teams (only up to simulated week)
     const teamIds = (teams || []).map(t => t.id)
     const { data: weeklyPoints } = await supabase
       .from('fantasy_team_weekly_points')
       .select('fantasy_team_id, week_number, points, is_high_points_winner, high_points_amount')
       .in('fantasy_team_id', teamIds)
+      .lte('week_number', currentWeek)
       .order('week_number', { ascending: true })
 
-    // Group weekly points by team
+    // Group weekly points by team and calculate totals from filtered weeks
     const weeklyPointsByTeam = new Map<string, typeof weeklyPoints>()
+    const totalPointsByTeam = new Map<string, number>()
+    const highPointsWinningsByTeam = new Map<string, number>()
     for (const wp of weeklyPoints || []) {
       if (!weeklyPointsByTeam.has(wp.fantasy_team_id)) {
         weeklyPointsByTeam.set(wp.fantasy_team_id, [])
       }
       weeklyPointsByTeam.get(wp.fantasy_team_id)!.push(wp)
+      // Accumulate total points
+      const currentTotal = totalPointsByTeam.get(wp.fantasy_team_id) || 0
+      totalPointsByTeam.set(wp.fantasy_team_id, currentTotal + Number(wp.points))
+      // Accumulate high points winnings
+      if (wp.is_high_points_winner) {
+        const currentWinnings = highPointsWinningsByTeam.get(wp.fantasy_team_id) || 0
+        highPointsWinningsByTeam.set(wp.fantasy_team_id, currentWinnings + Number(wp.high_points_amount))
+      }
     }
 
-    // Build standings response
-    const standings: StandingsTeam[] = (teams || []).map((team, index) => {
+    // Build standings response with recalculated totals
+    const standingsData: StandingsTeam[] = (teams || []).map((team) => {
       // profiles comes as an object when using !inner join
       const profile = team.profiles as unknown as { display_name: string | null; email: string }
       const teamWeeklyPoints = weeklyPointsByTeam.get(team.id) || []
@@ -100,17 +117,24 @@ export async function GET(
         name: team.name,
         userId: team.user_id,
         userName: profile?.display_name || profile?.email?.split('@')[0] || 'Unknown',
-        totalPoints: Number(team.total_points),
-        highPointsWinnings: Number(team.high_points_winnings),
+        totalPoints: totalPointsByTeam.get(team.id) || 0,
+        highPointsWinnings: highPointsWinningsByTeam.get(team.id) || 0,
         weeklyPoints: teamWeeklyPoints.map(wp => ({
           week: wp.week_number,
           points: Number(wp.points),
           isHighPointsWinner: wp.is_high_points_winner,
           highPointsAmount: Number(wp.high_points_amount),
         })),
-        rank: index + 1,
+        rank: 0, // Will be set after sorting
       }
     })
+
+    // Sort by total points and assign ranks
+    standingsData.sort((a, b) => b.totalPoints - a.totalPoints)
+    const standings = standingsData.map((team, index) => ({
+      ...team,
+      rank: index + 1,
+    }))
 
     // Get league settings for high points info
     const { data: settings } = await supabase

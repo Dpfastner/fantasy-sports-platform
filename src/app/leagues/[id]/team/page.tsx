@@ -104,7 +104,15 @@ export default async function TeamPage({ params }: PageProps) {
     .eq('league_id', leagueId)
     .single()
 
-  // Get current roster (active schools)
+  // Calculate current week (with sandbox override support) - must be before roster queries
+  const seasons = league.seasons as unknown as { year: number } | { year: number }[] | null
+  const year = Array.isArray(seasons) ? seasons[0]?.year : seasons?.year || new Date().getFullYear()
+  const currentWeek = await getCurrentWeek(year)
+  const simulatedDate = await getSimulatedDate(year)
+  const environment = getEnvironment()
+
+  // Get current roster (schools active at the simulated week)
+  // Filter: start_week <= currentWeek AND (end_week IS NULL OR end_week > currentWeek)
   const { data: rosterData } = await supabase
     .from('roster_periods')
     .select(`
@@ -124,12 +132,14 @@ export default async function TeamPage({ params }: PageProps) {
       )
     `)
     .eq('fantasy_team_id', team.id)
-    .is('end_week', null)
+    .lte('start_week', currentWeek)
+    .or(`end_week.is.null,end_week.gt.${currentWeek}`)
     .order('slot_number', { ascending: true })
 
   const roster = rosterData as unknown as RosterSchool[] | null
 
-  // Get historical roster (dropped schools)
+  // Get historical roster (schools dropped before or during the simulated week)
+  // Filter: end_week IS NOT NULL AND end_week <= currentWeek
   const { data: droppedRosterData } = await supabase
     .from('roster_periods')
     .select(`
@@ -150,6 +160,7 @@ export default async function TeamPage({ params }: PageProps) {
     `)
     .eq('fantasy_team_id', team.id)
     .not('end_week', 'is', null)
+    .lte('end_week', currentWeek)
     .order('end_week', { ascending: false })
 
   const droppedRoster = droppedRosterData as unknown as RosterSchool[] | null
@@ -174,26 +185,20 @@ export default async function TeamPage({ params }: PageProps) {
 
   const allRosterPeriods = allRosterPeriodsData as unknown as RosterSchool[] | null
 
-  // Calculate current week (with sandbox override support)
-  const seasons = league.seasons as unknown as { year: number } | { year: number }[] | null
-  const year = Array.isArray(seasons) ? seasons[0]?.year : seasons?.year || new Date().getFullYear()
-  const currentWeek = await getCurrentWeek(year)
-  const simulatedDate = await getSimulatedDate(year)
-  const environment = getEnvironment()
-
   // Get school IDs from roster
   const schoolIds = roster?.map(r => r.school_id) || []
 
-  // Get weekly points for roster schools
+  // Get weekly points for roster schools (only up to simulated week)
   const { data: schoolPointsData } = await supabase
     .from('school_weekly_points')
     .select('school_id, week_number, total_points')
     .eq('season_id', league.season_id)
     .in('school_id', schoolIds.length > 0 ? schoolIds : ['none'])
+    .lte('week_number', currentWeek)
 
   const schoolPoints = (schoolPointsData || []) as SchoolPoints[]
 
-  // Get weekly points for dropped schools too
+  // Get weekly points for dropped schools too (only up to simulated week)
   const droppedSchoolIds = droppedRoster?.map(r => r.school_id) || []
   let droppedSchoolPoints: SchoolPoints[] = []
   if (droppedSchoolIds.length > 0) {
@@ -202,6 +207,7 @@ export default async function TeamPage({ params }: PageProps) {
       .select('school_id, week_number, total_points')
       .eq('season_id', league.season_id)
       .in('school_id', droppedSchoolIds)
+      .lte('week_number', currentWeek)
     droppedSchoolPoints = (droppedPointsData || []) as SchoolPoints[]
   }
 

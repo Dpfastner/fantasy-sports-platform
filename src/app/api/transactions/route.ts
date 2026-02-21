@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { getSimulatedDate } from '@/lib/week'
 
 // Create admin client for transaction processing
 function getSupabaseAdmin() {
@@ -64,10 +65,24 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Check if deadline has passed
+    // Check if deadline has passed (using simulated date for sandbox testing)
     if (settings?.add_drop_deadline) {
+      // Get season year for simulated date calculation
+      let seasonYear = new Date().getFullYear()
+      if (seasonId) {
+        const { data: season } = await supabase
+          .from('seasons')
+          .select('year')
+          .eq('id', seasonId)
+          .single()
+        if (season) {
+          seasonYear = season.year
+        }
+      }
+
       const deadline = new Date(settings.add_drop_deadline)
-      if (new Date() > deadline) {
+      const currentDate = await getSimulatedDate(seasonYear)
+      if (currentDate > deadline) {
         return NextResponse.json(
           { error: 'The add/drop deadline has passed' },
           { status: 400 }

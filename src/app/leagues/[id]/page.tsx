@@ -4,6 +4,9 @@ import { createClient } from '@/lib/supabase/server'
 import { Header } from '@/components/Header'
 import DraftStatusSection from '@/components/DraftStatusSection'
 import EmbeddedLeaderboard from '@/components/EmbeddedLeaderboard'
+import { SandboxWeekSelector } from '@/components/SandboxWeekSelector'
+import { getCurrentWeek } from '@/lib/week'
+import { getEnvironment } from '@/lib/env'
 
 // Force dynamic rendering to ensure fresh data from database
 export const dynamic = 'force-dynamic'
@@ -139,14 +142,13 @@ export default async function LeaguePage({ params }: PageProps) {
   const draft = Array.isArray(league.drafts) ? league.drafts[0] : league.drafts
   const isDraftComplete = draft?.status === 'completed'
 
-  // Calculate current week (extends to week 20 for postseason/bowls)
+  // Calculate current week (with sandbox override support)
   const seasons = league.seasons as unknown as { year: number; name: string } | null
   const year = seasons?.year || new Date().getFullYear()
-  const seasonStart = new Date(year, 7, 24) // August 24
-  const weeksDiff = Math.floor((Date.now() - seasonStart.getTime()) / (7 * 24 * 60 * 60 * 1000))
-  const currentWeek = Math.max(1, Math.min(weeksDiff + 1, 20))
+  const currentWeek = await getCurrentWeek(year)
+  const environment = getEnvironment()
 
-  // Get weekly points for leaderboard (only if draft complete)
+  // Get weekly points for leaderboard (only if draft complete, filter by simulated week)
   let weeklyPoints: WeeklyPoints[] = []
   if (isDraftComplete && teams && teams.length > 0) {
     const teamIds = teams.map(t => t.id)
@@ -154,6 +156,7 @@ export default async function LeaguePage({ params }: PageProps) {
       .from('fantasy_team_weekly_points')
       .select('*')
       .in('fantasy_team_id', teamIds)
+      .lte('week_number', currentWeek)
       .order('week_number', { ascending: true })
     weeklyPoints = (weeklyPointsData || []) as WeeklyPoints[]
   }
@@ -423,6 +426,8 @@ export default async function LeaguePage({ params }: PageProps) {
           </div>
         </div>
       </main>
+
+      <SandboxWeekSelector currentWeek={currentWeek} environment={environment} />
     </div>
   )
 }

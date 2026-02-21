@@ -60,7 +60,14 @@ export default async function SchedulePage({ params, searchParams }: PageProps) 
     redirect('/dashboard')
   }
 
-  // Get user's roster school IDs
+  const seasons = league.seasons as { year: number; name: string } | { year: number; name: string }[] | null
+  const year = Array.isArray(seasons) ? seasons[0]?.year : seasons?.year || new Date().getFullYear()
+  const seasonName = Array.isArray(seasons) ? seasons[0]?.name : seasons?.name || `${year} Season`
+
+  // Calculate current week (with sandbox override support)
+  const currentWeek = await getCurrentWeek(year)
+
+  // Get user's roster school IDs (at the simulated week)
   const { data: userTeam } = await supabase
     .from('fantasy_teams')
     .select('id')
@@ -74,17 +81,11 @@ export default async function SchedulePage({ params, searchParams }: PageProps) 
       .from('roster_periods')
       .select('school_id')
       .eq('fantasy_team_id', userTeam.id)
-      .is('end_week', null)
+      .lte('start_week', currentWeek)
+      .or(`end_week.is.null,end_week.gt.${currentWeek}`)
 
     rosterSchoolIds = rosterData?.map(r => r.school_id) || []
   }
-
-  const seasons = league.seasons as { year: number; name: string } | { year: number; name: string }[] | null
-  const year = Array.isArray(seasons) ? seasons[0]?.year : seasons?.year || new Date().getFullYear()
-  const seasonName = Array.isArray(seasons) ? seasons[0]?.name : seasons?.name || `${year} Season`
-
-  // Calculate current week (with sandbox override support)
-  const currentWeek = await getCurrentWeek(year)
   const environment = getEnvironment()
 
   // Determine if selection is a category or week number

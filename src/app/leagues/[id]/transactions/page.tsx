@@ -103,7 +103,14 @@ export default async function TransactionsPage({ params }: PageProps) {
     redirect(`/leagues/${leagueId}`)
   }
 
-  // Get current roster
+  // Calculate current week (extends to week 20 for postseason/bowls) - supports sandbox override
+  const seasons = league.seasons as unknown as { year: number } | { year: number }[] | null
+  const year = Array.isArray(seasons) ? seasons[0]?.year : seasons?.year || new Date().getFullYear()
+  const currentWeek = await getCurrentWeek(year)
+  const simulatedDate = await getSimulatedDate(year)
+  const environment = getEnvironment()
+
+  // Get current roster (schools active at the simulated week)
   const { data: rosterData } = await supabase
     .from('roster_periods')
     .select(`
@@ -120,7 +127,8 @@ export default async function TransactionsPage({ params }: PageProps) {
       )
     `)
     .eq('fantasy_team_id', team.id)
-    .is('end_week', null)
+    .lte('start_week', currentWeek)
+    .or(`end_week.is.null,end_week.gt.${currentWeek}`)
     .order('slot_number', { ascending: true })
 
   const roster = rosterData as unknown as RosterSchool[] || []
@@ -134,12 +142,13 @@ export default async function TransactionsPage({ params }: PageProps) {
 
   const allSchools = schoolsData as School[] || []
 
-  // Get all completed games for record calculation (including conference game flag)
+  // Get all completed games for record calculation (only up to simulated week)
   const { data: gamesData } = await supabase
     .from('games')
-    .select('home_school_id, away_school_id, home_score, away_score, is_conference_game, status')
+    .select('home_school_id, away_school_id, home_score, away_score, is_conference_game, status, week_number')
     .eq('season_id', league.season_id)
     .eq('status', 'completed')
+    .lte('week_number', currentWeek)
 
   // Calculate W-L records for each school (overall and conference)
   const schoolRecordsMap = new Map<string, { wins: number; losses: number; confWins: number; confLosses: number }>()
@@ -170,11 +179,12 @@ export default async function TransactionsPage({ params }: PageProps) {
     schoolRecordsMap.set(game.away_school_id, awayRecord)
   }
 
-  // Get school points for this season
+  // Get school points for this season (only up to simulated week)
   const { data: schoolPointsData } = await supabase
     .from('school_weekly_points')
     .select('school_id, total_points')
     .eq('season_id', league.season_id)
+    .lte('week_number', currentWeek)
 
   // Aggregate points per school
   const schoolPointsMap = new Map<string, number>()
@@ -184,13 +194,6 @@ export default async function TransactionsPage({ params }: PageProps) {
   }
 
   // Get current AP rankings
-  // Calculate current week (extends to week 20 for postseason/bowls) - supports sandbox override
-  const seasons = league.seasons as unknown as { year: number } | { year: number }[] | null
-  const year = Array.isArray(seasons) ? seasons[0]?.year : seasons?.year || new Date().getFullYear()
-  const currentWeek = await getCurrentWeek(year)
-  const simulatedDate = await getSimulatedDate(year)
-  const environment = getEnvironment()
-
   // Get the most recent rankings - try current week first, then find latest available
   let { data: rankings } = await supabase
     .from('ap_rankings_history')
@@ -198,12 +201,13 @@ export default async function TransactionsPage({ params }: PageProps) {
     .eq('season_id', league.season_id)
     .eq('week_number', currentWeek)
 
-  // If no rankings for current week, get the most recent week with rankings
+  // If no rankings for current week, get the most recent week with rankings (up to simulated week)
   if (!rankings || rankings.length === 0) {
     const { data: latestRankings } = await supabase
       .from('ap_rankings_history')
       .select('school_id, rank, week_number')
       .eq('season_id', league.season_id)
+      .lte('week_number', currentWeek)
       .order('week_number', { ascending: false })
       .limit(25)
 
@@ -215,7 +219,7 @@ export default async function TransactionsPage({ params }: PageProps) {
     rankingsMap.set(r.school_id, r.rank)
   }
 
-  // Get schools already taken by other teams in this league
+  // Get schools taken by teams in this league (at the simulated week)
   const { data: takenSchoolsData } = await supabase
     .from('roster_periods')
     .select(`
@@ -223,7 +227,8 @@ export default async function TransactionsPage({ params }: PageProps) {
       fantasy_teams!inner (league_id)
     `)
     .eq('fantasy_teams.league_id', leagueId)
-    .is('end_week', null)
+    .lte('start_week', currentWeek)
+    .or(`end_week.is.null,end_week.gt.${currentWeek}`)
 
   // Count how many times each school is taken
   const schoolSelectionCounts = new Map<string, number>()
@@ -241,7 +246,7 @@ export default async function TransactionsPage({ params }: PageProps) {
   const leagueTeamIds = leagueTeams?.map(t => t.id) || []
   const teamNamesMap = new Map(leagueTeams?.map(t => [t.id, t.name]) || [])
 
-  // Get league-wide transaction history
+  // Get league-wide transaction history (only up to simulated week)
   const { data: transactionHistoryRaw } = await supabase
     .from('transactions')
     .select(`
@@ -258,6 +263,7 @@ export default async function TransactionsPage({ params }: PageProps) {
       )
     `)
     .in('fantasy_team_id', leagueTeamIds.length > 0 ? leagueTeamIds : ['none'])
+    .lte('week_number', currentWeek)
     .order('created_at', { ascending: false })
 
   // Transform transaction history to expected format
