@@ -319,6 +319,22 @@ export default async function TeamPage({ params }: PageProps) {
 
   const doublePicks = (doublePicksData || []) as { week_number: number; school_id: string }[]
 
+  // Fetch event bonuses from database for this league
+  const { data: eventBonusesData } = await supabase
+    .from('league_school_event_bonuses')
+    .select('school_id, week_number, bonus_type, points')
+    .eq('league_id', leagueId)
+    .eq('season_id', league.season_id)
+    .in('school_id', schoolIds.length > 0 ? schoolIds : ['none'])
+    .lte('week_number', currentWeek)
+
+  const eventBonuses = (eventBonusesData || []) as {
+    school_id: string
+    week_number: number
+    bonus_type: string
+    points: number
+  }[]
+
   // Calculate totals per school
   const schoolTotals = new Map<string, number>()
   for (const sp of schoolPoints) {
@@ -475,6 +491,7 @@ export default async function TeamPage({ params }: PageProps) {
                 confChampLoss: settings?.points_conference_championship_loss || 0,
                 heismanWinner: settings?.points_heisman_winner || 0,
               }}
+              eventBonuses={eventBonuses}
             />
           ) : (
             <p className="text-gray-500">No schools on roster yet. Complete the draft to build your team.</p>
