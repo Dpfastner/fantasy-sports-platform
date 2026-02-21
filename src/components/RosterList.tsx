@@ -301,6 +301,68 @@ export function RosterList({
   // Generate available weeks for preview (0-21 for full season including CFP championship)
   const availableWeeks = Array.from({ length: 22 }, (_, i) => i)
 
+  // Calculate special event bonus for a school in a given week
+  const getEventBonus = (schoolId: string, weekNumber: number): number => {
+    if (!specialEventSettings) return 0
+
+    const schoolGames = games.filter(g =>
+      (g.home_school_id === schoolId || g.away_school_id === schoolId) &&
+      g.week_number === weekNumber
+    )
+
+    let bonus = 0
+    for (const game of schoolGames) {
+      const isHome = game.home_school_id === schoolId
+      const myScore = isHome ? game.home_score : game.away_score
+      const oppScore = isHome ? game.away_score : game.home_score
+      const isWin = myScore !== null && oppScore !== null && myScore > oppScore
+      const isLoss = myScore !== null && oppScore !== null && myScore < oppScore
+
+      // Conference Championship (week 15)
+      if (weekNumber === 15 && game.status === 'completed') {
+        if (isWin && specialEventSettings.confChampWin > 0) {
+          bonus += specialEventSettings.confChampWin
+        } else if (isLoss && specialEventSettings.confChampLoss > 0) {
+          bonus += specialEventSettings.confChampLoss
+        }
+      }
+      // Bowl appearance (week 17)
+      else if (weekNumber === 17 && game.is_bowl_game && specialEventSettings.bowlAppearance > 0) {
+        bonus += specialEventSettings.bowlAppearance
+      }
+      // CFP games based on playoff_round
+      else if (game.is_playoff_game && game.playoff_round) {
+        const myRank = isHome ? game.home_rank : game.away_rank
+
+        if (game.playoff_round === 'first_round') {
+          if (specialEventSettings.playoffFirstRound > 0) {
+            bonus += specialEventSettings.playoffFirstRound
+          }
+        } else if (game.playoff_round === 'quarterfinal') {
+          // Bye teams (rank 1-4) get CFP R1 bonus in quarterfinals
+          const isByeTeam = myRank && myRank <= 4
+          if (isByeTeam && specialEventSettings.playoffFirstRound > 0) {
+            bonus += specialEventSettings.playoffFirstRound
+          }
+          if (specialEventSettings.playoffQuarterfinal > 0) {
+            bonus += specialEventSettings.playoffQuarterfinal
+          }
+        } else if (game.playoff_round === 'semifinal') {
+          if (specialEventSettings.playoffSemifinal > 0) {
+            bonus += specialEventSettings.playoffSemifinal
+          }
+        } else if (game.playoff_round === 'championship') {
+          if (isWin && specialEventSettings.championshipWin > 0) {
+            bonus += specialEventSettings.championshipWin
+          } else if (isLoss && specialEventSettings.championshipLoss > 0) {
+            bonus += specialEventSettings.championshipLoss
+          }
+        }
+      }
+    }
+    return bonus
+  }
+
   const handleSchoolClick = (school: School) => {
     setSelectedSchool(school)
     setShowScheduleModal(true)
@@ -444,7 +506,12 @@ export function RosterList({
               g => g.week_number === previewWeek &&
                    (g.home_school_id === slot.school_id || g.away_school_id === slot.school_id)
             )
-            const total = schoolTotals.get(slot.school_id) || 0
+            // Calculate total including event bonuses for special weeks
+            const gamePointsTotal = schoolTotals.get(slot.school_id) || 0
+            const eventBonusTotal = [15, 17, 18, 19, 20, 21].reduce(
+              (sum, week) => sum + getEventBonus(slot.school_id, week), 0
+            )
+            const total = gamePointsTotal + eventBonusTotal
             const isHome = thisWeekGame?.home_school_id === slot.school_id
 
             // Get opponent school from our schools data
@@ -640,9 +707,11 @@ export function RosterList({
 
               return (
                 <div key={slot.id} className="flex items-center h-14 bg-gray-700/50 border-b border-gray-800 min-w-max">
-                  {/* Regular season weeks */}
+                  {/* Regular season weeks - includes event bonuses for week 15 (conf championship) */}
                   {regularWeeks.map(week => {
-                    const pts = pointsMap.get(week) || 0
+                    const gamePts = pointsMap.get(week) || 0
+                    const eventBonus = week === 15 ? getEventBonus(slot.school_id, week) : 0
+                    const pts = gamePts + eventBonus
                     const isCurrent = week === currentWeek
                     const wasOnRoster = week >= startWeek
                     const hadDoublePick = schoolDoublePicks?.has(week)
@@ -671,13 +740,15 @@ export function RosterList({
                     )
                   })}
 
-                  {/* Special columns (Bowl, CFP, NC, Heisman) */}
+                  {/* Special columns (Bowl, CFP R1, QF, SF, NC) - includes event bonuses */}
                   {specialColumns.map(({ week, color }) => {
-                    const pts = pointsMap.get(week) || 0
+                    const gamePts = pointsMap.get(week) || 0
+                    const eventBonus = getEventBonus(slot.school_id, week)
+                    const totalPts = gamePts + eventBonus
                     return (
                       <div key={week} className={`w-11 flex-shrink-0 py-1 text-center ${color}`}>
-                        <span className={`text-xs ${pts > 0 ? 'text-white font-medium' : 'text-gray-500'}`}>
-                          {pts}
+                        <span className={`text-xs ${totalPts > 0 ? 'text-white font-medium' : 'text-gray-500'}`}>
+                          {totalPts}
                         </span>
                       </div>
                     )
