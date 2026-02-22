@@ -285,6 +285,18 @@ export async function calculateWeeklySchoolPoints(
     conferenceMap.set(school.id, school.conference)
   }
 
+  // Delete existing points for this week before inserting fresh calculations
+  const { error: deleteError } = await client
+    .from('school_weekly_points')
+    .delete()
+    .eq('season_id', seasonId)
+    .eq('week_number', weekNumber)
+
+  if (deleteError) {
+    errors.push(`Failed to clear existing points for week ${weekNumber}: ${deleteError.message}`)
+    return { calculated, errors }
+  }
+
   // Process each game and calculate points for each FBS team
   for (const game of games) {
     // Determine if it's a conference game
@@ -309,28 +321,24 @@ export async function calculateWeeklySchoolPoints(
       const awayTeamRank = game.away_school_id ? rankingsMap.get(game.away_school_id) || null : null
       const homePoints = calculateSchoolGamePoints(gameWithConf, game.home_school_id, awayTeamRank, DEFAULT_SCORING, isBowlGame)
 
-      const { error: upsertError } = await client
+      const { error: insertError } = await client
         .from('school_weekly_points')
-        .upsert(
-          {
-            school_id: homePoints.schoolId,
-            season_id: homePoints.seasonId,
-            week_number: homePoints.weekNumber,
-            game_id: homePoints.gameId,
-            base_points: homePoints.basePoints,
-            conference_bonus: homePoints.conferenceBonus,
-            over_50_bonus: homePoints.over50Bonus,
-            shutout_bonus: homePoints.shutoutBonus,
-            ranked_25_bonus: homePoints.ranked25Bonus,
-            ranked_10_bonus: homePoints.ranked10Bonus,
-            total_points: homePoints.totalPoints,
-            updated_at: new Date().toISOString(),
-          },
-          { onConflict: 'school_id,season_id,week_number' }
-        )
+        .insert({
+          school_id: homePoints.schoolId,
+          season_id: homePoints.seasonId,
+          week_number: homePoints.weekNumber,
+          game_id: homePoints.gameId,
+          base_points: homePoints.basePoints,
+          conference_bonus: homePoints.conferenceBonus,
+          over_50_bonus: homePoints.over50Bonus,
+          shutout_bonus: homePoints.shutoutBonus,
+          ranked_25_bonus: homePoints.ranked25Bonus,
+          ranked_10_bonus: homePoints.ranked10Bonus,
+          total_points: homePoints.totalPoints,
+        })
 
-      if (upsertError) {
-        errors.push(`Failed to upsert home team points for game ${game.id}: ${upsertError.message}`)
+      if (insertError) {
+        errors.push(`Failed to insert home team points for game ${game.id}: ${insertError.message}`)
       } else {
         calculated++
       }
@@ -342,28 +350,24 @@ export async function calculateWeeklySchoolPoints(
       const homeTeamRank = game.home_school_id ? rankingsMap.get(game.home_school_id) || null : null
       const awayPoints = calculateSchoolGamePoints(gameWithConf, game.away_school_id, homeTeamRank, DEFAULT_SCORING, isBowlGame)
 
-      const { error: upsertError } = await client
+      const { error: insertError } = await client
         .from('school_weekly_points')
-        .upsert(
-          {
-            school_id: awayPoints.schoolId,
-            season_id: awayPoints.seasonId,
-            week_number: awayPoints.weekNumber,
-            game_id: awayPoints.gameId,
-            base_points: awayPoints.basePoints,
-            conference_bonus: awayPoints.conferenceBonus,
-            over_50_bonus: awayPoints.over50Bonus,
-            shutout_bonus: awayPoints.shutoutBonus,
-            ranked_25_bonus: awayPoints.ranked25Bonus,
-            ranked_10_bonus: awayPoints.ranked10Bonus,
-            total_points: awayPoints.totalPoints,
-            updated_at: new Date().toISOString(),
-          },
-          { onConflict: 'school_id,season_id,week_number' }
-        )
+        .insert({
+          school_id: awayPoints.schoolId,
+          season_id: awayPoints.seasonId,
+          week_number: awayPoints.weekNumber,
+          game_id: awayPoints.gameId,
+          base_points: awayPoints.basePoints,
+          conference_bonus: awayPoints.conferenceBonus,
+          over_50_bonus: awayPoints.over50Bonus,
+          shutout_bonus: awayPoints.shutoutBonus,
+          ranked_25_bonus: awayPoints.ranked25Bonus,
+          ranked_10_bonus: awayPoints.ranked10Bonus,
+          total_points: awayPoints.totalPoints,
+        })
 
-      if (upsertError) {
-        errors.push(`Failed to upsert away team points for game ${game.id}: ${upsertError.message}`)
+      if (insertError) {
+        errors.push(`Failed to insert away team points for game ${game.id}: ${insertError.message}`)
       } else {
         calculated++
       }
@@ -636,26 +640,34 @@ export async function calculateFantasyTeamPoints(
     }
   }
 
-  // Upsert fantasy_team_weekly_points for each team
+  // Delete existing fantasy team weekly points for this week, then insert fresh
+  const teamIds = teams.map(t => t.id)
+  const { error: deleteTeamPtsError } = await client
+    .from('fantasy_team_weekly_points')
+    .delete()
+    .in('fantasy_team_id', teamIds)
+    .eq('week_number', weekNumber)
+
+  if (deleteTeamPtsError) {
+    errors.push(`Failed to clear existing team points for week ${weekNumber}: ${deleteTeamPtsError.message}`)
+  }
+
+  // Insert fantasy_team_weekly_points for each team
   for (const tp of teamPoints) {
     const isWinner = highScorers.includes(tp.teamId)
 
-    const { error: upsertError } = await client
+    const { error: insertError } = await client
       .from('fantasy_team_weekly_points')
-      .upsert(
-        {
-          fantasy_team_id: tp.teamId,
-          week_number: weekNumber,
-          points: tp.points,
-          is_high_points_winner: isWinner,
-          high_points_amount: isWinner ? highPointsAmount : 0,
-          updated_at: new Date().toISOString(),
-        },
-        { onConflict: 'fantasy_team_id,week_number' }
-      )
+      .insert({
+        fantasy_team_id: tp.teamId,
+        week_number: weekNumber,
+        points: tp.points,
+        is_high_points_winner: isWinner,
+        high_points_amount: isWinner ? highPointsAmount : 0,
+      })
 
-    if (upsertError) {
-      errors.push(`Failed to upsert weekly points for team ${tp.teamId}: ${upsertError.message}`)
+    if (insertError) {
+      errors.push(`Failed to insert weekly points for team ${tp.teamId}: ${insertError.message}`)
     } else {
       teamsUpdated++
     }
