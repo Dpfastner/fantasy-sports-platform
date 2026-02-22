@@ -381,10 +381,15 @@ export default function LeaderboardClient({
                       })}
                       {/* Postseason columns */}
                       {showPostseason && (() => {
-                        const heisPoints = teamWeekly?.get(20) // Heisman stored as week 20 if applicable
+                        // Week mapping: 17=Bowls, 18=CFP R1, 19=CFP QF, 20=CFP SF, 21=Natty, 22=Heisman
+                        const heisPoints = teamWeekly?.get(22)
                         const bowlsWp = teamWeekly?.get(17)
-                        const cfpWp = teamWeekly?.get(18)
-                        const nattyWp = teamWeekly?.get(19)
+                        // CFP column combines R1 (18) + QF (19) + SF (20)
+                        const cfpR1 = teamWeekly?.get(18)
+                        const cfpQF = teamWeekly?.get(19)
+                        const cfpSF = teamWeekly?.get(20)
+                        const cfpTotal = (cfpR1?.points || 0) + (cfpQF?.points || 0) + (cfpSF?.points || 0)
+                        const nattyWp = teamWeekly?.get(21)
                         return (
                           <>
                             <td className="px-1 md:px-3 py-2 md:py-3 text-center text-xs md:text-sm">
@@ -402,8 +407,8 @@ export default function LeaderboardClient({
                               )}
                             </td>
                             <td className="px-1 md:px-3 py-2 md:py-3 text-center text-xs md:text-sm">
-                              {cfpWp ? (
-                                <span className="text-orange-400">{cfpWp.points}</span>
+                              {cfpTotal > 0 ? (
+                                <span className="text-orange-400">{cfpTotal}</span>
                               ) : (
                                 <span className="text-gray-600">-</span>
                               )}

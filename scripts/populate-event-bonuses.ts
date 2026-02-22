@@ -14,8 +14,9 @@ const supabase = createClient(
  * - Week 17: Bowl games
  * - Week 18: CFP First Round (seeds 5-12 play)
  * - Week 19: CFP Quarterfinals
- * - Week 20: CFP Semifinals + Heisman
+ * - Week 20: CFP Semifinals
  * - Week 21: National Championship
+ * - Week 22: Heisman (separate column for display)
  */
 
 interface LeagueSettings {
@@ -330,13 +331,13 @@ async function populateEventBonuses() {
       }
     }
 
-    // Heisman (Week 20)
+    // Heisman (Week 22 - separate column for display)
     if (heismanSchoolId && settings.points_heisman_winner) {
       bonusRecords.push({
         league_id: league.id,
         school_id: heismanSchoolId,
         season_id: season.id,
-        week_number: 20,
+        week_number: 22,
         bonus_type: 'heisman',
         points: settings.points_heisman_winner,
         game_id: null,
