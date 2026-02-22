@@ -32,9 +32,9 @@ export async function POST(request: Request) {
   try {
     // Check for authorization
     const authHeader = request.headers.get('authorization')
-    const expectedKey = process.env.SYNC_API_KEY || 'fantasy-sports-sync-2024'
+    const expectedKey = process.env.SYNC_API_KEY
 
-    if (authHeader !== `Bearer ${expectedKey}`) {
+    if (!expectedKey || authHeader !== `Bearer ${expectedKey}`) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
@@ -60,7 +60,7 @@ export async function POST(request: Request) {
 
     // Calculate current week if not provided
     const currentDate = new Date()
-    const seasonStart = new Date(year, 7, 24) // August 24
+    const seasonStart = new Date(Date.UTC(year, 7, 24)) // August 24 UTC
     const weeksDiff = Math.floor(
       (currentDate.getTime() - seasonStart.getTime()) / (7 * 24 * 60 * 60 * 1000)
     )

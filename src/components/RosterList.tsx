@@ -305,10 +305,11 @@ export function RosterList({
     { week: 19, label: 'QF', color: 'bg-orange-600/20', textColor: 'text-orange-400' },    // CFP Quarterfinals
     { week: 20, label: 'SF', color: 'bg-orange-600/20', textColor: 'text-orange-400' },    // CFP Semifinals
     { week: 21, label: 'NC', color: 'bg-yellow-600/20', textColor: 'text-yellow-400' },    // National Championship
+    { week: 22, label: 'H', color: 'bg-amber-600/20', textColor: 'text-amber-400' },     // Heisman
   ]
 
-  // Generate available weeks for preview (0-21 for full season including CFP championship)
-  const availableWeeks = Array.from({ length: 22 }, (_, i) => i)
+  // Generate available weeks for preview (0-22 for full season including Heisman)
+  const availableWeeks = Array.from({ length: 23 }, (_, i) => i)
 
   // Build event bonuses map: school_id -> week_number -> total bonus
   const eventBonusMap = new Map<string, Map<number, number>>()
@@ -418,52 +419,6 @@ export function RosterList({
       .sort((a, b) => a.week_number - b.week_number)
   }
 
-  // Calculate per-game points for a school
-  const calculateGamePoints = (game: Game, schoolId: string): number => {
-    if (game.status !== 'completed' || game.home_score === null || game.away_score === null) {
-      return 0
-    }
-
-    const isHome = game.home_school_id === schoolId
-    const teamScore = isHome ? game.home_score : game.away_score
-    const opponentScore = isHome ? game.away_score : game.home_score
-    // Ranked bonus is for BEATING a ranked opponent
-    const opponentRank = isHome ? game.away_rank : game.home_rank
-    const isWin = teamScore > opponentScore
-    const isPlayoff = game.is_playoff_game || false
-
-    if (!isWin) return 0 // Only wins earn points
-
-    let points = 1 // Base win points
-
-    // Conference game bonus (not for bowl/playoff games)
-    if (game.is_conference_game && !game.is_bowl_game && !isPlayoff) points += 1
-
-    // 50+ points bonus
-    if (teamScore >= 50) points += 1
-
-    // Shutout bonus
-    if (opponentScore === 0) points += 1
-
-    // Ranked opponent bonus (for beating a ranked opponent)
-    if (opponentRank) {
-      const isBowl = game.is_bowl_game || false
-      if (isBowl || isPlayoff) {
-        // Bowls & Playoffs: only ranks 1-12 get the bonus (+2)
-        if (opponentRank <= 12) points += 2
-      } else {
-        // Regular season: beating ranks 1-10 gets higher bonus, 11-25 gets lower bonus
-        if (opponentRank <= 10) {
-          points += 2
-        } else if (opponentRank <= 25) {
-          points += 1
-        }
-      }
-    }
-
-    return points
-  }
-
   return (
     <div className="space-y-2">
       {/* Header with week preview and expand button */}
@@ -486,6 +441,7 @@ export function RosterList({
                    week === 19 ? 'Week 19 (CFP QF)' :
                    week === 20 ? 'Week 20 (CFP SF)' :
                    week === 21 ? 'Week 21 (NC)' :
+                   week === 22 ? 'Week 22 (Heisman)' :
                    `Week ${week}`}
                 </option>
               ))}
@@ -551,7 +507,7 @@ export function RosterList({
             )
             // Calculate total including event bonuses for special weeks
             const gamePointsTotal = schoolTotals.get(slot.school_id) || 0
-            const eventBonusTotal = [15, 17, 18, 19, 20, 21].reduce(
+            const eventBonusTotal = [15, 17, 18, 19, 20, 21, 22].reduce(
               (sum, week) => sum + getEventBonus(slot.school_id, week), 0
             )
             const total = gamePointsTotal + eventBonusTotal

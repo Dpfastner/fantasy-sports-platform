@@ -85,9 +85,9 @@ export async function GET(request: Request) {
 
     // Calculate current week (extends to week 20 for postseason/bowls)
     // CFB season typically starts late August, Week 0 is sometimes used
-    const seasonStart = new Date(year, 7, 24) // August 24
+    const seasonStart = new Date(Date.UTC(year, 7, 24)) // August 24 UTC
     const weeksDiff = Math.floor((now.getTime() - seasonStart.getTime()) / (7 * 24 * 60 * 60 * 1000))
-    const currentWeek = Math.max(0, Math.min(weeksDiff + 1, 20)) // Week 0-20 (including postseason)
+    const currentWeek = Math.max(0, Math.min(weeksDiff + 1, 22)) // Week 0-22 (through Heisman)
 
     // Sync Rankings
     try {

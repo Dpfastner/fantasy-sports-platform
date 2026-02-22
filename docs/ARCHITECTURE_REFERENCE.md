@@ -1,6 +1,7 @@
-# Fantasy Sports Platform - Architecture Reference
+# Rivyls - Architecture Reference
 
 > **Purpose**: This document serves as a comprehensive reference for the platform's architecture, data models, and scoring system. Reference this document when context is needed about how the system works.
+> **Domain**: rivyls.com
 
 ---
 
@@ -211,13 +212,15 @@ Applied per-team based on roster at time of event, NOT per-game:
 | Conf Champ Loss | 15 | `points_conference_championship_loss` |
 | Bowl Appearance | 17 | `points_bowl_appearance` |
 | CFP First Round | 18 | `points_playoff_first_round` |
-| CFP Quarterfinal | 18 | `points_playoff_quarterfinal` |
-| CFP Semifinal | 19 | `points_playoff_semifinal` |
-| Championship Win | 19 | `points_championship_win` |
-| Championship Loss | 19 | `points_championship_loss` |
-| Heisman Winner | 20 | `points_heisman_winner` |
+| CFP Quarterfinal | 19 | `points_playoff_quarterfinal` |
+| CFP Semifinal | 20 | `points_playoff_semifinal` |
+| Championship Win | 21 | `points_championship_win` |
+| Championship Loss | 21 | `points_championship_loss` |
+| Heisman Winner | 22 | `points_heisman_winner` |
 
 Special events are calculated by `scripts/calculate-special-events.ts`.
+
+> **Note**: Championship games (week 21) score 0 game points — only the event bonus applies. Heisman (week 22) is a virtual scoring week with no games.
 
 ### Double Points Feature
 
@@ -365,15 +368,37 @@ This ensures points are only counted for weeks the school was on roster.
 | `/api/sync/heisman` | Heisman winners |
 | `/api/sync/bulk` | Batch operations |
 
-### Cron Jobs
+### Automated Jobs
+
+The platform uses two scheduling systems due to Vercel free tier limits (2 cron jobs max):
+
+**Vercel Crons** (registered in `vercel.json`):
+
 | Route | Schedule | Purpose |
 |-------|----------|---------|
-| `/api/cron/daily-sync` | 10 AM UTC | Daily games + rankings |
-| `/api/cron/gameday-sync` | Every minute | Live score updates |
-| `/api/cron/rankings-sync` | Weekly | AP rankings |
-| `/api/cron/reconcile` | Nightly | Data integrity |
+| `/api/cron/daily-sync` | `0 10 * * *` (10 AM UTC daily) | Sync rankings, sync current week games, failsafe recalculation for games completed in past 2 days |
 
-**Note**: Crons are disabled in sandbox/development environments.
+**GitHub Actions** (registered in `.github/workflows/`):
+
+| Workflow | Schedule | Purpose |
+|----------|----------|---------|
+| `gameday-sync.yml` | `* * * * *` (every minute) | Live score updates during games. The endpoint has smart skip logic: skips if no games today, skips if outside game window (30 min before first game → 4 hours after last game), only calls ESPN API during actual game windows. ~95% of calls skip instantly. |
+| `nightly-reconcile.yml` | `0 8 * * *` (8 AM UTC daily) | Verifies fantasy team point totals match weekly point sums. Fixes high points winners. Safety net for data integrity. |
+
+**Manual-Only Routes** (not scheduled, triggered from admin panel):
+
+| Route | Purpose |
+|-------|---------|
+| `/api/cron/rankings-sync` | Dedicated AP rankings sync. Redundant with daily-sync but useful for manual re-pulls from `/admin/sync`. |
+| `/api/sync/schools` | Sync FBS schools from ESPN |
+| `/api/sync/games` | Sync game schedule for specific weeks |
+| `/api/sync/rankings-backfill` | Historical rankings |
+| `/api/sync/heisman` | Heisman winner tracking |
+| `/api/sync/bulk` | Batch operations |
+
+**Why two systems**: Vercel free tier allows 2 cron jobs with a minimum interval of once per day. Live scoring requires per-minute polling during games. GitHub Actions provides free per-minute scheduling (2,000 min/month free tier). The gameday-sync smart skip logic means most calls cost <100ms and don't count against ESPN rate limits.
+
+**How live scores reach users**: GitHub Actions calls gameday-sync → endpoint fetches ESPN scores → updates `games` table in Supabase → Supabase Realtime pushes changes to all connected browsers instantly.
 
 ### Key File
 - `/src/lib/api/espn.ts` - ESPN API client
@@ -383,14 +408,16 @@ This ensures points are only counted for weeks the school was on roster.
 ## Sandbox Time Travel
 
 ### Environments
+
+Currently running sandbox-only (rivyls.com points to sandbox). Production will be added when the platform is hardened for the 2026 season.
+
 | Environment | Crons | Badge | Database |
 |-------------|-------|-------|----------|
-| production | Enabled | None | Production |
-| sandbox | Disabled | Yellow | Sandbox |
+| sandbox (rivyls.com) | Enabled (via ENABLE_CRONS flag) | Yellow | Sandbox Supabase (2025 data) |
 | development | Disabled | Blue | Local |
 
 ### Time Travel Cookies
-- `sandbox_week_override`: Override current week (0-20)
+- `sandbox_week_override`: Override current week (0-22)
 - `sandbox_date_override`: Override day of week
 - `sandbox_time_override`: Override time (HH:MM)
 
@@ -474,13 +501,19 @@ supabase
 
 ## Known Issues / Technical Debt
 
-### Duplicated calculateGamePoints()
-The `calculateGamePoints()` function is duplicated in:
-- `RosterList.tsx` (client-side display)
-- `TransactionsClient.tsx` (client-side display)
-- `calculator.ts` (server-side calculations)
+For the full list of audit findings, see `docs/IMPLEMENTATION_PLAN.md` — Audit Findings & Corrections section.
 
-Consider extracting to a shared utility to avoid divergence.
+### Critical Bugs
+- **League settings ignored**: `calculator.ts` always uses `DEFAULT_SCORING` instead of league-specific settings. All leagues score identically. (Phase 12)
+- **Client scoring mismatch**: `RosterList.tsx` has a duplicate scoring function that diverges from server logic (bowl bonuses wrong, loss points always 0). (Phase 12)
+- **Timezone bug**: `week.ts` creates season start date in local timezone but compares against UTC. (Phase 12)
+- **Cron week cap**: `daily-sync` and `gameday-sync` cap at week 20, missing weeks 21 (championship) and 22 (Heisman). (Phase 12)
+
+### Tech Debt
+- **Duplicated calculateGamePoints()**: Exists in `RosterList.tsx`, `TransactionsClient.tsx`, and `calculator.ts`. Must be extracted to shared utility. (Phase 15)
+- **Duplicated leaderboard**: `LeaderboardClient.tsx` and `EmbeddedLeaderboard.tsx` are ~80% identical. (Phase 15)
+- **Hardcoded week numbers**: Magic numbers (15, 17, 18-21) throughout components and API routes. (Phase 15)
+- **TypeScript types out of sync**: `database.ts` missing 2 tables and 8+ columns from recent migrations. (Phase 14)
 
 ---
 
@@ -493,10 +526,14 @@ Consider extracting to a shared utility to avoid divergence.
 | 15 | Conference Championships |
 | 16 | Army-Navy game |
 | 17 | Bowl Games (non-CFP) |
-| 18 | CFP First Round + Quarterfinals |
-| 19 | CFP Semifinals + Championship |
-| 20 | Heisman announcement |
+| 18 | CFP First Round |
+| 19 | CFP Quarterfinals |
+| 20 | CFP Semifinals |
+| 21 | National Championship (0 game points, event bonus only) |
+| 22 | Heisman announcement (virtual scoring week, no games) |
+
+> **Code note**: The cron routes currently cap `currentWeek` at 20 (`Math.min(weeksDiff + 1, 20)`). This needs to be updated to 22 to cover the championship and Heisman weeks. See Phase 12 in IMPLEMENTATION_PLAN.md.
 
 ---
 
-*Last Updated: February 2026*
+*Last Updated: February 22, 2026*

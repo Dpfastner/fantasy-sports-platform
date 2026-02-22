@@ -71,8 +71,25 @@ export async function GET(request: Request) {
       .eq('game_date', today)
       .order('game_time', { ascending: true })
 
-    // No games today - skip
-    if (!todaysGames || todaysGames.length === 0) {
+    // Hawaii exception: check for games from yesterday still in progress
+    // (late games like Hawaii 8pm ET can end after midnight)
+    const yesterday = new Date(now)
+    yesterday.setDate(yesterday.getDate() - 1)
+    const yesterdayStr = yesterday.toISOString().split('T')[0]
+    const { data: lateGames } = await supabase
+      .from('games')
+      .select('id, status, game_time')
+      .eq('season_id', season.id)
+      .eq('game_date', yesterdayStr)
+      .eq('status', 'live')
+
+    const allRelevantGames = [
+      ...(todaysGames || []),
+      ...(lateGames || []),
+    ]
+
+    // No games today and no carryover live games - skip
+    if (allRelevantGames.length === 0) {
       return NextResponse.json({
         success: true,
         skipped: true,
@@ -82,7 +99,7 @@ export async function GET(request: Request) {
     }
 
     // All games complete - skip
-    const hasActiveGames = todaysGames.some(
+    const hasActiveGames = allRelevantGames.some(
       g => g.status === 'live' || g.status === 'scheduled'
     )
 
@@ -95,14 +112,18 @@ export async function GET(request: Request) {
       })
     }
 
+    // If there are carryover live games from yesterday, skip the window check
+    // (we need to keep fetching until they complete)
+    const hasLateGames = (lateGames?.length || 0) > 0
+
     // Check if we're within the game window
     // Window: 30 min before first game to 4 hours after last game starts
-    const gameTimes = todaysGames
+    const gameTimes = (todaysGames || [])
       .filter(g => g.game_time)
       .map(g => g.game_time as string)
       .sort()
 
-    if (gameTimes.length > 0) {
+    if (gameTimes.length > 0 && !hasLateGames) {
       const firstGameTime = gameTimes[0]
       const lastGameTime = gameTimes[gameTimes.length - 1]
 
@@ -144,9 +165,9 @@ export async function GET(request: Request) {
     }
 
     // Calculate current week (extends to week 20 for postseason/bowls)
-    const seasonStart = new Date(year, 7, 24) // August 24
+    const seasonStart = new Date(Date.UTC(year, 7, 24)) // August 24 UTC
     const weeksDiff = Math.floor((now.getTime() - seasonStart.getTime()) / (7 * 24 * 60 * 60 * 1000))
-    const currentWeek = Math.max(0, Math.min(weeksDiff + 1, 20))
+    const currentWeek = Math.max(0, Math.min(weeksDiff + 1, 22)) // Week 0-22 (through Heisman)
 
     // Fetch live scores from ESPN
     const games = await fetchScoreboard(year, currentWeek, 2)

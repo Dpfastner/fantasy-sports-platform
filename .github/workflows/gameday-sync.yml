@@ -1,0 +1,29 @@
+name: Gameday Live Sync
+
+on:
+  schedule:
+    # Every minute during CFB season (Aug-Jan)
+    # The endpoint itself has smart skip logic:
+    # - No games today? Skip instantly
+    # - Outside game window? Skip instantly
+    # - In game window? Fetch ESPN, update scores
+    - cron: '* * * * *'
+  workflow_dispatch: # Allow manual trigger
+
+jobs:
+  gameday-sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Call gameday-sync endpoint
+        run: |
+          response=$(curl -s -o /dev/null -w "%{http_code}" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            "${{ secrets.SITE_URL }}/api/cron/gameday-sync")
+
+          if [ "$response" -ge 500 ]; then
+            echo "Server error: HTTP $response"
+            exit 1
+          fi
+
+          echo "Response: HTTP $response"

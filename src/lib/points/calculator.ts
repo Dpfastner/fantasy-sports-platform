@@ -413,12 +413,116 @@ export async function calculateFantasyTeamPoints(
     return { teamsUpdated, highPointsWinner: null, errors }
   }
 
-  // Get league settings for high points and double points configuration
+  // Get league settings for scoring, high points, and double points configuration
   const { data: settings } = await client
     .from('league_settings')
-    .select('high_points_enabled, high_points_weekly_amount, high_points_allow_ties, double_points_enabled')
+    .select(`
+      points_win, points_conference_game, points_over_50, points_shutout, points_ranked_25, points_ranked_10,
+      points_loss, points_conference_game_loss, points_over_50_loss, points_shutout_loss, points_ranked_25_loss, points_ranked_10_loss,
+      high_points_enabled, high_points_weekly_amount, high_points_allow_ties, double_points_enabled
+    `)
     .eq('league_id', leagueId)
     .single()
+
+  // Build league-specific scoring (falls back to DEFAULT_SCORING if no settings)
+  const leagueScoring: LeagueSettings = settings ? {
+    points_win: Number(settings.points_win),
+    points_conference_game: Number(settings.points_conference_game),
+    points_over_50: Number(settings.points_over_50),
+    points_shutout: Number(settings.points_shutout),
+    points_ranked_25: Number(settings.points_ranked_25),
+    points_ranked_10: Number(settings.points_ranked_10),
+    points_loss: Number(settings.points_loss),
+    points_conference_game_loss: Number(settings.points_conference_game_loss),
+    points_over_50_loss: Number(settings.points_over_50_loss),
+    points_shutout_loss: Number(settings.points_shutout_loss),
+    points_ranked_25_loss: Number(settings.points_ranked_25_loss),
+    points_ranked_10_loss: Number(settings.points_ranked_10_loss),
+  } : DEFAULT_SCORING
+
+  // Fetch completed games for this week (needed for league-specific scoring)
+  const { data: weekGames } = await client
+    .from('games')
+    .select('*')
+    .eq('season_id', league.season_id)
+    .eq('week_number', weekNumber)
+    .eq('status', 'completed')
+
+  // Pre-calculate league-specific points per school for this week
+  const leagueSchoolPoints = new Map<string, number>()
+  if (weekGames) {
+    // Get AP rankings for opponent rank bonuses
+    let { data: rankings } = await client
+      .from('ap_rankings_history')
+      .select('school_id, rank')
+      .eq('season_id', league.season_id)
+      .eq('week_number', weekNumber)
+
+    // Fallback to most recent rankings if none for this week
+    if (!rankings || rankings.length === 0) {
+      const { data: latestRankings } = await client
+        .from('ap_rankings_history')
+        .select('school_id, rank, week_number')
+        .eq('season_id', league.season_id)
+        .lt('week_number', weekNumber)
+        .order('week_number', { ascending: false })
+        .limit(100)
+
+      if (latestRankings && latestRankings.length > 0) {
+        const maxWeek = Math.max(...latestRankings.map(r => r.week_number))
+        rankings = latestRankings.filter(r => r.week_number === maxWeek)
+      }
+    }
+
+    const rankingsMap = new Map<string, number>()
+    for (const r of rankings || []) {
+      rankingsMap.set(r.school_id, r.rank)
+    }
+
+    // Get conferences for conference game detection
+    const allSchoolIds = new Set<string>()
+    for (const g of weekGames) {
+      if (g.home_school_id) allSchoolIds.add(g.home_school_id)
+      if (g.away_school_id) allSchoolIds.add(g.away_school_id)
+    }
+
+    const { data: schools } = await client
+      .from('schools')
+      .select('id, conference')
+      .in('id', Array.from(allSchoolIds))
+
+    const conferenceMap = new Map<string, string>()
+    for (const s of schools || []) {
+      conferenceMap.set(s.id, s.conference)
+    }
+
+    // Calculate points for each school using league-specific settings
+    for (const game of weekGames) {
+      const homeConf = game.home_school_id ? conferenceMap.get(game.home_school_id) : null
+      const awayConf = game.away_school_id ? conferenceMap.get(game.away_school_id) : null
+      const isConferenceGame = !!(homeConf && awayConf && homeConf === awayConf)
+      const isBowlGame = game.is_bowl_game || false
+
+      const gameWithConf: Game = {
+        ...game,
+        is_conference_game: isConferenceGame,
+        is_bowl_game: isBowlGame,
+        is_playoff_game: game.is_playoff_game || false,
+        playoff_round: game.playoff_round || null,
+      }
+
+      if (game.home_school_id) {
+        const opponentRank = game.away_school_id ? rankingsMap.get(game.away_school_id) || null : null
+        const pts = calculateSchoolGamePoints(gameWithConf, game.home_school_id, opponentRank, leagueScoring, isBowlGame)
+        leagueSchoolPoints.set(game.home_school_id, pts.totalPoints)
+      }
+      if (game.away_school_id) {
+        const opponentRank = game.home_school_id ? rankingsMap.get(game.home_school_id) || null : null
+        const pts = calculateSchoolGamePoints(gameWithConf, game.away_school_id, opponentRank, leagueScoring, isBowlGame)
+        leagueSchoolPoints.set(game.away_school_id, pts.totalPoints)
+      }
+    }
+  }
 
   // Get all double picks for this week if enabled
   const doublePicksMap = new Map<string, string>() // teamId -> schoolId
@@ -461,19 +565,6 @@ export async function calculateFantasyTeamPoints(
     const schoolIds = rosterPeriods.map(r => r.school_id)
     const doublePickSchoolId = doublePicksMap.get(team.id)
 
-    // Get school weekly points for these schools
-    const { data: schoolPoints, error: pointsError } = await client
-      .from('school_weekly_points')
-      .select('school_id, total_points')
-      .eq('season_id', league.season_id)
-      .eq('week_number', weekNumber)
-      .in('school_id', schoolIds)
-
-    if (pointsError) {
-      errors.push(`Failed to fetch school points for team ${team.id}: ${pointsError.message}`)
-      continue
-    }
-
     // Get event bonuses for these schools (CFP, Bowl, Championship, Heisman, etc.)
     const { data: eventBonuses, error: eventError } = await client
       .from('league_school_event_bonuses')
@@ -495,12 +586,12 @@ export async function calculateFantasyTeamPoints(
       eventBonusMap.set(eb.school_id, current + Number(eb.points))
     }
 
-    // Calculate total with double points multiplier
+    // Calculate total using league-specific scoring (not global school_weekly_points)
     let weeklyTotal = 0
     let bonusPoints = 0
-    for (const sp of schoolPoints || []) {
-      const points = Number(sp.total_points)
-      if (doublePickSchoolId && sp.school_id === doublePickSchoolId) {
+    for (const schoolId of schoolIds) {
+      const points = leagueSchoolPoints.get(schoolId) || 0
+      if (doublePickSchoolId && schoolId === doublePickSchoolId) {
         // Apply 2x multiplier - add the original points again as bonus
         weeklyTotal += points * 2
         bonusPoints = points
@@ -510,23 +601,20 @@ export async function calculateFantasyTeamPoints(
     }
 
     // Add event bonuses (these are NOT doubled by double pick)
-    for (const [schoolId, eventPoints] of eventBonusMap) {
+    for (const [, eventPoints] of eventBonusMap) {
       weeklyTotal += eventPoints
     }
 
     // Update the weekly_double_picks record with the points earned
     if (doublePickSchoolId && bonusPoints > 0) {
-      const doublePickSchoolPoints = (schoolPoints || []).find(sp => sp.school_id === doublePickSchoolId)
-      if (doublePickSchoolPoints) {
-        await client
-          .from('weekly_double_picks')
-          .update({
-            points_earned: Number(doublePickSchoolPoints.total_points),
-            bonus_points: bonusPoints
-          })
-          .eq('fantasy_team_id', team.id)
-          .eq('week_number', weekNumber)
-      }
+      await client
+        .from('weekly_double_picks')
+        .update({
+          points_earned: leagueSchoolPoints.get(doublePickSchoolId) || 0,
+          bonus_points: bonusPoints
+        })
+        .eq('fantasy_team_id', team.id)
+        .eq('week_number', weekNumber)
     }
 
     teamPoints.push({ teamId: team.id, points: weeklyTotal, bonusPoints })
@@ -660,7 +748,7 @@ export async function calculateAllPoints(
 export async function calculateSeasonPoints(
   seasonId: string,
   startWeek: number = 0,
-  endWeek: number = 21,
+  endWeek: number = 22,
   supabase?: SupabaseClient
 ): Promise<{
   weeksProcessed: number

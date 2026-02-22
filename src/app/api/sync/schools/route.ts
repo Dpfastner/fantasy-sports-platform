@@ -18,9 +18,9 @@ export async function POST(request: Request) {
   try {
     // Check for authorization (basic security)
     const authHeader = request.headers.get('authorization')
-    const expectedKey = process.env.SYNC_API_KEY || 'fantasy-sports-sync-2024'
+    const expectedKey = process.env.SYNC_API_KEY
 
-    if (authHeader !== `Bearer ${expectedKey}`) {
+    if (!expectedKey || authHeader !== `Bearer ${expectedKey}`) {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
