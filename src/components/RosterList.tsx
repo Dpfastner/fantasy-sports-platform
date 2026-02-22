@@ -327,22 +327,36 @@ export function RosterList({
 
   // Get detailed event bonuses for modal display (fallback to calculation if not in DB)
   const getEventBonusDetails = (schoolId: string, weekNumber: number, game: Game): { label: string; points: number }[] => {
+    // Map bonus_type to friendly labels
+    const labelMap: Record<string, string> = {
+      'conf_championship_win': 'Conf Champ',
+      'conf_championship_loss': 'Conf Champ',
+      'bowl_appearance': 'Bowl',
+      'cfp_first_round': 'CFP R1',
+      'cfp_quarterfinal': 'CFP QF',
+      'cfp_semifinal': 'CFP Semi',
+      'championship_win': 'Natl Champ',
+      'championship_loss': 'Runner-up',
+      'heisman': 'Heisman'
+    }
+
     // Get bonuses from database for this school/week
-    const dbBonuses = eventBonuses.filter(eb => eb.school_id === schoolId && eb.week_number === weekNumber)
+    let dbBonuses = eventBonuses.filter(eb => eb.school_id === schoolId && eb.week_number === weekNumber)
+
+    // For CFP Quarterfinal (week 19), also include CFP R1 bonus (week 18) for bye teams
+    // Bye teams don't have a week 18 game, so their R1 bonus needs to show on QF row
+    if (game.playoff_round === 'quarterfinal') {
+      const hasWeek18Game = games.some(g =>
+        g.week_number === 18 &&
+        (g.home_school_id === schoolId || g.away_school_id === schoolId)
+      )
+      if (!hasWeek18Game) {
+        const r1Bonuses = eventBonuses.filter(eb => eb.school_id === schoolId && eb.week_number === 18)
+        dbBonuses = [...r1Bonuses, ...dbBonuses]
+      }
+    }
 
     if (dbBonuses.length > 0) {
-      // Map bonus_type to friendly labels
-      const labelMap: Record<string, string> = {
-        'conf_championship_win': 'Conf Champ',
-        'conf_championship_loss': 'Conf Champ',
-        'bowl_appearance': 'Bowl',
-        'cfp_first_round': 'CFP R1',
-        'cfp_quarterfinal': 'CFP QF',
-        'cfp_semifinal': 'CFP Semi',
-        'championship_win': 'Natl Champ',
-        'championship_loss': 'Runner-up',
-        'heisman': 'Heisman'
-      }
       return dbBonuses.map(eb => ({
         label: labelMap[eb.bonus_type] || eb.bonus_type,
         points: eb.points

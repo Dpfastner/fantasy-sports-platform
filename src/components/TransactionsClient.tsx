@@ -150,9 +150,6 @@ export default function TransactionsClient({
   // Record filter removed - users can sort by record instead
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  // School schedule modal state
-  const [selectedSchoolForSchedule, setSelectedSchoolForSchedule] = useState<School | null>(null)
-  const [showScheduleModal, setShowScheduleModal] = useState(false)
   const [showHistory, setShowHistory] = useState(false)
 
   // Get unique conferences
@@ -229,66 +226,6 @@ export default function TransactionsClient({
 
     return schools
   }, [allSchools, rosterSchoolIds, schoolSelectionCounts, maxSelectionsPerSchool, searchQuery, conferenceFilter, showRankedOnly, sortBy, schoolPointsMap, rankingsMap, schoolRecordsMap])
-
-  // Get all games for a school (for schedule modal)
-  const getSchoolGames = (schoolId: string) => {
-    return games
-      .filter(g => g.home_school_id === schoolId || g.away_school_id === schoolId)
-      .sort((a, b) => a.week_number - b.week_number)
-  }
-
-  // Calculate per-game points for a school
-  const calculateGamePoints = (game: Game, schoolId: string): number => {
-    if (game.status !== 'completed' || game.home_score === null || game.away_score === null) {
-      return 0
-    }
-
-    const isHome = game.home_school_id === schoolId
-    const teamScore = isHome ? game.home_score : game.away_score
-    const opponentScore = isHome ? game.away_score : game.home_score
-    // Ranked bonus is for BEATING a ranked opponent
-    const opponentRank = isHome ? game.away_rank : game.home_rank
-    const isWin = teamScore > opponentScore
-    const isPlayoff = game.is_playoff_game || false
-
-    if (!isWin) return 0 // Only wins earn points
-
-    let points = 1 // Base win points
-
-    // Conference game bonus (not for bowl/playoff games)
-    if (game.is_conference_game && !game.is_bowl_game && !isPlayoff) points += 1
-
-    // 50+ points bonus
-    if (teamScore >= 50) points += 1
-
-    // Shutout bonus
-    if (opponentScore === 0) points += 1
-
-    // Ranked opponent bonus (for beating a ranked opponent)
-    if (opponentRank) {
-      const isBowl = game.is_bowl_game || false
-      if (isBowl || isPlayoff) {
-        // Bowls & Playoffs: only ranks 1-12 get the bonus (+2)
-        if (opponentRank <= 12) points += 2
-      } else {
-        // Regular season: beating ranks 1-10 gets higher bonus, 11-25 gets lower bonus
-        if (opponentRank <= 10) {
-          points += 2
-        } else if (opponentRank <= 25) {
-          points += 1
-        }
-      }
-    }
-
-    return points
-  }
-
-  // Handle school click to show schedule
-  const handleSchoolClick = (school: School, e: React.MouseEvent) => {
-    e.stopPropagation() // Prevent triggering parent button click
-    setSelectedSchoolForSchedule(school)
-    setShowScheduleModal(true)
-  }
 
   const handleSelectDrop = (rosterEntry: RosterSchool) => {
     setSelectedDrop(rosterEntry)
@@ -500,20 +437,9 @@ export default function TransactionsClient({
                               <div className="w-10 h-10 bg-gray-600 rounded-full" />
                             )}
                             <div>
-                              <button
-                                onClick={(e) => handleSchoolClick({
-                                  id: entry.school_id,
-                                  name: entry.schools.name,
-                                  abbreviation: entry.schools.abbreviation,
-                                  logo_url: entry.schools.logo_url,
-                                  conference: entry.schools.conference,
-                                  primary_color: '#374151'
-                                }, e)}
-                                className="text-white font-medium hover:text-blue-400 transition-colors text-left"
-                                title="Click to view schedule"
-                              >
+                              <span className="text-white font-medium">
                                 {entry.schools.name}
-                              </button>
+                              </span>
                               <div className="flex items-center gap-2 text-sm">
                                 <span className="text-gray-400">{entry.schools.conference}</span>
                                 <span className={record.wins > record.losses ? 'text-green-400' : record.wins < record.losses ? 'text-red-400' : 'text-gray-400'}>
@@ -634,13 +560,7 @@ export default function TransactionsClient({
                                   {rankingsMap[school.id] && (
                                     <span className="text-yellow-400 mr-1">#{rankingsMap[school.id]}</span>
                                   )}
-                                  <button
-                                    onClick={(e) => handleSchoolClick(school, e)}
-                                    className="hover:text-blue-400 transition-colors text-left"
-                                    title="Click to view schedule"
-                                  >
-                                    {school.name}
-                                  </button>
+                                  <span>{school.name}</span>
                                 </div>
                                 <div className="flex items-center gap-2 text-xs">
                                   <span className="text-gray-500">{school.conference}</span>
@@ -797,23 +717,9 @@ export default function TransactionsClient({
                             <div className="w-6 h-6 bg-gray-600 rounded-full" />
                           )}
                           <div>
-                            <button
-                              onClick={() => {
-                                setSelectedSchoolForSchedule({
-                                  id: entry.school_id,
-                                  name: entry.schools.name,
-                                  abbreviation: entry.schools.abbreviation,
-                                  logo_url: entry.schools.logo_url,
-                                  conference: entry.schools.conference,
-                                  primary_color: '#374151'
-                                })
-                                setShowScheduleModal(true)
-                              }}
-                              className="text-white text-sm hover:text-blue-400 transition-colors"
-                              title="Click to view schedule"
-                            >
+                            <span className="text-white text-sm">
                               {entry.schools.abbreviation || entry.schools.name}
-                            </button>
+                            </span>
                             <span className={`ml-1 text-xs ${record.wins > record.losses ? 'text-green-400' : record.wins < record.losses ? 'text-red-400' : 'text-gray-500'}`}>
                               {record.wins}-{record.losses}
                             </span>
@@ -923,192 +829,6 @@ export default function TransactionsClient({
         </div>
       </main>
 
-      {/* School Schedule Modal */}
-      {showScheduleModal && selectedSchoolForSchedule && (
-        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
-          <div className="bg-gray-800 rounded-lg max-w-2xl w-full max-h-[80vh] overflow-hidden shadow-xl">
-            {/* Modal Header */}
-            <div className="flex items-center justify-between p-4 border-b border-gray-700">
-              <div className="flex items-center gap-3">
-                {selectedSchoolForSchedule.logo_url ? (
-                  <img src={selectedSchoolForSchedule.logo_url} alt={selectedSchoolForSchedule.name} className="w-10 h-10 object-contain" />
-                ) : (
-                  <div
-                    className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold"
-                    style={{ backgroundColor: selectedSchoolForSchedule.primary_color }}
-                  >
-                    {selectedSchoolForSchedule.abbreviation || selectedSchoolForSchedule.name.substring(0, 2)}
-                  </div>
-                )}
-                <div>
-                  <h2 className="text-white font-bold text-lg">{selectedSchoolForSchedule.name}</h2>
-                  <p className="text-gray-400 text-sm">
-                    {selectedSchoolForSchedule.conference}
-                    {schoolRecordsMap[selectedSchoolForSchedule.id] && (
-                      <span className={`ml-2 ${
-                        schoolRecordsMap[selectedSchoolForSchedule.id].wins > schoolRecordsMap[selectedSchoolForSchedule.id].losses
-                          ? 'text-green-400'
-                          : schoolRecordsMap[selectedSchoolForSchedule.id].wins < schoolRecordsMap[selectedSchoolForSchedule.id].losses
-                            ? 'text-red-400'
-                            : 'text-gray-400'
-                      }`}>
-                        ({schoolRecordsMap[selectedSchoolForSchedule.id].wins}-{schoolRecordsMap[selectedSchoolForSchedule.id].losses})
-                      </span>
-                    )}
-                    <span className="ml-2 text-blue-400">{schoolPointsMap[selectedSchoolForSchedule.id] || 0} pts</span>
-                  </p>
-                </div>
-              </div>
-              <button
-                onClick={() => setShowScheduleModal(false)}
-                className="text-gray-400 hover:text-white p-2 rounded-lg hover:bg-gray-700 transition-colors"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-
-            {/* Schedule List */}
-            <div className="overflow-y-auto max-h-[60vh] p-4">
-              <h3 className="text-gray-400 text-xs uppercase tracking-wide mb-3">Season Schedule</h3>
-              <div className="space-y-2">
-                {getSchoolGames(selectedSchoolForSchedule.id).map((game) => {
-                  const isHome = game.home_school_id === selectedSchoolForSchedule.id
-                  const opponentId = isHome ? game.away_school_id : game.home_school_id
-                  const opponent = opponentId ? allSchools.find(s => s.id === opponentId) : null
-                  const opponentName = opponent?.name || 'TBD'
-                  const opponentLogo = opponent?.logo_url
-                  const opponentRank = isHome ? game.away_rank : game.home_rank
-                  const myRank = isHome ? game.home_rank : game.away_rank
-                  const myScore = isHome ? game.home_score : game.away_score
-                  const oppScore = isHome ? game.away_score : game.home_score
-                  const isCurrentWeek = game.week_number === currentWeek
-                  const isPast = game.status === 'completed'
-                  const isWin = isPast && myScore !== null && oppScore !== null && myScore > oppScore
-                  const isLoss = isPast && myScore !== null && oppScore !== null && myScore < oppScore
-
-                  // Get points from database (authoritative source)
-                  const dbPoints = schoolGamePoints.find(sp => sp.game_id === game.id && sp.school_id === selectedSchoolForSchedule.id)
-                  const gamePoints = dbPoints?.total_points || 0
-
-                  // Get event bonuses from database (authoritative source)
-                  // Database bonus_type values mapped to display labels
-                  const bonusTypeLabels: Record<string, string> = {
-                    'bowl_appearance': 'Bowl',
-                    'cfp_first_round': 'CFP R1',
-                    'cfp_quarterfinal': 'CFP QF',
-                    'cfp_semifinal': 'CFP Semi',
-                    'championship_win': 'Natl Champ',
-                    'championship_loss': 'Runner-up',
-                    'conf_championship_win': 'Conf Champ Win',
-                    'conf_championship_loss': 'Conf Champ Loss',
-                    'heisman': 'Heisman',
-                  }
-
-                  // Look up event bonuses from database for this school and week
-                  const weekEventBonuses = eventBonuses
-                    .filter(eb => eb.school_id === selectedSchoolForSchedule.id && eb.week_number === game.week_number)
-                    .map(eb => ({
-                      label: bonusTypeLabels[eb.bonus_type] || eb.bonus_type,
-                      points: eb.points
-                    }))
-
-                  // Week label - use playoff_round for accurate CFP labeling
-                  let weekLabel = game.week_number <= 14 ? `Week ${game.week_number}` :
-                    game.week_number === 15 ? 'Conf Champ' :
-                    game.week_number === 16 ? 'Week 16' :
-                    game.week_number === 17 ? 'Bowl' : `Week ${game.week_number}`
-
-                  // Override with accurate playoff round if available
-                  // Database values: 'first_round', 'quarterfinal', 'semifinal', 'championship'
-                  if (game.is_playoff_game && game.playoff_round) {
-                    const roundLabels: Record<string, string> = {
-                      'first_round': 'CFP R1',
-                      'quarterfinal': 'CFP QF',
-                      'semifinal': 'CFP Semi',
-                      'championship': 'Natl Champ'
-                    }
-                    weekLabel = roundLabels[game.playoff_round] || 'CFP'
-                  }
-
-                  return (
-                    <div
-                      key={game.id}
-                      className={`flex items-center gap-3 p-3 rounded-lg ${
-                        isCurrentWeek ? 'bg-blue-600/20 border border-blue-500/50' :
-                        isPast ? 'bg-gray-700/30' : 'bg-gray-700/50'
-                      }`}
-                    >
-                      {/* Week */}
-                      <div className="w-20 flex-shrink-0">
-                        <span className={`text-xs font-medium ${isCurrentWeek ? 'text-blue-400' : 'text-gray-400'}`}>
-                          {weekLabel}
-                        </span>
-                      </div>
-
-                      {/* Opponent */}
-                      <div className="flex items-center gap-2 flex-1 min-w-0">
-                        <span className="text-gray-400 text-xs w-6">{isHome ? 'vs' : '@'}</span>
-                        {opponentLogo ? (
-                          <img src={opponentLogo} alt="" className="w-6 h-6 object-contain flex-shrink-0" />
-                        ) : (
-                          <div className="w-6 h-6 bg-gray-600 rounded-full flex-shrink-0" />
-                        )}
-                        <span className="text-white text-sm truncate">
-                          {opponentRank && opponentRank <= 25 && <span className="text-gray-500">#{opponentRank} </span>}
-                          {opponentName}
-                        </span>
-                      </div>
-
-                      {/* Result/Status + Points */}
-                      <div className="w-40 text-right flex-shrink-0">
-                        {game.status === 'completed' ? (
-                          <div className="flex flex-col items-end">
-                            <span className={`text-sm font-semibold ${
-                              isWin ? 'text-green-400' : isLoss ? 'text-red-400' : 'text-gray-400'
-                            }`}>
-                              {isWin ? 'W' : isLoss ? 'L' : 'T'} {myScore}-{oppScore}
-                            </span>
-                            <div className="flex items-center gap-1 flex-wrap justify-end">
-                              {gamePoints > 0 && <span className="text-xs text-blue-400">+{gamePoints} pts</span>}
-                              {weekEventBonuses.map((bonus, idx) => (
-                                <span key={idx} className="text-xs text-purple-400">
-                                  +{bonus.points} {bonus.label}
-                                </span>
-                              ))}
-                            </div>
-                          </div>
-                        ) : game.status === 'live' ? (
-                          <span className="text-yellow-400 text-sm animate-pulse">LIVE</span>
-                        ) : (
-                          <span className="text-gray-500 text-xs">
-                            {new Date(`${game.game_date}T${game.game_time || '12:00:00'}`).toLocaleDateString('en-US', { month: 'numeric', day: 'numeric' })}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  )
-                })}
-
-                {getSchoolGames(selectedSchoolForSchedule.id).length === 0 && (
-                  <p className="text-gray-500 text-sm text-center py-4">No games scheduled</p>
-                )}
-              </div>
-            </div>
-
-            {/* Modal Footer */}
-            <div className="p-4 border-t border-gray-700 bg-gray-800/50">
-              <button
-                onClick={() => setShowScheduleModal(false)}
-                className="w-full py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors text-sm"
-              >
-                Close
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   )
 }

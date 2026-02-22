@@ -230,13 +230,13 @@ export default async function TransactionsPage({ params }: PageProps) {
   const games = (fullGamesData || []) as Game[]
 
   // Get school points for this season (only up to simulated week)
-  // Note: Must specify limit > 1000 to override Supabase default limit
+  // Note: Use .range() to bypass Supabase default 1000 row limit
   const { data: schoolPointsData } = await supabase
     .from('school_weekly_points')
     .select('school_id, total_points, game_id')
     .eq('season_id', league.season_id)
     .lte('week_number', currentWeek)
-    .limit(5000)
+    .range(0, 2999)
 
   // Aggregate points per school (for display in add/drop list)
   const schoolPointsMap = new Map<string, number>()

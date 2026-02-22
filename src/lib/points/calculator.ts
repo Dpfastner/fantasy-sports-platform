@@ -239,11 +239,29 @@ export async function calculateWeeklySchoolPoints(
   }
 
   // Get AP rankings for this week to determine ranked bonuses
-  const { data: rankings } = await client
+  // For playoff weeks (18-21), fall back to most recent available rankings
+  let { data: rankings } = await client
     .from('ap_rankings_history')
     .select('school_id, rank')
     .eq('season_id', seasonId)
     .eq('week_number', weekNumber)
+
+  // If no rankings for this week (common for playoff weeks), get most recent rankings
+  if (!rankings || rankings.length === 0) {
+    const { data: latestRankings } = await client
+      .from('ap_rankings_history')
+      .select('school_id, rank, week_number')
+      .eq('season_id', seasonId)
+      .lt('week_number', weekNumber)
+      .order('week_number', { ascending: false })
+      .limit(100)
+
+    // Get unique schools from the most recent week that has rankings
+    if (latestRankings && latestRankings.length > 0) {
+      const maxWeek = Math.max(...latestRankings.map(r => r.week_number))
+      rankings = latestRankings.filter(r => r.week_number === maxWeek)
+    }
+  }
 
   const rankingsMap = new Map<string, number>()
   for (const ranking of rankings || []) {
@@ -456,6 +474,27 @@ export async function calculateFantasyTeamPoints(
       continue
     }
 
+    // Get event bonuses for these schools (CFP, Bowl, Championship, Heisman, etc.)
+    const { data: eventBonuses, error: eventError } = await client
+      .from('league_school_event_bonuses')
+      .select('school_id, points')
+      .eq('league_id', leagueId)
+      .eq('season_id', league.season_id)
+      .eq('week_number', weekNumber)
+      .in('school_id', schoolIds)
+
+    if (eventError) {
+      errors.push(`Failed to fetch event bonuses for team ${team.id}: ${eventError.message}`)
+      // Continue with just game points, don't skip the team entirely
+    }
+
+    // Sum event bonuses per school
+    const eventBonusMap = new Map<string, number>()
+    for (const eb of eventBonuses || []) {
+      const current = eventBonusMap.get(eb.school_id) || 0
+      eventBonusMap.set(eb.school_id, current + Number(eb.points))
+    }
+
     // Calculate total with double points multiplier
     let weeklyTotal = 0
     let bonusPoints = 0
@@ -468,6 +507,11 @@ export async function calculateFantasyTeamPoints(
       } else {
         weeklyTotal += points
       }
+    }
+
+    // Add event bonuses (these are NOT doubled by double pick)
+    for (const [schoolId, eventPoints] of eventBonusMap) {
+      weeklyTotal += eventPoints
     }
 
     // Update the weekly_double_picks record with the points earned
