@@ -424,7 +424,7 @@ Phase 18 (Brand & UX)       ░░░░░░░░░░░░  P7 - VISUAL PO
 
 *Rebrand to Rivyls, set up domain, simplify to sandbox-only deployment*
 
-**Status: NOT STARTED**
+**Status: COMPLETE**
 
 ### Background
 
@@ -465,7 +465,7 @@ The platform is being rebranded from "Fantasy Sports Platform" to **Rivyls** (ri
 
 *Fix scoring errors, data correctness issues, and live scoring architecture*
 
-**Status: NOT STARTED**
+**Status: COMPLETE**
 
 **Addresses**: [C1](#c1-league-settings-ignored-in-points-calculator), [C2](#c2-client-side-scoring-mismatch-rosterlist), [C3](#c3-timezone-bug-in-week-calculation), [A1](#a1-live-scoring-architecture-resolved), [A2](#a2-cron-week-cap-bug), [A3](#a3-season-timeline-week-numbering)
 

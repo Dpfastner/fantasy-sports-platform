@@ -7,7 +7,7 @@ export default function Home() {
         {/* Hero Section */}
         <div className="text-center mb-16">
           <h1 className="text-5xl font-bold mb-4">
-            Fantasy Sports Platform
+            Rivyls
           </h1>
           <p className="text-xl text-gray-300 mb-8 max-w-2xl mx-auto">
             Draft your favorite college football teams, compete with friends,
@@ -120,7 +120,7 @@ export default function Home() {
       {/* Footer */}
       <footer className="border-t border-gray-700 mt-16 py-8">
         <div className="container mx-auto px-4 text-center text-gray-400">
-          <p>&copy; 2025 Fantasy Sports Platform. All rights reserved.</p>
+          <p>&copy; 2025 Rivyls. All rights reserved.</p>
         </div>
       </footer>
     </div>

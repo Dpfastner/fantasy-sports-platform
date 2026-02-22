@@ -17,7 +17,7 @@ export function Header({ userName, userEmail, showUserMenu = true, children }: H
     <header className="bg-gray-800/50 border-b border-gray-700">
       <div className="container mx-auto px-4 py-4 flex justify-between items-center">
         <Link href="/dashboard" className="text-2xl font-bold text-white">
-          Fantasy Sports Platform
+          Rivyls
         </Link>
         <div className="flex items-center gap-4">
           {children}

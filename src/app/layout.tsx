@@ -15,8 +15,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Fantasy Sports Platform",
-  description: "Multi-sport fantasy league platform for college football, hockey, and more",
+  title: "Rivyls",
+  description: "Fantasy sports platform for college football, hockey, and more",
 };
 
 export default function RootLayout({

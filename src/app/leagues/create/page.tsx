@@ -170,7 +170,7 @@ export default function CreateLeaguePage() {
       <header className="bg-gray-800/50 border-b border-gray-700">
         <div className="container mx-auto px-4 py-4">
           <Link href="/dashboard" className="text-2xl font-bold text-white">
-            Fantasy Sports Platform
+            Rivyls
           </Link>
         </div>
       </header>

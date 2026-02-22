@@ -45,9 +45,10 @@ export function isDevelopment(): boolean {
 
 /**
  * Check if crons should be enabled
- * Only enabled in production to prevent sandbox from syncing real data
+ * Enabled in production, or when ENABLE_CRONS=true (for sandbox at rivyls.com)
  */
 export function areCronsEnabled(): boolean {
+  if (process.env.ENABLE_CRONS === 'true') return true
   return isProduction()
 }
 
