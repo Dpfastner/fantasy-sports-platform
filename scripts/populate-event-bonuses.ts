@@ -119,6 +119,24 @@ async function populateEventBonuses() {
   console.log(`CFP Semifinal games: ${cfpSemifinalGames.length}`)
   console.log(`Championship game: ${championshipGame ? 'Yes' : 'No'}`)
 
+  // Identify bye teams (top 4 seeds who are in quarterfinals but didn't play first round)
+  // These teams automatically get CFP First Round points
+  const firstRoundSchools = new Set<string>()
+  for (const game of cfpFirstRoundGames) {
+    if (game.home_school_id) firstRoundSchools.add(game.home_school_id)
+    if (game.away_school_id) firstRoundSchools.add(game.away_school_id)
+  }
+
+  const quarterfinalSchools = new Set<string>()
+  for (const game of cfpQuarterfinalGames) {
+    if (game.home_school_id) quarterfinalSchools.add(game.home_school_id)
+    if (game.away_school_id) quarterfinalSchools.add(game.away_school_id)
+  }
+
+  // Bye teams = in quarterfinals but not in first round
+  const byeTeams = [...quarterfinalSchools].filter(s => !firstRoundSchools.has(s))
+  console.log(`Bye teams (top 4 seeds): ${byeTeams.length}`)
+
   // Get Heisman winner
   const { data: heismanWinners } = await supabase
     .from('heisman_winners')
@@ -213,7 +231,7 @@ async function populateEventBonuses() {
       }
     }
 
-    // CFP First Round (Week 18)
+    // CFP First Round (Week 18) - Teams that played first round games
     for (const game of cfpFirstRoundGames) {
       if (settings.points_playoff_first_round) {
         if (game.home_school_id) {
@@ -238,6 +256,21 @@ async function populateEventBonuses() {
             game_id: game.id,
           })
         }
+      }
+    }
+
+    // CFP First Round (Week 18) - Bye teams (top 4 seeds get R1 points automatically)
+    for (const schoolId of byeTeams) {
+      if (settings.points_playoff_first_round) {
+        bonusRecords.push({
+          league_id: league.id,
+          school_id: schoolId,
+          season_id: season.id,
+          week_number: 18,
+          bonus_type: 'cfp_first_round',
+          points: settings.points_playoff_first_round,
+          game_id: null, // No game for bye teams
+        })
       }
     }
 

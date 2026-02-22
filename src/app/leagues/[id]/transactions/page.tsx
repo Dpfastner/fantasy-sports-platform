@@ -252,6 +252,21 @@ export default async function TransactionsPage({ params }: PageProps) {
     total_points: Number(sp.total_points)
   })) as SchoolGamePoints[]
 
+  // Get event bonuses for this league (postseason bonuses like CFP, bowl, championship, etc.)
+  const { data: eventBonusesData } = await supabase
+    .from('league_school_event_bonuses')
+    .select('school_id, week_number, bonus_type, points')
+    .eq('league_id', leagueId)
+    .eq('season_id', league.season_id)
+    .lte('week_number', currentWeek)
+
+  const eventBonuses = (eventBonusesData || []) as {
+    school_id: string
+    week_number: number
+    bonus_type: string
+    points: number
+  }[]
+
   // Get current AP rankings
   // Get the most recent rankings - try current week first, then find latest available
   let { data: rankings } = await supabase
@@ -394,6 +409,7 @@ export default async function TransactionsPage({ params }: PageProps) {
           confChampLoss: settings?.points_conference_championship_loss || 0,
           heismanWinner: settings?.points_heisman_winner || 0,
         }}
+        eventBonuses={eventBonuses}
       />
       <SandboxWeekSelector currentWeek={currentWeek} environment={environment} />
     </>

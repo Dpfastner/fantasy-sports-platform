@@ -75,6 +75,13 @@ interface SpecialEventSettings {
   heismanWinner: number
 }
 
+interface EventBonus {
+  school_id: string
+  week_number: number
+  bonus_type: string
+  points: number
+}
+
 interface TransactionsClientProps {
   leagueId: string
   leagueName: string
@@ -100,6 +107,7 @@ interface TransactionsClientProps {
   userName?: string | null
   userEmail?: string | null
   specialEventSettings?: SpecialEventSettings
+  eventBonuses?: EventBonus[]
 }
 
 type TransactionStep = 'select-drop' | 'select-add' | 'confirm'
@@ -129,6 +137,7 @@ export default function TransactionsClient({
   userName,
   userEmail,
   specialEventSettings,
+  eventBonuses = [],
 }: TransactionsClientProps) {
   const { addToast } = useToast()
   const [step, setStep] = useState<TransactionStep>('select-drop')
@@ -983,61 +992,27 @@ export default function TransactionsClient({
                   const dbPoints = schoolGamePoints.find(sp => sp.game_id === game.id && sp.school_id === selectedSchoolForSchedule.id)
                   const gamePoints = dbPoints?.total_points || 0
 
-                  // Calculate special event bonuses (team-level bonuses for having this school)
-                  // Use array to support multiple bonuses (e.g., CFP R1 + QF for bye teams)
-                  let eventBonuses: { label: string; points: number }[] = []
-                  if (specialEventSettings && game.status === 'completed') {
-                    // Week 15: Conference Championship
-                    if (game.week_number === 15) {
-                      if (isWin && specialEventSettings.confChampWin > 0) {
-                        eventBonuses.push({ label: 'Conf Champ Win', points: specialEventSettings.confChampWin })
-                      } else if (isLoss && specialEventSettings.confChampLoss > 0) {
-                        eventBonuses.push({ label: 'Conf Champ Loss', points: specialEventSettings.confChampLoss })
-                      }
-                    }
-                    // Week 17: Bowl Appearance
-                    else if (game.week_number === 17 && game.is_bowl_game) {
-                      if (specialEventSettings.bowlAppearance > 0) {
-                        eventBonuses.push({ label: 'Bowl', points: specialEventSettings.bowlAppearance })
-                      }
-                    }
-                    // CFP games: Use playoff_round field for accurate labeling
-                    // Database values: 'first_round', 'quarterfinal', 'semifinal', 'championship'
-                    else if (game.is_playoff_game && game.playoff_round) {
-                      // First Round: teams that play in first round (seeds 5-12)
-                      if (game.playoff_round === 'first_round') {
-                        if (specialEventSettings.playoffFirstRound > 0) {
-                          eventBonuses.push({ label: 'CFP R1', points: specialEventSettings.playoffFirstRound })
-                        }
-                      }
-                      // Quarterfinal: bye teams (seeds 1-4) get CFP R1 bonus here (their first CFP game)
-                      // Non-bye teams (seeds 5-12) already got CFP R1 in first_round, so only get CFP QF
-                      else if (game.playoff_round === 'quarterfinal') {
-                        // Only give CFP R1 bonus to bye teams (rank 1-4)
-                        const isByeTeam = myRank && myRank <= 4
-                        if (isByeTeam && specialEventSettings.playoffFirstRound > 0) {
-                          eventBonuses.push({ label: 'CFP R1', points: specialEventSettings.playoffFirstRound })
-                        }
-                        if (specialEventSettings.playoffQuarterfinal > 0) {
-                          eventBonuses.push({ label: 'CFP QF', points: specialEventSettings.playoffQuarterfinal })
-                        }
-                      }
-                      // Semifinal
-                      else if (game.playoff_round === 'semifinal') {
-                        if (specialEventSettings.playoffSemifinal > 0) {
-                          eventBonuses.push({ label: 'CFP Semi', points: specialEventSettings.playoffSemifinal })
-                        }
-                      }
-                      // Championship
-                      else if (game.playoff_round === 'championship') {
-                        if (isWin && specialEventSettings.championshipWin > 0) {
-                          eventBonuses.push({ label: 'Natl Champ', points: specialEventSettings.championshipWin })
-                        } else if (isLoss && specialEventSettings.championshipLoss > 0) {
-                          eventBonuses.push({ label: 'Runner-up', points: specialEventSettings.championshipLoss })
-                        }
-                      }
-                    }
+                  // Get event bonuses from database (authoritative source)
+                  // Database bonus_type values mapped to display labels
+                  const bonusTypeLabels: Record<string, string> = {
+                    'bowl_appearance': 'Bowl',
+                    'cfp_first_round': 'CFP R1',
+                    'cfp_quarterfinal': 'CFP QF',
+                    'cfp_semifinal': 'CFP Semi',
+                    'championship_win': 'Natl Champ',
+                    'championship_loss': 'Runner-up',
+                    'conf_championship_win': 'Conf Champ Win',
+                    'conf_championship_loss': 'Conf Champ Loss',
+                    'heisman': 'Heisman',
                   }
+
+                  // Look up event bonuses from database for this school and week
+                  const weekEventBonuses = eventBonuses
+                    .filter(eb => eb.school_id === selectedSchoolForSchedule.id && eb.week_number === game.week_number)
+                    .map(eb => ({
+                      label: bonusTypeLabels[eb.bonus_type] || eb.bonus_type,
+                      points: eb.points
+                    }))
 
                   // Week label - use playoff_round for accurate CFP labeling
                   let weekLabel = game.week_number <= 14 ? `Week ${game.week_number}` :
@@ -1097,7 +1072,7 @@ export default function TransactionsClient({
                             </span>
                             <div className="flex items-center gap-1 flex-wrap justify-end">
                               {gamePoints > 0 && <span className="text-xs text-blue-400">+{gamePoints} pts</span>}
-                              {eventBonuses.map((bonus, idx) => (
+                              {weekEventBonuses.map((bonus, idx) => (
                                 <span key={idx} className="text-xs text-purple-400">
                                   +{bonus.points} {bonus.label}
                                 </span>

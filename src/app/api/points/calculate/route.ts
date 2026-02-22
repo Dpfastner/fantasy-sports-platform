@@ -64,12 +64,12 @@ export async function POST(request: Request) {
     const weeksDiff = Math.floor(
       (currentDate.getTime() - seasonStart.getTime()) / (7 * 24 * 60 * 60 * 1000)
     )
-    const defaultWeek = Math.max(0, Math.min(weeksDiff + 1, 15))
+    const defaultWeek = Math.max(0, Math.min(weeksDiff + 1, 21))
 
     if (mode === 'season') {
       // Calculate entire season
       const startWeek = body.startWeek ?? 0
-      const endWeek = body.endWeek ?? 15
+      const endWeek = body.endWeek ?? 21
 
       const result = await calculateSeasonPoints(season.id, startWeek, endWeek, supabase)
 
@@ -138,7 +138,7 @@ export async function GET() {
       season: {
         description: 'Calculate points for entire season (backfill)',
         params: '{ year?, startWeek?, endWeek?, mode: "season" }',
-        example: { year: 2025, startWeek: 0, endWeek: 15, mode: 'season' },
+        example: { year: 2025, startWeek: 0, endWeek: 21, mode: 'season' },
       },
       league: {
         description: 'Calculate points for a specific league',

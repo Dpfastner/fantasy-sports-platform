@@ -43,6 +43,7 @@ interface Game {
   is_conference_game: boolean
   is_bowl_game: boolean
   is_playoff_game: boolean
+  playoff_round: string | null
 }
 
 interface SchoolPointsBreakdown {
@@ -82,7 +83,13 @@ const DEFAULT_SCORING: LeagueSettings = {
  * @param schoolId - The school we're calculating points for
  * @param opponentRank - The AP rank of the OPPONENT (not the school itself)
  * @param scoring - League scoring settings
- * @param isBowlGame - Whether this is a bowl game (no conference bonus)
+ * @param isBowlGame - Whether this is a bowl game (no conference bonus, no ranked bonuses)
+ *
+ * Scoring rules by game type:
+ * - Championship: NO regular scoring (all 0) - uses event bonus only
+ * - Bowl games: Win + 50+ + shutout, NO conference, NO ranked bonuses
+ * - Playoffs (R1, QF, SF): Win + 50+ + shutout, NO conference, ranked 1-12 only
+ * - Regular season: Win + conf + 50+ + shutout + ranked bonuses (1-10: +2, 11-25: +1)
  */
 export function calculateSchoolGamePoints(
   game: Game,
@@ -95,6 +102,25 @@ export function calculateSchoolGamePoints(
   const teamScore = isHome ? game.home_score : game.away_score
   const opponentScore = isHome ? game.away_score : game.home_score
   const isWin = teamScore > opponentScore
+
+  // Championship game: NO regular scoring - only championship_win/loss bonus from event system
+  const isChampionship = game.playoff_round === 'championship'
+  if (isChampionship) {
+    return {
+      schoolId,
+      gameId: game.id,
+      seasonId: game.season_id,
+      weekNumber: game.week_number,
+      isWin,
+      basePoints: 0,
+      conferenceBonus: 0,
+      over50Bonus: 0,
+      shutoutBonus: 0,
+      ranked25Bonus: 0,
+      ranked10Bonus: 0,
+      totalPoints: 0,
+    }
+  }
 
   // Calculate bonuses based on win/loss
   let basePoints = 0
@@ -112,12 +138,17 @@ export function calculateSchoolGamePoints(
     }
     if (teamScore >= 50) over50Bonus = scoring.points_over_50
     if (opponentScore === 0) shutoutBonus = scoring.points_shutout
-    // Ranked bonuses are for BEATING a ranked OPPONENT (mutually exclusive)
-    // Bowls/Playoffs: beating ranks 1-12 gets +2 (12-team CFP)
-    // Regular season: beating ranks 1-10 gets +2, 11-25 gets +1
+
+    // Ranked bonuses based on game type:
+    // - Bowl games: NO ranked bonuses at all
+    // - Playoffs (non-championship): Only ranks 1-12 get +2, no 11-25 bonus
+    // - Regular season: 1-10 gets +2, 11-25 gets +1
     if (opponentRank) {
-      if (isBowlGame || game.is_playoff_game) {
-        // Bowls & Playoffs: only ranks 1-12 get the bonus
+      if (isBowlGame) {
+        // Bowl games: NO ranked bonuses
+        // (intentionally empty - no ranked bonus for bowls)
+      } else if (game.is_playoff_game) {
+        // Playoffs (R1, QF, SF): only ranks 1-12 get the bonus, no 11-25
         if (opponentRank <= 12) ranked10Bonus = scoring.points_ranked_10
       } else {
         // Regular season: 1-10 gets higher bonus, 11-25 gets lower bonus
@@ -136,10 +167,17 @@ export function calculateSchoolGamePoints(
     }
     if (teamScore >= 50) over50Bonus = scoring.points_over_50_loss
     if (opponentScore === 0) shutoutBonus = scoring.points_shutout_loss
-    // Ranked bonuses are for LOSING TO a ranked OPPONENT (mutually exclusive)
+
+    // Ranked bonuses for losses based on game type:
+    // - Bowl games: NO ranked bonuses at all
+    // - Playoffs (non-championship): Only ranks 1-12 get the bonus, no 11-25
+    // - Regular season: 1-10 gets higher bonus, 11-25 gets lower bonus
     if (opponentRank) {
-      if (isBowlGame || game.is_playoff_game) {
-        // Bowls & Playoffs: only ranks 1-12 get the bonus
+      if (isBowlGame) {
+        // Bowl games: NO ranked bonuses
+        // (intentionally empty - no ranked bonus for bowls)
+      } else if (game.is_playoff_game) {
+        // Playoffs (R1, QF, SF): only ranks 1-12 get the bonus
         if (opponentRank <= 12) ranked10Bonus = scoring.points_ranked_10_loss
       } else {
         // Regular season: 1-10 gets higher bonus, 11-25 gets lower bonus
@@ -241,6 +279,7 @@ export async function calculateWeeklySchoolPoints(
       is_conference_game: isConferenceGame,
       is_bowl_game: game.is_bowl_game || false,
       is_playoff_game: game.is_playoff_game || false,
+      playoff_round: game.playoff_round || null,
     }
 
     // Determine if this is a bowl game (for excluding conference bonus)
@@ -577,7 +616,7 @@ export async function calculateAllPoints(
 export async function calculateSeasonPoints(
   seasonId: string,
   startWeek: number = 0,
-  endWeek: number = 15,
+  endWeek: number = 21,
   supabase?: SupabaseClient
 ): Promise<{
   weeksProcessed: number
