@@ -347,15 +347,20 @@ async function populateEventBonuses() {
   }
 
   // Delete existing records for this season (to handle re-runs)
-  console.log('\nClearing existing bonus records...')
-  const { error: deleteError } = await supabase
-    .from('league_school_event_bonuses')
-    .delete()
-    .eq('season_id', season.id)
+  // Skip delete if table is new/empty to avoid schema cache issues
+  console.log('\nClearing existing bonus records (if any)...')
+  try {
+    const { error: deleteError } = await supabase
+      .from('league_school_event_bonuses')
+      .delete()
+      .eq('season_id', season.id)
 
-  if (deleteError) {
-    console.error('Error deleting existing records:', deleteError)
-    return
+    if (deleteError && !deleteError.message.includes('schema cache')) {
+      console.error('Error deleting existing records:', deleteError)
+      return
+    }
+  } catch (e) {
+    console.log('  (Table may be new, skipping delete)')
   }
 
   // Insert all bonus records
