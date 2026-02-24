@@ -1,5 +1,5 @@
 import { redirect, notFound } from 'next/navigation'
-import { createClient, createAdminClient } from '@/lib/supabase/server'
+import { createClient } from '@/lib/supabase/server'
 import LeaderboardClient from '@/components/LeaderboardClient'
 import { SandboxWeekSelector } from '@/components/SandboxWeekSelector'
 import { getCurrentWeek } from '@/lib/week'
@@ -90,9 +90,8 @@ export default async function LeaderboardPage({ params }: PageProps) {
     redirect('/dashboard')
   }
 
-  // Get all teams with profiles (use admin client to bypass RLS)
-  const admin = createAdminClient()
-  const { data: teamsData } = await admin
+  // Get all teams with profiles
+  const { data: teamsData } = await supabase
     .from('fantasy_teams')
     .select(`
       id,

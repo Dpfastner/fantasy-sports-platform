@@ -1,6 +1,6 @@
 import { redirect, notFound } from 'next/navigation'
 import Link from 'next/link'
-import { createClient, createAdminClient } from '@/lib/supabase/server'
+import { createClient } from '@/lib/supabase/server'
 import { PlayoffBracket } from '@/components/PlayoffBracket'
 
 // Force dynamic rendering to ensure fresh data from database
@@ -43,9 +43,8 @@ export default async function BracketPage({ params }: PageProps) {
     redirect('/dashboard')
   }
 
-  // Get user's team and roster (use admin client to bypass RLS)
-  const admin = createAdminClient()
-  const { data: team } = await admin
+  // Get user's team and roster
+  const { data: team } = await supabase
     .from('fantasy_teams')
     .select('id')
     .eq('league_id', leagueId)

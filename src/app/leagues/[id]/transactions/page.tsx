@@ -1,5 +1,5 @@
 import { redirect, notFound } from 'next/navigation'
-import { createClient, createAdminClient } from '@/lib/supabase/server'
+import { createClient } from '@/lib/supabase/server'
 import TransactionsClient from '@/components/TransactionsClient'
 import { SandboxWeekSelector } from '@/components/SandboxWeekSelector'
 import { getCurrentWeek, getSimulatedDate } from '@/lib/week'
@@ -133,9 +133,8 @@ export default async function TransactionsPage({ params }: PageProps) {
     redirect('/dashboard')
   }
 
-  // Get user's team (use admin client to bypass RLS)
-  const admin = createAdminClient()
-  const { data: team } = await admin
+  // Get user's team
+  const { data: team } = await supabase
     .from('fantasy_teams')
     .select('id, name, add_drops_used')
     .eq('league_id', leagueId)
@@ -312,8 +311,8 @@ export default async function TransactionsPage({ params }: PageProps) {
     schoolSelectionCounts.set(ts.school_id, count + 1)
   }
 
-  // Get all teams in the league for league-wide transaction history (use admin client to bypass RLS)
-  const { data: leagueTeams } = await admin
+  // Get all teams in the league for league-wide transaction history
+  const { data: leagueTeams } = await supabase
     .from('fantasy_teams')
     .select('id, name')
     .eq('league_id', leagueId)
