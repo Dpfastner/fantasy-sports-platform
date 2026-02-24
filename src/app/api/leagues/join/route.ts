@@ -33,25 +33,26 @@ export async function POST(request: Request) {
     // Use admin client to bypass RLS for invite code lookup
     const admin = getSupabaseAdmin()
 
-    // Look up league by invite code
+    // Look up league by invite code (no joins — avoids PostgREST .single() issues)
     const { data: league, error: lookupError } = await admin
       .from('leagues')
-      .select(`
-        id,
-        name,
-        max_teams,
-        sports (name),
-        seasons (name),
-        league_members (id, user_id)
-      `)
+      .select('id, name, max_teams, sport_id, season_id')
       .eq('invite_code', inviteCode.trim().toLowerCase())
       .single()
 
     if (lookupError || !league) {
+      console.error('League lookup failed:', lookupError?.message, 'code:', inviteCode.trim().toLowerCase())
       return NextResponse.json({ error: 'League not found. Please check your invite code.' }, { status: 404 })
     }
 
-    const members = (league.league_members as { id: string; user_id: string }[]) || []
+    // Fetch related data separately
+    const [sportResult, seasonResult, membersResult] = await Promise.all([
+      admin.from('sports').select('name').eq('id', league.sport_id).single(),
+      admin.from('seasons').select('name').eq('id', league.season_id).single(),
+      admin.from('league_members').select('id, user_id').eq('league_id', league.id),
+    ])
+
+    const members = membersResult.data || []
 
     // Check if user is already a member
     if (members.some(m => m.user_id === user.id)) {
@@ -65,8 +66,8 @@ export async function POST(request: Request) {
         league: {
           id: league.id,
           name: league.name,
-          sport: (league.sports as unknown as { name: string } | null)?.name || 'Unknown',
-          season: (league.seasons as unknown as { name: string } | null)?.name || 'Unknown',
+          sport: sportResult.data?.name || 'Unknown',
+          season: seasonResult.data?.name || 'Unknown',
           memberCount: members.length,
           maxTeams: league.max_teams,
         },
