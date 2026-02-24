@@ -1,6 +1,6 @@
 import { redirect, notFound } from 'next/navigation'
 import Link from 'next/link'
-import { createClient } from '@/lib/supabase/server'
+import { createClient, createAdminClient } from '@/lib/supabase/server'
 import { Header } from '@/components/Header'
 import DraftStatusSection from '@/components/DraftStatusSection'
 import EmbeddedLeaderboard from '@/components/EmbeddedLeaderboard'
@@ -122,8 +122,9 @@ export default async function LeaguePage({ params }: PageProps) {
     .select('*', { count: 'exact', head: true })
     .eq('league_id', id)
 
-  // Get all teams in the league
-  const { data: teamsData } = await supabase
+  // Get all teams in the league (use admin client to bypass RLS)
+  const admin = createAdminClient()
+  const { data: teamsData } = await admin
     .from('fantasy_teams')
     .select(`
       id, name, user_id, total_points, high_points_winnings, add_drops_used,

@@ -1,6 +1,6 @@
 import { redirect, notFound } from 'next/navigation'
 import Link from 'next/link'
-import { createClient } from '@/lib/supabase/server'
+import { createClient, createAdminClient } from '@/lib/supabase/server'
 import ScheduleClient from './ScheduleClient'
 import { SandboxWeekSelector } from '@/components/SandboxWeekSelector'
 import { getCurrentWeek } from '@/lib/week'
@@ -67,8 +67,9 @@ export default async function SchedulePage({ params, searchParams }: PageProps) 
   // Calculate current week (with sandbox override support)
   const currentWeek = await getCurrentWeek(year)
 
-  // Get user's roster school IDs (at the simulated week)
-  const { data: userTeam } = await supabase
+  // Get user's roster school IDs (at the simulated week) - use admin client to bypass RLS
+  const admin = createAdminClient()
+  const { data: userTeam } = await admin
     .from('fantasy_teams')
     .select('id')
     .eq('league_id', leagueId)

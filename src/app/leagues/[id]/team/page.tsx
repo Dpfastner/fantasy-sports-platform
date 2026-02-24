@@ -1,6 +1,6 @@
 import { redirect, notFound } from 'next/navigation'
 import Link from 'next/link'
-import { createClient } from '@/lib/supabase/server'
+import { createClient, createAdminClient } from '@/lib/supabase/server'
 import { Header } from '@/components/Header'
 import { RosterList } from '@/components/RosterList'
 import { SandboxWeekSelector } from '@/components/SandboxWeekSelector'
@@ -107,8 +107,9 @@ export default async function TeamPage({ params }: PageProps) {
     notFound()
   }
 
-  // Get user's team
-  const { data: team } = await supabase
+  // Get user's team (use admin client to bypass RLS)
+  const admin = createAdminClient()
+  const { data: team } = await admin
     .from('fantasy_teams')
     .select('*')
     .eq('league_id', leagueId)
@@ -342,8 +343,8 @@ export default async function TeamPage({ params }: PageProps) {
     schoolTotals.set(sp.school_id, current + Number(sp.total_points))
   }
 
-  // Get team's standing in league
-  const { data: allTeams } = await supabase
+  // Get team's standing in league (use admin client to bypass RLS)
+  const { data: allTeams } = await admin
     .from('fantasy_teams')
     .select('id, total_points')
     .eq('league_id', leagueId)
