@@ -123,7 +123,7 @@ export default async function LeaguePage({ params }: PageProps) {
     .eq('league_id', id)
 
   // Get all teams in the league
-  const { data: teamsData } = await supabase
+  const { data: teamsData, error: teamsError } = await supabase
     .from('fantasy_teams')
     .select(`
       id, name, user_id, total_points, high_points_winnings, add_drops_used,
@@ -132,6 +132,10 @@ export default async function LeaguePage({ params }: PageProps) {
     `)
     .eq('league_id', id)
     .order('total_points', { ascending: false })
+
+  if (teamsError) {
+    console.error('Failed to fetch teams:', teamsError.message)
+  }
 
   const teams = teamsData as unknown as TeamData[] | null
 
