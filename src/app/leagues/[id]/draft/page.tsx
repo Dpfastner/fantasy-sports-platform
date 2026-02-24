@@ -229,7 +229,7 @@ export default function DraftRoomPage() {
         // Get teams
         const { data: teamsData } = await supabase
           .from('fantasy_teams')
-          .select('id, name, user_id, draft_position, profiles (display_name, email)')
+          .select('id, name, user_id, draft_position, profiles!fantasy_teams_user_id_fkey (display_name, email)')
           .eq('league_id', leagueId)
           .order('draft_position')
 
