@@ -3,7 +3,6 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { createClient } from '@/lib/supabase/client'
 
 export default function JoinLeaguePage() {
   const [inviteCode, setInviteCode] = useState('')
@@ -19,7 +18,6 @@ export default function JoinLeaguePage() {
     maxTeams: number
   } | null>(null)
   const router = useRouter()
-  const supabase = createClient()
 
   const handleLookup = async () => {
     setError(null)
@@ -33,55 +31,20 @@ export default function JoinLeaguePage() {
     setLoading(true)
 
     try {
-      // Look up the league by invite code
-      const { data: league, error: lookupError } = await supabase
-        .from('leagues')
-        .select(`
-          id,
-          name,
-          max_teams,
-          sports (name),
-          seasons (name),
-          league_members (id)
-        `)
-        .eq('invite_code', inviteCode.trim().toLowerCase())
-        .single()
+      const res = await fetch('/api/leagues/join', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ inviteCode: inviteCode.trim() }),
+      })
 
-      if (lookupError || !league) {
-        setError('League not found. Please check your invite code.')
+      const data = await res.json()
+
+      if (!res.ok) {
+        setError(data.error || 'League not found')
         return
       }
 
-      // Type the league data
-      const leagueData = league as unknown as {
-        id: string
-        name: string
-        max_teams: number
-        sports: { name: string } | null
-        seasons: { name: string } | null
-        league_members: { id: string }[] | null
-      }
-
-      // Check if user is already a member
-      const { data: { user } } = await supabase.auth.getUser()
-      if (user) {
-        const existingMember = leagueData.league_members?.find(
-          (m) => m.id === user.id
-        )
-        if (existingMember) {
-          setError('You are already a member of this league')
-          return
-        }
-      }
-
-      setLeaguePreview({
-        id: leagueData.id,
-        name: leagueData.name,
-        sport: leagueData.sports?.name || 'Unknown',
-        season: leagueData.seasons?.name || 'Unknown',
-        memberCount: leagueData.league_members?.length || 0,
-        maxTeams: leagueData.max_teams,
-      })
+      setLeaguePreview(data.league)
     } catch {
       setError('An unexpected error occurred')
     } finally {
@@ -111,53 +74,20 @@ export default function JoinLeaguePage() {
     setLoading(true)
 
     try {
-      const { data: { user } } = await supabase.auth.getUser()
+      const res = await fetch('/api/leagues/join', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ inviteCode: inviteCode.trim(), teamName: teamName.trim() }),
+      })
 
-      if (!user) {
-        setError('You must be logged in to join a league')
+      const data = await res.json()
+
+      if (!res.ok) {
+        setError(data.error || 'Failed to join league')
         return
       }
 
-      // Check if league is full
-      if (leaguePreview.memberCount >= leaguePreview.maxTeams) {
-        setError('This league is full')
-        return
-      }
-
-      // Add user as league member
-      const { error: memberError } = await supabase
-        .from('league_members')
-        .insert({
-          league_id: leaguePreview.id,
-          user_id: user.id,
-          role: 'member',
-        })
-
-      if (memberError) {
-        if (memberError.code === '23505') {
-          setError('You are already a member of this league')
-        } else {
-          setError(memberError.message)
-        }
-        return
-      }
-
-      // Create fantasy team
-      const { error: teamError } = await supabase
-        .from('fantasy_teams')
-        .insert({
-          league_id: leaguePreview.id,
-          user_id: user.id,
-          name: teamName.trim(),
-        })
-
-      if (teamError) {
-        setError(teamError.message)
-        return
-      }
-
-      // Redirect to the league page
-      router.push(`/leagues/${leaguePreview.id}`)
+      router.push(`/leagues/${data.leagueId}`)
     } catch {
       setError('An unexpected error occurred')
     } finally {

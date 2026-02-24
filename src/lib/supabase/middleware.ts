@@ -27,6 +27,19 @@ export async function updateSession(request: NextRequest) {
     }
   )
 
+  // Intercept auth codes that land on unexpected routes
+  // Supabase email links (password reset, signup confirmation) may redirect to
+  // the root URL with ?code=XXX instead of /auth/callback
+  const code = request.nextUrl.searchParams.get('code')
+  if (code && !request.nextUrl.pathname.startsWith('/auth/callback')) {
+    const url = request.nextUrl.clone()
+    const currentPath = request.nextUrl.pathname
+    url.pathname = '/auth/callback'
+    url.searchParams.set('code', code)
+    url.searchParams.set('next', currentPath === '/' ? '/dashboard' : currentPath)
+    return NextResponse.redirect(url)
+  }
+
   // Do not run code between createServerClient and
   // supabase.auth.getUser(). A simple mistake could make it very hard to debug
   // issues with users being randomly logged out.
