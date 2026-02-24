@@ -12,7 +12,7 @@ function getSupabaseAdmin(): SupabaseClient {
   return createClient(url, key)
 }
 
-interface LeagueSettings {
+export interface LeagueSettings {
   // Win scoring
   points_win: number
   points_conference_game: number
@@ -62,7 +62,7 @@ interface SchoolPointsBreakdown {
 }
 
 // Default scoring rules (used for global school points)
-const DEFAULT_SCORING: LeagueSettings = {
+export const DEFAULT_SCORING: LeagueSettings = {
   points_win: 1,
   points_conference_game: 1,
   points_over_50: 1,
@@ -318,7 +318,9 @@ export async function calculateWeeklySchoolPoints(
     // Calculate points for home team if FBS
     if (game.home_school_id) {
       // Get OPPONENT's rank (away team's rank) for the ranked bonus
-      const awayTeamRank = game.away_school_id ? rankingsMap.get(game.away_school_id) || null : null
+      const awayTeamRank = game.away_school_id
+        ? (rankingsMap.get(game.away_school_id) ?? (game.away_rank != null && game.away_rank < 99 ? game.away_rank : null))
+        : null
       const homePoints = calculateSchoolGamePoints(gameWithConf, game.home_school_id, awayTeamRank, DEFAULT_SCORING, isBowlGame)
 
       const { error: insertError } = await client
@@ -347,7 +349,9 @@ export async function calculateWeeklySchoolPoints(
     // Calculate points for away team if FBS
     if (game.away_school_id) {
       // Get OPPONENT's rank (home team's rank) for the ranked bonus
-      const homeTeamRank = game.home_school_id ? rankingsMap.get(game.home_school_id) || null : null
+      const homeTeamRank = game.home_school_id
+        ? (rankingsMap.get(game.home_school_id) ?? (game.home_rank != null && game.home_rank < 99 ? game.home_rank : null))
+        : null
       const awayPoints = calculateSchoolGamePoints(gameWithConf, game.away_school_id, homeTeamRank, DEFAULT_SCORING, isBowlGame)
 
       const { error: insertError } = await client
@@ -516,12 +520,16 @@ export async function calculateFantasyTeamPoints(
       }
 
       if (game.home_school_id) {
-        const opponentRank = game.away_school_id ? rankingsMap.get(game.away_school_id) || null : null
+        const opponentRank = game.away_school_id
+          ? (rankingsMap.get(game.away_school_id) ?? (game.away_rank != null && game.away_rank < 99 ? game.away_rank : null))
+          : null
         const pts = calculateSchoolGamePoints(gameWithConf, game.home_school_id, opponentRank, leagueScoring, isBowlGame)
         leagueSchoolPoints.set(game.home_school_id, pts.totalPoints)
       }
       if (game.away_school_id) {
-        const opponentRank = game.home_school_id ? rankingsMap.get(game.home_school_id) || null : null
+        const opponentRank = game.home_school_id
+          ? (rankingsMap.get(game.home_school_id) ?? (game.home_rank != null && game.home_rank < 99 ? game.home_rank : null))
+          : null
         const pts = calculateSchoolGamePoints(gameWithConf, game.away_school_id, opponentRank, leagueScoring, isBowlGame)
         leagueSchoolPoints.set(game.away_school_id, pts.totalPoints)
       }

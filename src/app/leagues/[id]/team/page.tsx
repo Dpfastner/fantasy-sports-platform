@@ -6,6 +6,7 @@ import { RosterList } from '@/components/RosterList'
 import { SandboxWeekSelector } from '@/components/SandboxWeekSelector'
 import { getCurrentWeek, getSimulatedDate } from '@/lib/week'
 import { getEnvironment } from '@/lib/env'
+import { calculateSchoolGamePoints, DEFAULT_SCORING } from '@/lib/points/calculator'
 
 // Force dynamic rendering to ensure fresh data from database
 export const dynamic = 'force-dynamic'
@@ -119,7 +120,7 @@ export default async function TeamPage({ params }: PageProps) {
     redirect(`/leagues/${leagueId}`)
   }
 
-  // Get league settings (including special event bonuses)
+  // Get league settings (including game scoring + special event bonuses)
   const { data: settings } = await supabase
     .from('league_settings')
     .select(`
@@ -127,6 +128,8 @@ export default async function TeamPage({ params }: PageProps) {
       add_drop_deadline,
       double_points_enabled,
       max_double_picks_per_season,
+      points_win, points_conference_game, points_over_50, points_shutout, points_ranked_25, points_ranked_10,
+      points_loss, points_conference_game_loss, points_over_50_loss, points_shutout_loss, points_ranked_25_loss, points_ranked_10_loss,
       points_bowl_appearance,
       points_playoff_first_round,
       points_playoff_quarterfinal,
@@ -223,43 +226,120 @@ export default async function TeamPage({ params }: PageProps) {
 
   // Get school IDs from roster
   const schoolIds = roster?.map(r => r.school_id) || []
-
-  // Get weekly points for roster schools (only up to simulated week) - include full breakdown
-  // Note: Must specify limit > 1000 to override Supabase default limit
-  const { data: schoolPointsData } = await supabase
-    .from('school_weekly_points')
-    .select('school_id, week_number, total_points, game_id, base_points, conference_bonus, over_50_bonus, shutout_bonus, ranked_25_bonus, ranked_10_bonus')
-    .eq('season_id', league.season_id)
-    .in('school_id', schoolIds.length > 0 ? schoolIds : ['none'])
-    .lte('week_number', currentWeek)
-    .limit(5000)
-
-  const schoolPoints = (schoolPointsData || []) as SchoolPoints[]
-
-  // Get weekly points for dropped schools too (only up to simulated week)
   const droppedSchoolIds = droppedRoster?.map(r => r.school_id) || []
-  let droppedSchoolPoints: SchoolPoints[] = []
-  if (droppedSchoolIds.length > 0) {
-    const { data: droppedPointsData } = await supabase
-      .from('school_weekly_points')
-      .select('school_id, week_number, total_points, game_id, base_points, conference_bonus, over_50_bonus, shutout_bonus, ranked_25_bonus, ranked_10_bonus')
-      .eq('season_id', league.season_id)
-      .in('school_id', droppedSchoolIds)
-      .lte('week_number', currentWeek)
-      .limit(5000)
-    droppedSchoolPoints = (droppedPointsData || []) as SchoolPoints[]
-  }
+  const allRosterSchoolIds = [...new Set([...schoolIds, ...droppedSchoolIds])]
 
-  // Get all games for roster schools (for the season)
+  // Get all games for roster schools (current + dropped) for the season
   let gamesData: Game[] = []
-  if (schoolIds.length > 0) {
+  if (allRosterSchoolIds.length > 0) {
     const { data } = await supabase
       .from('games')
       .select('*')
       .eq('season_id', league.season_id)
-      .or(`home_school_id.in.(${schoolIds.join(',')}),away_school_id.in.(${schoolIds.join(',')})`)
+      .or(`home_school_id.in.(${allRosterSchoolIds.join(',')}),away_school_id.in.(${allRosterSchoolIds.join(',')})`)
     gamesData = (data || []) as Game[]
   }
+
+  // Fetch conferences for all schools in games (needed for conference game detection)
+  const gameSchoolIds = new Set<string>()
+  for (const game of gamesData) {
+    if (game.home_school_id) gameSchoolIds.add(game.home_school_id)
+    if (game.away_school_id) gameSchoolIds.add(game.away_school_id)
+  }
+  const conferenceMap = new Map<string, string>()
+  if (gameSchoolIds.size > 0) {
+    const { data: confData } = await supabase
+      .from('schools')
+      .select('id, conference')
+      .in('id', Array.from(gameSchoolIds))
+    for (const s of confData || []) {
+      conferenceMap.set(s.id, s.conference)
+    }
+  }
+
+  // Build league scoring settings (falls back to DEFAULT_SCORING)
+  const leagueScoring = settings ? {
+    points_win: Number(settings.points_win),
+    points_conference_game: Number(settings.points_conference_game),
+    points_over_50: Number(settings.points_over_50),
+    points_shutout: Number(settings.points_shutout),
+    points_ranked_25: Number(settings.points_ranked_25),
+    points_ranked_10: Number(settings.points_ranked_10),
+    points_loss: Number(settings.points_loss),
+    points_conference_game_loss: Number(settings.points_conference_game_loss),
+    points_over_50_loss: Number(settings.points_over_50_loss),
+    points_shutout_loss: Number(settings.points_shutout_loss),
+    points_ranked_25_loss: Number(settings.points_ranked_25_loss),
+    points_ranked_10_loss: Number(settings.points_ranked_10_loss),
+  } : DEFAULT_SCORING
+
+  // Compute league-specific school points from completed games (instead of reading global school_weekly_points)
+  const computedPoints: SchoolPoints[] = []
+  for (const game of gamesData) {
+    if (game.status !== 'completed' || game.week_number > currentWeek) continue
+
+    const homeConf = game.home_school_id ? conferenceMap.get(game.home_school_id) : null
+    const awayConf = game.away_school_id ? conferenceMap.get(game.away_school_id) : null
+    const isConferenceGame = !!(homeConf && awayConf && homeConf === awayConf)
+    const isBowlGame = game.is_bowl_game || false
+
+    const calcGame = {
+      id: game.id,
+      season_id: league.season_id,
+      week_number: game.week_number,
+      home_school_id: game.home_school_id,
+      away_school_id: game.away_school_id,
+      home_score: game.home_score ?? 0,
+      away_score: game.away_score ?? 0,
+      home_rank: game.home_rank,
+      away_rank: game.away_rank,
+      status: game.status,
+      is_conference_game: isConferenceGame,
+      is_bowl_game: isBowlGame,
+      is_playoff_game: game.is_playoff_game || false,
+      playoff_round: game.playoff_round || null,
+    }
+
+    // Calculate for home team if it's one of our roster schools
+    if (game.home_school_id && allRosterSchoolIds.includes(game.home_school_id)) {
+      const opponentRank = game.away_rank != null && game.away_rank < 99 ? game.away_rank : null
+      const pts = calculateSchoolGamePoints(calcGame, game.home_school_id, opponentRank, leagueScoring, isBowlGame)
+      computedPoints.push({
+        school_id: pts.schoolId,
+        week_number: pts.weekNumber,
+        total_points: pts.totalPoints,
+        game_id: pts.gameId,
+        base_points: pts.basePoints,
+        conference_bonus: pts.conferenceBonus,
+        over_50_bonus: pts.over50Bonus,
+        shutout_bonus: pts.shutoutBonus,
+        ranked_25_bonus: pts.ranked25Bonus,
+        ranked_10_bonus: pts.ranked10Bonus,
+      })
+    }
+
+    // Calculate for away team if it's one of our roster schools
+    if (game.away_school_id && allRosterSchoolIds.includes(game.away_school_id)) {
+      const opponentRank = game.home_rank != null && game.home_rank < 99 ? game.home_rank : null
+      const pts = calculateSchoolGamePoints(calcGame, game.away_school_id, opponentRank, leagueScoring, isBowlGame)
+      computedPoints.push({
+        school_id: pts.schoolId,
+        week_number: pts.weekNumber,
+        total_points: pts.totalPoints,
+        game_id: pts.gameId,
+        base_points: pts.basePoints,
+        conference_bonus: pts.conferenceBonus,
+        over_50_bonus: pts.over50Bonus,
+        shutout_bonus: pts.shutoutBonus,
+        ranked_25_bonus: pts.ranked25Bonus,
+        ranked_10_bonus: pts.ranked10Bonus,
+      })
+    }
+  }
+
+  // Split computed points into current roster and dropped roster
+  const schoolPoints = computedPoints.filter(p => schoolIds.includes(p.school_id))
+  const droppedSchoolPoints = computedPoints.filter(p => droppedSchoolIds.includes(p.school_id))
 
   // Calculate W-L records for roster schools from completed games
   const schoolRecordsMap = new Map<string, { wins: number; losses: number }>()
