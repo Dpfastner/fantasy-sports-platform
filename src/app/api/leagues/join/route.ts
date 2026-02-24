@@ -42,7 +42,19 @@ export async function POST(request: Request) {
 
     if (lookupError || !league) {
       console.error('League lookup failed:', lookupError?.message, 'code:', inviteCode.trim().toLowerCase())
-      return NextResponse.json({ error: 'League not found. Please check your invite code.' }, { status: 404 })
+      const isSandbox = process.env.NEXT_PUBLIC_ENVIRONMENT === 'sandbox'
+      return NextResponse.json({
+        error: 'League not found. Please check your invite code.',
+        ...(isSandbox && {
+          debug: {
+            lookupError: lookupError?.message || null,
+            lookupCode: lookupError?.code || null,
+            searchedCode: inviteCode.trim().toLowerCase(),
+            hasAdminUrl: !!process.env.NEXT_PUBLIC_SUPABASE_URL,
+            hasAdminKey: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
+          },
+        }),
+      }, { status: 404 })
     }
 
     // Fetch related data separately
@@ -116,7 +128,12 @@ export async function POST(request: Request) {
       success: true,
       leagueId: league.id,
     })
-  } catch {
-    return NextResponse.json({ error: 'An unexpected error occurred' }, { status: 500 })
+  } catch (err) {
+    const isSandbox = process.env.NEXT_PUBLIC_ENVIRONMENT === 'sandbox'
+    console.error('League join error:', err)
+    return NextResponse.json({
+      error: 'An unexpected error occurred',
+      ...(isSandbox && { debug: { message: err instanceof Error ? err.message : String(err) } }),
+    }, { status: 500 })
   }
 }

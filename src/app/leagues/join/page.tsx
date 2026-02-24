@@ -40,7 +40,8 @@ export default function JoinLeaguePage() {
       const data = await res.json()
 
       if (!res.ok) {
-        setError(data.error || 'League not found')
+        const debugInfo = data.debug ? `\n[Debug: ${JSON.stringify(data.debug)}]` : ''
+        setError((data.error || 'League not found') + debugInfo)
         return
       }
 
