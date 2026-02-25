@@ -587,8 +587,8 @@ After completing this phase:
 | 13.6 | **Audit remaining routes** | Walk through every route in `/api/` and verify it has appropriate auth. Document which routes are public (none should be) and which require specific roles (commissioner). |
 | 13.7 | **Regenerate all API keys** | After removing fallbacks, generate new strong keys for `SYNC_API_KEY` and `CRON_SECRET` using `openssl rand -hex 32`. Update Vercel env vars. |
 | 13.8 | **Protect admin routes** | Verify `/admin/sync` and `/admin/reports` pages check for admin role or specific user IDs. Currently these may be accessible to any logged-in user. |
-| 13.9 | **Transfer DNS to Cloudflare** | Wix DNS doesn't support MX records on subdomains and has other quirks (no `@` host, no trailing period on CNAMEs). Transfer `rivyls.com` DNS management to Cloudflare (free): sign up → add site → re-create DNS records (Vercel A/CNAME, any existing records) → update nameservers at domain registrar. This unblocks custom SMTP setup and gives full DNS control. **Does NOT require transferring domain registration** — just nameserver changes. |
-| 13.10 | **Configure custom SMTP for auth emails** | After DNS transfer (13.9), set up Resend (3,000 emails/month free): verify `rivyls.com` domain in Resend (add DNS records in Cloudflare), get SMTP credentials, configure in Supabase: Project Settings > Authentication > SMTP Settings. This replaces Supabase's built-in email provider (~4/hour project-wide limit) with production-grade delivery. **Depends on 13.9.** |
+| 13.9 | **Transfer DNS to Cloudflare** | **DEFERRED — Wix ICANN 60-day lock until Apr 21, 2026.** Transfer `rivyls.com` DNS to Cloudflare after lock expires. Resend DNS records are incompatible with Wix DNS. Moved to Phase 15. |
+| 13.10 | **Configure custom SMTP for auth emails** | **DEFERRED — depends on 13.9.** Moved to Phase 15. |
 
 ### Verification
 

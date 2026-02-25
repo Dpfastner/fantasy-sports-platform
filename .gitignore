@@ -40,6 +40,9 @@ yarn-error.log*
 # vercel
 .vercel
 
+# scripts with secrets
+scripts/recalculate-season.sh
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts

@@ -8,11 +8,13 @@ export type Json =
 
 // Enums
 export type SportType = 'college_football' | 'hockey' | 'baseball' | 'basketball' | 'cricket'
-export type DraftType = 'snake' | 'linear'
+export type DraftType = 'snake' | 'linear' | 'auction'
 export type DraftStatus = 'not_started' | 'in_progress' | 'paused' | 'completed'
 export type GameStatus = 'scheduled' | 'live' | 'completed' | 'postponed' | 'cancelled'
-export type LeagueRole = 'commissioner' | 'member'
+export type LeagueRole = 'commissioner' | 'co_commissioner' | 'member'
 export type UserRole = 'user' | 'admin'
+export type DraftOrderType = 'random' | 'manual'
+export type UserTier = 'free' | 'pro' | 'founding_commissioner'
 
 export interface Database {
   public: {
@@ -142,6 +144,8 @@ export interface Database {
           role: UserRole
           favorite_school_id: string | null // For charity feature
           timezone: string
+          tier: UserTier
+          referred_by: string | null
           created_at: string
           updated_at: string
         }
@@ -153,6 +157,8 @@ export interface Database {
           role?: UserRole
           favorite_school_id?: string | null
           timezone?: string
+          tier?: UserTier
+          referred_by?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -164,6 +170,8 @@ export interface Database {
           role?: UserRole
           favorite_school_id?: string | null
           timezone?: string
+          tier?: UserTier
+          referred_by?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -225,12 +233,14 @@ export interface Database {
           draft_date: string | null
           draft_type: DraftType
           draft_timer_seconds: number
+          draft_order_type: DraftOrderType
+          manual_draft_order: string[] | null // UUID array
           schools_per_team: number
-          max_school_selections_per_team: number // How many times same school on one team
-          max_school_selections_total: number // How many times same school across league
+          max_school_selections_per_team: number
+          max_school_selections_total: number
           // Transaction settings
           max_add_drops_per_season: number
-          add_drop_deadline: string | null // Season-wide deadline
+          add_drop_deadline: string | null
           // Scoring - Wins
           points_win: number
           points_conference_game: number
@@ -238,7 +248,7 @@ export interface Database {
           points_shutout: number
           points_ranked_25: number
           points_ranked_10: number
-          // Scoring - Losses (usually 0)
+          // Scoring - Losses
           points_loss: number
           points_conference_game_loss: number
           points_over_50_loss: number
@@ -266,8 +276,13 @@ export interface Database {
           winner_percentage: number
           runner_up_percentage: number
           third_place_percentage: number
+          // Double points
+          double_points_enabled: boolean
+          max_double_picks_per_season: number
+          // Scoring preset
+          scoring_preset: string | null
           // Locks
-          settings_locked: boolean // Locked after draft starts
+          settings_locked: boolean
           created_at: string
           updated_at: string
         }
@@ -277,6 +292,8 @@ export interface Database {
           draft_date?: string | null
           draft_type?: DraftType
           draft_timer_seconds?: number
+          draft_order_type?: DraftOrderType
+          manual_draft_order?: string[] | null
           schools_per_team?: number
           max_school_selections_per_team?: number
           max_school_selections_total?: number
@@ -313,6 +330,9 @@ export interface Database {
           winner_percentage?: number
           runner_up_percentage?: number
           third_place_percentage?: number
+          double_points_enabled?: boolean
+          max_double_picks_per_season?: number
+          scoring_preset?: string | null
           settings_locked?: boolean
           created_at?: string
           updated_at?: string
@@ -323,6 +343,8 @@ export interface Database {
           draft_date?: string | null
           draft_type?: DraftType
           draft_timer_seconds?: number
+          draft_order_type?: DraftOrderType
+          manual_draft_order?: string[] | null
           schools_per_team?: number
           max_school_selections_per_team?: number
           max_school_selections_total?: number
@@ -359,6 +381,9 @@ export interface Database {
           winner_percentage?: number
           runner_up_percentage?: number
           third_place_percentage?: number
+          double_points_enabled?: boolean
+          max_double_picks_per_season?: number
+          scoring_preset?: string | null
           settings_locked?: boolean
           created_at?: string
           updated_at?: string
@@ -374,6 +399,7 @@ export interface Database {
           role: LeagueRole
           has_paid: boolean
           joined_at: string
+          updated_at: string | null
         }
         Insert: {
           id?: string
@@ -382,6 +408,7 @@ export interface Database {
           role?: LeagueRole
           has_paid?: boolean
           joined_at?: string
+          updated_at?: string | null
         }
         Update: {
           id?: string
@@ -390,6 +417,7 @@ export interface Database {
           role?: LeagueRole
           has_paid?: boolean
           joined_at?: string
+          updated_at?: string | null
         }
       }
 
@@ -411,6 +439,7 @@ export interface Database {
           total_points: number
           high_points_winnings: number
           add_drops_used: number
+          second_owner_id: string | null
           created_at: string
           updated_at: string
         }
@@ -426,6 +455,7 @@ export interface Database {
           total_points?: number
           high_points_winnings?: number
           add_drops_used?: number
+          second_owner_id?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -441,6 +471,7 @@ export interface Database {
           total_points?: number
           high_points_winnings?: number
           add_drops_used?: number
+          second_owner_id?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -452,10 +483,11 @@ export interface Database {
           id: string
           fantasy_team_id: string
           school_id: string
-          slot_number: number // 1-12 etc, for re-adding to same slot
+          slot_number: number
           start_week: number
           end_week: number | null // null = still active
           created_at: string
+          updated_at: string | null
         }
         Insert: {
           id?: string
@@ -465,6 +497,7 @@ export interface Database {
           start_week: number
           end_week?: number | null
           created_at?: string
+          updated_at?: string | null
         }
         Update: {
           id?: string
@@ -474,6 +507,7 @@ export interface Database {
           start_week?: number
           end_week?: number | null
           created_at?: string
+          updated_at?: string | null
         }
       }
 
@@ -487,6 +521,7 @@ export interface Database {
           added_school_id: string
           slot_number: number
           created_at: string
+          updated_at: string | null
         }
         Insert: {
           id?: string
@@ -496,6 +531,7 @@ export interface Database {
           added_school_id: string
           slot_number: number
           created_at?: string
+          updated_at?: string | null
         }
         Update: {
           id?: string
@@ -505,16 +541,20 @@ export interface Database {
           added_school_id?: string
           slot_number?: number
           created_at?: string
+          updated_at?: string | null
         }
       }
 
-      // Weekly double points pick (future feature - schema ready)
+      // Weekly double points pick
       weekly_double_picks: {
         Row: {
           id: string
           fantasy_team_id: string
           week_number: number
           school_id: string
+          picked_at: string | null
+          points_earned: number | null
+          bonus_points: number | null
           created_at: string
         }
         Insert: {
@@ -522,6 +562,9 @@ export interface Database {
           fantasy_team_id: string
           week_number: number
           school_id: string
+          picked_at?: string | null
+          points_earned?: number | null
+          bonus_points?: number | null
           created_at?: string
         }
         Update: {
@@ -529,6 +572,9 @@ export interface Database {
           fantasy_team_id?: string
           week_number?: number
           school_id?: string
+          picked_at?: string | null
+          points_earned?: number | null
+          bonus_points?: number | null
           created_at?: string
         }
       }
@@ -546,7 +592,7 @@ export interface Database {
           current_round: number
           current_pick: number
           current_team_id: string | null
-          pick_deadline: string | null // When current pick expires
+          pick_deadline: string | null
           started_at: string | null
           completed_at: string | null
           created_at: string
@@ -587,8 +633,9 @@ export interface Database {
           draft_id: string
           fantasy_team_id: string
           round: number
-          pick_number: number // Overall pick number (1-96 for 8 teams x 12 rounds)
-          position_in_round: number // 1-8 within the round
+          pick_number: number
+          position_in_round: number
+          updated_at: string | null
         }
         Insert: {
           id?: string
@@ -597,6 +644,7 @@ export interface Database {
           round: number
           pick_number: number
           position_in_round: number
+          updated_at?: string | null
         }
         Update: {
           id?: string
@@ -605,6 +653,7 @@ export interface Database {
           round?: number
           pick_number?: number
           position_in_round?: number
+          updated_at?: string | null
         }
       }
 
@@ -618,6 +667,7 @@ export interface Database {
           round: number
           pick_number: number
           picked_at: string
+          updated_at: string | null
         }
         Insert: {
           id?: string
@@ -627,6 +677,7 @@ export interface Database {
           round: number
           pick_number: number
           picked_at?: string
+          updated_at?: string | null
         }
         Update: {
           id?: string
@@ -636,6 +687,7 @@ export interface Database {
           round?: number
           pick_number?: number
           picked_at?: string
+          updated_at?: string | null
         }
       }
 
@@ -648,26 +700,30 @@ export interface Database {
         Row: {
           id: string
           season_id: string
-          external_game_id: string | null // ESPN game ID
+          external_game_id: string | null
           week_number: number
-          week_name: string | null // "Week 1", "Conference Championships", etc.
+          week_name: string | null
           game_date: string
           game_time: string | null
-          bowl_name: string | null // "Rose Bowl", "CFP Semifinal", etc.
-          home_school_id: string
-          away_school_id: string
+          bowl_name: string | null
+          home_school_id: string | null // Nullable for FCS opponents
+          away_school_id: string | null // Nullable for FCS opponents
+          home_team_name: string | null // Denormalized for FCS opponents
+          home_team_logo_url: string | null
+          away_team_name: string | null
+          away_team_logo_url: string | null
           home_score: number | null
           away_score: number | null
-          home_rank: number | null // AP rank at time of game
+          home_rank: number | null
           away_rank: number | null
           status: GameStatus
           is_conference_game: boolean
           is_bowl_game: boolean
           is_playoff_game: boolean
-          playoff_round: string | null // 'first', 'quarter', 'semi', 'championship'
-          quarter: string | null // For live games
-          clock: string | null // For live games
-          possession_team_id: string | null // For live games
+          playoff_round: string | null
+          quarter: string | null
+          clock: string | null
+          possession_team_id: string | null
           completed_at: string | null
           created_at: string
           updated_at: string
@@ -681,8 +737,12 @@ export interface Database {
           game_date: string
           game_time?: string | null
           bowl_name?: string | null
-          home_school_id: string
-          away_school_id: string
+          home_school_id?: string | null
+          away_school_id?: string | null
+          home_team_name?: string | null
+          home_team_logo_url?: string | null
+          away_team_name?: string | null
+          away_team_logo_url?: string | null
           home_score?: number | null
           away_score?: number | null
           home_rank?: number | null
@@ -708,8 +768,12 @@ export interface Database {
           game_date?: string
           game_time?: string | null
           bowl_name?: string | null
-          home_school_id?: string
-          away_school_id?: string
+          home_school_id?: string | null
+          away_school_id?: string | null
+          home_team_name?: string | null
+          home_team_logo_url?: string | null
+          away_team_name?: string | null
+          away_team_logo_url?: string | null
           home_score?: number | null
           away_score?: number | null
           home_rank?: number | null
@@ -740,7 +804,7 @@ export interface Database {
           season_id: string
           week_number: number
           game_id: string | null
-          base_points: number // Win/loss points
+          base_points: number
           conference_bonus: number
           over_50_bonus: number
           shutout_bonus: number
@@ -790,7 +854,7 @@ export interface Database {
           id: string
           school_id: string
           season_id: string
-          bonus_type: string // 'bowl_appearance', 'playoff_first', 'heisman', 'championship_win', etc.
+          bonus_type: string
           points: number
           awarded_at: string
           created_at: string
@@ -811,6 +875,43 @@ export interface Database {
           bonus_type?: string
           points?: number
           awarded_at?: string
+          created_at?: string
+        }
+      }
+
+      // League-specific event bonuses (per league scoring)
+      league_school_event_bonuses: {
+        Row: {
+          id: string
+          league_id: string
+          school_id: string
+          season_id: string
+          week_number: number
+          bonus_type: string
+          points: number
+          game_id: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          league_id: string
+          school_id: string
+          season_id: string
+          week_number: number
+          bonus_type: string
+          points?: number
+          game_id?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          league_id?: string
+          school_id?: string
+          season_id?: string
+          week_number?: number
+          bonus_type?: string
+          points?: number
+          game_id?: string | null
           created_at?: string
         }
       }
@@ -888,7 +989,7 @@ export interface Database {
           season_id: string
           school_id: string
           seed: number
-          eliminated_round: string | null // 'first', 'quarter', 'semi', 'championship' or null if still active
+          eliminated_round: string | null
           created_at: string
           updated_at: string
         }
@@ -939,6 +1040,341 @@ export interface Database {
           created_at?: string
         }
       }
+
+      // Issue reports (bug reports from users)
+      issue_reports: {
+        Row: {
+          id: string
+          category: string
+          description: string
+          user_id: string | null
+          page: string | null
+          user_agent: string | null
+          status: string
+          resolved_at: string | null
+          resolved_by: string | null
+          admin_notes: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          category: string
+          description: string
+          user_id?: string | null
+          page?: string | null
+          user_agent?: string | null
+          status?: string
+          resolved_at?: string | null
+          resolved_by?: string | null
+          admin_notes?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          category?: string
+          description?: string
+          user_id?: string | null
+          page?: string | null
+          user_agent?: string | null
+          status?: string
+          resolved_at?: string | null
+          resolved_by?: string | null
+          admin_notes?: string | null
+          created_at?: string
+        }
+      }
+
+      // ============================================
+      // AUDIT & ACTIVITY TABLES
+      // ============================================
+
+      // Activity log (audit trail)
+      activity_log: {
+        Row: {
+          id: string
+          league_id: string | null
+          user_id: string | null
+          action: string
+          details: Json
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          league_id?: string | null
+          user_id?: string | null
+          action: string
+          details?: Json
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          league_id?: string | null
+          user_id?: string | null
+          action?: string
+          details?: Json
+          created_at?: string
+        }
+      }
+
+      // ============================================
+      // PREMIUM / FEATURE FLAG TABLES
+      // ============================================
+
+      // Feature flags (global feature toggles)
+      feature_flags: {
+        Row: {
+          id: string
+          key: string
+          name: string
+          description: string | null
+          tier_required: string
+          enabled: boolean
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          key: string
+          name: string
+          description?: string | null
+          tier_required?: string
+          enabled?: boolean
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          key?: string
+          name?: string
+          description?: string | null
+          tier_required?: string
+          enabled?: boolean
+          created_at?: string
+        }
+      }
+
+      // User feature flag overrides
+      user_feature_flags: {
+        Row: {
+          id: string
+          user_id: string
+          feature_flag_id: string
+          enabled: boolean
+          granted_at: string
+          expires_at: string | null
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          feature_flag_id: string
+          enabled?: boolean
+          granted_at?: string
+          expires_at?: string | null
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          feature_flag_id?: string
+          enabled?: boolean
+          granted_at?: string
+          expires_at?: string | null
+        }
+      }
+
+      // Notification preferences
+      notification_preferences: {
+        Row: {
+          id: string
+          user_id: string
+          email_game_results: boolean
+          email_draft_reminders: boolean
+          email_transaction_confirmations: boolean
+          email_league_announcements: boolean
+          push_enabled: boolean
+          created_at: string
+          updated_at: string | null
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          email_game_results?: boolean
+          email_draft_reminders?: boolean
+          email_transaction_confirmations?: boolean
+          email_league_announcements?: boolean
+          push_enabled?: boolean
+          created_at?: string
+          updated_at?: string | null
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          email_game_results?: boolean
+          email_draft_reminders?: boolean
+          email_transaction_confirmations?: boolean
+          email_league_announcements?: boolean
+          push_enabled?: boolean
+          created_at?: string
+          updated_at?: string | null
+        }
+      }
+
+      // Watchlists (user school bookmarks)
+      watchlists: {
+        Row: {
+          id: string
+          user_id: string
+          school_id: string
+          league_id: string | null
+          notes: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          school_id: string
+          league_id?: string | null
+          notes?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          school_id?: string
+          league_id?: string | null
+          notes?: string | null
+          created_at?: string
+        }
+      }
+
+      // ============================================
+      // TRADE TABLES
+      // ============================================
+
+      // Trades (proposals between teams)
+      trades: {
+        Row: {
+          id: string
+          league_id: string
+          proposer_team_id: string
+          receiver_team_id: string
+          status: string
+          proposed_at: string
+          resolved_at: string | null
+          commissioner_override: boolean
+          override_reason: string | null
+        }
+        Insert: {
+          id?: string
+          league_id: string
+          proposer_team_id: string
+          receiver_team_id: string
+          status?: string
+          proposed_at?: string
+          resolved_at?: string | null
+          commissioner_override?: boolean
+          override_reason?: string | null
+        }
+        Update: {
+          id?: string
+          league_id?: string
+          proposer_team_id?: string
+          receiver_team_id?: string
+          status?: string
+          proposed_at?: string
+          resolved_at?: string | null
+          commissioner_override?: boolean
+          override_reason?: string | null
+        }
+      }
+
+      // Trade items (schools being exchanged)
+      trade_items: {
+        Row: {
+          id: string
+          trade_id: string
+          team_id: string
+          school_id: string
+          direction: string
+        }
+        Insert: {
+          id?: string
+          trade_id: string
+          team_id: string
+          school_id: string
+          direction: string
+        }
+        Update: {
+          id?: string
+          trade_id?: string
+          team_id?: string
+          school_id?: string
+          direction?: string
+        }
+      }
+
+      // ============================================
+      // INVITE & WAITLIST TABLES
+      // ============================================
+
+      // League invites (multiple invite links per league)
+      league_invites: {
+        Row: {
+          id: string
+          league_id: string
+          code: string
+          created_by: string
+          expires_at: string | null
+          max_uses: number | null
+          current_uses: number
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          league_id: string
+          code: string
+          created_by: string
+          expires_at?: string | null
+          max_uses?: number | null
+          current_uses?: number
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          league_id?: string
+          code?: string
+          created_by?: string
+          expires_at?: string | null
+          max_uses?: number | null
+          current_uses?: number
+          created_at?: string
+        }
+      }
+
+      // Waitlist (landing page email capture)
+      waitlist: {
+        Row: {
+          id: string
+          email: string
+          name: string | null
+          source: string | null
+          referral_code: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          email: string
+          name?: string | null
+          source?: string | null
+          referral_code?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          email?: string
+          name?: string | null
+          source?: string | null
+          referral_code?: string | null
+          created_at?: string
+        }
+      }
     }
     Views: {
       [_ in never]: never
@@ -953,6 +1389,7 @@ export interface Database {
       game_status: GameStatus
       league_role: LeagueRole
       user_role: UserRole
+      draft_order_type: DraftOrderType
     }
   }
 }
@@ -979,8 +1416,19 @@ export type DraftPick = Tables<'draft_picks'>
 export type Game = Tables<'games'>
 export type SchoolWeeklyPoints = Tables<'school_weekly_points'>
 export type SchoolSeasonBonus = Tables<'school_season_bonuses'>
+export type LeagueSchoolEventBonus = Tables<'league_school_event_bonuses'>
 export type FantasyTeamWeeklyPoints = Tables<'fantasy_team_weekly_points'>
 export type ApRankingsHistory = Tables<'ap_rankings_history'>
 export type PlayoffTeam = Tables<'playoff_teams'>
 export type HeismanWinner = Tables<'heisman_winners'>
 export type WeeklyDoublePick = Tables<'weekly_double_picks'>
+export type IssueReport = Tables<'issue_reports'>
+export type ActivityLog = Tables<'activity_log'>
+export type FeatureFlag = Tables<'feature_flags'>
+export type UserFeatureFlag = Tables<'user_feature_flags'>
+export type NotificationPreference = Tables<'notification_preferences'>
+export type Watchlist = Tables<'watchlists'>
+export type Trade = Tables<'trades'>
+export type TradeItem = Tables<'trade_items'>
+export type LeagueInvite = Tables<'league_invites'>
+export type WaitlistEntry = Tables<'waitlist'>
