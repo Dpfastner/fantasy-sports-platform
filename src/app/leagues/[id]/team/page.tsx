@@ -276,7 +276,10 @@ export default async function TeamPage({ params }: PageProps) {
   // Compute league-specific school points from completed games (instead of reading global school_weekly_points)
   const computedPoints: SchoolPoints[] = []
   for (const game of gamesData) {
-    if (game.status !== 'completed' || game.week_number > currentWeek) continue
+    // Skip incomplete games; for regular season (W0-16), respect currentWeek filter;
+    // always include completed postseason games (W17+) so special columns always show data
+    if (game.status !== 'completed') continue
+    if (game.week_number > currentWeek && game.week_number <= 16) continue
 
     const homeConf = game.home_school_id ? conferenceMap.get(game.home_school_id) : null
     const awayConf = game.away_school_id ? conferenceMap.get(game.away_school_id) : null
@@ -406,7 +409,7 @@ export default async function TeamPage({ params }: PageProps) {
     .eq('league_id', leagueId)
     .eq('season_id', league.season_id)
     .in('school_id', schoolIds.length > 0 ? schoolIds : ['none'])
-    .lte('week_number', currentWeek)
+    .or(`week_number.lte.${currentWeek},week_number.gte.17`)
 
   const eventBonuses = (eventBonusesData || []) as {
     school_id: string

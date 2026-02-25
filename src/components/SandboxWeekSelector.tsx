@@ -85,13 +85,14 @@ export function SandboxWeekSelector({ currentWeek, environment }: Props) {
     window.location.reload()
   }
 
-  const weeks = Array.from({ length: 22 }, (_, i) => i) // 0-21
+  const weeks = Array.from({ length: 23 }, (_, i) => i) // 0-22
   const specialWeeks: Record<number, string> = {
     17: 'Bowls',
     18: 'R1',      // CFP First Round
     19: 'QF',      // CFP Quarterfinals
     20: 'SF',      // CFP Semifinals
     21: 'NC',      // National Championship
+    22: 'Heis',    // Heisman
   }
 
   const getDayLabel = () => {
