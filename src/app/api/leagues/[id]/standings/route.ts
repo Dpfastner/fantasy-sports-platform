@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { getCurrentWeek } from '@/lib/week'
+import { requireAuth, verifyLeagueMembership } from '@/lib/auth'
 
 // Create admin client
 function getSupabaseAdmin() {
@@ -36,6 +37,17 @@ export async function GET(
 ) {
   try {
     const { id: leagueId } = await params
+
+    // Verify user is authenticated and is a league member
+    const authResult = await requireAuth()
+    if (authResult instanceof NextResponse) return authResult
+    const { user } = authResult
+
+    const isMember = await verifyLeagueMembership(user.id, leagueId)
+    if (!isMember) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    }
+
     const supabase = getSupabaseAdmin()
 
     // Get league with season info

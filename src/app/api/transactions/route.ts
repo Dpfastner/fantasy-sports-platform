@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { getSimulatedDate } from '@/lib/week'
+import { requireAuth, verifyLeagueMembership } from '@/lib/auth'
 
 // Create admin client for transaction processing
 function getSupabaseAdmin() {
@@ -16,6 +17,11 @@ function getSupabaseAdmin() {
 
 export async function POST(request: NextRequest) {
   try {
+    // Verify user is authenticated
+    const authResult = await requireAuth()
+    if (authResult instanceof NextResponse) return authResult
+    const { user } = authResult
+
     const body = await request.json()
     const {
       teamId,
@@ -37,7 +43,7 @@ export async function POST(request: NextRequest) {
 
     const supabase = getSupabaseAdmin()
 
-    // Get team and verify ownership via the request
+    // Get team and verify the requesting user owns it
     const { data: team, error: teamError } = await supabase
       .from('fantasy_teams')
       .select('id, user_id, add_drops_used, league_id')
@@ -48,6 +54,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { error: 'Team not found' },
         { status: 404 }
+      )
+    }
+
+    if (team.user_id !== user.id) {
+      return NextResponse.json(
+        { error: 'Forbidden' },
+        { status: 403 }
       )
     }
 
@@ -259,6 +272,11 @@ export async function POST(request: NextRequest) {
 // GET endpoint for fetching transaction history
 export async function GET(request: NextRequest) {
   try {
+    // Verify user is authenticated
+    const authResult = await requireAuth()
+    if (authResult instanceof NextResponse) return authResult
+    const { user } = authResult
+
     const { searchParams } = new URL(request.url)
     const teamId = searchParams.get('teamId')
     const leagueId = searchParams.get('leagueId')
@@ -268,6 +286,14 @@ export async function GET(request: NextRequest) {
         { error: 'teamId or leagueId required' },
         { status: 400 }
       )
+    }
+
+    // Verify user is a member of the league
+    if (leagueId) {
+      const isMember = await verifyLeagueMembership(user.id, leagueId)
+      if (!isMember) {
+        return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+      }
     }
 
     const supabase = getSupabaseAdmin()

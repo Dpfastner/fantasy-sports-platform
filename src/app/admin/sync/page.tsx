@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
+import { runSync } from './actions'
 
 type SyncType = 'schools' | 'games' | 'rankings' | 'bulk' | 'live'
 
@@ -65,46 +66,26 @@ export default function SyncPage() {
     setError(null)
 
     try {
-      let endpoint = ''
       let body: Record<string, unknown> | undefined
 
       switch (syncType) {
-        case 'schools':
-          endpoint = '/api/sync/schools'
-          break
         case 'games':
-          endpoint = '/api/sync/games'
           body = { year, week, seasonType }
           break
         case 'rankings':
-          endpoint = '/api/sync/rankings'
           body = { year, week }
           break
         case 'bulk':
-          endpoint = '/api/sync/bulk'
           body = { year, startWeek, endWeek, includePostseason }
-          break
-        case 'live':
-          endpoint = '/api/cron/gameday-sync'
           break
       }
 
-      const apiKey = process.env.NEXT_PUBLIC_SYNC_API_KEY || ''
-      const response = await fetch(endpoint, {
-        method: syncType === 'live' ? 'GET' : 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${apiKey}`,
-        },
-        body: body ? JSON.stringify(body) : undefined,
-      })
+      const result = await runSync(syncType, body)
 
-      const data = await response.json()
-
-      if (!response.ok) {
-        setError(data.error || 'Sync failed')
+      if (result.error) {
+        setError(result.error)
       } else {
-        setResult(data)
+        setResult(result.data as SyncResult)
       }
     } catch (err) {
       setError(String(err))

@@ -21,8 +21,8 @@ function verifyCronRequest(request: Request): boolean {
   const authHeader = request.headers.get('authorization')
   const cronSecret = process.env.CRON_SECRET
 
-  // If CRON_SECRET is set, verify it
-  if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
+  // Fail closed: reject if CRON_SECRET is not set or doesn't match
+  if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
     return false
   }
 

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { requireAuth } from '@/lib/auth'
 
 function getSupabaseAdmin() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -14,8 +15,13 @@ function getSupabaseAdmin() {
 
 export async function POST(request: NextRequest) {
   try {
+    // Verify user is authenticated — use session user ID instead of client-provided
+    const authResult = await requireAuth()
+    if (authResult instanceof NextResponse) return authResult
+    const { user } = authResult
+
     const body = await request.json()
-    const { category, description, userId, page, userAgent } = body
+    const { category, description, page, userAgent } = body
 
     if (!description || !category) {
       return NextResponse.json(
@@ -35,7 +41,7 @@ export async function POST(request: NextRequest) {
         .insert({
           category,
           description,
-          user_id: userId || null,
+          user_id: user.id,
           page,
           user_agent: userAgent,
           status: 'new',
@@ -46,7 +52,7 @@ export async function POST(request: NextRequest) {
         console.log('Issue Report (table may not exist):', {
           category,
           description,
-          userId,
+          userId: user.id,
           page,
           userAgent,
           timestamp: new Date().toISOString(),
@@ -57,7 +63,7 @@ export async function POST(request: NextRequest) {
       console.log('Issue Report:', {
         category,
         description,
-        userId,
+        userId: user.id,
         page,
         userAgent,
         timestamp: new Date().toISOString(),
