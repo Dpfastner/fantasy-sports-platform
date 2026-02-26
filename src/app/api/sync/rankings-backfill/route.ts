@@ -1,11 +1,8 @@
 import { NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/server'
 import { fetchRankings } from '@/lib/api/espn'
-
-interface BackfillRequest {
-  year: number
-  weeks?: number[] // Specific weeks to sync, or all 0-15 if not provided
-}
+import { validateBody } from '@/lib/api/validation'
+import { syncRankingsBackfillSchema } from '@/lib/api/schemas'
 
 export async function POST(request: Request) {
   try {
@@ -17,9 +14,12 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const body: BackfillRequest = await request.json().catch(() => ({ year: 2025 }))
-    const year = body.year || 2025
-    const weeksToSync = body.weeks || Array.from({ length: 16 }, (_, i) => i) // Weeks 0-15
+    const rawBody = await request.json().catch(() => ({ year: 2025 }))
+    const validation = validateBody(syncRankingsBackfillSchema, rawBody)
+    if (!validation.success) return validation.response
+
+    const year = validation.data.year
+    const weeksToSync = validation.data.weeks || Array.from({ length: 16 }, (_, i) => i)
 
     const supabase = createAdminClient()
 

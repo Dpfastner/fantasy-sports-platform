@@ -1,15 +1,8 @@
 import { NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/server'
 import { fetchRankings, fetchCFPRankings, fetchRankingsFromWebsite, ParsedRanking } from '@/lib/api/espn'
-
-interface SyncRankingsRequest {
-  year?: number
-  week?: number
-  seasonType?: number // 1 = preseason, 2 = regular, 3 = final
-  backfillAll?: boolean // Set true to sync all weeks
-  useCFP?: boolean // Set true to fetch CFP rankings (poll 22)
-  useWebsite?: boolean // Set true to scrape ESPN website for historical data
-}
+import { validateBody } from '@/lib/api/validation'
+import { syncRankingsSchema } from '@/lib/api/schemas'
 
 export async function POST(request: Request) {
   try {
@@ -24,13 +17,16 @@ export async function POST(request: Request) {
       )
     }
 
-    const body: SyncRankingsRequest = await request.json().catch(() => ({}))
-    const year = body.year || new Date().getFullYear()
-    const week = body.week || 1
-    const seasonType = body.seasonType || 2
-    const backfillAll = body.backfillAll || false
-    const useCFP = body.useCFP || false
-    const useWebsite = body.useWebsite ?? true // Default to website scraping for historical data
+    const rawBody = await request.json().catch(() => ({}))
+    const validation = validateBody(syncRankingsSchema, rawBody)
+    if (!validation.success) return validation.response
+
+    const year = validation.data.year || new Date().getFullYear()
+    const week = validation.data.week || 1
+    const seasonType = validation.data.seasonType || 2
+    const backfillAll = validation.data.backfillAll || false
+    const useCFP = validation.data.useCFP || false
+    const useWebsite = validation.data.useWebsite ?? true
 
     // Handle backfill all weeks
     if (backfillAll) {

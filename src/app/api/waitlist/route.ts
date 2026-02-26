@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/server'
+import { validateBody } from '@/lib/api/validation'
+import { waitlistSchema } from '@/lib/api/schemas'
 
 // Simple in-memory rate limiting
 const rateLimit = new Map<string, number[]>()
@@ -16,8 +18,6 @@ function isRateLimited(ip: string): boolean {
   return false
 }
 
-const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-
 export async function POST(request: NextRequest) {
   const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown'
   if (isRateLimited(ip)) {
@@ -27,9 +27,9 @@ export async function POST(request: NextRequest) {
     )
   }
 
-  let body: { name?: string; email?: string; source?: string; referral_code?: string; }
+  let rawBody: unknown
   try {
-    body = await request.json()
+    rawBody = await request.json()
   } catch {
     return NextResponse.json(
       { success: false, message: 'Invalid request body.' },
@@ -37,20 +37,17 @@ export async function POST(request: NextRequest) {
     )
   }
 
-  const email = body.email?.trim().toLowerCase()
-  if (!email || !EMAIL_REGEX.test(email)) {
-    return NextResponse.json(
-      { success: false, message: 'Please enter a valid email address.' },
-      { status: 400 }
-    )
-  }
+  const validation = validateBody(waitlistSchema, rawBody)
+  if (!validation.success) return validation.response
 
-  const name = body.name?.trim() || null
-  const referredBy = body.referral_code?.trim() || null
+  const { email: rawEmail, name: rawName, source: rawSource, referral_code } = validation.data
+  const email = rawEmail.trim().toLowerCase()
+  const name = rawName?.trim() || null
+  const referredBy = referral_code?.trim() || null
   // If referred, note it in source; otherwise use provided source or default
   const source = referredBy
     ? `referral:${referredBy}`
-    : (body.source?.trim() || 'landing_page')
+    : (rawSource?.trim() || 'landing_page')
 
   const supabase = createAdminClient()
 

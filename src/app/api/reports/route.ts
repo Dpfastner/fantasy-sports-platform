@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/server'
 import { requireAuth } from '@/lib/auth'
+import { validateBody } from '@/lib/api/validation'
+import { reportSchema } from '@/lib/api/schemas'
 
 export async function POST(request: NextRequest) {
   try {
@@ -9,15 +11,11 @@ export async function POST(request: NextRequest) {
     if (authResult instanceof NextResponse) return authResult
     const { user } = authResult
 
-    const body = await request.json()
-    const { category, description, page, userAgent } = body
+    const rawBody = await request.json()
+    const validation = validateBody(reportSchema, rawBody)
+    if (!validation.success) return validation.response
 
-    if (!description || !category) {
-      return NextResponse.json(
-        { error: 'Category and description are required' },
-        { status: 400 }
-      )
-    }
+    const { category, description, page, userAgent } = validation.data
 
     const supabase = createAdminClient()
 

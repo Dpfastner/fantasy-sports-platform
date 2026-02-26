@@ -7,15 +7,8 @@ import {
   calculateFantasyTeamPoints,
 } from '@/lib/points/calculator'
 import { calculateCurrentWeek } from '@/lib/constants/season'
-
-interface CalculatePointsRequest {
-  year?: number
-  week?: number
-  startWeek?: number
-  endWeek?: number
-  leagueId?: string
-  mode?: 'week' | 'season' | 'league'
-}
+import { validateBody } from '@/lib/api/validation'
+import { pointsCalculateSchema } from '@/lib/api/schemas'
 
 export async function POST(request: Request) {
   try {
@@ -27,9 +20,12 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const body: CalculatePointsRequest = await request.json().catch(() => ({}))
-    const year = body.year || new Date().getFullYear()
-    const mode = body.mode || 'week'
+    const rawBody = await request.json().catch(() => ({}))
+    const validation = validateBody(pointsCalculateSchema, rawBody)
+    if (!validation.success) return validation.response
+
+    const year = validation.data.year || new Date().getFullYear()
+    const mode = validation.data.mode
 
     const supabase = createAdminClient()
 
@@ -52,8 +48,8 @@ export async function POST(request: Request) {
 
     if (mode === 'season') {
       // Calculate entire season (week 22 = Heisman)
-      const startWeek = body.startWeek ?? 0
-      const endWeek = body.endWeek ?? 22
+      const startWeek = validation.data.startWeek ?? 0
+      const endWeek = validation.data.endWeek ?? 22
 
       const result = await calculateSeasonPoints(season.id, startWeek, endWeek, supabase)
 
@@ -65,22 +61,22 @@ export async function POST(request: Request) {
         endWeek,
         ...result,
       })
-    } else if (mode === 'league' && body.leagueId) {
+    } else if (mode === 'league' && validation.data.leagueId) {
       // Calculate for a specific league
-      const week = body.week ?? defaultWeek
+      const week = validation.data.week ?? defaultWeek
 
       // First ensure school points are calculated
       const schoolResult = await calculateWeeklySchoolPoints(season.id, week, supabase)
 
       // Then calculate for the specific league
-      const teamResult = await calculateFantasyTeamPoints(body.leagueId, week, supabase)
+      const teamResult = await calculateFantasyTeamPoints(validation.data.leagueId, week, supabase)
 
       return NextResponse.json({
         success: true,
         mode: 'league',
         year,
         week,
-        leagueId: body.leagueId,
+        leagueId: validation.data.leagueId,
         schoolPointsCalculated: schoolResult.calculated,
         teamsUpdated: teamResult.teamsUpdated,
         highPointsWinner: teamResult.highPointsWinner,
@@ -88,7 +84,7 @@ export async function POST(request: Request) {
       })
     } else {
       // Calculate single week (default)
-      const week = body.week ?? defaultWeek
+      const week = validation.data.week ?? defaultWeek
 
       const result = await calculateAllPoints(season.id, week, supabase)
 

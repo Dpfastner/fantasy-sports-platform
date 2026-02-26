@@ -1,13 +1,8 @@
 import { NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/server'
 import { fetchScoreboard, ESPNGame, getTeamLogoUrl } from '@/lib/api/espn'
-
-interface SyncGameRequest {
-  year?: number
-  week?: number
-  seasonType?: number // 2 = regular, 3 = postseason
-  backfillAll?: boolean // Set true to sync all weeks
-}
+import { validateBody } from '@/lib/api/validation'
+import { syncGamesSchema } from '@/lib/api/schemas'
 
 export async function POST(request: Request) {
   try {
@@ -22,11 +17,14 @@ export async function POST(request: Request) {
       )
     }
 
-    const body: SyncGameRequest = await request.json().catch(() => ({}))
-    const year = body.year || new Date().getFullYear()
-    const week = body.week || 1
-    const seasonType = body.seasonType || 2
-    const backfillAll = body.backfillAll || false
+    const rawBody = await request.json().catch(() => ({}))
+    const validation = validateBody(syncGamesSchema, rawBody)
+    if (!validation.success) return validation.response
+
+    const year = validation.data.year || new Date().getFullYear()
+    const week = validation.data.week || 1
+    const seasonType = validation.data.seasonType || 2
+    const backfillAll = validation.data.backfillAll || false
 
     // Handle backfill all weeks
     if (backfillAll) {

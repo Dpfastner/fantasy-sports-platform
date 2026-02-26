@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient as createServerClient, createAdminClient } from '@/lib/supabase/server'
+import { validateBody } from '@/lib/api/validation'
+import { leagueJoinSchema } from '@/lib/api/schemas'
 
 // POST /api/leagues/join
 // Body: { inviteCode: string, teamName?: string }
@@ -15,12 +17,11 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'You must be logged in' }, { status: 401 })
     }
 
-    const body = await request.json()
-    const { inviteCode, teamName } = body
+    const rawBody = await request.json()
+    const validation = validateBody(leagueJoinSchema, rawBody)
+    if (!validation.success) return validation.response
 
-    if (!inviteCode || typeof inviteCode !== 'string') {
-      return NextResponse.json({ error: 'Invite code is required' }, { status: 400 })
-    }
+    const { inviteCode, teamName } = validation.data
 
     // Use admin client to bypass RLS for invite code lookup
     const admin = createAdminClient()
@@ -78,11 +79,7 @@ export async function POST(request: Request) {
       })
     }
 
-    // Join mode — validate and join
-    if (typeof teamName !== 'string' || teamName.trim().length < 3) {
-      return NextResponse.json({ error: 'Team name must be at least 3 characters' }, { status: 400 })
-    }
-
+    // Join mode — Zod already validated teamName is 3+ chars
     if (members.length >= league.max_teams) {
       return NextResponse.json({ error: 'This league is full' }, { status: 409 })
     }

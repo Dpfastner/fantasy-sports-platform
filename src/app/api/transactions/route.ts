@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/server'
 import { getSimulatedDate } from '@/lib/week'
 import { requireAuth, verifyLeagueMembership } from '@/lib/auth'
+import { validateBody } from '@/lib/api/validation'
+import { transactionSchema } from '@/lib/api/schemas'
 
 export async function POST(request: NextRequest) {
   try {
@@ -10,7 +12,10 @@ export async function POST(request: NextRequest) {
     if (authResult instanceof NextResponse) return authResult
     const { user } = authResult
 
-    const body = await request.json()
+    const rawBody = await request.json()
+    const validation = validateBody(transactionSchema, rawBody)
+    if (!validation.success) return validation.response
+
     const {
       teamId,
       leagueId,
@@ -20,14 +25,7 @@ export async function POST(request: NextRequest) {
       addedSchoolId,
       slotNumber,
       rosterPeriodId,
-    } = body
-
-    if (!teamId || !leagueId || !weekNumber || !droppedSchoolId || !addedSchoolId || !slotNumber || !rosterPeriodId) {
-      return NextResponse.json(
-        { error: 'Missing required fields' },
-        { status: 400 }
-      )
-    }
+    } = validation.data
 
     const supabase = createAdminClient()
 

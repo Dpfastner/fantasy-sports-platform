@@ -1,13 +1,8 @@
 import { NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/server'
 import { fetchScoreboard, ESPNGame, getTeamLogoUrl } from '@/lib/api/espn'
-
-interface BulkSyncRequest {
-  year?: number
-  startWeek?: number
-  endWeek?: number
-  includePostseason?: boolean
-}
+import { validateBody } from '@/lib/api/validation'
+import { syncBulkSchema } from '@/lib/api/schemas'
 
 export async function POST(request: Request) {
   try {
@@ -19,11 +14,14 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const body: BulkSyncRequest = await request.json().catch(() => ({}))
-    const year = body.year || new Date().getFullYear()
-    const startWeek = body.startWeek || 0
-    const endWeek = body.endWeek || 15
-    const includePostseason = body.includePostseason !== false
+    const rawBody = await request.json().catch(() => ({}))
+    const validation = validateBody(syncBulkSchema, rawBody)
+    if (!validation.success) return validation.response
+
+    const year = validation.data.year || new Date().getFullYear()
+    const startWeek = validation.data.startWeek || 0
+    const endWeek = validation.data.endWeek || 15
+    const includePostseason = validation.data.includePostseason !== false
 
     const supabase = createAdminClient()
 
