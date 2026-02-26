@@ -1,18 +1,8 @@
 import { NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
+import { createAdminClient } from '@/lib/supabase/server'
 import { fetchRankings } from '@/lib/api/espn'
 import { areCronsEnabled, getEnvironment } from '@/lib/env'
-
-function getSupabaseAdmin() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY
-
-  if (!url || !key) {
-    throw new Error('Missing Supabase configuration')
-  }
-
-  return createClient(url, key)
-}
+import { calculateCurrentWeek } from '@/lib/constants/season'
 
 function verifyCronRequest(request: Request): boolean {
   const authHeader = request.headers.get('authorization')
@@ -42,7 +32,7 @@ export async function GET(request: Request) {
       })
     }
 
-    const supabase = getSupabaseAdmin()
+    const supabase = createAdminClient()
     const year = new Date().getFullYear()
 
     // Get current season
@@ -72,10 +62,7 @@ export async function GET(request: Request) {
     }
 
     // Calculate current week
-    const currentDate = new Date()
-    const seasonStart = new Date(Date.UTC(year, 7, 24)) // August 24 UTC
-    const weeksDiff = Math.floor((currentDate.getTime() - seasonStart.getTime()) / (7 * 24 * 60 * 60 * 1000))
-    const currentWeek = Math.max(0, Math.min(weeksDiff + 1, 22)) // Week 0-22 (through Heisman)
+    const currentWeek = calculateCurrentWeek(year)
 
     // Fetch rankings from ESPN
     const rankingsData = await fetchRankings(year)

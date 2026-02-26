@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { Header } from '@/components/Header'
 
@@ -184,9 +183,9 @@ export default function SettingsPage() {
 
       <main className="container mx-auto px-4 py-8 max-w-2xl">
         <div className="mb-6">
-          <Link href="/dashboard" className="text-gray-400 hover:text-white transition-colors">
-            &larr; Back to Dashboard
-          </Link>
+          <button onClick={() => router.back()} className="text-gray-400 hover:text-white transition-colors">
+            &larr; Back
+          </button>
         </div>
 
         <h1 className="text-3xl font-bold text-white mb-8">Account Settings</h1>

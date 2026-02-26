@@ -1,18 +1,6 @@
 import { NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
+import { createAdminClient } from '@/lib/supabase/server'
 import { fetchScoreboard, ESPNGame, getTeamLogoUrl } from '@/lib/api/espn'
-
-// Create admin client lazily at runtime (not build time)
-function getSupabaseAdmin() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY
-
-  if (!url || !key) {
-    throw new Error('Missing Supabase configuration. Set NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY.')
-  }
-
-  return createClient(url, key)
-}
 
 interface SyncGameRequest {
   year?: number
@@ -52,7 +40,7 @@ export async function POST(request: Request) {
     console.log(`Found ${games.length} games`)
 
     // Get season ID from our database
-    const { data: season } = await getSupabaseAdmin()
+    const { data: season } = await createAdminClient()
       .from('seasons')
       .select('id')
       .eq('year', year)
@@ -66,7 +54,7 @@ export async function POST(request: Request) {
     }
 
     // Get school mappings (ESPN ID -> our school ID), conference info, and logos
-    const { data: schools } = await getSupabaseAdmin()
+    const { data: schools } = await createAdminClient()
       .from('schools')
       .select('id, external_api_id, conference, logo_url')
       .not('external_api_id', 'is', null)
@@ -150,7 +138,7 @@ export async function POST(request: Request) {
       const playoffRound = seasonType === 3 ? determinePlayoffRound(bowlName || '') : null
 
       // Upsert the game (using correct column names from schema)
-      const { error: upsertError } = await getSupabaseAdmin()
+      const { error: upsertError } = await createAdminClient()
         .from('games')
         .upsert(
           {
@@ -271,7 +259,7 @@ function determinePlayoffRound(notesHeadline: string): string | null {
 async function handleBackfillAllGames(year: number) {
   console.log(`Starting full game backfill for ${year} season...`)
 
-  const supabase = getSupabaseAdmin()
+  const supabase = createAdminClient()
 
   // Get season ID
   const { data: season } = await supabase
@@ -371,7 +359,7 @@ async function handleBackfillAllGames(year: number) {
  * Sync games for a single week
  */
 async function syncWeekGames(
-  supabase: ReturnType<typeof getSupabaseAdmin>,
+  supabase: ReturnType<typeof createAdminClient>,
   seasonId: string,
   weekNumber: number,
   games: ESPNGame[],

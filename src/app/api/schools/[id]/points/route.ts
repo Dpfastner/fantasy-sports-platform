@@ -1,17 +1,5 @@
 import { NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
-
-// Create admin client
-function getSupabaseAdmin() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY
-
-  if (!url || !key) {
-    throw new Error('Missing Supabase configuration')
-  }
-
-  return createClient(url, key)
-}
+import { createAdminClient } from '@/lib/supabase/server'
 
 export async function GET(
   request: Request,
@@ -23,7 +11,7 @@ export async function GET(
     const year = parseInt(searchParams.get('year') || String(new Date().getFullYear()))
     const week = searchParams.get('week') ? parseInt(searchParams.get('week')!) : null
 
-    const supabase = getSupabaseAdmin()
+    const supabase = createAdminClient()
 
     // Get school info
     const { data: school, error: schoolError } = await supabase

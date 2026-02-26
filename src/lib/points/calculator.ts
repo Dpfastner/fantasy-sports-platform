@@ -1,212 +1,18 @@
-import { createClient, SupabaseClient } from '@supabase/supabase-js'
+import { SupabaseClient } from '@supabase/supabase-js'
+import { createAdminClient } from '@/lib/supabase/server'
 
-// Create admin client for points calculations
-function getSupabaseAdmin(): SupabaseClient {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY
+// Re-export shared types and functions for backward compatibility
+export {
+  type LeagueSettings,
+  type Game,
+  type SchoolPointsBreakdown,
+  DEFAULT_SCORING,
+  SCORING_CATEGORIES,
+  calculateSchoolGamePoints,
+} from './shared'
 
-  if (!url || !key) {
-    throw new Error('Missing Supabase configuration')
-  }
-
-  return createClient(url, key)
-}
-
-export interface LeagueSettings {
-  // Win scoring
-  points_win: number
-  points_conference_game: number
-  points_over_50: number
-  points_shutout: number
-  points_ranked_25: number
-  points_ranked_10: number
-  // Loss scoring
-  points_loss: number
-  points_conference_game_loss: number
-  points_over_50_loss: number
-  points_shutout_loss: number
-  points_ranked_25_loss: number
-  points_ranked_10_loss: number
-}
-
-interface Game {
-  id: string
-  season_id: string
-  week_number: number
-  home_school_id: string | null
-  away_school_id: string | null
-  home_score: number
-  away_score: number
-  home_rank: number | null
-  away_rank: number | null
-  status: string
-  is_conference_game: boolean
-  is_bowl_game: boolean
-  is_playoff_game: boolean
-  playoff_round: string | null
-}
-
-interface SchoolPointsBreakdown {
-  schoolId: string
-  gameId: string
-  seasonId: string
-  weekNumber: number
-  isWin: boolean
-  basePoints: number
-  conferenceBonus: number
-  over50Bonus: number
-  shutoutBonus: number
-  ranked25Bonus: number
-  ranked10Bonus: number
-  totalPoints: number
-}
-
-// Default scoring rules (used for global school points)
-export const DEFAULT_SCORING: LeagueSettings = {
-  points_win: 1,
-  points_conference_game: 1,
-  points_over_50: 1,
-  points_shutout: 1,
-  points_ranked_25: 1,
-  points_ranked_10: 2,
-  points_loss: 0,
-  points_conference_game_loss: 0,
-  points_over_50_loss: 0,
-  points_shutout_loss: 0,
-  points_ranked_25_loss: 0,
-  points_ranked_10_loss: 0,
-}
-
-/**
- * Calculate points for a single school in a single game
- * @param game - The game data
- * @param schoolId - The school we're calculating points for
- * @param opponentRank - The AP rank of the OPPONENT (not the school itself)
- * @param scoring - League scoring settings
- * @param isBowlGame - Whether this is a bowl game (no conference bonus, no ranked bonuses)
- *
- * Scoring rules by game type:
- * - Championship: NO regular scoring (all 0) - uses event bonus only
- * - Bowl games: Win + 50+ + shutout, NO conference, NO ranked bonuses
- * - Playoffs (R1, QF, SF): Win + 50+ + shutout, NO conference, ranked 1-12 only
- * - Regular season: Win + conf + 50+ + shutout + ranked bonuses (1-10: +2, 11-25: +1)
- */
-export function calculateSchoolGamePoints(
-  game: Game,
-  schoolId: string,
-  opponentRank: number | null,
-  scoring: LeagueSettings = DEFAULT_SCORING,
-  isBowlGame: boolean = false
-): SchoolPointsBreakdown {
-  const isHome = game.home_school_id === schoolId
-  const teamScore = isHome ? game.home_score : game.away_score
-  const opponentScore = isHome ? game.away_score : game.home_score
-  const isWin = teamScore > opponentScore
-
-  // Championship game: NO regular scoring - only championship_win/loss bonus from event system
-  const isChampionship = game.playoff_round === 'championship'
-  if (isChampionship) {
-    return {
-      schoolId,
-      gameId: game.id,
-      seasonId: game.season_id,
-      weekNumber: game.week_number,
-      isWin,
-      basePoints: 0,
-      conferenceBonus: 0,
-      over50Bonus: 0,
-      shutoutBonus: 0,
-      ranked25Bonus: 0,
-      ranked10Bonus: 0,
-      totalPoints: 0,
-    }
-  }
-
-  // Calculate bonuses based on win/loss
-  let basePoints = 0
-  let conferenceBonus = 0
-  let over50Bonus = 0
-  let shutoutBonus = 0
-  let ranked25Bonus = 0
-  let ranked10Bonus = 0
-
-  if (isWin) {
-    basePoints = scoring.points_win
-    // Conference bonus only applies to regular season games (not bowls or playoffs)
-    if (game.is_conference_game && !isBowlGame && !game.is_playoff_game) {
-      conferenceBonus = scoring.points_conference_game
-    }
-    if (teamScore >= 50) over50Bonus = scoring.points_over_50
-    if (opponentScore === 0) shutoutBonus = scoring.points_shutout
-
-    // Ranked bonuses based on game type:
-    // - Bowl games: NO ranked bonuses at all
-    // - Playoffs (non-championship): Only ranks 1-12 get +2, no 11-25 bonus
-    // - Regular season: 1-10 gets +2, 11-25 gets +1
-    if (opponentRank) {
-      if (isBowlGame) {
-        // Bowl games: NO ranked bonuses
-        // (intentionally empty - no ranked bonus for bowls)
-      } else if (game.is_playoff_game) {
-        // Playoffs (R1, QF, SF): only ranks 1-12 get the bonus, no 11-25
-        if (opponentRank <= 12) ranked10Bonus = scoring.points_ranked_10
-      } else {
-        // Regular season: 1-10 gets higher bonus, 11-25 gets lower bonus
-        if (opponentRank <= 10) {
-          ranked10Bonus = scoring.points_ranked_10
-        } else if (opponentRank <= 25) {
-          ranked25Bonus = scoring.points_ranked_25
-        }
-      }
-    }
-  } else {
-    basePoints = scoring.points_loss
-    // Conference bonus only applies to regular season games (not bowls or playoffs)
-    if (game.is_conference_game && !isBowlGame && !game.is_playoff_game) {
-      conferenceBonus = scoring.points_conference_game_loss
-    }
-    if (teamScore >= 50) over50Bonus = scoring.points_over_50_loss
-    if (opponentScore === 0) shutoutBonus = scoring.points_shutout_loss
-
-    // Ranked bonuses for losses based on game type:
-    // - Bowl games: NO ranked bonuses at all
-    // - Playoffs (non-championship): Only ranks 1-12 get the bonus, no 11-25
-    // - Regular season: 1-10 gets higher bonus, 11-25 gets lower bonus
-    if (opponentRank) {
-      if (isBowlGame) {
-        // Bowl games: NO ranked bonuses
-        // (intentionally empty - no ranked bonus for bowls)
-      } else if (game.is_playoff_game) {
-        // Playoffs (R1, QF, SF): only ranks 1-12 get the bonus
-        if (opponentRank <= 12) ranked10Bonus = scoring.points_ranked_10_loss
-      } else {
-        // Regular season: 1-10 gets higher bonus, 11-25 gets lower bonus
-        if (opponentRank <= 10) {
-          ranked10Bonus = scoring.points_ranked_10_loss
-        } else if (opponentRank <= 25) {
-          ranked25Bonus = scoring.points_ranked_25_loss
-        }
-      }
-    }
-  }
-
-  const totalPoints = basePoints + conferenceBonus + over50Bonus + shutoutBonus + ranked25Bonus + ranked10Bonus
-
-  return {
-    schoolId,
-    gameId: game.id,
-    seasonId: game.season_id,
-    weekNumber: game.week_number,
-    isWin,
-    basePoints,
-    conferenceBonus,
-    over50Bonus,
-    shutoutBonus,
-    ranked25Bonus,
-    ranked10Bonus,
-    totalPoints,
-  }
-}
+import type { LeagueSettings, Game } from './shared'
+import { DEFAULT_SCORING, calculateSchoolGamePoints } from './shared'
 
 /**
  * Calculate and store points for all completed games in a given week
@@ -217,7 +23,7 @@ export async function calculateWeeklySchoolPoints(
   weekNumber: number,
   supabase?: SupabaseClient
 ): Promise<{ calculated: number; errors: string[] }> {
-  const client = supabase || getSupabaseAdmin()
+  const client = supabase || createAdminClient()
   const errors: string[] = []
   let calculated = 0
 
@@ -390,7 +196,7 @@ export async function calculateFantasyTeamPoints(
   weekNumber: number,
   supabase?: SupabaseClient
 ): Promise<{ teamsUpdated: number; highPointsWinner: string | null; errors: string[] }> {
-  const client = supabase || getSupabaseAdmin()
+  const client = supabase || createAdminClient()
   const errors: string[] = []
   let teamsUpdated = 0
 
@@ -719,7 +525,7 @@ export async function calculateAllPoints(
   teamsUpdated: number
   errors: string[]
 }> {
-  const client = supabase || getSupabaseAdmin()
+  const client = supabase || createAdminClient()
   const errors: string[] = []
 
   // Step 1: Calculate school weekly points
@@ -776,7 +582,7 @@ export async function calculateSeasonPoints(
   totalTeamsUpdated: number
   errors: string[]
 }> {
-  const client = supabase || getSupabaseAdmin()
+  const client = supabase || createAdminClient()
   let weeksProcessed = 0
   let totalSchoolPoints = 0
   let totalTeamsUpdated = 0

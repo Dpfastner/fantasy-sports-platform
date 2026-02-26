@@ -1,19 +1,8 @@
 import { NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
+import { createAdminClient } from '@/lib/supabase/server'
 import { getCurrentWeek } from '@/lib/week'
 import { requireAuth, verifyLeagueMembership } from '@/lib/auth'
-
-// Create admin client
-function getSupabaseAdmin() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY
-
-  if (!url || !key) {
-    throw new Error('Missing Supabase configuration')
-  }
-
-  return createClient(url, key)
-}
+import { getLeagueYear } from '@/lib/league-helpers'
 
 interface StandingsTeam {
   id: string
@@ -48,7 +37,7 @@ export async function GET(
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
-    const supabase = getSupabaseAdmin()
+    const supabase = createAdminClient()
 
     // Get league with season info
     const { data: league, error: leagueError } = await supabase
@@ -65,8 +54,7 @@ export async function GET(
     }
 
     // Get current week (respects sandbox override)
-    const seasonData = league.seasons as unknown as { year: number } | { year: number }[] | null
-    const seasonYear = Array.isArray(seasonData) ? seasonData[0]?.year : seasonData?.year || new Date().getFullYear()
+    const seasonYear = getLeagueYear(league.seasons)
     const currentWeek = await getCurrentWeek(seasonYear)
 
     // Get all fantasy teams with their points

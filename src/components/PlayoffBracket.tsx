@@ -149,6 +149,22 @@ export function PlayoffBracket({ seasonId, rosterSchoolIds = [], leagueId }: Pro
       rounds[round].push(bracketGame)
     }
 
+    // Detect bye teams: seeds 1-4 appear in quarterfinals but NOT in first round
+    const firstRoundSchoolIds = new Set<string>()
+    for (const g of rounds.first_round) {
+      if (g.game?.home_school_id) firstRoundSchoolIds.add(g.game.home_school_id)
+      if (g.game?.away_school_id) firstRoundSchoolIds.add(g.game.away_school_id)
+    }
+
+    // For each quarterfinal game, check if either team has a bye (seed 1-4, not in first round)
+    for (const qf of rounds.quarterfinal) {
+      for (const slot of [qf.topTeam, qf.bottomTeam]) {
+        if (slot.seed && slot.seed <= 4 && slot.schoolId && !firstRoundSchoolIds.has(slot.schoolId)) {
+          slot.isBye = true
+        }
+      }
+    }
+
     // Ensure proper ordering and fill in bye placeholders
     rounds.first_round = ensureFirstRoundSlots(rounds.first_round)
     rounds.quarterfinal = ensureQuarterfinalSlots(rounds.quarterfinal)
@@ -272,6 +288,9 @@ export function PlayoffBracket({ seasonId, rosterSchoolIds = [], leagueId }: Pro
         }`}>
           {team.name}
         </span>
+        {team.isBye && (
+          <span className="text-xs text-yellow-400 font-medium">BYE</span>
+        )}
         {team.score !== null && team.score !== undefined && (
           <span className={`text-sm font-bold ${
             team.isWinner ? 'text-green-400' : 'text-gray-400'

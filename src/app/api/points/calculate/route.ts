@@ -1,23 +1,12 @@
 import { NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
+import { createAdminClient } from '@/lib/supabase/server'
 import {
   calculateAllPoints,
   calculateSeasonPoints,
   calculateWeeklySchoolPoints,
   calculateFantasyTeamPoints,
 } from '@/lib/points/calculator'
-
-// Create admin client
-function getSupabaseAdmin() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY
-
-  if (!url || !key) {
-    throw new Error('Missing Supabase configuration')
-  }
-
-  return createClient(url, key)
-}
+import { calculateCurrentWeek } from '@/lib/constants/season'
 
 interface CalculatePointsRequest {
   year?: number
@@ -42,7 +31,7 @@ export async function POST(request: Request) {
     const year = body.year || new Date().getFullYear()
     const mode = body.mode || 'week'
 
-    const supabase = getSupabaseAdmin()
+    const supabase = createAdminClient()
 
     // Get season
     const { data: season } = await supabase
@@ -59,12 +48,7 @@ export async function POST(request: Request) {
     }
 
     // Calculate current week if not provided
-    const currentDate = new Date()
-    const seasonStart = new Date(Date.UTC(year, 7, 24)) // August 24 UTC
-    const weeksDiff = Math.floor(
-      (currentDate.getTime() - seasonStart.getTime()) / (7 * 24 * 60 * 60 * 1000)
-    )
-    const defaultWeek = Math.max(0, Math.min(weeksDiff + 1, 22))
+    const defaultWeek = calculateCurrentWeek(year)
 
     if (mode === 'season') {
       // Calculate entire season (week 22 = Heisman)

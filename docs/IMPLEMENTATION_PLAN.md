@@ -666,7 +666,7 @@ After completing this phase:
 
 *Eliminate duplication, fix type safety, improve component architecture*
 
-**Status: NOT STARTED**
+**Status: COMPLETE**
 
 **Addresses**: [T1](#t1-duplicated-scoring-logic), [T2](#t2-duplicated-leaderboard-components), [T3](#t3-duplicated-page-logic), [T4](#t4-20-unsafe-type-assertions), [T5](#t5-hardcoded-week-numbers-everywhere), [T6](#t6-hardcoded-season-start-date), [T7](#t7-missing-error-handling-in-components), [T8](#t8-large-components), [T9](#t9-missing-memoization)
 
@@ -694,6 +694,19 @@ After completing this phase:
 3. **15.1** (scoring utility) — depends on Phase 12 being complete
 4. **15.2** (leaderboard merge) — larger refactor, do after tests exist (Phase 16)
 5. **15.7 + 15.8 + 15.9** (error handling, boundaries, memoization) — can be done independently
+
+### 15.10: Component Splitting Plan (Post-Phase 16)
+
+These large components should be split **after** Phase 16 adds tests, so regressions can be caught.
+
+| Component | File | Lines | Recommended Splits |
+|-----------|------|-------|--------------------|
+| Draft page | `src/app/leagues/[id]/draft/page.tsx` | ~1,755 | `DraftBoard` (grid display), `DraftPickList` (pick history sidebar), `DraftTimer` (countdown + auto-pick), `DraftControls` (start/pause/reset buttons), `AvailableSchoolsList` (filterable school picker) |
+| League settings | `src/app/leagues/[id]/settings/page.tsx` | ~1,471 | `ScoringSettingsForm`, `DraftSettingsForm`, `TransactionSettingsForm`, `MemberManagement` (invite/remove/role) |
+| RosterList | `src/components/RosterList.tsx` | ~953 | `RosterRow` (single school row with points), `WeeklyPointsGrid` (the scrollable week columns), `SchoolScheduleModal` (opponent popup) |
+| TransactionsClient | `src/components/TransactionsClient.tsx` | ~834 | `AvailableSchoolsBrowser` (search/filter/sort), `TransactionConfirmation` (add/drop confirm modal), `TransactionHistory` (past transactions list) |
+
+**Approach**: Extract child components one at a time, passing data via props. Keep state in the parent. Write a test for the parent component first (Phase 16), then extract.
 
 ---
 
@@ -1129,7 +1142,7 @@ If building post-launch, suggested order:
 | `vercel.json` | A1 (missing crons) | 12 |
 | `src/types/database.ts` | D1 (out of sync) | 14 |
 | `src/components/LeaderboardClient.tsx` | T2, T5, T9 | 15 |
-| `src/components/EmbeddedLeaderboard.tsx` | T2, T5, T9 | 15 |
+| `src/components/EmbeddedLeaderboard.tsx` | ~~T2, T5, T9~~ DELETED (merged into LeaderboardClient) | 15 |
 | `src/components/TransactionsClient.tsx` | T1, T8 | 15 |
 | `src/app/api/transactions/route.ts` | S1 (no auth) | 13 |
 | `src/app/api/leagues/[id]/standings/route.ts` | S1 (no auth) | 13 |
@@ -1155,4 +1168,4 @@ If building post-launch, suggested order:
 
 ---
 
-*Last Updated: February 23, 2026*
+*Last Updated: February 25, 2026*

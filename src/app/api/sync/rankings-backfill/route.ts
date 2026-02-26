@@ -1,17 +1,6 @@
 import { NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
+import { createAdminClient } from '@/lib/supabase/server'
 import { fetchRankings } from '@/lib/api/espn'
-
-function getSupabaseAdmin() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY
-
-  if (!url || !key) {
-    throw new Error('Missing Supabase configuration')
-  }
-
-  return createClient(url, key)
-}
 
 interface BackfillRequest {
   year: number
@@ -32,7 +21,7 @@ export async function POST(request: Request) {
     const year = body.year || 2025
     const weeksToSync = body.weeks || Array.from({ length: 16 }, (_, i) => i) // Weeks 0-15
 
-    const supabase = getSupabaseAdmin()
+    const supabase = createAdminClient()
 
     // Get season
     const { data: season } = await supabase

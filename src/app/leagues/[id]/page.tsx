@@ -3,10 +3,12 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { Header } from '@/components/Header'
 import DraftStatusSection from '@/components/DraftStatusSection'
-import EmbeddedLeaderboard from '@/components/EmbeddedLeaderboard'
+import LeaderboardClient from '@/components/LeaderboardClient'
+import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { SandboxWeekSelector } from '@/components/SandboxWeekSelector'
 import { getCurrentWeek } from '@/lib/week'
 import { getEnvironment } from '@/lib/env'
+import { getLeagueYear } from '@/lib/league-helpers'
 
 // Force dynamic rendering to ensure fresh data from database
 export const dynamic = 'force-dynamic'
@@ -147,8 +149,7 @@ export default async function LeaguePage({ params }: PageProps) {
   const isDraftComplete = draft?.status === 'completed'
 
   // Calculate current week (with sandbox override support)
-  const seasons = league.seasons as unknown as { year: number; name: string } | null
-  const year = seasons?.year || new Date().getFullYear()
+  const year = getLeagueYear(league.seasons)
   const currentWeek = await getCurrentWeek(year)
   const environment = getEnvironment()
 
@@ -272,17 +273,20 @@ export default async function LeaguePage({ params }: PageProps) {
             {/* Leaderboard (only when draft IS completed) */}
             {isDraftComplete && teams && teams.length > 0 && (
               <div className="bg-gray-800 rounded-lg p-4 md:p-6">
-                <EmbeddedLeaderboard
-                  leagueId={id}
-                  currentWeek={currentWeek}
-                  currentUserId={user.id}
-                  initialTeams={teams}
-                  initialWeeklyPoints={weeklyPoints}
-                  settings={settings ? {
-                    high_points_enabled: settings.high_points_enabled || false,
-                    high_points_weekly_amount: settings.high_points_weekly_amount || 0,
-                  } : null}
-                />
+                <ErrorBoundary sectionName="leaderboard">
+                  <LeaderboardClient
+                    leagueId={id}
+                    variant="embedded"
+                    currentWeek={currentWeek}
+                    currentUserId={user.id}
+                    initialTeams={teams}
+                    initialWeeklyPoints={weeklyPoints}
+                    settings={settings ? {
+                      high_points_enabled: settings.high_points_enabled || false,
+                      high_points_weekly_amount: settings.high_points_weekly_amount || 0,
+                    } : null}
+                  />
+                </ErrorBoundary>
               </div>
             )}
           </div>

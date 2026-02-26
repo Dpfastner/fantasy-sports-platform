@@ -1,16 +1,5 @@
 import { NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
-
-function getSupabaseAdmin() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY
-
-  if (!url || !key) {
-    throw new Error('Missing Supabase configuration')
-  }
-
-  return createClient(url, key)
-}
+import { createAdminClient } from '@/lib/supabase/server'
 
 // Known Heisman winners data (Wikipedia-sourced)
 // This provides reliable fallback data when scraping fails
@@ -45,7 +34,7 @@ export async function POST(request: Request) {
     const body: SyncHeismanRequest = await request.json().catch(() => ({}))
     const year = body.year || new Date().getFullYear()
 
-    const supabase = getSupabaseAdmin()
+    const supabase = createAdminClient()
 
     // Get season
     const { data: season } = await supabase

@@ -1,17 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
+import { createAdminClient } from '@/lib/supabase/server'
 import { areCronsEnabled, getEnvironment } from '@/lib/env'
-
-function getSupabaseAdmin() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY
-
-  if (!url || !key) {
-    throw new Error('Missing Supabase configuration')
-  }
-
-  return createClient(url, key)
-}
 
 interface ReconciliationResult {
   teamPointsFixed: number
@@ -39,7 +28,7 @@ export async function POST(request: NextRequest) {
       })
     }
 
-    const supabase = getSupabaseAdmin()
+    const supabase = createAdminClient()
     const result: ReconciliationResult = {
       teamPointsFixed: 0,
       highPointsFixed: 0,

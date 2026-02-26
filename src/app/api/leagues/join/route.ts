@@ -1,13 +1,5 @@
 import { NextResponse } from 'next/server'
-import { createClient as createServerClient } from '@/lib/supabase/server'
-import { createClient } from '@supabase/supabase-js'
-
-function getSupabaseAdmin() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY
-  if (!url || !key) throw new Error('Missing Supabase configuration')
-  return createClient(url, key)
-}
+import { createClient as createServerClient, createAdminClient } from '@/lib/supabase/server'
 
 // POST /api/leagues/join
 // Body: { inviteCode: string, teamName?: string }
@@ -31,7 +23,7 @@ export async function POST(request: Request) {
     }
 
     // Use admin client to bypass RLS for invite code lookup
-    const admin = getSupabaseAdmin()
+    const admin = createAdminClient()
 
     // Look up league by invite code (no joins — avoids PostgREST .single() issues)
     const { data: league, error: lookupError } = await admin

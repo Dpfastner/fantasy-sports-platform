@@ -1,19 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
+import { createAdminClient } from '@/lib/supabase/server'
 import { getSimulatedDate } from '@/lib/week'
 import { requireAuth, verifyLeagueMembership } from '@/lib/auth'
-
-// Create admin client for transaction processing
-function getSupabaseAdmin() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY
-
-  if (!url || !key) {
-    throw new Error('Missing Supabase configuration')
-  }
-
-  return createClient(url, key)
-}
 
 export async function POST(request: NextRequest) {
   try {
@@ -41,7 +29,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const supabase = getSupabaseAdmin()
+    const supabase = createAdminClient()
 
     // Get team and verify the requesting user owns it
     const { data: team, error: teamError } = await supabase
@@ -296,7 +284,7 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    const supabase = getSupabaseAdmin()
+    const supabase = createAdminClient()
 
     let query = supabase
       .from('transactions')

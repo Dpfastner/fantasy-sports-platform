@@ -1,20 +1,9 @@
 import { NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
+import { createAdminClient } from '@/lib/supabase/server'
 import { fetchScoreboard, fetchRankings, getTeamLogoUrl } from '@/lib/api/espn'
 import { calculateAllPoints } from '@/lib/points/calculator'
 import { areCronsEnabled, getEnvironment } from '@/lib/env'
-
-// Create admin client
-function getSupabaseAdmin() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY
-
-  if (!url || !key) {
-    throw new Error('Missing Supabase configuration')
-  }
-
-  return createClient(url, key)
-}
+import { calculateCurrentWeek } from '@/lib/constants/season'
 
 // Verify the request is from Vercel Cron
 function verifyCronRequest(request: Request): boolean {
@@ -45,7 +34,7 @@ export async function GET(request: Request) {
       })
     }
 
-    const supabase = getSupabaseAdmin()
+    const supabase = createAdminClient()
     const now = new Date()
     const year = now.getFullYear()
     const results = {
@@ -83,11 +72,8 @@ export async function GET(request: Request) {
       }
     }
 
-    // Calculate current week (extends to week 20 for postseason/bowls)
-    // CFB season typically starts late August, Week 0 is sometimes used
-    const seasonStart = new Date(Date.UTC(year, 7, 24)) // August 24 UTC
-    const weeksDiff = Math.floor((now.getTime() - seasonStart.getTime()) / (7 * 24 * 60 * 60 * 1000))
-    const currentWeek = Math.max(0, Math.min(weeksDiff + 1, 22)) // Week 0-22 (through Heisman)
+    // Calculate current week
+    const currentWeek = calculateCurrentWeek(year, now.getTime())
 
     // Sync Rankings
     try {

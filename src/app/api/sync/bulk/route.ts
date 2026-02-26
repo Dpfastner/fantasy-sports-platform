@@ -1,18 +1,6 @@
 import { NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
+import { createAdminClient } from '@/lib/supabase/server'
 import { fetchScoreboard, ESPNGame, getTeamLogoUrl } from '@/lib/api/espn'
-
-// Create admin client
-function getSupabaseAdmin() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY
-
-  if (!url || !key) {
-    throw new Error('Missing Supabase configuration')
-  }
-
-  return createClient(url, key)
-}
 
 interface BulkSyncRequest {
   year?: number
@@ -37,7 +25,7 @@ export async function POST(request: Request) {
     const endWeek = body.endWeek || 15
     const includePostseason = body.includePostseason !== false
 
-    const supabase = getSupabaseAdmin()
+    const supabase = createAdminClient()
 
     // Get season
     const { data: season } = await supabase
@@ -155,7 +143,7 @@ export async function POST(request: Request) {
 }
 
 async function syncGames(
-  supabase: ReturnType<typeof getSupabaseAdmin>,
+  supabase: ReturnType<typeof createAdminClient>,
   games: ESPNGame[],
   seasonId: string,
   weekNumber: number,

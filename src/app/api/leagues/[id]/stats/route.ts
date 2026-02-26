@@ -1,18 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
+import { createAdminClient } from '@/lib/supabase/server'
 import { requireAuth, verifyLeagueMembership } from '@/lib/auth'
-
-// Create admin client
-function getSupabaseAdmin() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY
-
-  if (!url || !key) {
-    throw new Error('Missing Supabase configuration')
-  }
-
-  return createClient(url, key)
-}
+import { calculateCurrentWeek } from '@/lib/constants/season'
 
 interface SchoolStats {
   id: string
@@ -51,7 +40,7 @@ export async function GET(
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
-    const supabase = getSupabaseAdmin()
+    const supabase = createAdminClient()
 
     // Get league with season and settings
     const { data: league, error: leagueError } = await supabase
@@ -151,9 +140,7 @@ export async function GET(
       .single()
 
     const year = season?.year || new Date().getFullYear()
-    const seasonStart = new Date(year, 7, 24)
-    const weeksDiff = Math.floor((Date.now() - seasonStart.getTime()) / (7 * 24 * 60 * 60 * 1000))
-    const currentWeek = Math.max(1, Math.min(weeksDiff + 1, 15))
+    const currentWeek = calculateCurrentWeek(year)
 
     // Calculate max points for current week
     const currentWeekPoints = new Map<string, number>()

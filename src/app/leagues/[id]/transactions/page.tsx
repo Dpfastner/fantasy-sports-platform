@@ -1,9 +1,11 @@
 import { redirect, notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import TransactionsClient from '@/components/TransactionsClient'
+import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { SandboxWeekSelector } from '@/components/SandboxWeekSelector'
 import { getCurrentWeek, getSimulatedDate } from '@/lib/week'
 import { getEnvironment } from '@/lib/env'
+import { getLeagueYear } from '@/lib/league-helpers'
 
 // Force dynamic rendering to ensure fresh data from database
 export const dynamic = 'force-dynamic'
@@ -146,8 +148,7 @@ export default async function TransactionsPage({ params }: PageProps) {
   }
 
   // Calculate current week (extends to week 20 for postseason/bowls) - supports sandbox override
-  const seasons = league.seasons as unknown as { year: number } | { year: number }[] | null
-  const year = Array.isArray(seasons) ? seasons[0]?.year : seasons?.year || new Date().getFullYear()
+  const year = getLeagueYear(league.seasons)
   const currentWeek = await getCurrentWeek(year)
   const simulatedDate = await getSimulatedDate(year)
   const environment = getEnvironment()
@@ -374,6 +375,7 @@ export default async function TransactionsPage({ params }: PageProps) {
 
   return (
     <>
+      <ErrorBoundary sectionName="transactions">
       <TransactionsClient
         leagueId={leagueId}
         leagueName={league.name}
@@ -411,6 +413,7 @@ export default async function TransactionsPage({ params }: PageProps) {
         }}
         eventBonuses={eventBonuses}
       />
+      </ErrorBoundary>
       <SandboxWeekSelector currentWeek={currentWeek} environment={environment} />
     </>
   )

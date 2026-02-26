@@ -6,6 +6,7 @@ import { RosterList } from '@/components/RosterList'
 import { SandboxWeekSelector } from '@/components/SandboxWeekSelector'
 import { getCurrentWeek, getSimulatedDate } from '@/lib/week'
 import { getEnvironment } from '@/lib/env'
+import { getLeagueYear } from '@/lib/league-helpers'
 import { calculateSchoolGamePoints, DEFAULT_SCORING } from '@/lib/points/calculator'
 
 // Force dynamic rendering to ensure fresh data from database
@@ -144,8 +145,7 @@ export default async function TeamPage({ params }: PageProps) {
     .single()
 
   // Calculate current week (with sandbox override support) - must be before roster queries
-  const seasons = league.seasons as unknown as { year: number } | { year: number }[] | null
-  const year = Array.isArray(seasons) ? seasons[0]?.year : seasons?.year || new Date().getFullYear()
+  const year = getLeagueYear(league.seasons)
   const currentWeek = await getCurrentWeek(year)
   const simulatedDate = await getSimulatedDate(year)
   const environment = getEnvironment()

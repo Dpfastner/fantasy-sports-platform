@@ -2,6 +2,8 @@ import { redirect, notFound } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { PlayoffBracket } from '@/components/PlayoffBracket'
+import { ErrorBoundary } from '@/components/ErrorBoundary'
+import { getLeagueYear } from '@/lib/league-helpers'
 
 // Force dynamic rendering to ensure fresh data from database
 export const dynamic = 'force-dynamic'
@@ -62,8 +64,7 @@ export default async function BracketPage({ params }: PageProps) {
     rosterSchoolIds = roster?.map(r => r.school_id) || []
   }
 
-  const seasons = league.seasons as unknown as { year: number } | { year: number }[] | null
-  const year = Array.isArray(seasons) ? seasons[0]?.year : seasons?.year || new Date().getFullYear()
+  const year = getLeagueYear(league.seasons)
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-900 to-gray-800">
@@ -128,11 +129,13 @@ export default async function BracketPage({ params }: PageProps) {
           <p className="text-gray-400 mt-2">12-team bracket with schools from your roster highlighted</p>
         </div>
 
-        <PlayoffBracket
-          seasonId={league.season_id}
-          rosterSchoolIds={rosterSchoolIds}
-          leagueId={leagueId}
-        />
+        <ErrorBoundary sectionName="playoff bracket">
+          <PlayoffBracket
+            seasonId={league.season_id}
+            rosterSchoolIds={rosterSchoolIds}
+            leagueId={leagueId}
+          />
+        </ErrorBoundary>
 
         {/* Roster schools in playoffs */}
         {rosterSchoolIds.length > 0 && (

@@ -1,18 +1,6 @@
 import { NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
+import { createAdminClient } from '@/lib/supabase/server'
 import { fetchAllTeams, getTeamLogoUrl, getEspnTeamId } from '@/lib/api/espn'
-
-// Create admin client lazily at runtime (not build time)
-function getSupabaseAdmin() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY
-
-  if (!url || !key) {
-    throw new Error('Missing Supabase configuration. Set NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY.')
-  }
-
-  return createClient(url, key)
-}
 
 export async function POST(request: Request) {
   try {
@@ -33,7 +21,7 @@ export async function POST(request: Request) {
     console.log(`Found ${espnTeams.length} ESPN teams`)
 
     // Fetch all schools from our database
-    const { data: schools, error: schoolsError } = await getSupabaseAdmin()
+    const { data: schools, error: schoolsError } = await createAdminClient()
       .from('schools')
       .select('id, name, external_api_id, logo_url')
 
@@ -82,7 +70,7 @@ export async function POST(request: Request) {
     let errorCount = 0
 
     for (const update of updates) {
-      const { error: updateError } = await getSupabaseAdmin()
+      const { error: updateError } = await createAdminClient()
         .from('schools')
         .update({
           external_api_id: update.external_api_id,

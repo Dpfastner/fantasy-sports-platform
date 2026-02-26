@@ -1,18 +1,6 @@
 import { NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
+import { createAdminClient } from '@/lib/supabase/server'
 import { fetchRankings, fetchCFPRankings, fetchRankingsFromWebsite, ParsedRanking } from '@/lib/api/espn'
-
-// Create admin client lazily at runtime (not build time)
-function getSupabaseAdmin() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY
-
-  if (!url || !key) {
-    throw new Error('Missing Supabase configuration. Set NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY.')
-  }
-
-  return createClient(url, key)
-}
 
 interface SyncRankingsRequest {
   year?: number
@@ -71,7 +59,7 @@ export async function POST(request: Request) {
     console.log(`Found AP poll with ${apPoll.ranks?.length || 0} ranked teams`)
 
     // Get season ID from our database
-    const { data: season } = await getSupabaseAdmin()
+    const { data: season } = await createAdminClient()
       .from('seasons')
       .select('id')
       .eq('year', year)
@@ -85,7 +73,7 @@ export async function POST(request: Request) {
     }
 
     // Get school mappings (ESPN ID -> our school ID)
-    const { data: schools } = await getSupabaseAdmin()
+    const { data: schools } = await createAdminClient()
       .from('schools')
       .select('id, external_api_id, name')
       .not('external_api_id', 'is', null)
@@ -107,7 +95,7 @@ export async function POST(request: Request) {
     const skippedTeams: string[] = []
 
     // Clear existing rankings for this week first
-    await getSupabaseAdmin()
+    await createAdminClient()
       .from('ap_rankings_history')
       .delete()
       .eq('season_id', season.id)
@@ -125,7 +113,7 @@ export async function POST(request: Request) {
         continue
       }
 
-      const { error: insertError } = await getSupabaseAdmin()
+      const { error: insertError } = await createAdminClient()
         .from('ap_rankings_history')
         .insert({
           season_id: season.id,
@@ -195,7 +183,7 @@ export async function GET() {
 async function handleBackfillAll(year: number, request: Request) {
   console.log(`Starting full backfill for ${year} season...`)
 
-  const supabase = getSupabaseAdmin()
+  const supabase = createAdminClient()
 
   // Get season ID
   const { data: season } = await supabase
@@ -305,7 +293,7 @@ async function handleBackfillAll(year: number, request: Request) {
  * Sync rankings for a single week
  */
 async function syncWeekRankings(
-  supabase: ReturnType<typeof getSupabaseAdmin>,
+  supabase: ReturnType<typeof createAdminClient>,
   seasonId: string,
   weekNumber: number,
   rankingsData: Awaited<ReturnType<typeof fetchRankings>>,
@@ -366,7 +354,7 @@ async function syncWeekRankings(
 async function handleBackfillAllFromWebsite(year: number) {
   console.log(`Starting full rankings backfill from ESPN website for ${year} season...`)
 
-  const supabase = getSupabaseAdmin()
+  const supabase = createAdminClient()
 
   // Get season ID
   const { data: season } = await supabase
@@ -461,7 +449,7 @@ async function handleBackfillAllFromWebsite(year: number) {
  * Sync parsed rankings from website scraping
  */
 async function syncParsedRankings(
-  supabase: ReturnType<typeof getSupabaseAdmin>,
+  supabase: ReturnType<typeof createAdminClient>,
   seasonId: string,
   weekNumber: number,
   rankings: ParsedRanking[],

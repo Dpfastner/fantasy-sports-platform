@@ -1,7 +1,18 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { useToast } from '@/components/Toast'
+import {
+  REGULAR_WEEK_COUNT,
+  ROSTER_SPECIAL_COLUMNS,
+  WEEK_CONF_CHAMPS,
+  WEEK_BOWLS,
+  WEEK_ARMY_NAVY,
+  REGULAR_SEASON_END,
+  EVENT_BONUS_WEEKS,
+  SCHEDULE_WEEK_LABELS,
+} from '@/lib/constants/season'
 
 interface School {
   id: string
@@ -125,6 +136,7 @@ export function RosterList({
   eventBonuses = []
 }: Props) {
   const supabase = createClient()
+  const { addToast } = useToast()
   const [doublePickSchoolId, setDoublePickSchoolId] = useState<string | null>(null)
   const [canPick, setCanPick] = useState(true)
   const [picksUsed, setPicksUsed] = useState(0)
@@ -216,6 +228,7 @@ export function RosterList({
       setDoublePickSchoolId(schoolId)
     } catch (err) {
       console.error('Error saving double pick:', err)
+      addToast('Failed to save double pick. Please try again.', 'error')
     }
 
     setSaving(false)
@@ -237,50 +250,63 @@ export function RosterList({
       setPicksUsed(prev => Math.max(0, prev - 1))
     } catch (err) {
       console.error('Error removing double pick:', err)
+      addToast('Failed to remove double pick. Please try again.', 'error')
     }
 
     setSaving(false)
   }
 
   // Build points by school
-  const schoolPointsMap = new Map<string, Map<number, number>>()
-  for (const sp of schoolPoints) {
-    if (!schoolPointsMap.has(sp.school_id)) {
-      schoolPointsMap.set(sp.school_id, new Map())
+  const schoolPointsMap = useMemo(() => {
+    const map = new Map<string, Map<number, number>>()
+    for (const sp of schoolPoints) {
+      if (!map.has(sp.school_id)) {
+        map.set(sp.school_id, new Map())
+      }
+      map.get(sp.school_id)!.set(sp.week_number, sp.total_points)
     }
-    schoolPointsMap.get(sp.school_id)!.set(sp.week_number, sp.total_points)
-  }
+    return map
+  }, [schoolPoints])
 
   // Calculate totals
-  const schoolTotals = new Map<string, number>()
-  for (const sp of schoolPoints) {
-    const current = schoolTotals.get(sp.school_id) || 0
-    schoolTotals.set(sp.school_id, current + Number(sp.total_points))
-  }
+  const schoolTotals = useMemo(() => {
+    const totals = new Map<string, number>()
+    for (const sp of schoolPoints) {
+      const current = totals.get(sp.school_id) || 0
+      totals.set(sp.school_id, current + Number(sp.total_points))
+    }
+    return totals
+  }, [schoolPoints])
 
   const maxPicksReached = maxDoublePicksPerSeason > 0 && picksUsed >= maxDoublePicksPerSeason && !doublePickSchoolId
 
   // Build opponent schools map for quick lookup
-  const opponentSchoolsMap = new Map<string, OpponentSchool>()
-  for (const school of opponentSchools) {
-    opponentSchoolsMap.set(school.id, school)
-  }
+  const opponentSchoolsMap = useMemo(() => {
+    const map = new Map<string, OpponentSchool>()
+    for (const school of opponentSchools) {
+      map.set(school.id, school)
+    }
+    return map
+  }, [opponentSchools])
 
   // Build double picks map: school_id -> Set of week_numbers
-  const doublePicksMap = new Map<string, Set<number>>()
-  for (const pick of doublePicks) {
-    if (!doublePicksMap.has(pick.school_id)) {
-      doublePicksMap.set(pick.school_id, new Set())
+  const doublePicksMap = useMemo(() => {
+    const map = new Map<string, Set<number>>()
+    for (const pick of doublePicks) {
+      if (!map.has(pick.school_id)) {
+        map.set(pick.school_id, new Set())
+      }
+      map.get(pick.school_id)!.add(pick.week_number)
     }
-    doublePicksMap.get(pick.school_id)!.add(pick.week_number)
-  }
-  // Include current week's selection (from state) so it reflects immediately
-  if (doublePickSchoolId) {
-    if (!doublePicksMap.has(doublePickSchoolId)) {
-      doublePicksMap.set(doublePickSchoolId, new Set())
+    // Include current week's selection (from state) so it reflects immediately
+    if (doublePickSchoolId) {
+      if (!map.has(doublePickSchoolId)) {
+        map.set(doublePickSchoolId, new Set())
+      }
+      map.get(doublePickSchoolId)!.add(currentWeek)
     }
-    doublePicksMap.get(doublePickSchoolId)!.add(currentWeek)
-  }
+    return map
+  }, [doublePicks, doublePickSchoolId, currentWeek])
 
   // Conference abbreviation mapping
   const conferenceAbbreviations: Record<string, string> = {
@@ -298,33 +324,29 @@ export function RosterList({
   }
 
   // Week columns configuration
-  const regularWeeks = Array.from({ length: 17 }, (_, i) => i) // 0-16
-  const specialColumns = [
-    { week: 17, label: 'Bowl', color: 'bg-green-600/20', textColor: 'text-green-400' },
-    { week: 18, label: 'R1', color: 'bg-orange-600/20', textColor: 'text-orange-400' },    // CFP First Round
-    { week: 19, label: 'QF', color: 'bg-orange-600/20', textColor: 'text-orange-400' },    // CFP Quarterfinals
-    { week: 20, label: 'SF', color: 'bg-orange-600/20', textColor: 'text-orange-400' },    // CFP Semifinals
-    { week: 21, label: 'NC', color: 'bg-yellow-600/20', textColor: 'text-yellow-400' },    // National Championship
-    { week: 22, label: 'H', color: 'bg-amber-600/20', textColor: 'text-amber-400' },     // Heisman
-  ]
+  const regularWeeks = Array.from({ length: REGULAR_WEEK_COUNT }, (_, i) => i) // 0-16
+  const specialColumns = ROSTER_SPECIAL_COLUMNS
 
   // Generate available weeks for preview (0-22 for full season including Heisman)
   const availableWeeks = Array.from({ length: 23 }, (_, i) => i)
 
   // Build event bonuses map: school_id -> week_number -> total bonus
-  const eventBonusMap = new Map<string, Map<number, number>>()
-  for (const eb of eventBonuses) {
-    if (!eventBonusMap.has(eb.school_id)) {
-      eventBonusMap.set(eb.school_id, new Map())
+  const eventBonusMap = useMemo(() => {
+    const map = new Map<string, Map<number, number>>()
+    for (const eb of eventBonuses) {
+      if (!map.has(eb.school_id)) {
+        map.set(eb.school_id, new Map())
+      }
+      const weekMap = map.get(eb.school_id)!
+      weekMap.set(eb.week_number, (weekMap.get(eb.week_number) || 0) + eb.points)
     }
-    const weekMap = eventBonusMap.get(eb.school_id)!
-    weekMap.set(eb.week_number, (weekMap.get(eb.week_number) || 0) + eb.points)
-  }
+    return map
+  }, [eventBonuses])
 
   // Get event bonus for a school in a given week (from database)
-  const getEventBonus = (schoolId: string, weekNumber: number): number => {
+  const getEventBonus = useCallback((schoolId: string, weekNumber: number): number => {
     return eventBonusMap.get(schoolId)?.get(weekNumber) || 0
-  }
+  }, [eventBonusMap])
 
   // Get detailed event bonuses for modal display (fallback to calculation if not in DB)
   const getEventBonusDetails = (schoolId: string, weekNumber: number, game: Game): { label: string; points: number }[] => {
@@ -375,13 +397,13 @@ export function RosterList({
     const isLoss = myScore !== null && oppScore !== null && myScore < oppScore
     const result: { label: string; points: number }[] = []
 
-    if (weekNumber === 15) {
+    if (weekNumber === WEEK_CONF_CHAMPS) {
       if (isWin && specialEventSettings.confChampWin > 0) {
         result.push({ label: 'Conf Champ', points: specialEventSettings.confChampWin })
       } else if (isLoss && specialEventSettings.confChampLoss > 0) {
         result.push({ label: 'Conf Champ', points: specialEventSettings.confChampLoss })
       }
-    } else if (weekNumber === 17 && game.is_bowl_game && specialEventSettings.bowlAppearance > 0) {
+    } else if (weekNumber === WEEK_BOWLS && game.is_bowl_game && specialEventSettings.bowlAppearance > 0) {
       result.push({ label: 'Bowl', points: specialEventSettings.bowlAppearance })
     } else if (game.is_playoff_game && game.playoff_round) {
       if (game.playoff_round === 'first_round' && specialEventSettings.playoffFirstRound > 0) {
@@ -507,7 +529,7 @@ export function RosterList({
             )
             // Calculate total including event bonuses for special weeks
             const gamePointsTotal = schoolTotals.get(slot.school_id) || 0
-            const eventBonusTotal = [15, 17, 18, 19, 20, 21, 22].reduce(
+            const eventBonusTotal = EVENT_BONUS_WEEKS.reduce(
               (sum, week) => sum + getEventBonus(slot.school_id, week), 0
             )
             const total = gamePointsTotal + eventBonusTotal
@@ -857,16 +879,10 @@ export function RosterList({
                         'championship': 'Natl Champ'
                       }
                       weekLabel = roundLabels[game.playoff_round] || 'CFP'
-                    } else if (game.week_number <= 14) {
+                    } else if (game.week_number <= REGULAR_SEASON_END) {
                       weekLabel = `Week ${game.week_number}`
-                    } else if (game.week_number === 15) {
-                      weekLabel = 'Conf Champ'
-                    } else if (game.week_number === 16) {
-                      weekLabel = 'Week 16'
-                    } else if (game.week_number === 17) {
-                      weekLabel = 'Bowl'
                     } else {
-                      weekLabel = `Week ${game.week_number}`
+                      weekLabel = SCHEDULE_WEEK_LABELS[game.week_number] || `Week ${game.week_number}`
                     }
 
                     return (
