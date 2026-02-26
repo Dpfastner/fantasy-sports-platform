@@ -2,7 +2,7 @@
 
 > **Platform Name**: Rivyls (rivyls.com)
 > **Current Sport**: College Football (base for multi-sport expansion)
-> **Last Updated**: February 23, 2026
+> **Last Updated**: February 25, 2026
 > **Audit Date**: February 22, 2026
 
 ---
@@ -13,22 +13,21 @@
 2. [Audit Findings & Corrections](#audit-findings--corrections)
 3. [Priority Roadmap](#priority-roadmap)
 4. [Phase 11: Platform Identity & Infrastructure](#phase-11-platform-identity--infrastructure) ✅
-5. [Phase 12: Critical Bug Fixes](#phase-12-critical-bug-fixes-p0) ✅
+5. [Phase 12: Critical Bug Fixes](#phase-12-critical-bug-fixes) ✅
 6. **MUST DO — Launch Blockers**
-   - [Phase 13: Security Hardening](#phase-13-security-hardening-p1)
-   - [Phase 14: Data Integrity & Database Fixes](#phase-14-data-integrity--database-fixes-p2)
+   - [Phase 13: Security Hardening](#phase-13-security-hardening) ✅
+   - [Phase 14: Data Integrity & Database Fixes](#phase-14-data-integrity--database-fixes) ✅
 7. **SHOULD DO — Launch Quality**
-   - [Phase 18: Brand & UX](#phase-18-brand--ux-p3)
-   - [Phase 19: Landing Page & Email Capture](#phase-19-landing-page--email-capture-p4)
+   - [Phase 16: Brand & UX](#phase-16-brand--ux)
+   - [Phase 17: Landing Page & Email Capture](#phase-17-landing-page--email-capture)
 8. **SHOULD DO IF TIME — Pre-Season Polish**
-   - [Phase 15: Tech Debt Resolution](#phase-15-tech-debt-resolution-p5)
-   - [Phase 16: Standard Practices](#phase-16-standard-practices-p6)
-   - [Phase 20: Analytics & Tracking](#phase-20-analytics--tracking-p7)
-   - [Phase 21: User Profiles & Tiers](#phase-21-user-profiles--tiers-p8)
+   - [Phase 18: Standard Practices](#phase-18-standard-practices)
+   - [Phase 19: Analytics & Tracking](#phase-19-analytics--tracking)
+   - [Phase 20: User Profiles & Tiers](#phase-20-user-profiles--tiers)
 9. **DEFER — Post-Launch**
-   - [Phase 22: Share & Social Features](#phase-22-share--social-features-p9)
-   - [Phase 17: Multi-Sport Architecture](#phase-17-multi-sport-architecture-p10)
-   - [Phase 23: Free Feature Enhancements](#phase-23-free-feature-enhancements-p11)
+   - [Phase 21: Share & Social Features](#phase-21-share--social-features)
+   - [Phase 22: Multi-Sport Architecture](#phase-22-multi-sport-architecture)
+   - [Phase 23: Free Feature Enhancements](#phase-23-free-feature-enhancements)
    - [Future Phases](#future-phases)
 
 ---
@@ -77,7 +76,7 @@ These phases represent the core feature build. All are **COMPLETE** but some con
 | 3.4 | Game state management (scheduled → live → completed) |
 | 3.5 | Handle edge cases (Army-Navy week, Week 0, bowl games) |
 
-> **⚠ CORRECTION (Resolved)**: Vercel free tier limits to 2 crons. The original design called for per-minute live score polling via `gameday-sync`, which requires per-minute scheduling. Resolution: keep `daily-sync` as the Vercel cron, move `gameday-sync` and `reconcile` to GitHub Actions (free per-minute scheduling). `rankings-sync` stays manual-only (admin panel) since `daily-sync` already syncs rankings daily. See [Phase 12](#phase-12-critical-bug-fixes-p0) for implementation.
+> **⚠ CORRECTION (Resolved)**: Vercel free tier limits to 2 crons. The original design called for per-minute live score polling via `gameday-sync`, which requires per-minute scheduling. Resolution: keep `daily-sync` as the Vercel cron, move `gameday-sync` and `reconcile` to GitHub Actions (free per-minute scheduling). `rankings-sync` stays manual-only (admin panel) since `daily-sync` already syncs rankings daily. See [Phase 12](#phase-12-critical-bug-fixes) for implementation.
 >
 > **⚠ CORRECTION**: Cron routes cap `currentWeek` at 20 (`Math.min(weeksDiff + 1, 20)`). This misses weeks 21 (championship) and 22 (Heisman). Fixed in Phase 12.
 
@@ -390,8 +389,9 @@ The roadmap is organized by **launch urgency**, not sequential phase numbers. Th
 ```
 Phase 12: Critical Bug Fixes           ████████████  COMPLETE ✅
 Phase 11: Platform Identity             ████████████  COMPLETE ✅
-Phase 13: Security Hardening            ░░░░░░░░░░░░  NEXT
-Phase 14: DB Fixes + Schema Now         ░░░░░░░░░░░░
+Phase 13: Security Hardening            ████████████  COMPLETE ✅
+Phase 14: DB Fixes + Schema Now         ████████████  COMPLETE ✅
+Phase 15: Tech Debt Resolution          ████████████  COMPLETE ✅
 ```
 
 ### SHOULD DO — Launch Quality
@@ -399,8 +399,8 @@ Phase 14: DB Fixes + Schema Now         ░░░░░░░░░░░░
 *Platform works but looks amateur and has no way to acquire users without these.*
 
 ```
-Phase 18: Brand & UX                   ░░░░░░░░░░░░  Visual identity + dark mode
-Phase 19: Landing Page & Email Capture  ░░░░░░░░░░░░  User acquisition funnel
+Phase 16: Brand & UX                   ░░░░░░░░░░░░  Visual identity + dark mode
+Phase 17: Landing Page & Email Capture  ░░░░░░░░░░░░  User acquisition funnel
 ```
 
 ### SHOULD DO IF TIME — Pre-Season Polish
@@ -408,10 +408,9 @@ Phase 19: Landing Page & Email Capture  ░░░░░░░░░░░░  Us
 *Important for quality and growth, but platform is functional without them. Do what you can before June.*
 
 ```
-Phase 15: Tech Debt Resolution          ░░░░░░░░░░░░  Code quality
-Phase 16: Standard Practices            ░░░░░░░░░░░░  Testing, monitoring, CI/CD
-Phase 20: Analytics & Tracking          ░░░░░░░░░░░░  Know your numbers
-Phase 21: User Profiles & Tiers         ░░░░░░░░░░░░  Founding Commissioner program
+Phase 18: Standard Practices            ░░░░░░░░░░░░  Testing, monitoring, CI/CD
+Phase 19: Analytics & Tracking          ░░░░░░░░░░░░  Know your numbers
+Phase 20: User Profiles & Tiers         ░░░░░░░░░░░░  Founding Commissioner program
 ```
 
 ### DEFER — Post-Launch
@@ -419,8 +418,8 @@ Phase 21: User Profiles & Tiers         ░░░░░░░░░░░░  Fo
 *Build after Season 1 starts. None of these block the core experience.*
 
 ```
-Phase 22: Share & Social Features       ░░░░░░░░░░░░  Organic growth tools
-Phase 17: Multi-Sport Architecture      ░░░░░░░░░░░░  Year 2 expansion prep
+Phase 21: Share & Social Features       ░░░░░░░░░░░░  Organic growth tools
+Phase 22: Multi-Sport Architecture      ░░░░░░░░░░░░  Year 2 expansion prep
 Phase 23: Free Feature Enhancements     ░░░░░░░░░░░░  Extras (presets, watchlists, chat, etc.)
 Future Phases 24-31                     ░░░░░░░░░░░░  Year 2+ features
 ```
@@ -431,29 +430,29 @@ Future Phases 24-31                     ░░░░░░░░░░░░  Ye
 ━━━ MUST DO (Launch Blockers) ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Phase 12 (Bug Fixes)         ████████████  COMPLETE ✅
 Phase 11 (Rivyls Identity)   ████████████  COMPLETE ✅
-Phase 13 (Security)          ░░░░░░░░░░░░  ← START HERE
+Phase 13 (Security)          ████████████  COMPLETE ✅
         ↓
-Phase 14 (DB + Schema Now)   ░░░░░░░░░░░░
+Phase 14 (DB + Schema Now)   ████████████  COMPLETE ✅
+        ↓
+Phase 15 (Tech Debt)         ████████████  COMPLETE ✅
 
 ━━━ SHOULD DO (Launch Quality) ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         ↓
-Phase 18 (Brand & UX)        ░░░░░░░░░░░░
+Phase 16 (Brand & UX)        ░░░░░░░░░░░░  ← START HERE
         ↓
-Phase 19 (Landing Page)      ░░░░░░░░░░░░
+Phase 17 (Landing Page)      ░░░░░░░░░░░░
 
 ━━━ SHOULD DO IF TIME (Pre-Season) ━━━━━━━━━━━━━━━━━━━━━━━━━
         ↓
-Phase 15 (Tech Debt)         ░░░░░░░░░░░░
+Phase 18 (Std Practices)     ░░░░░░░░░░░░
         ↓
-Phase 16 (Std Practices)     ░░░░░░░░░░░░
+Phase 19 (Analytics)         ░░░░░░░░░░░░
         ↓
-Phase 20 (Analytics)         ░░░░░░░░░░░░
-        ↓
-Phase 21 (Profiles & Tiers)  ░░░░░░░░░░░░
+Phase 20 (Profiles & Tiers)  ░░░░░░░░░░░░
 
 ━━━ DEFER (Post-Launch) ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Phase 22 (Share & Social)    ░░░░░░░░░░░░
-Phase 17 (Multi-Sport)       ░░░░░░░░░░░░
+Phase 21 (Share & Social)    ░░░░░░░░░░░░
+Phase 22 (Multi-Sport)       ░░░░░░░░░░░░
 Phase 23 (Free Enhancements) ░░░░░░░░░░░░
 ```
 
@@ -463,19 +462,18 @@ If running out of time before the August 2026 season:
 
 ```
 STOP POINT 1 (Minimum viable launch):
-  ✅ Phase 13 + 14 done → Platform is secure and schema is solid
-  ✅ Phase 18 done      → Platform looks professional
-  ✅ Phase 19 done      → Users can find and sign up
+  ✅ Phase 13-15 done   → Platform is secure, schema solid, code clean
+  ✅ Phase 16 done      → Platform looks professional
+  ✅ Phase 17 done      → Users can find and sign up
   → Launch with this. Everything else is post-launch.
 
 STOP POINT 2 (If time allows):
-  ✅ Phase 15 done      → Code is clean
-  ✅ Phase 16 done      → Tests catch regressions, monitoring in place
+  ✅ Phase 18 done      → Tests catch regressions, monitoring in place
   → Solid engineering foundation for Season 1.
 
 STOP POINT 3 (If still more time):
-  ✅ Phase 20 done      → Analytics measuring growth targets
-  ✅ Phase 21 done      → Founding Commissioner program live
+  ✅ Phase 19 done      → Analytics measuring growth targets
+  ✅ Phase 20 done      → Founding Commissioner program live
   → Full pre-launch experience.
 ```
 
@@ -502,7 +500,7 @@ The platform is being rebranded from "Fantasy Sports Platform" to **Rivyls** (ri
 | 11.5 | **Update vercel.json crons** | Register all 4 cron routes (see [A1](#a1-vercel-cron-configuration-mismatch)). Fix gameday-sync schedule if live scoring is desired during testing. |
 | 11.6 | **Rename project references** | Update `package.json` name, page titles, metadata, and `<title>` tags from "Fantasy Sports Platform" to "Rivyls". |
 | 11.7 | **Update environment documentation** | Rewrite `docs/ENVIRONMENT_SETUP.md` to reflect single-environment setup with Rivyls.com domain. Document the plan to add production back when ready. |
-| 11.8 | **Brand guidelines integration** | Import brand guidelines (colors, fonts, logo) and create a design token file / Tailwind theme extension. See [Phase 18](#phase-18-brand--ux) for full implementation. |
+| 11.8 | **Brand guidelines integration** | Import brand guidelines (colors, fonts, logo) and create a design token file / Tailwind theme extension. See [Phase 16](#phase-18-brand--ux) for full implementation. |
 | 11.9 | **Test stable URL** | Verify rivyls.com loads correctly, SSL works, all routes function, auth redirects use correct domain. |
 
 ### Decision Record: Why Sandbox-Only
@@ -522,8 +520,7 @@ The platform is being rebranded from "Fantasy Sports Platform" to **Rivyls** (ri
 
 ---
 
-## Phase 12: Critical Bug Fixes [P0]
-
+## Phase 12: Critical Bug Fixes
 *Fix scoring errors, data correctness issues, and live scoring architecture*
 
 **Status: COMPLETE**
@@ -567,11 +564,10 @@ After completing this phase:
 
 ---
 
-## Phase 13: Security Hardening [P1]
-
+## Phase 13: Security Hardening
 *Fix authentication gaps and credential exposure before any real users*
 
-**Status: NOT STARTED**
+**Status: COMPLETE**
 
 **Addresses**: [S1](#s1-api-routes-missing-authentication), [S2](#s2-hardcoded-sync-api-key-fallback), [S3](#s3-cron-secret-logic-flaw), [S4](#s4-anonymous-issue-report-inserts)
 
@@ -600,11 +596,10 @@ After completing this phase:
 
 ---
 
-## Phase 14: Data Integrity & Database Fixes [P2]
-
+## Phase 14: Data Integrity & Database Fixes
 *Fix schema issues, sync types, add missing constraints, indexes, and premium-ready schema*
 
-**Status: NOT STARTED**
+**Status: COMPLETE**
 
 **Addresses**: [D1](#d1-typescript-types-out-of-sync), [D2](#d2-missing-database-indexes), [D3](#d3-missing-updated_at-and-triggers), [D4](#d4-missing-check-constraints), [D5](#d5-denormalized-data-risks), [D7](#d7-no-audit-trail), Premium Features Spec ("Schema Now, Build Later")
 
@@ -635,7 +630,7 @@ These tasks add database tables and columns needed for Year 2 premium features. 
 | 14.14 | **Create watchlists table** | Create `watchlists` table: `id`, `user_id`, `school_id`, `league_id` (nullable — global or league-scoped), `notes` (text), `created_at`. Lets users bookmark programs they're interested in drafting or picking up via add/drop. Schema only — free feature, UI built in Phase 23. |
 | 14.15 | **Add auction draft type** | `ALTER TYPE draft_type ADD VALUE 'auction'`. Extends the existing draft type enum. No auction logic built — just the enum value so we don't need a disruptive enum migration later. |
 | 14.16 | **Add scoring presets to league_settings** | `ALTER TABLE league_settings ADD COLUMN scoring_preset TEXT DEFAULT 'custom'`. Allows future "Aggressive", "Conservative", "Chaos Mode" scoring templates. Does not change existing per-column scoring — just adds a label for preset tracking. |
-| 14.17 | **Create waitlist table** | Create `waitlist` table: `id`, `email` (unique), `name` (text), `source` (text, e.g. 'landing_page', 'referral', 'social'), `referral_code` (text), `created_at`. Used by the landing page email capture (Phase 19). |
+| 14.17 | **Create waitlist table** | Create `waitlist` table: `id`, `email` (unique), `name` (text), `source` (text, e.g. 'landing_page', 'referral', 'social'), `referral_code` (text), `created_at`. Used by the landing page email capture (Phase 17). |
 | 14.18 | **Re-sync TypeScript types** | After all schema changes, regenerate `src/types/database.ts` to include all new tables and columns from 14.8-14.17. |
 
 ### Migration Strategy
@@ -662,8 +657,7 @@ After completing this phase:
 
 ---
 
-## Phase 15: Tech Debt Resolution [P5]
-
+## Phase 15: Tech Debt Resolution
 *Eliminate duplication, fix type safety, improve component architecture*
 
 **Status: COMPLETE**
@@ -692,12 +686,12 @@ After completing this phase:
 1. **15.5 + 15.6** first (constants) — these are simple, low-risk, and unblock other refactors
 2. **15.3 + 15.4** next (shared utilities) — reduces duplication in pages
 3. **15.1** (scoring utility) — depends on Phase 12 being complete
-4. **15.2** (leaderboard merge) — larger refactor, do after tests exist (Phase 16)
+4. **15.2** (leaderboard merge) — larger refactor, do after tests exist (Phase 18)
 5. **15.7 + 15.8 + 15.9** (error handling, boundaries, memoization) — can be done independently
 
-### 15.10: Component Splitting Plan (Post-Phase 16)
+### 15.10: Component Splitting Plan (Post-Phase 18)
 
-These large components should be split **after** Phase 16 adds tests, so regressions can be caught.
+These large components should be split **after** Phase 18 adds tests, so regressions can be caught.
 
 | Component | File | Lines | Recommended Splits |
 |-----------|------|-------|--------------------|
@@ -706,110 +700,11 @@ These large components should be split **after** Phase 16 adds tests, so regress
 | RosterList | `src/components/RosterList.tsx` | ~953 | `RosterRow` (single school row with points), `WeeklyPointsGrid` (the scrollable week columns), `SchoolScheduleModal` (opponent popup) |
 | TransactionsClient | `src/components/TransactionsClient.tsx` | ~834 | `AvailableSchoolsBrowser` (search/filter/sort), `TransactionConfirmation` (add/drop confirm modal), `TransactionHistory` (past transactions list) |
 
-**Approach**: Extract child components one at a time, passing data via props. Keep state in the parent. Write a test for the parent component first (Phase 16), then extract.
+**Approach**: Extract child components one at a time, passing data via props. Keep state in the parent. Write a test for the parent component first (Phase 18), then extract.
 
 ---
 
-## Phase 16: Standard Practices [P6]
-
-*Add testing, monitoring, validation, and CI/CD*
-
-**Status: NOT STARTED**
-
-**Addresses**: [SP1](#sp1-zero-tests), [SP2](#sp2-no-error-monitoring), [SP3](#sp3-no-input-validation), [SP4](#sp4-no-cicd-pipeline), [SP5](#sp5-inconsistent-api-response-format), [SP6](#sp6-no-rate-limiting), [SP7](#sp7-no-react-error-boundaries), [SP8](#sp8-no-response-caching)
-
-### Tasks
-
-| Task | Description | Details |
-|------|-------------|---------|
-| **Testing** |||
-| 16.1 | **Set up Vitest** | Add `vitest` to devDependencies, create `vitest.config.ts`, add `"test"` script to `package.json`. |
-| 16.2 | **Write points calculator tests** | Test every scoring rule: wins, losses, conference games, ranked opponents, bowls, playoffs, championship (0 points), shutouts, 50+ points, double points multiplier. Test with custom league settings AND default settings. This is the highest-value test. |
-| 16.3 | **Write week calculation tests** | Test `getCurrentWeek()` across timezone boundaries, at season boundaries, at week transitions. Test sandbox overrides. |
-| 16.4 | **Write API endpoint tests** | Test auth enforcement, input validation, error responses for key endpoints: `/api/transactions`, `/api/points/calculate`, `/api/drafts/reset`. |
-| 16.5 | **Add test script to CI** | Ensure tests run before deploy (see 16.9). |
-| **Monitoring** |||
-| 16.6 | **Add Sentry** | Install `@sentry/nextjs`. Configure for both client and server. Set up source maps. Create free Sentry project. |
-| 16.7 | **Add cron alerting** | Have cron routes report success/failure to Sentry (or a simple health-check service). Alert on consecutive failures. |
-| 16.8 | **Add Vercel Analytics** | Enable Vercel Analytics (free) for Core Web Vitals and page performance tracking. |
-| **CI/CD** |||
-| 16.9 | **Create GitHub Actions workflow** | On PR: run `npm run lint`, `npx tsc --noEmit`, `npm test`. Block merge if any fail. |
-| 16.10 | **Add pre-commit hooks** | Install `husky` + `lint-staged`. Run lint + type-check on staged files before commit. |
-| **Validation** |||
-| 16.11 | **Add Zod for API validation** | Install `zod`. Create request schemas for: transaction requests, league settings updates, sync requests. Validate at the top of each API route. |
-| 16.12 | **Standardize API responses** | Create `src/lib/api/response.ts` with helpers: `successResponse(data)`, `errorResponse(message, status)`. Migrate all routes to use consistent `{ success, data?, error?, message? }` format. |
-| **Resilience** |||
-| 16.13 | **Add rate limiting** | Add rate limiting to public-facing API routes. Can use Vercel Edge Middleware with `@vercel/kv` or a simple in-memory solution for low-traffic phase. |
-| 16.14 | **Add response caching** | Add `Cache-Control` headers or Next.js `revalidate` to: standings (30s TTL), leaderboard (30s), schedule (5min). |
-
-### Recommended Order
-
-1. **16.1-16.2** (Vitest + calculator tests) — highest value, catches scoring bugs
-2. **16.6** (Sentry) — know when things break
-3. **16.9** (GitHub Actions) — prevent regressions
-4. **16.11-16.12** (Zod + response format) — clean up API layer
-5. Everything else
-
----
-
-## Phase 17: Multi-Sport Architecture [P10]
-
-*Refactor the architecture so college football patterns don't block other sports*
-
-**Status: NOT STARTED**
-
-### Background
-
-College football is sport #1. Future sports include hockey, baseball, basketball, and cricket. Some features are inherently sport-specific (Heisman is only for CFB, Stanley Cup is only for hockey), and that's expected. However, several core architectural patterns are currently hardcoded for football and would **break or require major rewrites** when porting to another sport.
-
-### Analysis: What's Shared vs. Sport-Specific
-
-| Concept | Shared (must generalize) | Sport-Specific (OK to keep) |
-|---------|-------------------------|---------------------------|
-| Season structure | Season start/end dates, week numbering | Specific week counts (CFB: 22 weeks, NHL: 26 weeks) |
-| Game model | Home/away, scores, status, date | Bowl games, overtime format |
-| Rankings | Concept of ranked opponents | AP Top 25 (CFB), power rankings (NHL/NBA) |
-| Scoring rules | Points for wins, bonuses | Specific bonus types per sport |
-| Playoffs | Playoff tracking, bracket display | Number of teams, format (single elim vs best-of-7) |
-| Special events | Event-based bonuses | Conference championships (CFB), award winners |
-| Individual awards | Award tracking system | Heisman (CFB), Hart Trophy (NHL), MVP (NBA/MLB) |
-| Team model | Schools/teams, conferences, logos | "Schools" naming (college only) |
-
-### Tasks — Generalize Shared Patterns
-
-| Task | Description | Details |
-|------|-------------|---------|
-| 17.1 | **Abstract week/season structure** | Move season config (start date, max weeks, playoff start week, week labels) into the `seasons` table or a new `season_config` JSONB column. Replace all hardcoded week numbers with lookups from this config. The `getCurrentWeek()` function should accept sport/season and calculate based on DB config, not hardcoded August 24. |
-| 17.2 | **Generalize ranking system** | Rename `ap_rankings_history` to `rankings_history`. Add `ranking_type` column (e.g., 'ap_poll', 'power_ranking', 'standings'). The scoring engine should look up the ranking type for the sport, not assume AP Top 25. Not all sports use rankings for bonus points — make ranking-based scoring optional per sport. |
-| 17.3 | **Generalize game types** | Currently `games` has `is_bowl_game`, `is_playoff_game`, `bowl_name`, `playoff_round` — all football-specific. Replace with: `game_type` ENUM ('regular_season', 'conference_championship', 'postseason', 'playoff', 'championship', 'exhibition'). Add `game_type_detail` TEXT for sport-specific detail (e.g., bowl name for CFB, "Stanley Cup Finals" for NHL). Move `is_conference_game` logic to derive from the game data rather than storing as a separate boolean. |
-| 17.4 | **Abstract scoring rules schema** | The `league_settings` table has 20+ football-specific point columns. Replace with a `scoring_rules` JSONB column or a normalized `scoring_rules` table: `{ rule_type: 'win', points: 1 }, { rule_type: 'conference_game', points: 1 }, { rule_type: 'ranked_opponent_top10', points: 2 }`. Each sport defines its available rule types. The scoring engine reads rules dynamically instead of accessing fixed columns. |
-| 17.5 | **Generalize individual awards** | Rename `heisman_winners` to `individual_awards`. Add `award_type` column ('heisman', 'hart_trophy', 'mvp', etc.) and `sport_id`. The scoring engine checks for awards associated with schools on rosters, regardless of which specific award it is. |
-| 17.6 | **Rename "schools" to "teams" (or keep with alias)** | College sports use "schools," pro sports use "teams." Options: (a) rename table to `teams` (breaking change), (b) keep `schools` for college sports and add `teams` for pro, (c) keep `schools` table name but use "teams" in the UI with a display alias per sport. Recommend option (c) for now — least disruptive. |
-| 17.7 | **Create sport configuration table** | Create `sport_configs` table with: `sport_id`, `season_week_count`, `playoff_format` ('single_elimination', 'best_of_7', etc.), `ranking_type`, `available_scoring_rules` (JSONB), `api_provider`, `api_base_url`. This is the single source of truth for how each sport works. |
-| 17.8 | **Create sport-specific API adapters** | Currently `src/lib/api/espn.ts` is football-specific. Create an adapter pattern: `src/lib/api/adapters/espn-cfb.ts`, `src/lib/api/adapters/nhl.ts`, etc. Each adapter implements a common interface: `fetchTeams()`, `fetchGames(week)`, `fetchRankings()`, `fetchScores()`. The sync routes call the adapter for the given sport. |
-| 17.9 | **Abstract scoring engine** | Refactor `src/lib/points/calculator.ts` to be sport-agnostic. The engine reads scoring rules from the sport config and league settings, then applies them generically. Sport-specific logic (e.g., "bowl games don't get ranked bonus") lives in sport-specific rule files, not in the main calculator. |
-
-### What NOT to Change
-
-These are intentionally sport-specific and don't need generalization:
-- **Heisman scraping logic** — only relevant for CFB; other sports will have their own award detection
-- **CFP bracket component** — other sports will have different bracket formats; build new components per sport
-- **Conference abbreviation mapping** — sport-specific display data
-- **ESPN API endpoints** — each sport has different endpoints; handled by the adapter pattern (17.8)
-
-### Migration Path
-
-This phase is the largest refactor. Recommended approach:
-1. Start with **additive changes** (new tables, new columns) — don't remove old schema yet
-2. Update the scoring engine to read from new config, with **fallback to old columns**
-3. Migrate CFB data to new format
-4. Once verified, remove old columns in a cleanup migration
-5. Build sport #2 (hockey?) using only the new patterns
-
----
-
-## Phase 18: Brand & UX [P3]
-
+## Phase 16: Brand & UX
 *Apply Rivyls brand identity, implement dark mode, and convert all components to themed design system*
 
 **Status: NOT STARTED**
@@ -867,36 +762,36 @@ Both are Google Fonts, loaded via `next/font/google` for performance optimizatio
 
 | Task | Description | Details |
 |------|-------------|---------|
-| 18.1 | **Install `next-themes`** | Add `next-themes` package for theme management. Wrap app in `ThemeProvider` with `attribute="class"` and `defaultTheme="dark"`. This enables class-based Tailwind dark mode with a toggle. Update `src/components/Providers.tsx` to include the ThemeProvider. |
-| 18.2 | **Configure Tailwind v4 dark mode** | In `globals.css`, update `@theme inline {}` block to use class-based dark mode. Add `@variant dark (&:where(.dark, .dark *));` or equivalent Tailwind v4 config. This enables the `dark:` variant prefix across all components. |
-| 18.3 | **Define color tokens in CSS** | In `globals.css`, replace the current minimal `:root` variables with the full brand color system. Define light mode and dark mode token sets: `--background`, `--foreground`, `--surface`, `--surface-elevated`, `--border`, `--text-primary`, `--text-secondary`, `--text-muted`, `--accent`, `--accent-hover`, `--success`, `--error`, `--warning`. Map these to the brand hex values for each mode. |
-| 18.4 | **Register brand colors in Tailwind theme** | Update the `@theme inline {}` block to register all brand colors as Tailwind utilities: `--color-navy: #1B2A4A`, `--color-red: #E8513D`, `--color-gold: #F5A623`, `--color-ice: #F7F8FA`, `--color-midnight: #0D1520`, `--color-green: #2ECC71`, `--color-slate: #8892A0`, plus surface layer colors. This enables classes like `bg-navy`, `text-red`, `border-gold`. |
-| 18.5 | **Import brand fonts** | In `layout.tsx`, replace `Geist` and `Geist_Mono` with `Montserrat` and `Inter` from `next/font/google`. Configure with the required weight subsets (400, 500, 600, 700, 800). Update `globals.css` font references. |
-| 18.6 | **Create theme toggle component** | Build a simple light/dark mode toggle button component using `next-themes` `useTheme()` hook. Place in the header/nav. Default to dark mode. |
+| 16.1 | **Install `next-themes`** | Add `next-themes` package for theme management. Wrap app in `ThemeProvider` with `attribute="class"` and `defaultTheme="dark"`. This enables class-based Tailwind dark mode with a toggle. Update `src/components/Providers.tsx` to include the ThemeProvider. |
+| 16.2 | **Configure Tailwind v4 dark mode** | In `globals.css`, update `@theme inline {}` block to use class-based dark mode. Add `@variant dark (&:where(.dark, .dark *));` or equivalent Tailwind v4 config. This enables the `dark:` variant prefix across all components. |
+| 16.3 | **Define color tokens in CSS** | In `globals.css`, replace the current minimal `:root` variables with the full brand color system. Define light mode and dark mode token sets: `--background`, `--foreground`, `--surface`, `--surface-elevated`, `--border`, `--text-primary`, `--text-secondary`, `--text-muted`, `--accent`, `--accent-hover`, `--success`, `--error`, `--warning`. Map these to the brand hex values for each mode. |
+| 16.4 | **Register brand colors in Tailwind theme** | Update the `@theme inline {}` block to register all brand colors as Tailwind utilities: `--color-navy: #1B2A4A`, `--color-red: #E8513D`, `--color-gold: #F5A623`, `--color-ice: #F7F8FA`, `--color-midnight: #0D1520`, `--color-green: #2ECC71`, `--color-slate: #8892A0`, plus surface layer colors. This enables classes like `bg-navy`, `text-red`, `border-gold`. |
+| 16.5 | **Import brand fonts** | In `layout.tsx`, replace `Geist` and `Geist_Mono` with `Montserrat` and `Inter` from `next/font/google`. Configure with the required weight subsets (400, 500, 600, 700, 800). Update `globals.css` font references. |
+| 16.6 | **Create theme toggle component** | Build a simple light/dark mode toggle button component using `next-themes` `useTheme()` hook. Place in the header/nav. Default to dark mode. |
 
 ### Tasks — Component Conversion
 
 | Task | Description | Details |
 |------|-------------|---------|
-| 18.7 | **Audit all hardcoded colors** | Search for hardcoded color values (`bg-white`, `bg-gray-*`, `text-gray-*`, `bg-black`, `border-gray-*`, hex values in inline styles) across all components. Create a list of every instance that needs conversion to theme tokens. |
-| 18.8 | **Convert layout and navigation** | Update `layout.tsx`, any header/nav components, and sidebar to use brand colors and theme tokens. Nav should use Deep Navy background, Fierce Red for active states. |
-| 18.9 | **Convert dashboard and league pages** | Update the dashboard, league home, and league list pages. Apply card styling with surface layer tokens, proper text hierarchy with Montserrat headlines and Inter body. |
-| 18.10 | **Convert draft room** | Update the draft board, pick list, and timer. This is a high-visibility page — ensure it looks sharp in dark mode with clear contrast between available/drafted/on-clock states. |
-| 18.11 | **Convert leaderboard and standings** | Update leaderboard tables, standings views, and stats pages. Use Gold for rankings/positions, Green for positive changes, Red for alerts. |
-| 18.12 | **Convert team and roster pages** | Update roster display, school cards, game detail modals. Ensure school logos and colors work against both dark and light backgrounds. |
-| 18.13 | **Convert transaction and settings pages** | Update add/drop flow, transaction history, and all league settings forms. Forms need clear input/label contrast in dark mode. |
-| 18.14 | **Convert playoff bracket** | Update bracket visualization with brand colors. Ensure good contrast for matchup cards and score displays. |
-| 18.15 | **Convert auth pages** | Update login, signup, and any auth-related pages with brand identity. First impression matters. |
+| 16.7 | **Audit all hardcoded colors** | Search for hardcoded color values (`bg-white`, `bg-gray-*`, `text-gray-*`, `bg-black`, `border-gray-*`, hex values in inline styles) across all components. Create a list of every instance that needs conversion to theme tokens. |
+| 16.8 | **Convert layout and navigation** | Update `layout.tsx`, any header/nav components, and sidebar to use brand colors and theme tokens. Nav should use Deep Navy background, Fierce Red for active states. |
+| 16.9 | **Convert dashboard and league pages** | Update the dashboard, league home, and league list pages. Apply card styling with surface layer tokens, proper text hierarchy with Montserrat headlines and Inter body. |
+| 16.10 | **Convert draft room** | Update the draft board, pick list, and timer. This is a high-visibility page — ensure it looks sharp in dark mode with clear contrast between available/drafted/on-clock states. |
+| 16.11 | **Convert leaderboard and standings** | Update leaderboard tables, standings views, and stats pages. Use Gold for rankings/positions, Green for positive changes, Red for alerts. |
+| 16.12 | **Convert team and roster pages** | Update roster display, school cards, game detail modals. Ensure school logos and colors work against both dark and light backgrounds. |
+| 16.13 | **Convert transaction and settings pages** | Update add/drop flow, transaction history, and all league settings forms. Forms need clear input/label contrast in dark mode. |
+| 16.14 | **Convert playoff bracket** | Update bracket visualization with brand colors. Ensure good contrast for matchup cards and score displays. |
+| 16.15 | **Convert auth pages** | Update login, signup, and any auth-related pages with brand identity. First impression matters. |
 
 ### Tasks — Polish & Assets
 
 | Task | Description | Details |
 |------|-------------|---------|
-| 18.16 | **Add Rivyls logo** | Place logo in header, landing page hero, favicon (`/public/favicon.ico`), and Apple touch icon. Create SVG versions for crisp rendering at all sizes. |
-| 18.17 | **Create Open Graph images** | Design OG images for social sharing using brand colors and logo. Set up `@vercel/og` or static images for: default site image, league-specific images (if feasible). Update `<meta>` tags in `layout.tsx`. |
-| 18.18 | **Update meta tags** | Update `<title>` to "Rivyls — Fantasy College Sports", `<meta description>` with brand-aligned copy, Twitter Card tags, and favicon references. |
-| 18.19 | **WCAG contrast audit** | Test all color combinations against WCAG AA standards (4.5:1 for text, 3:1 for large text). Particular focus on: Red on Navy (known fail per brand guidelines), Gold on light backgrounds, text on dark surface layers. Fix any failures. |
-| 18.20 | **Mobile dark mode testing** | Test all pages on iOS Safari and Android Chrome in dark mode. Verify: status bar theming (`<meta name="theme-color">`), input field styling, modal overlays, and scroll behavior. |
+| 16.16 | **Add Rivyls logo** | Place logo in header, landing page hero, favicon (`/public/favicon.ico`), and Apple touch icon. Create SVG versions for crisp rendering at all sizes. |
+| 16.17 | **Create Open Graph images** | Design OG images for social sharing using brand colors and logo. Set up `@vercel/og` or static images for: default site image, league-specific images (if feasible). Update `<meta>` tags in `layout.tsx`. |
+| 16.18 | **Update meta tags** | Update `<title>` to "Rivyls — Fantasy College Sports", `<meta description>` with brand-aligned copy, Twitter Card tags, and favicon references. |
+| 16.19 | **WCAG contrast audit** | Test all color combinations against WCAG AA standards (4.5:1 for text, 3:1 for large text). Particular focus on: Red on Navy (known fail per brand guidelines), Gold on light backgrounds, text on dark surface layers. Fix any failures. |
+| 16.20 | **Mobile dark mode testing** | Test all pages on iOS Safari and Android Chrome in dark mode. Verify: status bar theming (`<meta name="theme-color">`), input field styling, modal overlays, and scroll behavior. |
 | 18.21 | **Design system page** | Create `/style-guide` page showing all brand elements in context: color palette swatches, typography scale, button variants, card styles, form elements, status indicators. Living reference for consistency. |
 
 ### Brand Guideline Testing Process
@@ -918,13 +813,12 @@ For each conversion task:
 
 ---
 
-## Phase 19: Landing Page & Email Capture [P4]
-
+## Phase 17: Landing Page & Email Capture
 *Build a marketing landing page for pre-launch signups*
 
 **Status: NOT STARTED**
 
-**Depends on**: Phase 18 (brand colors, fonts, and dark mode must be defined before building the landing page)
+**Depends on**: Phase 16 (brand colors, fonts, and dark mode must be defined before building the landing page)
 
 ### Background
 
@@ -938,14 +832,14 @@ The marketing plan identifies several pre-launch needs: email list building, com
 
 | Task | Description | Details |
 |------|-------------|---------|
-| 19.1 | **Design landing page layout** | Hero section with headline + CTA, "How It Works" section (3-step flow), feature highlights, social proof section (placeholder for testimonials), commissioner CTA section, email capture form, footer. Follow StoryBrand messaging from brand guidelines: user is the hero, Rivyls is the guide. |
-| 19.2 | **Build landing page route** | Create `/src/app/(marketing)/page.tsx` as a separate layout group from the app. This allows the landing page to have its own layout (no app nav, different header) while sharing the same domain. Unauthenticated users see the landing page; authenticated users redirect to dashboard. |
-| 19.3 | **Build email capture form** | Form fields: name, email. Submits to `POST /api/waitlist` which inserts into the `waitlist` table (created in Phase 14.17). Show success confirmation. Add basic validation (valid email, not already on list). |
-| 19.4 | **Build waitlist API route** | `POST /api/waitlist` — validates input, checks for duplicate email, inserts into `waitlist` table. Accepts optional `source` and `referral_code` query params for attribution tracking. No auth required (public endpoint). Add rate limiting. |
-| 19.5 | **Add referral link support** | When a user shares the landing page with `?ref=CODE`, store the referral code in the waitlist entry. Generate unique referral codes for each waitlist signup (e.g., `RIVYLS-{short_id}`). Show "share your link" after signup with their unique code. |
-| 19.6 | **Commissioner early access CTA** | Dedicated section on the landing page targeting commissioners: "Be a Founding Commissioner — Build your league first, free for life." Links to commissioner signup flow (or a separate form that flags them as commissioner-interest in the waitlist table). |
-| 19.7 | **SEO and meta tags** | Set up proper meta tags for the landing page: title, description, OG image (from Phase 18.17), Twitter Card. Add structured data (JSON-LD) for the website. |
-| 19.8 | **Mobile optimization** | Landing page must be mobile-first (80%+ of fantasy sports users are on mobile). Test on iOS Safari and Android Chrome. Ensure CTA buttons are thumb-friendly, email form is easy to fill on mobile. |
+| 17.1 | **Design landing page layout** | Hero section with headline + CTA, "How It Works" section (3-step flow), feature highlights, social proof section (placeholder for testimonials), commissioner CTA section, email capture form, footer. Follow StoryBrand messaging from brand guidelines: user is the hero, Rivyls is the guide. |
+| 17.2 | **Build landing page route** | Create `/src/app/(marketing)/page.tsx` as a separate layout group from the app. This allows the landing page to have its own layout (no app nav, different header) while sharing the same domain. Unauthenticated users see the landing page; authenticated users redirect to dashboard. |
+| 17.3 | **Build email capture form** | Form fields: name, email. Submits to `POST /api/waitlist` which inserts into the `waitlist` table (created in Phase 14.17). Show success confirmation. Add basic validation (valid email, not already on list). |
+| 17.4 | **Build waitlist API route** | `POST /api/waitlist` — validates input, checks for duplicate email, inserts into `waitlist` table. Accepts optional `source` and `referral_code` query params for attribution tracking. No auth required (public endpoint). Add rate limiting. |
+| 17.5 | **Add referral link support** | When a user shares the landing page with `?ref=CODE`, store the referral code in the waitlist entry. Generate unique referral codes for each waitlist signup (e.g., `RIVYLS-{short_id}`). Show "share your link" after signup with their unique code. |
+| 17.6 | **Commissioner early access CTA** | Dedicated section on the landing page targeting commissioners: "Be a Founding Commissioner — Build your league first, free for life." Links to commissioner signup flow (or a separate form that flags them as commissioner-interest in the waitlist table). |
+| 17.7 | **SEO and meta tags** | Set up proper meta tags for the landing page: title, description, OG image (from Phase 16.17), Twitter Card. Add structured data (JSON-LD) for the website. |
+| 17.8 | **Mobile optimization** | Landing page must be mobile-first (80%+ of fantasy sports users are on mobile). Test on iOS Safari and Android Chrome. Ensure CTA buttons are thumb-friendly, email form is easy to fill on mobile. |
 
 ### Verification
 
@@ -958,13 +852,53 @@ The marketing plan identifies several pre-launch needs: email list building, com
 
 ---
 
-## Phase 20: Analytics & Tracking [P7]
+## Phase 18: Standard Practices
+*Add testing, monitoring, validation, and CI/CD*
 
+**Status: NOT STARTED**
+
+**Addresses**: [SP1](#sp1-zero-tests), [SP2](#sp2-no-error-monitoring), [SP3](#sp3-no-input-validation), [SP4](#sp4-no-cicd-pipeline), [SP5](#sp5-inconsistent-api-response-format), [SP6](#sp6-no-rate-limiting), [SP7](#sp7-no-react-error-boundaries), [SP8](#sp8-no-response-caching)
+
+### Tasks
+
+| Task | Description | Details |
+|------|-------------|---------|
+| **Testing** |||
+| 18.1 | **Set up Vitest** | Add `vitest` to devDependencies, create `vitest.config.ts`, add `"test"` script to `package.json`. |
+| 18.2 | **Write points calculator tests** | Test every scoring rule: wins, losses, conference games, ranked opponents, bowls, playoffs, championship (0 points), shutouts, 50+ points, double points multiplier. Test with custom league settings AND default settings. This is the highest-value test. |
+| 18.3 | **Write week calculation tests** | Test `getCurrentWeek()` across timezone boundaries, at season boundaries, at week transitions. Test sandbox overrides. |
+| 18.4 | **Write API endpoint tests** | Test auth enforcement, input validation, error responses for key endpoints: `/api/transactions`, `/api/points/calculate`, `/api/drafts/reset`. |
+| 18.5 | **Add test script to CI** | Ensure tests run before deploy (see 18.9). |
+| **Monitoring** |||
+| 18.6 | **Add Sentry** | Install `@sentry/nextjs`. Configure for both client and server. Set up source maps. Create free Sentry project. |
+| 18.7 | **Add cron alerting** | Have cron routes report success/failure to Sentry (or a simple health-check service). Alert on consecutive failures. |
+| 18.8 | **Add Vercel Analytics** | Enable Vercel Analytics (free) for Core Web Vitals and page performance tracking. |
+| **CI/CD** |||
+| 18.9 | **Create GitHub Actions workflow** | On PR: run `npm run lint`, `npx tsc --noEmit`, `npm test`. Block merge if any fail. |
+| 18.10 | **Add pre-commit hooks** | Install `husky` + `lint-staged`. Run lint + type-check on staged files before commit. |
+| **Validation** |||
+| 18.11 | **Add Zod for API validation** | Install `zod`. Create request schemas for: transaction requests, league settings updates, sync requests. Validate at the top of each API route. |
+| 18.12 | **Standardize API responses** | Create `src/lib/api/response.ts` with helpers: `successResponse(data)`, `errorResponse(message, status)`. Migrate all routes to use consistent `{ success, data?, error?, message? }` format. |
+| **Resilience** |||
+| 18.13 | **Add rate limiting** | Add rate limiting to public-facing API routes. Can use Vercel Edge Middleware with `@vercel/kv` or a simple in-memory solution for low-traffic phase. |
+| 18.14 | **Add response caching** | Add `Cache-Control` headers or Next.js `revalidate` to: standings (30s TTL), leaderboard (30s), schedule (5min). |
+
+### Recommended Order
+
+1. **18.1-18.2** (Vitest + calculator tests) — highest value, catches scoring bugs
+2. **18.6** (Sentry) — know when things break
+3. **18.9** (GitHub Actions) — prevent regressions
+4. **18.11-18.12** (Zod + response format) — clean up API layer
+5. Everything else
+
+---
+
+## Phase 19: Analytics & Tracking
 *Add user behavior tracking and business metric measurement*
 
 **Status: NOT STARTED**
 
-**Depends on**: Phase 14 (activity_log table), Phase 16.8 (Vercel Analytics for web vitals)
+**Depends on**: Phase 14 (activity_log table), Phase 18.8 (Vercel Analytics for web vitals)
 
 ### Background
 
@@ -976,13 +910,13 @@ The business plan sets Year 1 targets: 1,000 users and 100 leagues. Without anal
 
 | Task | Description | Details |
 |------|-------------|---------|
-| 20.1 | **Instrument activity logging** | Wire up the `activity_log` table (from Phase 14.6) with application events. Add logging calls to: user signup, league creation, draft start/complete, transaction made, league join, settings changed. Create a `logActivity(userId, leagueId, action, details)` utility in `src/lib/analytics.ts`. |
-| 20.2 | **Build admin analytics dashboard** | Create `/admin/analytics` page showing key metrics: total users, total leagues, users this week, leagues this week, active users (made a transaction or visited in last 7 days), draft completion rate. Query from `activity_log` and existing tables. |
-| 20.3 | **Add referral attribution tracking** | When a new user signs up via an invite link with `?ref=USER_ID`, populate `profiles.referred_by` (from Phase 14.10). Track referral chains: who invited whom. Show referral counts on admin dashboard. |
-| 20.4 | **Waitlist conversion tracking** | When a waitlist user signs up for the real platform, link their waitlist entry to their profile. Track conversion rate: waitlist signups → actual signups. Show on admin dashboard. |
-| 20.5 | **Commissioner metrics** | Track per-commissioner: leagues created, total members across leagues, draft completion rate. These metrics help identify top commissioners for the Founding Commissioner program. |
-| 20.6 | **Add Vercel Analytics** | Enable Vercel Analytics (free tier) for Core Web Vitals and page-level performance tracking. Install `@vercel/analytics` and add the `<Analytics />` component to `layout.tsx`. |
-| 20.7 | **Add simple event tracking** | Evaluate lightweight analytics options: Vercel Analytics custom events (if sufficient), Plausible (privacy-focused, $9/mo), or PostHog (open source, self-hostable). Pick one and instrument key flows: signup, league creation, draft, first transaction. Avoid heavy solutions like Google Analytics for now. |
+| 19.1 | **Instrument activity logging** | Wire up the `activity_log` table (from Phase 14.6) with application events. Add logging calls to: user signup, league creation, draft start/complete, transaction made, league join, settings changed. Create a `logActivity(userId, leagueId, action, details)` utility in `src/lib/analytics.ts`. |
+| 19.2 | **Build admin analytics dashboard** | Create `/admin/analytics` page showing key metrics: total users, total leagues, users this week, leagues this week, active users (made a transaction or visited in last 7 days), draft completion rate. Query from `activity_log` and existing tables. |
+| 19.3 | **Add referral attribution tracking** | When a new user signs up via an invite link with `?ref=USER_ID`, populate `profiles.referred_by` (from Phase 14.10). Track referral chains: who invited whom. Show referral counts on admin dashboard. |
+| 19.4 | **Waitlist conversion tracking** | When a waitlist user signs up for the real platform, link their waitlist entry to their profile. Track conversion rate: waitlist signups → actual signups. Show on admin dashboard. |
+| 19.5 | **Commissioner metrics** | Track per-commissioner: leagues created, total members across leagues, draft completion rate. These metrics help identify top commissioners for the Founding Commissioner program. |
+| 19.6 | **Add Vercel Analytics** | Enable Vercel Analytics (free tier) for Core Web Vitals and page-level performance tracking. Install `@vercel/analytics` and add the `<Analytics />` component to `layout.tsx`. |
+| 19.7 | **Add simple event tracking** | Evaluate lightweight analytics options: Vercel Analytics custom events (if sufficient), Plausible (privacy-focused, $9/mo), or PostHog (open source, self-hostable). Pick one and instrument key flows: signup, league creation, draft, first transaction. Avoid heavy solutions like Google Analytics for now. |
 
 ### Verification
 
@@ -993,13 +927,12 @@ The business plan sets Year 1 targets: 1,000 users and 100 leagues. Without anal
 
 ---
 
-## Phase 21: User Profiles & Tiers [P8]
-
+## Phase 20: User Profiles & Tiers
 *Implement Founding Commissioner program, user profile enhancements, and tier management*
 
 **Status: NOT STARTED**
 
-**Depends on**: Phase 14 (tier column, feature_flags tables), Phase 20 (commissioner metrics for Founding Commissioner selection)
+**Depends on**: Phase 14 (tier column, feature_flags tables), Phase 19 (commissioner metrics for Founding Commissioner selection)
 
 ### Background
 
@@ -1017,13 +950,13 @@ The business plan and marketing plan both highlight the Founding Commissioner pr
 
 | Task | Description | Details |
 |------|-------------|---------|
-| 21.1 | **Build user profile page** | Create `/profile` page showing: display name, email, tier badge, leagues (as commissioner and member), join date, referral link. Currently there's no dedicated profile page. |
-| 21.2 | **Implement tier display** | Show the user's tier as a badge throughout the app: profile page, league member lists, leaderboard. Founding Commissioners get a distinctive gold badge. Free users see no badge (clean default). |
-| 21.3 | **Build Founding Commissioner grant flow** | Admin tool to grant Founding Commissioner status: `/admin/founding-commissioners` page. Shows commissioners who meet criteria (created a league, league has X+ members, draft completed). Admin can manually grant tier. Updates `profiles.tier` to `'founding_commissioner'`. |
-| 21.4 | **Define Founding Commissioner criteria** | Decide the exact criteria for auto-qualifying. Suggested: commissioner creates a league AND the league has 6+ members AND the draft is completed — all during Year 1 (before August 2026 season start). Store criteria in config, not hardcoded. |
-| 21.5 | **Build feature flag checking utility** | Create `src/lib/features.ts` with: `hasFeature(userId, featureKey)` — checks user's tier against `feature_flags.tier_required`, with override from `user_feature_flags`. This is the gating function all premium features will use in Year 2. For now, all features return `true` (everything free in Year 1). |
-| 21.6 | **Seed initial feature flags** | Populate the `feature_flags` table with the planned premium features: `'pre_draft_intelligence'`, `'live_analytics'`, `'transaction_intelligence'`, `'custom_scoring_templates'`, `'waiver_suggestions'`, `'what_if_simulator'`, `'power_rankings'`, `'custom_league_themes'`, `'early_draft_access'`. All set to `enabled = false` and `tier_required = 'pro'`. |
-| 21.7 | **Profile edit functionality** | Let users update their display name and notification preferences (from Phase 14.12 schema). Basic form on the profile page. |
+| 20.1 | **Build user profile page** | Create `/profile` page showing: display name, email, tier badge, leagues (as commissioner and member), join date, referral link. Currently there's no dedicated profile page. |
+| 20.2 | **Implement tier display** | Show the user's tier as a badge throughout the app: profile page, league member lists, leaderboard. Founding Commissioners get a distinctive gold badge. Free users see no badge (clean default). |
+| 20.3 | **Build Founding Commissioner grant flow** | Admin tool to grant Founding Commissioner status: `/admin/founding-commissioners` page. Shows commissioners who meet criteria (created a league, league has X+ members, draft completed). Admin can manually grant tier. Updates `profiles.tier` to `'founding_commissioner'`. |
+| 20.4 | **Define Founding Commissioner criteria** | Decide the exact criteria for auto-qualifying. Suggested: commissioner creates a league AND the league has 6+ members AND the draft is completed — all during Year 1 (before August 2026 season start). Store criteria in config, not hardcoded. |
+| 20.5 | **Build feature flag checking utility** | Create `src/lib/features.ts` with: `hasFeature(userId, featureKey)` — checks user's tier against `feature_flags.tier_required`, with override from `user_feature_flags`. This is the gating function all premium features will use in Year 2. For now, all features return `true` (everything free in Year 1). |
+| 20.6 | **Seed initial feature flags** | Populate the `feature_flags` table with the planned premium features: `'pre_draft_intelligence'`, `'live_analytics'`, `'transaction_intelligence'`, `'custom_scoring_templates'`, `'waiver_suggestions'`, `'what_if_simulator'`, `'power_rankings'`, `'custom_league_themes'`, `'early_draft_access'`. All set to `enabled = false` and `tier_required = 'pro'`. |
+| 20.7 | **Profile edit functionality** | Let users update their display name and notification preferences (from Phase 14.12 schema). Basic form on the profile page. |
 
 ### Free Features (confirmed — no tier gating)
 
@@ -1046,13 +979,12 @@ These features will NEVER be gated behind premium:
 
 ---
 
-## Phase 22: Share & Social Features [P9]
-
+## Phase 21: Share & Social Features
 *Add social sharing capabilities for marketing and user engagement*
 
 **Status: NOT STARTED**
 
-**Depends on**: Phase 18 (brand styling for share cards), Phase 19 (landing page as share destination)
+**Depends on**: Phase 16 (brand styling for share cards), Phase 17 (landing page as share destination)
 
 ### Background
 
@@ -1062,13 +994,13 @@ The marketing plan relies on organic sharing as a key growth channel. Users shou
 
 | Task | Description | Details |
 |------|-------------|---------|
-| 22.1 | **Build share card generator** | Create a utility using `@vercel/og` (or `satori` + `sharp`) that generates branded image cards from data. Cards include: Rivyls logo, league name, the data being shared, and a call-to-action URL. Output as PNG for social media compatibility. |
-| 22.2 | **Leaderboard share** | Add "Share Standings" button to the leaderboard page. Generates an image card showing top 5 teams and their points. Includes the user's position if not in top 5. Share via native Web Share API (mobile) or copy-to-clipboard (desktop). |
-| 22.3 | **Bracket share** | Add "Share Bracket" button to the playoff bracket page. Generates an image of the bracket with user's teams highlighted. Particularly valuable during CFP for social engagement. |
-| 22.4 | **Weekly recap share** | After each week's scores are finalized, generate a "Week X Recap" card for each league: top scorer, biggest mover, closest matchup. Users can share their team's weekly performance. |
-| 22.5 | **League invite share** | Improve the existing invite flow with a shareable card: "Join my Rivyls league: [League Name]". Include league details (sport, team count, draft date). Make the invite link the primary CTA. |
-| 22.6 | **Commissioner referral share** | Commissioners get a branded share card: "I'm running a Rivyls league — [League Name]. Join with code [CODE]." Optimized for WhatsApp, iMessage, and Twitter/X where most fantasy league recruitment happens. |
-| 22.7 | **Add Web Share API integration** | Create a reusable `ShareButton` component that uses the Web Share API on supported devices (mobile Safari, Android Chrome) and falls back to a copy-to-clipboard modal on desktop. Include share options: Twitter/X, WhatsApp, copy link. |
+| 21.1 | **Build share card generator** | Create a utility using `@vercel/og` (or `satori` + `sharp`) that generates branded image cards from data. Cards include: Rivyls logo, league name, the data being shared, and a call-to-action URL. Output as PNG for social media compatibility. |
+| 21.2 | **Leaderboard share** | Add "Share Standings" button to the leaderboard page. Generates an image card showing top 5 teams and their points. Includes the user's position if not in top 5. Share via native Web Share API (mobile) or copy-to-clipboard (desktop). |
+| 21.3 | **Bracket share** | Add "Share Bracket" button to the playoff bracket page. Generates an image of the bracket with user's teams highlighted. Particularly valuable during CFP for social engagement. |
+| 21.4 | **Weekly recap share** | After each week's scores are finalized, generate a "Week X Recap" card for each league: top scorer, biggest mover, closest matchup. Users can share their team's weekly performance. |
+| 21.5 | **League invite share** | Improve the existing invite flow with a shareable card: "Join my Rivyls league: [League Name]". Include league details (sport, team count, draft date). Make the invite link the primary CTA. |
+| 21.6 | **Commissioner referral share** | Commissioners get a branded share card: "I'm running a Rivyls league — [League Name]. Join with code [CODE]." Optimized for WhatsApp, iMessage, and Twitter/X where most fantasy league recruitment happens. |
+| 21.7 | **Add Web Share API integration** | Create a reusable `ShareButton` component that uses the Web Share API on supported devices (mobile Safari, Android Chrome) and falls back to a copy-to-clipboard modal on desktop. Include share options: Twitter/X, WhatsApp, copy link. |
 
 ### Verification
 
@@ -1080,13 +1012,67 @@ The marketing plan relies on organic sharing as a key growth channel. Users shou
 
 ---
 
-## Phase 23: Free Feature Enhancements [P11]
+## Phase 22: Multi-Sport Architecture
+*Refactor the architecture so college football patterns don't block other sports*
 
+**Status: NOT STARTED**
+
+### Background
+
+College football is sport #1. Future sports include hockey, baseball, basketball, and cricket. Some features are inherently sport-specific (Heisman is only for CFB, Stanley Cup is only for hockey), and that's expected. However, several core architectural patterns are currently hardcoded for football and would **break or require major rewrites** when porting to another sport.
+
+### Analysis: What's Shared vs. Sport-Specific
+
+| Concept | Shared (must generalize) | Sport-Specific (OK to keep) |
+|---------|-------------------------|---------------------------|
+| Season structure | Season start/end dates, week numbering | Specific week counts (CFB: 22 weeks, NHL: 26 weeks) |
+| Game model | Home/away, scores, status, date | Bowl games, overtime format |
+| Rankings | Concept of ranked opponents | AP Top 25 (CFB), power rankings (NHL/NBA) |
+| Scoring rules | Points for wins, bonuses | Specific bonus types per sport |
+| Playoffs | Playoff tracking, bracket display | Number of teams, format (single elim vs best-of-7) |
+| Special events | Event-based bonuses | Conference championships (CFB), award winners |
+| Individual awards | Award tracking system | Heisman (CFB), Hart Trophy (NHL), MVP (NBA/MLB) |
+| Team model | Schools/teams, conferences, logos | "Schools" naming (college only) |
+
+### Tasks — Generalize Shared Patterns
+
+| Task | Description | Details |
+|------|-------------|---------|
+| 22.1 | **Abstract week/season structure** | Move season config (start date, max weeks, playoff start week, week labels) into the `seasons` table or a new `season_config` JSONB column. Replace all hardcoded week numbers with lookups from this config. The `getCurrentWeek()` function should accept sport/season and calculate based on DB config, not hardcoded August 24. |
+| 22.2 | **Generalize ranking system** | Rename `ap_rankings_history` to `rankings_history`. Add `ranking_type` column (e.g., 'ap_poll', 'power_ranking', 'standings'). The scoring engine should look up the ranking type for the sport, not assume AP Top 25. Not all sports use rankings for bonus points — make ranking-based scoring optional per sport. |
+| 22.3 | **Generalize game types** | Currently `games` has `is_bowl_game`, `is_playoff_game`, `bowl_name`, `playoff_round` — all football-specific. Replace with: `game_type` ENUM ('regular_season', 'conference_championship', 'postseason', 'playoff', 'championship', 'exhibition'). Add `game_type_detail` TEXT for sport-specific detail (e.g., bowl name for CFB, "Stanley Cup Finals" for NHL). Move `is_conference_game` logic to derive from the game data rather than storing as a separate boolean. |
+| 22.4 | **Abstract scoring rules schema** | The `league_settings` table has 20+ football-specific point columns. Replace with a `scoring_rules` JSONB column or a normalized `scoring_rules` table: `{ rule_type: 'win', points: 1 }, { rule_type: 'conference_game', points: 1 }, { rule_type: 'ranked_opponent_top10', points: 2 }`. Each sport defines its available rule types. The scoring engine reads rules dynamically instead of accessing fixed columns. |
+| 22.5 | **Generalize individual awards** | Rename `heisman_winners` to `individual_awards`. Add `award_type` column ('heisman', 'hart_trophy', 'mvp', etc.) and `sport_id`. The scoring engine checks for awards associated with schools on rosters, regardless of which specific award it is. |
+| 22.6 | **Rename "schools" to "teams" (or keep with alias)** | College sports use "schools," pro sports use "teams." Options: (a) rename table to `teams` (breaking change), (b) keep `schools` for college sports and add `teams` for pro, (c) keep `schools` table name but use "teams" in the UI with a display alias per sport. Recommend option (c) for now — least disruptive. |
+| 22.7 | **Create sport configuration table** | Create `sport_configs` table with: `sport_id`, `season_week_count`, `playoff_format` ('single_elimination', 'best_of_7', etc.), `ranking_type`, `available_scoring_rules` (JSONB), `api_provider`, `api_base_url`. This is the single source of truth for how each sport works. |
+| 22.8 | **Create sport-specific API adapters** | Currently `src/lib/api/espn.ts` is football-specific. Create an adapter pattern: `src/lib/api/adapters/espn-cfb.ts`, `src/lib/api/adapters/nhl.ts`, etc. Each adapter implements a common interface: `fetchTeams()`, `fetchGames(week)`, `fetchRankings()`, `fetchScores()`. The sync routes call the adapter for the given sport. |
+| 22.9 | **Abstract scoring engine** | Refactor `src/lib/points/calculator.ts` to be sport-agnostic. The engine reads scoring rules from the sport config and league settings, then applies them generically. Sport-specific logic (e.g., "bowl games don't get ranked bonus") lives in sport-specific rule files, not in the main calculator. |
+
+### What NOT to Change
+
+These are intentionally sport-specific and don't need generalization:
+- **Heisman scraping logic** — only relevant for CFB; other sports will have their own award detection
+- **CFP bracket component** — other sports will have different bracket formats; build new components per sport
+- **Conference abbreviation mapping** — sport-specific display data
+- **ESPN API endpoints** — each sport has different endpoints; handled by the adapter pattern (22.8)
+
+### Migration Path
+
+This phase is the largest refactor. Recommended approach:
+1. Start with **additive changes** (new tables, new columns) — don't remove old schema yet
+2. Update the scoring engine to read from new config, with **fallback to old columns**
+3. Migrate CFB data to new format
+4. Once verified, remove old columns in a cleanup migration
+5. Build sport #2 (hockey?) using only the new patterns
+
+---
+
+## Phase 23: Free Feature Enhancements
 *Post-launch free features that enhance the experience but aren't required for the core loop*
 
 **Status: NOT STARTED — DEFERRED**
 
-**Depends on**: Phase 18 (brand styling), Phase 14 (schema for watchlists, scoring_preset, notification_preferences)
+**Depends on**: Phase 16 (brand styling), Phase 14 (schema for watchlists, scoring_preset, notification_preferences)
 
 ### Background
 
@@ -1122,7 +1108,7 @@ If building post-launch, suggested order:
 | **Phase 24** | Auto-pick for draft, draft pause/resume | Enhancement to draft system |
 | **Phase 25** | Email/push notifications | Game updates, draft reminders, transaction confirmations. Uses `notification_preferences` schema from Phase 14.12. Extends Phase 23.5 in-app notifications with email delivery. |
 | **Phase 26** | Historical season caching | Archive past seasons, returning user experience. Extends Phase 23.6 with full multi-season data. |
-| **Phase 27** | Multi-sport launch (Hockey) | First sport after CFB using Phase 17 architecture |
+| **Phase 27** | Multi-sport launch (Hockey) | First sport after CFB using Phase 22 architecture |
 | **Phase 28** | Team-to-team trading | Mid-season roster trades between users. Uses `trades` schema from Phase 14.13. |
 | **Phase 29** | Premium features launch (Year 2) | Activate feature flags, build premium UI, implement: pre-draft intelligence, live analytics, transaction intelligence, custom scoring templates, what-if simulator, power rankings, custom league themes, early draft access. Stripe integration for Pro subscriptions. |
 | **Phase 30** | Payment integration (Stripe) | Entry fees, prize payouts, charity pooling, Pro subscription billing |
@@ -1156,8 +1142,8 @@ If building post-launch, suggested order:
 
 | Layer | Technology | Version |
 |-------|-----------|---------|
-| Framework | Next.js (App Router) | 16.1.4 |
-| UI | React | 19.2.3 |
+| Framework | Next.js (App Router) | 18.1.4 |
+| UI | React | 17.2.3 |
 | Language | TypeScript | ^5 |
 | Styling | Tailwind CSS | ^4 |
 | Database | Supabase (PostgreSQL) | ^2.91.1 |
