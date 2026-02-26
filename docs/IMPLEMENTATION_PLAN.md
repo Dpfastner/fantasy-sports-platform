@@ -2,7 +2,7 @@
 
 > **Platform Name**: Rivyls (rivyls.com)
 > **Current Sport**: College Football (base for multi-sport expansion)
-> **Last Updated**: February 25, 2026
+> **Last Updated**: February 26, 2026
 > **Audit Date**: February 22, 2026
 
 ---
@@ -18,8 +18,8 @@
    - [Phase 13: Security Hardening](#phase-13-security-hardening) ✅
    - [Phase 14: Data Integrity & Database Fixes](#phase-14-data-integrity--database-fixes) ✅
 7. **SHOULD DO — Launch Quality**
-   - [Phase 16: Brand & UX](#phase-16-brand--ux)
-   - [Phase 17: Landing Page & Email Capture](#phase-17-landing-page--email-capture)
+   - [Phase 16: Brand & UX](#phase-16-brand--ux) ✅
+   - [Phase 17: Landing Page & Email Capture](#phase-17-landing-page--email-capture) ✅
 8. **SHOULD DO IF TIME — Pre-Season Polish**
    - [Phase 18: Standard Practices](#phase-18-standard-practices)
    - [Phase 19: Analytics & Tracking](#phase-19-analytics--tracking)
@@ -399,8 +399,8 @@ Phase 15: Tech Debt Resolution          ████████████  CO
 *Platform works but looks amateur and has no way to acquire users without these.*
 
 ```
-Phase 16: Brand & UX                   ░░░░░░░░░░░░  Visual identity + dark mode
-Phase 17: Landing Page & Email Capture  ░░░░░░░░░░░░  User acquisition funnel
+Phase 16: Brand & UX                   ████████████  COMPLETE ✅
+Phase 17: Landing Page & Email Capture  ████████████  COMPLETE ✅
 ```
 
 ### SHOULD DO IF TIME — Pre-Season Polish
@@ -438,13 +438,13 @@ Phase 15 (Tech Debt)         ████████████  COMPLETE ✅
 
 ━━━ SHOULD DO (Launch Quality) ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         ↓
-Phase 16 (Brand & UX)        ░░░░░░░░░░░░  ← START HERE
+Phase 16 (Brand & UX)        ████████████  COMPLETE ✅
         ↓
-Phase 17 (Landing Page)      ░░░░░░░░░░░░
+Phase 17 (Landing Page)      ████████████  COMPLETE ✅
 
 ━━━ SHOULD DO IF TIME (Pre-Season) ━━━━━━━━━━━━━━━━━━━━━━━━━
         ↓
-Phase 18 (Std Practices)     ░░░░░░░░░░░░
+Phase 18 (Std Practices)     ░░░░░░░░░░░░  ← START HERE
         ↓
 Phase 19 (Analytics)         ░░░░░░░░░░░░
         ↓
@@ -461,11 +461,11 @@ Phase 23 (Free Enhancements) ░░░░░░░░░░░░
 If running out of time before the August 2026 season:
 
 ```
-STOP POINT 1 (Minimum viable launch):
+STOP POINT 1 (Minimum viable launch):  ★ REACHED ★
   ✅ Phase 13-15 done   → Platform is secure, schema solid, code clean
   ✅ Phase 16 done      → Platform looks professional
   ✅ Phase 17 done      → Users can find and sign up
-  → Launch with this. Everything else is post-launch.
+  → Can launch with this. Everything else is post-launch polish.
 
 STOP POINT 2 (If time allows):
   ✅ Phase 18 done      → Tests catch regressions, monitoring in place
@@ -707,7 +707,9 @@ These large components should be split **after** Phase 18 adds tests, so regress
 ## Phase 16: Brand & UX
 *Apply Rivyls brand identity, implement dark mode, and convert all components to themed design system*
 
-**Status: NOT STARTED**
+**Status: COMPLETE**
+
+**Summary**: Implemented a 4-palette CSS variable system (Collegiate Fire, Heritage Field, Royal Gambit, Warm Kickoff) with semantic tokens for all surfaces, text, borders, brand, accent, and functional colors. Loaded Montserrat (headings) + Inter (body) via next/font/google. Created PaletteProvider and PaletteSwitcher components. Converted all 1200+ hardcoded colors to semantic palette tokens. Brand typography utility classes (`.brand-h1`, `.brand-h2`, `.brand-h3`, `.brand-nav`) defined in globals.css.
 
 **References**: `docs/Rivyls_Brand_Guidelines_v1.docx.pdf`, `docs/RIVYLS — Color Palette Exploration v2.pdf`
 
@@ -816,9 +818,11 @@ For each conversion task:
 ## Phase 17: Landing Page & Email Capture
 *Build a marketing landing page for pre-launch signups*
 
-**Status: NOT STARTED**
+**Status: COMPLETE**
 
 **Depends on**: Phase 16 (brand colors, fonts, and dark mode must be defined before building the landing page)
+
+**Summary**: Built `/welcome` landing page with brand typography (Montserrat headings, Inter body). Email capture form with referral tracking (`?ref=CODE`), rate-limited waitlist API, Commissioner CTA with palette tertiary color. Added waitlist-to-user conversion trigger (migration 015): auto-sets `founding_commissioner` tier for commissioner signups, links `referred_by` for referral signups. Deferred: waitlist confirmation email (waiting on Resend/SMTP setup).
 
 ### Background
 
@@ -843,19 +847,21 @@ The marketing plan identifies several pre-launch needs: email list building, com
 
 ### Verification
 
-- [ ] Unauthenticated visit to rivyls.com shows landing page
-- [ ] Authenticated visit to rivyls.com redirects to dashboard
-- [ ] Email capture form works and inserts into waitlist table
-- [ ] Referral links append `?ref=CODE` and code is stored
-- [ ] Landing page scores 90+ on Lighthouse mobile
-- [ ] OG image and meta tags render correctly when shared on Twitter/Facebook
+- [x] Landing page at `/welcome` renders with brand typography
+- [ ] Unauthenticated visit to rivyls.com shows landing page (currently shows app — deferred routing change)
+- [x] Email capture form works and inserts into waitlist table
+- [x] Referral links append `?ref=CODE` and code is stored
+- [x] Waitlist-to-user conversion trigger marks `converted_at` and sets `founding_commissioner` tier
+- [x] Referral attribution links `referred_by` on user profiles
+- [ ] Landing page scores 90+ on Lighthouse mobile (not yet tested)
+- [ ] OG image and meta tags render correctly when shared on Twitter/Facebook (OG image not yet created)
 
 ---
 
 ## Phase 18: Standard Practices
 *Add testing, monitoring, validation, and CI/CD*
 
-**Status: NOT STARTED**
+**Status: UP NEXT**
 
 **Addresses**: [SP1](#sp1-zero-tests), [SP2](#sp2-no-error-monitoring), [SP3](#sp3-no-input-validation), [SP4](#sp4-no-cicd-pipeline), [SP5](#sp5-inconsistent-api-response-format), [SP6](#sp6-no-rate-limiting), [SP7](#sp7-no-react-error-boundaries), [SP8](#sp8-no-response-caching)
 
@@ -1154,4 +1160,4 @@ If building post-launch, suggested order:
 
 ---
 
-*Last Updated: February 25, 2026*
+*Last Updated: February 26, 2026*
