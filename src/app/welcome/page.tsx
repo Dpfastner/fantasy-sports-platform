@@ -73,7 +73,7 @@ export default function WelcomePage() {
           run the league you&apos;ve always wanted.
         </p>
         <a
-          href="#waitlist"
+          href="#commissioner"
           className="inline-block bg-brand hover:bg-brand-hover text-text-inverse font-semibold py-4 px-10 rounded-lg text-lg transition-colors"
         >
           Join the Waitlist
@@ -117,7 +117,7 @@ export default function WelcomePage() {
       </section>
 
       {/* ── Commissioner CTA ── */}
-      <section className="bg-brand-subtle py-16 md:py-24">
+      <section id="commissioner" className="py-16 md:py-24" style={{ backgroundColor: '#2A1F0A' }}>
         <div className="container mx-auto px-4 md:px-8 max-w-3xl text-center">
           <h2 className="brand-h2 text-2xl md:text-4xl text-text-primary mb-4">
             Be a Founding Commissioner
@@ -178,20 +178,6 @@ export default function WelcomePage() {
             </div>
           ))}
         </div>
-      </section>
-
-      {/* ── Waitlist ── */}
-      <section id="waitlist" className="container mx-auto px-4 md:px-8 py-16 md:py-24 text-center">
-        <h2 className="brand-h2 text-2xl md:text-4xl text-text-primary mb-4">
-          Join the Waitlist
-        </h2>
-        <p className="text-text-secondary mb-10 max-w-lg mx-auto">
-          Be the first to know when Rivyls launches. Early access members get
-          priority invites and exclusive perks.
-        </p>
-        <Suspense fallback={<div className="h-48" />}>
-          <EmailCaptureForm />
-        </Suspense>
       </section>
 
       {/* ── Footer ── */}
