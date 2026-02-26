@@ -117,18 +117,18 @@ export default function WelcomePage() {
       </section>
 
       {/* ── Commissioner CTA ── */}
-      <section id="commissioner" className="py-16 md:py-24" style={{ backgroundColor: '#2A1F0A' }}>
+      <section id="commissioner" className="py-16 md:py-24" style={{ backgroundColor: '#F5A623' }}>
         <div className="container mx-auto px-4 md:px-8 max-w-3xl text-center">
-          <h2 className="brand-h2 text-2xl md:text-4xl text-text-primary mb-4">
+          <h2 className="brand-h2 text-2xl md:text-4xl text-text-inverse mb-4">
             Be a Founding Commissioner
           </h2>
-          <p className="text-lg text-text-secondary mb-10 leading-relaxed">
+          <p className="text-lg mb-10 leading-relaxed" style={{ color: 'rgba(13, 21, 32, 0.75)' }}>
             Build your league first, free for life. As a founding commissioner,
             you&apos;ll shape the Rivyls experience and lock in permanent perks
             for your league.
           </p>
           <Suspense fallback={<div className="h-48" />}>
-            <EmailCaptureForm source="commissioner" />
+            <EmailCaptureForm source="commissioner" inverted />
           </Suspense>
         </div>
       </section>
