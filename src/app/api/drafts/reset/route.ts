@@ -2,8 +2,13 @@ import { NextResponse } from 'next/server'
 import { createClient, createAdminClient } from '@/lib/supabase/server'
 import { validateBody } from '@/lib/api/validation'
 import { draftResetSchema } from '@/lib/api/schemas'
+import { createRateLimiter, getClientIp } from '@/lib/api/rate-limit'
+
+const limiter = createRateLimiter({ windowMs: 60_000, max: 3 })
 
 export async function POST(request: Request) {
+  const { limited, response } = limiter.check(getClientIp(request))
+  if (limited) return response!
   try {
     const supabase = await createClient()
     const supabaseAdmin = createAdminClient()

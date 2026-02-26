@@ -3,8 +3,13 @@ import { createAdminClient } from '@/lib/supabase/server'
 import { requireAuth } from '@/lib/auth'
 import { validateBody } from '@/lib/api/validation'
 import { reportSchema } from '@/lib/api/schemas'
+import { createRateLimiter, getClientIp } from '@/lib/api/rate-limit'
+
+const limiter = createRateLimiter({ windowMs: 60_000, max: 5 })
 
 export async function POST(request: NextRequest) {
+  const { limited, response } = limiter.check(getClientIp(request))
+  if (limited) return response!
   try {
     // Verify user is authenticated — use session user ID instead of client-provided
     const authResult = await requireAuth()

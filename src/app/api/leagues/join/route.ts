@@ -2,12 +2,17 @@ import { NextResponse } from 'next/server'
 import { createClient as createServerClient, createAdminClient } from '@/lib/supabase/server'
 import { validateBody } from '@/lib/api/validation'
 import { leagueJoinSchema } from '@/lib/api/schemas'
+import { createRateLimiter, getClientIp } from '@/lib/api/rate-limit'
+
+const limiter = createRateLimiter({ windowMs: 60_000, max: 10 })
 
 // POST /api/leagues/join
 // Body: { inviteCode: string, teamName?: string }
 // If teamName is omitted, returns league preview (lookup mode)
 // If teamName is provided, joins the league and creates a team
 export async function POST(request: Request) {
+  const { limited, response } = limiter.check(getClientIp(request))
+  if (limited) return response!
   try {
     // Verify the user is authenticated
     const supabase = await createServerClient()

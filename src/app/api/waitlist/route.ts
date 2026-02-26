@@ -2,30 +2,13 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/server'
 import { validateBody } from '@/lib/api/validation'
 import { waitlistSchema } from '@/lib/api/schemas'
+import { createRateLimiter, getClientIp } from '@/lib/api/rate-limit'
 
-// Simple in-memory rate limiting
-const rateLimit = new Map<string, number[]>()
-const RATE_LIMIT_WINDOW = 60_000 // 1 minute
-const RATE_LIMIT_MAX = 5
-
-function isRateLimited(ip: string): boolean {
-  const now = Date.now()
-  const timestamps = rateLimit.get(ip) || []
-  const recent = timestamps.filter(t => now - t < RATE_LIMIT_WINDOW)
-  rateLimit.set(ip, recent)
-  if (recent.length >= RATE_LIMIT_MAX) return true
-  recent.push(now)
-  return false
-}
+const limiter = createRateLimiter({ windowMs: 60_000, max: 5 })
 
 export async function POST(request: NextRequest) {
-  const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown'
-  if (isRateLimited(ip)) {
-    return NextResponse.json(
-      { success: false, message: 'Too many requests. Please try again later.' },
-      { status: 429 }
-    )
-  }
+  const { limited, response } = limiter.check(getClientIp(request))
+  if (limited) return response!
 
   let rawBody: unknown
   try {

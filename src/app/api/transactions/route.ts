@@ -4,8 +4,13 @@ import { getSimulatedDate } from '@/lib/week'
 import { requireAuth, verifyLeagueMembership } from '@/lib/auth'
 import { validateBody } from '@/lib/api/validation'
 import { transactionSchema } from '@/lib/api/schemas'
+import { createRateLimiter, getClientIp } from '@/lib/api/rate-limit'
+
+const limiter = createRateLimiter({ windowMs: 60_000, max: 10 })
 
 export async function POST(request: NextRequest) {
+  const { limited, response } = limiter.check(getClientIp(request))
+  if (limited) return response!
   try {
     // Verify user is authenticated
     const authResult = await requireAuth()
