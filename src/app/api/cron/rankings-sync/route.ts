@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import * as Sentry from '@sentry/nextjs'
 import { createAdminClient } from '@/lib/supabase/server'
 import { fetchRankings } from '@/lib/api/espn'
 import { areCronsEnabled, getEnvironment } from '@/lib/env'
@@ -139,6 +140,7 @@ export async function GET(request: Request) {
     })
   } catch (error) {
     console.error('Rankings sync cron error:', error)
+    Sentry.captureException(error, { tags: { cron: 'rankings-sync' } })
     return NextResponse.json(
       { error: 'Cron job failed', details: String(error) },
       { status: 500 }
