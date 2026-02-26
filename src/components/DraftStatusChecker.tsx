@@ -38,14 +38,14 @@ export default function DraftStatusChecker({ leagueId, initialStatus }: DraftSta
   // Show notification banner when draft starts
   if (showNotification && status === 'in_progress') {
     return (
-      <div className="fixed top-0 left-0 right-0 bg-green-600 text-white p-4 z-50 flex items-center justify-between">
+      <div className="fixed top-0 left-0 right-0 bg-success text-text-primary p-4 z-50 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <span className="w-3 h-3 bg-white rounded-full animate-pulse"></span>
+          <span className="w-3 h-3 bg-text-primary rounded-full animate-pulse"></span>
           <span className="font-semibold">The draft has started!</span>
         </div>
         <Link
           href={`/leagues/${leagueId}/draft`}
-          className="bg-white text-green-600 px-4 py-2 rounded font-semibold hover:bg-green-50"
+          className="bg-text-primary text-success px-4 py-2 rounded font-semibold hover:bg-success-hover"
         >
           Join Draft Room
         </Link>
@@ -56,14 +56,14 @@ export default function DraftStatusChecker({ leagueId, initialStatus }: DraftSta
   // If status changed to in_progress, show inline
   if (status === 'in_progress' && initialStatus !== 'in_progress') {
     return (
-      <div className="bg-green-900/30 border border-green-700 rounded-lg p-4 mb-4">
+      <div className="bg-success/20 border border-success rounded-lg p-4 mb-4">
         <div className="flex items-center gap-3 mb-2">
-          <span className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></span>
-          <span className="text-green-400 font-semibold">Draft In Progress</span>
+          <span className="w-3 h-3 bg-success rounded-full animate-pulse"></span>
+          <span className="text-success-text font-semibold">Draft In Progress</span>
         </div>
         <Link
           href={`/leagues/${leagueId}/draft`}
-          className="inline-block bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors"
+          className="inline-block bg-success hover:bg-success-hover text-text-primary font-semibold py-2 px-4 rounded-lg transition-colors"
         >
           Go to Draft Room
         </Link>

@@ -300,43 +300,43 @@ export default function TransactionsClient({
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-900 to-gray-800">
+    <div className="min-h-screen bg-gradient-to-b from-gradient-from to-gradient-to">
       <Header userName={userName} userEmail={userEmail}>
         <Link
           href={`/leagues/${leagueId}/team`}
-          className="text-gray-400 hover:text-white transition-colors text-sm md:text-base"
+          className="text-text-secondary hover:text-text-primary transition-colors text-sm md:text-base"
         >
           My Roster
         </Link>
         <Link
           href={`/leagues/${leagueId}`}
-          className="text-gray-400 hover:text-white transition-colors text-sm md:text-base truncate max-w-[100px] md:max-w-none"
+          className="text-text-secondary hover:text-text-primary transition-colors text-sm md:text-base truncate max-w-[100px] md:max-w-none"
         >
           {leagueName}
         </Link>
-        <Link href="/dashboard" className="text-gray-400 hover:text-white transition-colors text-sm md:text-base">
+        <Link href="/dashboard" className="text-text-secondary hover:text-text-primary transition-colors text-sm md:text-base">
           My Leagues
         </Link>
       </Header>
 
       <main className="container mx-auto px-3 md:px-4 py-4 md:py-8">
         {/* Quick Nav */}
-        <div className="flex flex-wrap items-center gap-2 mb-6 pb-4 border-b border-gray-700">
+        <div className="flex flex-wrap items-center gap-2 mb-6 pb-4 border-b border-border">
           <Link
             href={`/leagues/${leagueId}`}
-            className="bg-gray-700 hover:bg-gray-600 text-white text-sm py-2 px-4 rounded-lg transition-colors"
+            className="bg-surface hover:bg-surface-subtle text-text-primary text-sm py-2 px-4 rounded-lg transition-colors"
           >
             League Home
           </Link>
           <Link
             href={`/leagues/${leagueId}/schedule`}
-            className="bg-gray-700 hover:bg-gray-600 text-white text-sm py-2 px-4 rounded-lg transition-colors"
+            className="bg-surface hover:bg-surface-subtle text-text-primary text-sm py-2 px-4 rounded-lg transition-colors"
           >
             Schedule
           </Link>
           <Link
             href={`/leagues/${leagueId}/stats`}
-            className="bg-gray-700 hover:bg-gray-600 text-white text-sm py-2 px-4 rounded-lg transition-colors"
+            className="bg-surface hover:bg-surface-subtle text-text-primary text-sm py-2 px-4 rounded-lg transition-colors"
           >
             League Stats
           </Link>
@@ -345,15 +345,15 @@ export default function TransactionsClient({
         {/* Page Header */}
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3 mb-4 md:mb-8">
           <div>
-            <h1 className="text-2xl md:text-3xl font-bold text-white">Add/Drop</h1>
-            <p className="text-gray-400 mt-1 text-sm md:text-base">Week {currentWeek}</p>
+            <h1 className="text-2xl md:text-3xl font-bold text-text-primary">Add/Drop</h1>
+            <p className="text-text-secondary mt-1 text-sm md:text-base">Week {currentWeek}</p>
           </div>
           <div className="sm:text-right">
-            <p className="text-gray-400 text-sm md:text-base">
-              Transactions: <span className="text-white font-semibold">{addDropsUsed} / {maxAddDrops}</span>
+            <p className="text-text-secondary text-sm md:text-base">
+              Transactions: <span className="text-text-primary font-semibold">{addDropsUsed} / {maxAddDrops}</span>
             </p>
             {addDropDeadline && (
-              <p className="text-gray-500 text-xs md:text-sm">
+              <p className="text-text-muted text-xs md:text-sm">
                 Deadline: {new Date(addDropDeadline).toLocaleDateString()}
               </p>
             )}
@@ -362,24 +362,24 @@ export default function TransactionsClient({
 
         {/* Status Messages */}
         {isDeadlinePassed && (
-          <div className="bg-red-900/30 border border-red-700 rounded-lg p-4 mb-6">
-            <p className="text-red-400">
+          <div className="bg-danger/20 border border-danger rounded-lg p-4 mb-6">
+            <p className="text-danger-text">
               The add/drop deadline has passed. No more transactions can be made this season.
             </p>
           </div>
         )}
 
         {!isDeadlinePassed && addDropsUsed >= maxAddDrops && (
-          <div className="bg-yellow-900/30 border border-yellow-700 rounded-lg p-4 mb-6">
-            <p className="text-yellow-400">
+          <div className="bg-highlight-special border border-warning rounded-lg p-4 mb-6">
+            <p className="text-warning-text">
               You have used all {maxAddDrops} transactions for this season.
             </p>
           </div>
         )}
 
         {error && (
-          <div className="bg-red-900/30 border border-red-700 rounded-lg p-4 mb-6">
-            <p className="text-red-400">{error}</p>
+          <div className="bg-danger/20 border border-danger rounded-lg p-4 mb-6">
+            <p className="text-danger-text">{error}</p>
           </div>
         )}
 
@@ -389,24 +389,24 @@ export default function TransactionsClient({
             <div className="lg:col-span-2">
               {/* Progress Steps */}
               <div className="flex items-center gap-2 md:gap-4 mb-4 md:mb-6">
-                <div className={`flex items-center gap-1 md:gap-2 ${step === 'select-drop' ? 'text-blue-400' : 'text-gray-500'}`}>
-                  <div className={`w-6 h-6 md:w-8 md:h-8 text-xs md:text-base rounded-full flex items-center justify-center ${step === 'select-drop' ? 'bg-blue-600' : 'bg-gray-700'}`}>
+                <div className={`flex items-center gap-1 md:gap-2 ${step === 'select-drop' ? 'text-brand-text' : 'text-text-muted'}`}>
+                  <div className={`w-6 h-6 md:w-8 md:h-8 text-xs md:text-base rounded-full flex items-center justify-center ${step === 'select-drop' ? 'bg-brand' : 'bg-surface'}`}>
                     1
                   </div>
                   <span className="text-sm md:text-base hidden sm:inline">Select Drop</span>
                   <span className="text-xs sm:hidden">Drop</span>
                 </div>
-                <div className="flex-1 h-px bg-gray-700" />
-                <div className={`flex items-center gap-1 md:gap-2 ${step === 'select-add' ? 'text-blue-400' : 'text-gray-500'}`}>
-                  <div className={`w-6 h-6 md:w-8 md:h-8 text-xs md:text-base rounded-full flex items-center justify-center ${step === 'select-add' ? 'bg-blue-600' : 'bg-gray-700'}`}>
+                <div className="flex-1 h-px bg-surface" />
+                <div className={`flex items-center gap-1 md:gap-2 ${step === 'select-add' ? 'text-brand-text' : 'text-text-muted'}`}>
+                  <div className={`w-6 h-6 md:w-8 md:h-8 text-xs md:text-base rounded-full flex items-center justify-center ${step === 'select-add' ? 'bg-brand' : 'bg-surface'}`}>
                     2
                   </div>
                   <span className="text-sm md:text-base hidden sm:inline">Select Add</span>
                   <span className="text-xs sm:hidden">Add</span>
                 </div>
-                <div className="flex-1 h-px bg-gray-700" />
-                <div className={`flex items-center gap-1 md:gap-2 ${step === 'confirm' ? 'text-blue-400' : 'text-gray-500'}`}>
-                  <div className={`w-6 h-6 md:w-8 md:h-8 text-xs md:text-base rounded-full flex items-center justify-center ${step === 'confirm' ? 'bg-blue-600' : 'bg-gray-700'}`}>
+                <div className="flex-1 h-px bg-surface" />
+                <div className={`flex items-center gap-1 md:gap-2 ${step === 'confirm' ? 'text-brand-text' : 'text-text-muted'}`}>
+                  <div className={`w-6 h-6 md:w-8 md:h-8 text-xs md:text-base rounded-full flex items-center justify-center ${step === 'confirm' ? 'bg-brand' : 'bg-surface'}`}>
                     3
                   </div>
                   <span className="text-sm md:text-base">Confirm</span>
@@ -415,8 +415,8 @@ export default function TransactionsClient({
 
               {/* Step 1: Select Drop */}
               {step === 'select-drop' && (
-                <div className="bg-gray-800 rounded-lg p-4 md:p-6">
-                  <h2 className="text-lg md:text-xl font-semibold text-white mb-3 md:mb-4">Select a school to drop</h2>
+                <div className="bg-surface rounded-lg p-4 md:p-6">
+                  <h2 className="text-lg md:text-xl font-semibold text-text-primary mb-3 md:mb-4">Select a school to drop</h2>
                   <div className="space-y-2 md:space-y-3">
                     {roster.map((entry) => {
                       const record = schoolRecordsMap[entry.school_id] || { wins: 0, losses: 0, confWins: 0, confLosses: 0 }
@@ -424,7 +424,7 @@ export default function TransactionsClient({
                         <button
                           key={entry.id}
                           onClick={() => handleSelectDrop(entry)}
-                          className="w-full flex items-center justify-between p-3 md:p-4 bg-gray-700/50 hover:bg-gray-700 rounded-lg transition-colors text-left"
+                          className="w-full flex items-center justify-between p-3 md:p-4 bg-surface-inset hover:bg-surface rounded-lg transition-colors text-left"
                         >
                           <div className="flex items-center gap-3 md:gap-4">
                             {entry.schools.logo_url ? (
@@ -434,19 +434,19 @@ export default function TransactionsClient({
                                 className="w-8 h-8 md:w-10 md:h-10 object-contain"
                               />
                             ) : (
-                              <div className="w-10 h-10 bg-gray-600 rounded-full" />
+                              <div className="w-10 h-10 bg-surface-subtle rounded-full" />
                             )}
                             <div>
-                              <span className="text-white font-medium">
+                              <span className="text-text-primary font-medium">
                                 {entry.schools.name}
                               </span>
                               <div className="flex items-center gap-2 text-sm">
-                                <span className="text-gray-400">{entry.schools.conference}</span>
-                                <span className={record.wins > record.losses ? 'text-green-400' : record.wins < record.losses ? 'text-red-400' : 'text-gray-400'}>
+                                <span className="text-text-secondary">{entry.schools.conference}</span>
+                                <span className={record.wins > record.losses ? 'text-success-text' : record.wins < record.losses ? 'text-danger-text' : 'text-text-secondary'}>
                                   {record.wins}-{record.losses}
                                 </span>
                                 {(record.confWins > 0 || record.confLosses > 0) && (
-                                  <span className="text-gray-500 text-xs">
+                                  <span className="text-text-muted text-xs">
                                     ({record.confWins}-{record.confLosses})
                                   </span>
                                 )}
@@ -454,11 +454,11 @@ export default function TransactionsClient({
                             </div>
                           </div>
                           <div className="text-right">
-                            <p className="text-white font-medium">
+                            <p className="text-text-primary font-medium">
                               {schoolPointsMap[entry.school_id] || 0} pts
                             </p>
                             {rankingsMap[entry.school_id] && (
-                              <p className="text-gray-400 text-sm">#{rankingsMap[entry.school_id]}</p>
+                              <p className="text-text-secondary text-sm">#{rankingsMap[entry.school_id]}</p>
                             )}
                           </div>
                         </button>
@@ -470,21 +470,21 @@ export default function TransactionsClient({
 
               {/* Step 2: Select Add */}
               {step === 'select-add' && (
-                <div className="bg-gray-800 rounded-lg p-6">
+                <div className="bg-surface rounded-lg p-6">
                   <div className="flex items-center justify-between mb-4">
-                    <h2 className="text-xl font-semibold text-white">Select a school to add</h2>
+                    <h2 className="text-xl font-semibold text-text-primary">Select a school to add</h2>
                     <button
                       onClick={handleBack}
-                      className="text-gray-400 hover:text-white transition-colors"
+                      className="text-text-secondary hover:text-text-primary transition-colors"
                     >
                       Back
                     </button>
                   </div>
 
                   {/* Selected Drop */}
-                  <div className="bg-red-900/20 border border-red-700/50 rounded-lg p-3 mb-4">
-                    <p className="text-red-400 text-sm mb-1">Dropping:</p>
-                    <p className="text-white font-medium">{selectedDrop?.schools.name}</p>
+                  <div className="bg-danger/10 border border-danger/50 rounded-lg p-3 mb-4">
+                    <p className="text-danger-text text-sm mb-1">Dropping:</p>
+                    <p className="text-text-primary font-medium">{selectedDrop?.schools.name}</p>
                   </div>
 
                   {/* Filters */}
@@ -494,12 +494,12 @@ export default function TransactionsClient({
                       placeholder="Search..."
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
-                      className="col-span-2 md:col-span-1 px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="col-span-2 md:col-span-1 px-3 py-2 bg-surface border border-border rounded-lg text-text-primary text-sm focus:outline-none focus:ring-2 focus:ring-brand"
                     />
                     <select
                       value={conferenceFilter}
                       onChange={(e) => setConferenceFilter(e.target.value)}
-                      className="px-2 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="px-2 py-2 bg-surface border border-border rounded-lg text-text-primary text-sm focus:outline-none focus:ring-2 focus:ring-brand"
                     >
                       <option value="all">All Conf</option>
                       {conferences.map(conf => (
@@ -509,7 +509,7 @@ export default function TransactionsClient({
                     <select
                       value={sortBy}
                       onChange={(e) => setSortBy(e.target.value as 'name' | 'points' | 'rank' | 'record' | 'confRecord')}
-                      className="px-2 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="px-2 py-2 bg-surface border border-border rounded-lg text-text-primary text-sm focus:outline-none focus:ring-2 focus:ring-brand"
                     >
                       <option value="points">By Points</option>
                       <option value="rank">By Rank</option>
@@ -517,12 +517,12 @@ export default function TransactionsClient({
                       <option value="confRecord">By Conf Record</option>
                       <option value="name">By Name</option>
                     </select>
-                    <label className="col-span-2 md:col-span-1 flex items-center gap-2 text-gray-400 text-sm">
+                    <label className="col-span-2 md:col-span-1 flex items-center gap-2 text-text-secondary text-sm">
                       <input
                         type="checkbox"
                         checked={showRankedOnly}
                         onChange={(e) => setShowRankedOnly(e.target.checked)}
-                        className="rounded bg-gray-700 border-gray-600"
+                        className="rounded bg-surface border-border"
                       />
                       Ranked only
                     </label>
@@ -531,7 +531,7 @@ export default function TransactionsClient({
                   {/* Available Schools */}
                   <div className="space-y-2 max-h-96 overflow-y-auto">
                     {availableSchools.length === 0 ? (
-                      <p className="text-gray-500 text-center py-8">No schools match your filters</p>
+                      <p className="text-text-muted text-center py-8">No schools match your filters</p>
                     ) : (
                       availableSchools.map((school) => {
                         const selectionCount = schoolSelectionCounts[school.id] || 0
@@ -540,7 +540,7 @@ export default function TransactionsClient({
                           <button
                             key={school.id}
                             onClick={() => handleSelectAdd(school)}
-                            className="w-full flex items-center justify-between p-3 bg-gray-700/30 hover:bg-gray-700/50 rounded-lg transition-colors text-left"
+                            className="w-full flex items-center justify-between p-3 bg-surface-subtle hover:bg-surface-inset rounded-lg transition-colors text-left"
                           >
                             <div className="flex items-center gap-3">
                               {school.logo_url ? (
@@ -556,19 +556,19 @@ export default function TransactionsClient({
                                 />
                               )}
                               <div>
-                                <div className="text-white text-sm font-medium">
+                                <div className="text-text-primary text-sm font-medium">
                                   {rankingsMap[school.id] && (
-                                    <span className="text-yellow-400 mr-1">#{rankingsMap[school.id]}</span>
+                                    <span className="text-warning-text mr-1">#{rankingsMap[school.id]}</span>
                                   )}
                                   <span>{school.name}</span>
                                 </div>
                                 <div className="flex items-center gap-2 text-xs">
-                                  <span className="text-gray-500">{school.conference}</span>
-                                  <span className={record.wins > record.losses ? 'text-green-400' : record.wins < record.losses ? 'text-red-400' : 'text-gray-400'}>
+                                  <span className="text-text-muted">{school.conference}</span>
+                                  <span className={record.wins > record.losses ? 'text-success-text' : record.wins < record.losses ? 'text-danger-text' : 'text-text-secondary'}>
                                     {record.wins}-{record.losses}
                                   </span>
                                   {(record.confWins > 0 || record.confLosses > 0) && (
-                                    <span className="text-gray-500">
+                                    <span className="text-text-muted">
                                       ({record.confWins}-{record.confLosses} conf)
                                     </span>
                                   )}
@@ -576,11 +576,11 @@ export default function TransactionsClient({
                               </div>
                             </div>
                             <div className="text-right">
-                              <p className="text-white text-sm font-medium">
+                              <p className="text-text-primary text-sm font-medium">
                                 {schoolPointsMap[school.id] || 0} pts
                               </p>
                               {selectionCount > 0 && (
-                                <p className="text-gray-500 text-xs">
+                                <p className="text-text-muted text-xs">
                                   {selectionCount}/{maxSelectionsPerSchool} taken
                                 </p>
                               )}
@@ -595,12 +595,12 @@ export default function TransactionsClient({
 
               {/* Step 3: Confirm */}
               {step === 'confirm' && selectedDrop && selectedAdd && (
-                <div className="bg-gray-800 rounded-lg p-6">
+                <div className="bg-surface rounded-lg p-6">
                   <div className="flex items-center justify-between mb-6">
-                    <h2 className="text-xl font-semibold text-white">Confirm Transaction</h2>
+                    <h2 className="text-xl font-semibold text-text-primary">Confirm Transaction</h2>
                     <button
                       onClick={handleBack}
-                      className="text-gray-400 hover:text-white transition-colors"
+                      className="text-text-secondary hover:text-text-primary transition-colors"
                     >
                       Back
                     </button>
@@ -608,8 +608,8 @@ export default function TransactionsClient({
 
                   <div className="grid md:grid-cols-2 gap-6 mb-6">
                     {/* Drop */}
-                    <div className="bg-red-900/20 border border-red-700/50 rounded-lg p-4">
-                      <p className="text-red-400 text-sm mb-3">Dropping</p>
+                    <div className="bg-danger/10 border border-danger/50 rounded-lg p-4">
+                      <p className="text-danger-text text-sm mb-3">Dropping</p>
                       <div className="flex items-center gap-4">
                         {selectedDrop.schools.logo_url ? (
                           <img
@@ -618,12 +618,12 @@ export default function TransactionsClient({
                             className="w-12 h-12 object-contain"
                           />
                         ) : (
-                          <div className="w-12 h-12 bg-gray-600 rounded-full" />
+                          <div className="w-12 h-12 bg-surface-subtle rounded-full" />
                         )}
                         <div>
-                          <p className="text-white font-medium">{selectedDrop.schools.name}</p>
-                          <p className="text-gray-400 text-sm">{selectedDrop.schools.conference}</p>
-                          <p className="text-gray-500 text-sm">
+                          <p className="text-text-primary font-medium">{selectedDrop.schools.name}</p>
+                          <p className="text-text-secondary text-sm">{selectedDrop.schools.conference}</p>
+                          <p className="text-text-muted text-sm">
                             {schoolPointsMap[selectedDrop.school_id] || 0} pts this season
                           </p>
                         </div>
@@ -631,8 +631,8 @@ export default function TransactionsClient({
                     </div>
 
                     {/* Add */}
-                    <div className="bg-green-900/20 border border-green-700/50 rounded-lg p-4">
-                      <p className="text-green-400 text-sm mb-3">Adding</p>
+                    <div className="bg-success/10 border border-success/50 rounded-lg p-4">
+                      <p className="text-success-text text-sm mb-3">Adding</p>
                       <div className="flex items-center gap-4">
                         {selectedAdd.logo_url ? (
                           <img
@@ -647,14 +647,14 @@ export default function TransactionsClient({
                           />
                         )}
                         <div>
-                          <p className="text-white font-medium">
+                          <p className="text-text-primary font-medium">
                             {rankingsMap[selectedAdd.id] && (
-                              <span className="text-yellow-400 mr-1">#{rankingsMap[selectedAdd.id]}</span>
+                              <span className="text-warning-text mr-1">#{rankingsMap[selectedAdd.id]}</span>
                             )}
                             {selectedAdd.name}
                           </p>
-                          <p className="text-gray-400 text-sm">{selectedAdd.conference}</p>
-                          <p className="text-gray-500 text-sm">
+                          <p className="text-text-secondary text-sm">{selectedAdd.conference}</p>
+                          <p className="text-text-muted text-sm">
                             {schoolPointsMap[selectedAdd.id] || 0} pts this season
                           </p>
                         </div>
@@ -662,12 +662,12 @@ export default function TransactionsClient({
                     </div>
                   </div>
 
-                  <div className="bg-gray-700/50 rounded-lg p-4 mb-6">
-                    <p className="text-gray-400 text-sm">
-                      This transaction will use <span className="text-white font-semibold">1</span> of your remaining{' '}
-                      <span className="text-white font-semibold">{maxAddDrops - addDropsUsed}</span> transactions.
+                  <div className="bg-surface-inset rounded-lg p-4 mb-6">
+                    <p className="text-text-secondary text-sm">
+                      This transaction will use <span className="text-text-primary font-semibold">1</span> of your remaining{' '}
+                      <span className="text-text-primary font-semibold">{maxAddDrops - addDropsUsed}</span> transactions.
                     </p>
-                    <p className="text-gray-500 text-sm mt-1">
+                    <p className="text-text-muted text-sm mt-1">
                       The new school will earn points starting from Week {currentWeek}.
                     </p>
                   </div>
@@ -675,14 +675,14 @@ export default function TransactionsClient({
                   <div className="flex gap-4">
                     <button
                       onClick={handleCancel}
-                      className="flex-1 bg-gray-700 hover:bg-gray-600 text-white font-semibold py-3 px-4 rounded-lg transition-colors"
+                      className="flex-1 bg-surface hover:bg-surface-subtle text-text-primary font-semibold py-3 px-4 rounded-lg transition-colors"
                     >
                       Cancel
                     </button>
                     <button
                       onClick={handleConfirm}
                       disabled={isSubmitting}
-                      className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-800 disabled:cursor-not-allowed text-white font-semibold py-3 px-4 rounded-lg transition-colors"
+                      className="flex-1 bg-brand hover:bg-brand-hover disabled:bg-brand/50 disabled:cursor-not-allowed text-text-primary font-semibold py-3 px-4 rounded-lg transition-colors"
                     >
                       {isSubmitting ? 'Processing...' : 'Confirm Transaction'}
                     </button>
@@ -694,8 +694,8 @@ export default function TransactionsClient({
             {/* Sidebar */}
             <div className="space-y-6">
               {/* Current Roster Preview */}
-              <div className="bg-gray-800 rounded-lg p-6">
-                <h3 className="text-lg font-semibold text-white mb-4">Current Roster</h3>
+              <div className="bg-surface rounded-lg p-6">
+                <h3 className="text-lg font-semibold text-text-primary mb-4">Current Roster</h3>
                 <div className="space-y-2">
                   {roster.map((entry) => {
                     const record = schoolRecordsMap[entry.school_id] || { wins: 0, losses: 0, confWins: 0, confLosses: 0 }
@@ -703,7 +703,7 @@ export default function TransactionsClient({
                       <div
                         key={entry.id}
                         className={`flex items-center justify-between p-2 rounded ${
-                          selectedDrop?.id === entry.id ? 'bg-red-900/30 border border-red-700' : 'bg-gray-700/30'
+                          selectedDrop?.id === entry.id ? 'bg-danger/20 border border-danger' : 'bg-surface-subtle'
                         }`}
                       >
                         <div className="flex items-center gap-2">
@@ -714,18 +714,18 @@ export default function TransactionsClient({
                               className="w-6 h-6 object-contain"
                             />
                           ) : (
-                            <div className="w-6 h-6 bg-gray-600 rounded-full" />
+                            <div className="w-6 h-6 bg-surface-subtle rounded-full" />
                           )}
                           <div>
-                            <span className="text-white text-sm">
+                            <span className="text-text-primary text-sm">
                               {entry.schools.abbreviation || entry.schools.name}
                             </span>
-                            <span className={`ml-1 text-xs ${record.wins > record.losses ? 'text-green-400' : record.wins < record.losses ? 'text-red-400' : 'text-gray-500'}`}>
+                            <span className={`ml-1 text-xs ${record.wins > record.losses ? 'text-success-text' : record.wins < record.losses ? 'text-danger-text' : 'text-text-muted'}`}>
                               {record.wins}-{record.losses}
                             </span>
                           </div>
                         </div>
-                        <span className="text-gray-400 text-sm">{schoolPointsMap[entry.school_id] || 0}</span>
+                        <span className="text-text-secondary text-sm">{schoolPointsMap[entry.school_id] || 0}</span>
                       </div>
                     )
                   })}
@@ -734,15 +734,15 @@ export default function TransactionsClient({
             </div>
           </div>
         ) : (
-          <div className="bg-gray-800 rounded-lg p-8 text-center">
-            <p className="text-gray-400 mb-4">
+          <div className="bg-surface rounded-lg p-8 text-center">
+            <p className="text-text-secondary mb-4">
               {isDeadlinePassed
                 ? 'The transaction deadline has passed for this season.'
                 : 'You have used all your transactions for this season.'}
             </p>
             <Link
               href={`/leagues/${leagueId}/team`}
-              className="inline-block bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-6 rounded-lg transition-colors"
+              className="inline-block bg-brand hover:bg-brand-hover text-text-primary font-semibold py-2 px-6 rounded-lg transition-colors"
             >
               View My Team
             </Link>
@@ -753,7 +753,7 @@ export default function TransactionsClient({
         <div className="mt-8">
           <button
             onClick={() => setShowHistory(!showHistory)}
-            className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors mb-4"
+            className="flex items-center gap-2 text-text-secondary hover:text-text-primary transition-colors mb-4"
           >
             <svg
               className={`w-4 h-4 transition-transform ${showHistory ? 'rotate-90' : ''}`}
@@ -767,9 +767,9 @@ export default function TransactionsClient({
           </button>
 
           {showHistory && (
-            <div className="bg-gray-800 rounded-lg p-6">
+            <div className="bg-surface rounded-lg p-6">
               {transactionHistory.length === 0 ? (
-                <p className="text-gray-500 text-center py-4">No transactions in this league yet</p>
+                <p className="text-text-muted text-center py-4">No transactions in this league yet</p>
               ) : (
                 <div className="space-y-3">
                   {transactionHistory.map((tx) => {
@@ -779,17 +779,17 @@ export default function TransactionsClient({
                       <div
                         key={tx.id}
                         className={`p-4 rounded-lg ${
-                          isMyTransaction ? 'bg-blue-900/20 border border-blue-700/30' : 'bg-gray-700/30'
+                          isMyTransaction ? 'bg-highlight-row border border-brand/30' : 'bg-surface-subtle'
                         }`}
                       >
                         <div className="flex items-center justify-between mb-2">
-                          <span className={`text-sm font-medium ${isMyTransaction ? 'text-blue-400' : 'text-gray-300'}`}>
+                          <span className={`text-sm font-medium ${isMyTransaction ? 'text-brand-text' : 'text-text-secondary'}`}>
                             {tx.team_name}
-                            {isMyTransaction && <span className="text-gray-500 ml-2">(You)</span>}
+                            {isMyTransaction && <span className="text-text-muted ml-2">(You)</span>}
                           </span>
                           <div className="text-right">
-                            <span className="text-gray-400 text-sm">Week {tx.week_number}</span>
-                            <span className="text-gray-600 text-sm ml-2">
+                            <span className="text-text-secondary text-sm">Week {tx.week_number}</span>
+                            <span className="text-text-muted text-sm ml-2">
                               {new Date(tx.created_at).toLocaleDateString()}
                             </span>
                           </div>
@@ -797,26 +797,26 @@ export default function TransactionsClient({
                         <div className="flex items-center gap-4">
                           {/* Dropped */}
                           <div className="flex items-center gap-2">
-                            <span className="text-red-400 text-sm">-</span>
+                            <span className="text-danger-text text-sm">-</span>
                             {tx.dropped_school?.logo_url ? (
                               <img src={tx.dropped_school.logo_url} alt="" className="w-6 h-6 object-contain opacity-60" />
                             ) : (
-                              <div className="w-6 h-6 bg-gray-600 rounded-full opacity-60" />
+                              <div className="w-6 h-6 bg-surface-subtle rounded-full opacity-60" />
                             )}
-                            <span className="text-gray-400 text-sm">{tx.dropped_school?.name}</span>
+                            <span className="text-text-secondary text-sm">{tx.dropped_school?.name}</span>
                           </div>
 
-                          <span className="text-gray-600">→</span>
+                          <span className="text-text-muted">→</span>
 
                           {/* Added */}
                           <div className="flex items-center gap-2">
-                            <span className="text-green-400 text-sm">+</span>
+                            <span className="text-success-text text-sm">+</span>
                             {tx.added_school?.logo_url ? (
                               <img src={tx.added_school.logo_url} alt="" className="w-6 h-6 object-contain" />
                             ) : (
-                              <div className="w-6 h-6 bg-gray-600 rounded-full" />
+                              <div className="w-6 h-6 bg-surface-subtle rounded-full" />
                             )}
-                            <span className="text-white text-sm">{tx.added_school?.name}</span>
+                            <span className="text-text-primary text-sm">{tx.added_school?.name}</span>
                           </div>
                         </div>
                       </div>

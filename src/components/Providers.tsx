@@ -2,6 +2,8 @@
 
 import { ReactNode } from 'react'
 import { ToastProvider } from './Toast'
+import { PaletteProvider } from './PaletteProvider'
+import PaletteSwitcher from './PaletteSwitcher'
 import ReportIssue from './ReportIssue'
 
 interface ProvidersProps {
@@ -10,9 +12,12 @@ interface ProvidersProps {
 
 export function Providers({ children }: ProvidersProps) {
   return (
-    <ToastProvider>
-      {children}
-      <ReportIssue />
-    </ToastProvider>
+    <PaletteProvider>
+      <ToastProvider>
+        {children}
+        <PaletteSwitcher />
+        <ReportIssue />
+      </ToastProvider>
+    </PaletteProvider>
   )
 }

@@ -57,7 +57,7 @@ export default function ReportIssue({ userId, currentPage }: ReportIssueProps) {
       {/* Floating Button */}
       <button
         onClick={() => setIsOpen(true)}
-        className="fixed bottom-4 left-4 z-40 bg-gray-700 hover:bg-gray-600 text-white p-3 rounded-full shadow-lg transition-colors"
+        className="fixed bottom-4 left-4 z-40 bg-surface hover:bg-surface-subtle text-text-primary p-3 rounded-full shadow-lg transition-colors"
         aria-label="Report an issue"
         title="Report an issue"
       >
@@ -69,12 +69,12 @@ export default function ReportIssue({ userId, currentPage }: ReportIssueProps) {
       {/* Modal */}
       {isOpen && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
-          <div className="bg-gray-800 rounded-lg shadow-xl w-full max-w-md">
-            <div className="flex items-center justify-between p-4 border-b border-gray-700">
-              <h2 className="text-lg font-semibold text-white">Report an Issue</h2>
+          <div className="bg-surface rounded-lg shadow-xl w-full max-w-md">
+            <div className="flex items-center justify-between p-4 border-b border-border">
+              <h2 className="text-lg font-semibold text-text-primary">Report an Issue</h2>
               <button
                 onClick={() => setIsOpen(false)}
-                className="text-gray-400 hover:text-white transition-colors"
+                className="text-text-secondary hover:text-text-primary transition-colors"
                 aria-label="Close"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -86,7 +86,7 @@ export default function ReportIssue({ userId, currentPage }: ReportIssueProps) {
             <form onSubmit={handleSubmit} className="p-4 space-y-4">
               {/* Category */}
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
+                <label className="block text-sm font-medium text-text-secondary mb-2">
                   Category
                 </label>
                 <div className="flex gap-2">
@@ -97,8 +97,8 @@ export default function ReportIssue({ userId, currentPage }: ReportIssueProps) {
                       onClick={() => setCategory(cat)}
                       className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-colors ${
                         category === cat
-                          ? 'bg-blue-600 text-white'
-                          : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                          ? 'bg-brand text-text-primary'
+                          : 'bg-surface text-text-secondary hover:bg-surface-subtle'
                       }`}
                     >
                       {cat === 'bug' ? 'Bug' : cat === 'feature' ? 'Feature Request' : 'Other'}
@@ -109,7 +109,7 @@ export default function ReportIssue({ userId, currentPage }: ReportIssueProps) {
 
               {/* Description */}
               <div>
-                <label htmlFor="description" className="block text-sm font-medium text-gray-300 mb-2">
+                <label htmlFor="description" className="block text-sm font-medium text-text-secondary mb-2">
                   Description
                 </label>
                 <textarea
@@ -124,7 +124,7 @@ export default function ReportIssue({ userId, currentPage }: ReportIssueProps) {
                       : "Tell us what's on your mind..."
                   }
                   rows={4}
-                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                  className="w-full px-3 py-2 bg-surface border border-border rounded-lg text-text-primary placeholder-text-muted focus:outline-none focus:ring-2 focus:ring-brand resize-none"
                   required
                 />
               </div>
@@ -134,14 +134,14 @@ export default function ReportIssue({ userId, currentPage }: ReportIssueProps) {
                 <button
                   type="button"
                   onClick={() => setIsOpen(false)}
-                  className="flex-1 py-2 px-4 bg-gray-700 hover:bg-gray-600 text-white rounded-lg font-medium transition-colors"
+                  className="flex-1 py-2 px-4 bg-surface hover:bg-surface-subtle text-text-primary rounded-lg font-medium transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="flex-1 py-2 px-4 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50"
+                  className="flex-1 py-2 px-4 bg-brand hover:bg-brand-hover text-text-primary rounded-lg font-medium transition-colors disabled:opacity-50"
                 >
                   {isSubmitting ? 'Submitting...' : 'Submit'}
                 </button>

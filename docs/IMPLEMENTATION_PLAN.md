@@ -500,7 +500,7 @@ The platform is being rebranded from "Fantasy Sports Platform" to **Rivyls** (ri
 | 11.5 | **Update vercel.json crons** | Register all 4 cron routes (see [A1](#a1-vercel-cron-configuration-mismatch)). Fix gameday-sync schedule if live scoring is desired during testing. |
 | 11.6 | **Rename project references** | Update `package.json` name, page titles, metadata, and `<title>` tags from "Fantasy Sports Platform" to "Rivyls". |
 | 11.7 | **Update environment documentation** | Rewrite `docs/ENVIRONMENT_SETUP.md` to reflect single-environment setup with Rivyls.com domain. Document the plan to add production back when ready. |
-| 11.8 | **Brand guidelines integration** | Import brand guidelines (colors, fonts, logo) and create a design token file / Tailwind theme extension. See [Phase 16](#phase-18-brand--ux) for full implementation. |
+| 11.8 | **Brand guidelines integration** | Import brand guidelines (colors, fonts, logo) and create a design token file / Tailwind theme extension. See [Phase 16](#phase-16-brand--ux) for full implementation. |
 | 11.9 | **Test stable URL** | Verify rivyls.com loads correctly, SSL works, all routes function, auth redirects use correct domain. |
 
 ### Decision Record: Why Sandbox-Only
@@ -792,7 +792,7 @@ Both are Google Fonts, loaded via `next/font/google` for performance optimizatio
 | 16.18 | **Update meta tags** | Update `<title>` to "Rivyls — Fantasy College Sports", `<meta description>` with brand-aligned copy, Twitter Card tags, and favicon references. |
 | 16.19 | **WCAG contrast audit** | Test all color combinations against WCAG AA standards (4.5:1 for text, 3:1 for large text). Particular focus on: Red on Navy (known fail per brand guidelines), Gold on light backgrounds, text on dark surface layers. Fix any failures. |
 | 16.20 | **Mobile dark mode testing** | Test all pages on iOS Safari and Android Chrome in dark mode. Verify: status bar theming (`<meta name="theme-color">`), input field styling, modal overlays, and scroll behavior. |
-| 18.21 | **Design system page** | Create `/style-guide` page showing all brand elements in context: color palette swatches, typography scale, button variants, card styles, form elements, status indicators. Living reference for consistency. |
+| 16.21 | **Design system page** | Create `/style-guide` page showing all brand elements in context: color palette swatches, typography scale, button variants, card styles, form elements, status indicators. Living reference for consistency. |
 
 ### Brand Guideline Testing Process
 
@@ -1142,8 +1142,8 @@ If building post-launch, suggested order:
 
 | Layer | Technology | Version |
 |-------|-----------|---------|
-| Framework | Next.js (App Router) | 18.1.4 |
-| UI | React | 17.2.3 |
+| Framework | Next.js (App Router) | 16.1.4 |
+| UI | React | 19.2.3 |
 | Language | TypeScript | ^5 |
 | Styling | Tailwind CSS | ^4 |
 | Database | Supabase (PostgreSQL) | ^2.91.1 |

@@ -436,43 +436,43 @@ export default async function TeamPage({ params }: PageProps) {
   const totalTeams = allTeams?.length || 0
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-900 to-gray-800">
+    <div className="min-h-screen bg-gradient-to-b from-gradient-from to-gradient-to">
       <Header userName={profile?.display_name} userEmail={user.email}>
         <Link
           href={`/leagues/${leagueId}`}
-          className="text-gray-400 hover:text-white transition-colors"
+          className="text-text-secondary hover:text-text-primary transition-colors"
         >
           {league.name}
         </Link>
-        <Link href="/dashboard" className="text-gray-400 hover:text-white transition-colors">
+        <Link href="/dashboard" className="text-text-secondary hover:text-text-primary transition-colors">
           My Leagues
         </Link>
       </Header>
 
       <main className="container mx-auto px-4 py-8">
         {/* Quick Nav */}
-        <div className="flex flex-wrap items-center gap-2 mb-6 pb-4 border-b border-gray-700">
+        <div className="flex flex-wrap items-center gap-2 mb-6 pb-4 border-b border-border">
           <Link
             href={`/leagues/${leagueId}`}
-            className="bg-gray-700 hover:bg-gray-600 text-white text-sm py-2 px-4 rounded-lg transition-colors"
+            className="bg-surface hover:bg-surface-subtle text-text-primary text-sm py-2 px-4 rounded-lg transition-colors"
           >
             League Home
           </Link>
           <Link
             href={`/leagues/${leagueId}/schedule`}
-            className="bg-gray-700 hover:bg-gray-600 text-white text-sm py-2 px-4 rounded-lg transition-colors"
+            className="bg-surface hover:bg-surface-subtle text-text-primary text-sm py-2 px-4 rounded-lg transition-colors"
           >
             Schedule
           </Link>
           <Link
             href={`/leagues/${leagueId}/transactions`}
-            className="bg-gray-700 hover:bg-gray-600 text-white text-sm py-2 px-4 rounded-lg transition-colors"
+            className="bg-surface hover:bg-surface-subtle text-text-primary text-sm py-2 px-4 rounded-lg transition-colors"
           >
             Add/Drop
           </Link>
           <Link
             href={`/leagues/${leagueId}/stats`}
-            className="bg-gray-700 hover:bg-gray-600 text-white text-sm py-2 px-4 rounded-lg transition-colors"
+            className="bg-surface hover:bg-surface-subtle text-text-primary text-sm py-2 px-4 rounded-lg transition-colors"
           >
             League Stats
           </Link>
@@ -536,10 +536,10 @@ export default async function TeamPage({ params }: PageProps) {
         </div>
 
         {/* Roster Section */}
-        <div className="bg-gray-800 rounded-lg p-6 mb-8">
+        <div className="bg-surface rounded-lg p-6 mb-8">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-semibold text-white">My Roster</h2>
-            <span className="text-gray-400 text-sm">Week {currentWeek}</span>
+            <h2 className="text-xl font-semibold text-text-primary">My Roster</h2>
+            <span className="text-text-secondary text-sm">Week {currentWeek}</span>
           </div>
 
           {roster && roster.length > 0 ? (
@@ -577,17 +577,17 @@ export default async function TeamPage({ params }: PageProps) {
               eventBonuses={eventBonuses}
             />
           ) : (
-            <p className="text-gray-500">No schools on roster yet. Complete the draft to build your team.</p>
+            <p className="text-text-muted">No schools on roster yet. Complete the draft to build your team.</p>
           )}
         </div>
 
         {/* Roster History (Dropped Schools) - styled like current roster */}
         {droppedRoster && droppedRoster.length > 0 && (
-          <div className="bg-gray-800 rounded-lg p-6 mb-8">
+          <div className="bg-surface rounded-lg p-6 mb-8">
             <div className="flex items-center justify-between mb-4">
               <div>
-                <h2 className="text-xl font-semibold text-gray-400">Roster History</h2>
-                <p className="text-gray-500 text-sm">Schools previously on your roster and points earned while rostered</p>
+                <h2 className="text-xl font-semibold text-text-secondary">Roster History</h2>
+                <p className="text-text-muted text-sm">Schools previously on your roster and points earned while rostered</p>
               </div>
             </div>
 
@@ -596,13 +596,13 @@ export default async function TeamPage({ params }: PageProps) {
               {/* Fixed left section */}
               <div className="flex-shrink-0">
                 {/* Header row */}
-                <div className="flex items-center h-8 px-3 text-xs text-gray-600 uppercase tracking-wide border-b border-gray-700">
+                <div className="flex items-center h-8 px-3 text-xs text-text-muted uppercase tracking-wide border-b border-border">
                   <span className="w-6 text-center">#</span>
                   <span className="w-10"></span>
                   <span className="w-32">School</span>
-                  <span className="w-px mx-1 h-5 bg-gray-700"></span>
+                  <span className="w-px mx-1 h-5 bg-surface"></span>
                   <span className="w-24">Tenure</span>
-                  <span className="w-px mx-1 h-5 bg-gray-700"></span>
+                  <span className="w-px mx-1 h-5 bg-surface"></span>
                   <span className="w-16 text-right">Earned</span>
                 </div>
 
@@ -618,10 +618,10 @@ export default async function TeamPage({ params }: PageProps) {
                   const totalPointsEarned = pointsDuringTenure.reduce((sum, p) => sum + Number(p.total_points), 0)
 
                   return (
-                    <div key={slot.id} className="flex items-center h-14 px-3 bg-gray-700/30 border-b border-gray-800">
+                    <div key={slot.id} className="flex items-center h-14 px-3 bg-surface-subtle border-b border-surface">
                       {/* Number */}
                       <div className="w-6 flex-shrink-0 text-center">
-                        <span className="text-gray-600 font-medium text-sm">{index + 1}</span>
+                        <span className="text-text-muted font-medium text-sm">{index + 1}</span>
                       </div>
 
                       {/* School Logo - faded */}
@@ -630,7 +630,7 @@ export default async function TeamPage({ params }: PageProps) {
                           <img src={school.logo_url} alt={school.name} className="w-8 h-8 object-contain opacity-40 grayscale" />
                         ) : (
                           <div
-                            className="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-xs opacity-40 grayscale"
+                            className="w-8 h-8 rounded-full flex items-center justify-center text-text-primary font-bold text-xs opacity-40 grayscale"
                             style={{ backgroundColor: school.primary_color }}
                           >
                             {school.abbreviation || school.name.substring(0, 2)}
@@ -640,22 +640,22 @@ export default async function TeamPage({ params }: PageProps) {
 
                       {/* School Name */}
                       <div className="w-32 flex-shrink-0 overflow-hidden">
-                        <p className="text-gray-400 font-medium text-sm truncate">{school.name}</p>
-                        <p className="text-gray-600 text-xs truncate">{school.conference}</p>
+                        <p className="text-text-secondary font-medium text-sm truncate">{school.name}</p>
+                        <p className="text-text-muted text-xs truncate">{school.conference}</p>
                       </div>
 
-                      <div className="w-px h-10 bg-gray-600 flex-shrink-0 mx-1" />
+                      <div className="w-px h-10 bg-surface-subtle flex-shrink-0 mx-1" />
 
                       {/* Tenure */}
                       <div className="w-24 flex-shrink-0 text-center">
-                        <span className="text-gray-500 text-xs">W{slot.start_week} - W{slot.end_week}</span>
+                        <span className="text-text-muted text-xs">W{slot.start_week} - W{slot.end_week}</span>
                       </div>
 
-                      <div className="w-px h-10 bg-gray-600 flex-shrink-0 mx-1" />
+                      <div className="w-px h-10 bg-surface-subtle flex-shrink-0 mx-1" />
 
                       {/* Total Points Earned */}
                       <div className="w-16 flex-shrink-0 text-right">
-                        <p className="text-gray-400 font-semibold text-sm">{totalPointsEarned} pts</p>
+                        <p className="text-text-secondary font-semibold text-sm">{totalPointsEarned} pts</p>
                       </div>
                     </div>
                   )
@@ -663,9 +663,9 @@ export default async function TeamPage({ params }: PageProps) {
               </div>
 
               {/* Scrollable right section - Weekly Points */}
-              <div className="flex-1 overflow-x-auto border-l border-gray-600">
+              <div className="flex-1 overflow-x-auto border-l border-border">
                 {/* Header row for weeks */}
-                <div className="flex items-center h-8 text-xs text-gray-600 uppercase tracking-wide border-b border-gray-700 min-w-max">
+                <div className="flex items-center h-8 text-xs text-text-muted uppercase tracking-wide border-b border-border min-w-max">
                   {Array.from({ length: 17 }, (_, i) => i).map(week => (
                     <div key={week} className="w-9 flex-shrink-0 text-center">
                       W{week}
@@ -679,7 +679,7 @@ export default async function TeamPage({ params }: PageProps) {
                     .filter(p => p.school_id === slot.school_id)
 
                   return (
-                    <div key={slot.id} className="flex items-center h-14 bg-gray-700/30 border-b border-gray-800 min-w-max">
+                    <div key={slot.id} className="flex items-center h-14 bg-surface-subtle border-b border-surface min-w-max">
                       {Array.from({ length: 17 }, (_, i) => i).map(week => {
                         const wasOnRoster = week >= slot.start_week && week < (slot.end_week || currentWeek + 1)
                         const weekPoints = pointsDuringTenure.find(p => p.week_number === week)
@@ -688,14 +688,14 @@ export default async function TeamPage({ params }: PageProps) {
                         return (
                           <div
                             key={week}
-                            className={`w-9 flex-shrink-0 py-1 text-center ${wasOnRoster ? 'bg-gray-600/20' : ''}`}
+                            className={`w-9 flex-shrink-0 py-1 text-center ${wasOnRoster ? 'bg-surface-subtle/20' : ''}`}
                           >
                             {wasOnRoster ? (
-                              <span className={`text-xs ${pts > 0 ? 'text-gray-400' : 'text-gray-600'}`}>
+                              <span className={`text-xs ${pts > 0 ? 'text-text-secondary' : 'text-text-muted'}`}>
                                 {pts}
                               </span>
                             ) : (
-                              <span className="text-gray-700 text-xs">-</span>
+                              <span className="text-text-muted text-xs">-</span>
                             )}
                           </div>
                         )
@@ -710,10 +710,10 @@ export default async function TeamPage({ params }: PageProps) {
 
         {/* Transaction History - at the bottom */}
         {droppedRoster && droppedRoster.length > 0 && (
-          <div className="bg-gray-800 rounded-lg p-6 mb-8">
+          <div className="bg-surface rounded-lg p-6 mb-8">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-semibold text-white">Transaction History</h2>
-              <span className="text-gray-400 text-sm">
+              <h2 className="text-xl font-semibold text-text-primary">Transaction History</h2>
+              <span className="text-text-secondary text-sm">
                 {droppedRoster.length} / {settings?.max_add_drops_per_season || 50} transactions used
               </span>
             </div>
@@ -730,16 +730,16 @@ export default async function TeamPage({ params }: PageProps) {
                 return (
                   <div
                     key={slot.id}
-                    className="flex items-center gap-3 p-3 bg-gray-700/30 rounded-lg text-sm"
+                    className="flex items-center gap-3 p-3 bg-surface-subtle rounded-lg text-sm"
                   >
-                    <span className="text-gray-500 w-16 flex-shrink-0">Week {slot.end_week}</span>
-                    <span className="text-red-400">Dropped</span>
-                    <span className="text-gray-300 font-medium">{droppedSchool.name}</span>
+                    <span className="text-text-muted w-16 flex-shrink-0">Week {slot.end_week}</span>
+                    <span className="text-danger-text">Dropped</span>
+                    <span className="text-text-secondary font-medium">{droppedSchool.name}</span>
                     {replacement && (
                       <>
-                        <span className="text-gray-500">→</span>
-                        <span className="text-green-400">Added</span>
-                        <span className="text-gray-300 font-medium">{replacement.schools?.name || 'Unknown'}</span>
+                        <span className="text-text-muted">→</span>
+                        <span className="text-success-text">Added</span>
+                        <span className="text-text-secondary font-medium">{replacement.schools?.name || 'Unknown'}</span>
                       </>
                     )}
                   </div>

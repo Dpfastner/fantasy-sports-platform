@@ -14,9 +14,9 @@ export function Header({ userName, userEmail, showUserMenu = true, children }: H
   const displayName = userName || userEmail || 'User'
 
   return (
-    <header className="bg-gray-800/50 border-b border-gray-700">
+    <header className="bg-surface/50 border-b border-border">
       <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-        <Link href="/dashboard" className="text-2xl font-bold text-white">
+        <Link href="/dashboard" className="text-2xl font-bold text-text-primary">
           Rivyls
         </Link>
         <div className="flex items-center gap-4">
@@ -25,7 +25,7 @@ export function Header({ userName, userEmail, showUserMenu = true, children }: H
             <>
               <Link
                 href="/settings"
-                className="text-gray-300 hover:text-white transition-colors"
+                className="text-text-secondary hover:text-text-primary transition-colors"
               >
                 {displayName}
               </Link>

@@ -1,27 +1,260 @@
 @import "tailwindcss";
 
+/* ============================================================
+   Palette System — CSS Variables
+
+   Default: Collegiate Fire (Option A)
+   Override via data-palette attribute on <html>
+   ============================================================ */
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Surfaces */
+  --palette-page: #0D1520;
+  --palette-page-alt: #111827;
+  --palette-gradient-from: #0D1520;
+  --palette-gradient-to: #1B2A4A;
+  --palette-surface: #1E293B;
+  --palette-surface-hover: #243556;
+  --palette-surface-subtle: rgba(30, 41, 59, 0.5);
+  --palette-surface-inset: rgba(30, 41, 59, 0.7);
+
+  /* Borders */
+  --palette-border: #334155;
+  --palette-border-subtle: rgba(51, 65, 85, 0.5);
+
+  /* Text */
+  --palette-text-primary: #F7F8FA;
+  --palette-text-secondary: #94A3B8;
+  --palette-text-muted: #64748B;
+  --palette-text-inverse: #0D1520;
+
+  /* Brand action */
+  --palette-brand: #E8513D;
+  --palette-brand-hover: #D4432F;
+  --palette-brand-text: #E8513D;
+  --palette-brand-subtle: rgba(232, 81, 61, 0.15);
+
+  /* Accent */
+  --palette-accent: #F5A623;
+  --palette-accent-text: #F5A623;
+  --palette-accent-subtle: rgba(245, 166, 35, 0.15);
+
+  /* Functional */
+  --palette-success: #22C55E;
+  --palette-success-text: #4ADE80;
+  --palette-success-subtle: rgba(34, 197, 94, 0.15);
+  --palette-danger: #EF4444;
+  --palette-danger-text: #F87171;
+  --palette-danger-subtle: rgba(239, 68, 68, 0.15);
+  --palette-warning: #F5A623;
+  --palette-warning-text: #FBBF24;
+  --palette-warning-subtle: rgba(245, 166, 35, 0.15);
+  --palette-info: #818CF8;
+  --palette-info-text: #A5B4FC;
+  --palette-info-subtle: rgba(129, 140, 248, 0.15);
+
+  /* Special */
+  --palette-highlight-row: rgba(232, 81, 61, 0.1);
+  --palette-highlight-special: rgba(245, 166, 35, 0.15);
+  --palette-live-indicator: #22C55E;
+
+  /* Backward compat */
+  --background: var(--palette-page);
+  --foreground: var(--palette-text-primary);
 }
+
+/* --- Heritage Field (Option C) --- */
+[data-palette="heritage-field"] {
+  --palette-page: #0E2218;
+  --palette-page-alt: #132E20;
+  --palette-gradient-from: #0E2218;
+  --palette-gradient-to: #1A3C2A;
+  --palette-surface: #1A3C2A;
+  --palette-surface-hover: #245235;
+  --palette-surface-subtle: rgba(26, 60, 42, 0.5);
+  --palette-surface-inset: rgba(26, 60, 42, 0.7);
+  --palette-border: #2D5E3F;
+  --palette-border-subtle: rgba(45, 94, 63, 0.5);
+  --palette-text-primary: #F2E8D5;
+  --palette-text-secondary: #B8A88A;
+  --palette-text-muted: #7A6F5C;
+  --palette-text-inverse: #0E2218;
+  --palette-brand: #C47A3A;
+  --palette-brand-hover: #B06A2E;
+  --palette-brand-text: #C47A3A;
+  --palette-brand-subtle: rgba(196, 122, 58, 0.15);
+  --palette-accent: #D4A23A;
+  --palette-accent-text: #D4A23A;
+  --palette-accent-subtle: rgba(212, 162, 58, 0.15);
+  --palette-success: #4ADE80;
+  --palette-success-text: #86EFAC;
+  --palette-success-subtle: rgba(74, 222, 128, 0.15);
+  --palette-danger: #EF4444;
+  --palette-danger-text: #F87171;
+  --palette-danger-subtle: rgba(239, 68, 68, 0.15);
+  --palette-warning: #D4A23A;
+  --palette-warning-text: #E4B84A;
+  --palette-warning-subtle: rgba(212, 162, 58, 0.15);
+  --palette-info: #A78BFA;
+  --palette-info-text: #C4B5FD;
+  --palette-info-subtle: rgba(167, 139, 250, 0.15);
+  --palette-highlight-row: rgba(196, 122, 58, 0.1);
+  --palette-highlight-special: rgba(212, 162, 58, 0.15);
+  --palette-live-indicator: #4ADE80;
+}
+
+/* --- Royal Gambit (Option E) --- */
+[data-palette="royal-gambit"] {
+  --palette-page: #1A0F28;
+  --palette-page-alt: #221533;
+  --palette-gradient-from: #1A0F28;
+  --palette-gradient-to: #2A1A3E;
+  --palette-surface: #2A1A3E;
+  --palette-surface-hover: #3A2555;
+  --palette-surface-subtle: rgba(42, 26, 62, 0.5);
+  --palette-surface-inset: rgba(42, 26, 62, 0.7);
+  --palette-border: #4A3066;
+  --palette-border-subtle: rgba(74, 48, 102, 0.5);
+  --palette-text-primary: #FAF5EE;
+  --palette-text-secondary: #C4B5D4;
+  --palette-text-muted: #8B7BA0;
+  --palette-text-inverse: #1A0F28;
+  --palette-brand: #F59E0B;
+  --palette-brand-hover: #D97706;
+  --palette-brand-text: #F59E0B;
+  --palette-brand-subtle: rgba(245, 158, 11, 0.15);
+  --palette-accent: #E74C6F;
+  --palette-accent-text: #E74C6F;
+  --palette-accent-subtle: rgba(231, 76, 111, 0.15);
+  --palette-success: #4ADE80;
+  --palette-success-text: #86EFAC;
+  --palette-success-subtle: rgba(74, 222, 128, 0.15);
+  --palette-danger: #E74C6F;
+  --palette-danger-text: #F472B6;
+  --palette-danger-subtle: rgba(231, 76, 111, 0.15);
+  --palette-warning: #F59E0B;
+  --palette-warning-text: #FBBF24;
+  --palette-warning-subtle: rgba(245, 158, 11, 0.15);
+  --palette-info: #A78BFA;
+  --palette-info-text: #C4B5FD;
+  --palette-info-subtle: rgba(167, 139, 250, 0.15);
+  --palette-highlight-row: rgba(245, 158, 11, 0.1);
+  --palette-highlight-special: rgba(231, 76, 111, 0.15);
+  --palette-live-indicator: #4ADE80;
+}
+
+/* --- Warm Kickoff (Option H) — Light theme --- */
+[data-palette="warm-kickoff"] {
+  --palette-page: #FAF7F2;
+  --palette-page-alt: #F5F0E8;
+  --palette-gradient-from: #FAF7F2;
+  --palette-gradient-to: #F0EBE1;
+  --palette-surface: #FFFFFF;
+  --palette-surface-hover: #F5F0E8;
+  --palette-surface-subtle: rgba(44, 62, 80, 0.06);
+  --palette-surface-inset: rgba(44, 62, 80, 0.08);
+  --palette-border: #D5CFC3;
+  --palette-border-subtle: rgba(44, 62, 80, 0.12);
+  --palette-text-primary: #2C3E50;
+  --palette-text-secondary: #5D6D7E;
+  --palette-text-muted: #95A5A6;
+  --palette-text-inverse: #FAF7F2;
+  --palette-brand: #3D5A80;
+  --palette-brand-hover: #2C4A6E;
+  --palette-brand-text: #3D5A80;
+  --palette-brand-subtle: rgba(61, 90, 128, 0.1);
+  --palette-accent: #E07A3A;
+  --palette-accent-text: #D06A2A;
+  --palette-accent-subtle: rgba(224, 122, 58, 0.1);
+  --palette-success: #16A34A;
+  --palette-success-text: #15803D;
+  --palette-success-subtle: rgba(22, 163, 74, 0.1);
+  --palette-danger: #DC2626;
+  --palette-danger-text: #B91C1C;
+  --palette-danger-subtle: rgba(220, 38, 38, 0.1);
+  --palette-warning: #E07A3A;
+  --palette-warning-text: #C2690F;
+  --palette-warning-subtle: rgba(224, 122, 58, 0.1);
+  --palette-info: #6366F1;
+  --palette-info-text: #4F46E5;
+  --palette-info-subtle: rgba(99, 102, 241, 0.1);
+  --palette-highlight-row: rgba(61, 90, 128, 0.08);
+  --palette-highlight-special: rgba(224, 122, 58, 0.1);
+  --palette-live-indicator: #16A34A;
+}
+
+/* ============================================================
+   Tailwind v4 Theme Registration
+   Maps palette variables to utility classes
+   ============================================================ */
 
 @theme inline {
+  /* Surfaces */
+  --color-page: var(--palette-page);
+  --color-page-alt: var(--palette-page-alt);
+  --color-surface: var(--palette-surface);
+  --color-surface-hover: var(--palette-surface-hover);
+  --color-surface-subtle: var(--palette-surface-subtle);
+  --color-surface-inset: var(--palette-surface-inset);
+
+  /* Gradient endpoints */
+  --color-gradient-from: var(--palette-gradient-from);
+  --color-gradient-to: var(--palette-gradient-to);
+
+  /* Borders */
+  --color-border: var(--palette-border);
+  --color-border-subtle: var(--palette-border-subtle);
+
+  /* Text */
+  --color-text-primary: var(--palette-text-primary);
+  --color-text-secondary: var(--palette-text-secondary);
+  --color-text-muted: var(--palette-text-muted);
+  --color-text-inverse: var(--palette-text-inverse);
+
+  /* Brand */
+  --color-brand: var(--palette-brand);
+  --color-brand-hover: var(--palette-brand-hover);
+  --color-brand-text: var(--palette-brand-text);
+  --color-brand-subtle: var(--palette-brand-subtle);
+
+  /* Accent */
+  --color-accent: var(--palette-accent);
+  --color-accent-text: var(--palette-accent-text);
+  --color-accent-subtle: var(--palette-accent-subtle);
+
+  /* Functional */
+  --color-success: var(--palette-success);
+  --color-success-text: var(--palette-success-text);
+  --color-success-subtle: var(--palette-success-subtle);
+  --color-danger: var(--palette-danger);
+  --color-danger-text: var(--palette-danger-text);
+  --color-danger-subtle: var(--palette-danger-subtle);
+  --color-warning: var(--palette-warning);
+  --color-warning-text: var(--palette-warning-text);
+  --color-warning-subtle: var(--palette-warning-subtle);
+  --color-info: var(--palette-info);
+  --color-info-text: var(--palette-info-text);
+  --color-info-subtle: var(--palette-info-subtle);
+
+  /* Special */
+  --color-highlight-row: var(--palette-highlight-row);
+  --color-highlight-special: var(--palette-highlight-special);
+  --color-live-indicator: var(--palette-live-indicator);
+
+  /* Backward compat */
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+
+  /* Fonts */
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --font-heading: var(--font-montserrat, var(--font-geist-sans));
+  --font-body: var(--font-inter, var(--font-geist-sans));
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
+  background: var(--palette-page);
+  color: var(--palette-text-primary);
   font-family: Arial, Helvetica, sans-serif;
 }
 

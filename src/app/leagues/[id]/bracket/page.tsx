@@ -67,17 +67,17 @@ export default async function BracketPage({ params }: PageProps) {
   const year = getLeagueYear(league.seasons)
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-900 to-gray-800">
+    <div className="min-h-screen bg-gradient-to-b from-gradient-from to-gradient-to">
       {/* Header */}
-      <header className="bg-gray-800/50 border-b border-gray-700">
+      <header className="bg-surface/50 border-b border-border">
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-          <Link href="/dashboard" className="text-2xl font-bold text-white">
+          <Link href="/dashboard" className="text-2xl font-bold text-text-primary">
             Rivyls
           </Link>
           <div className="flex items-center gap-4">
             <Link
               href={`/leagues/${leagueId}`}
-              className="text-gray-400 hover:text-white transition-colors"
+              className="text-text-secondary hover:text-text-primary transition-colors"
             >
               {league.name}
             </Link>
@@ -86,30 +86,30 @@ export default async function BracketPage({ params }: PageProps) {
       </header>
 
       {/* Navigation */}
-      <nav className="bg-gray-800/30 border-b border-gray-700">
+      <nav className="bg-surface/30 border-b border-border">
         <div className="container mx-auto px-4">
           <div className="flex gap-4 overflow-x-auto">
             <Link
               href={`/leagues/${leagueId}`}
-              className="py-3 px-4 text-gray-400 hover:text-white transition-colors whitespace-nowrap"
+              className="py-3 px-4 text-text-secondary hover:text-text-primary transition-colors whitespace-nowrap"
             >
               Overview
             </Link>
             <Link
               href={`/leagues/${leagueId}/team`}
-              className="py-3 px-4 text-gray-400 hover:text-white transition-colors whitespace-nowrap"
+              className="py-3 px-4 text-text-secondary hover:text-text-primary transition-colors whitespace-nowrap"
             >
               My Team
             </Link>
             <Link
               href={`/leagues/${leagueId}/bracket`}
-              className="py-3 px-4 text-white border-b-2 border-blue-500 whitespace-nowrap"
+              className="py-3 px-4 text-text-primary border-b-2 border-brand whitespace-nowrap"
             >
               Playoff Bracket
             </Link>
             <Link
               href={`/leagues/${leagueId}/transactions`}
-              className="py-3 px-4 text-gray-400 hover:text-white transition-colors whitespace-nowrap"
+              className="py-3 px-4 text-text-secondary hover:text-text-primary transition-colors whitespace-nowrap"
             >
               Add/Drop
             </Link>
@@ -119,8 +119,8 @@ export default async function BracketPage({ params }: PageProps) {
 
       <main className="container mx-auto px-4 py-8">
         <div className="mb-6">
-          <h1 className="text-3xl font-bold text-white">{year} College Football Playoff</h1>
-          <p className="text-gray-400 mt-2">12-team bracket with schools from your roster highlighted</p>
+          <h1 className="text-3xl font-bold text-text-primary">{year} College Football Playoff</h1>
+          <p className="text-text-secondary mt-2">12-team bracket with schools from your roster highlighted</p>
         </div>
 
         <ErrorBoundary sectionName="playoff bracket">
@@ -133,9 +133,9 @@ export default async function BracketPage({ params }: PageProps) {
 
         {/* Roster schools in playoffs */}
         {rosterSchoolIds.length > 0 && (
-          <div className="mt-8 bg-gray-800 rounded-lg p-6">
-            <h2 className="text-xl font-semibold text-white mb-4">Your Playoff Teams</h2>
-            <p className="text-gray-400 text-sm mb-4">
+          <div className="mt-8 bg-surface rounded-lg p-6">
+            <h2 className="text-xl font-semibold text-text-primary mb-4">Your Playoff Teams</h2>
+            <p className="text-text-secondary text-sm mb-4">
               Schools from your roster that are in the playoffs will be highlighted in purple on the bracket.
             </p>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">

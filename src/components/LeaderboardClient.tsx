@@ -261,16 +261,16 @@ export default function LeaderboardClient({
     return (
       <>
         <td className={`${px} ${py} text-center text-xs ${compact ? 'whitespace-nowrap' : 'md:text-sm'}`}>
-          {heisPoints ? <span className="text-purple-400">{heisPoints.points}</span> : <span className="text-gray-600">-</span>}
+          {heisPoints ? <span className="text-info-text">{heisPoints.points}</span> : <span className="text-text-muted">-</span>}
         </td>
         <td className={`${px} ${py} text-center text-xs ${compact ? 'whitespace-nowrap' : 'md:text-sm'}`}>
-          {bowlsWp ? <span className="text-green-400">{bowlsWp.points}</span> : <span className="text-gray-600">-</span>}
+          {bowlsWp ? <span className="text-success-text">{bowlsWp.points}</span> : <span className="text-text-muted">-</span>}
         </td>
         <td className={`${px} ${py} text-center text-xs ${compact ? 'whitespace-nowrap' : 'md:text-sm'}`}>
-          {cfpTotal > 0 ? <span className="text-orange-400">{cfpTotal}</span> : <span className="text-gray-600">-</span>}
+          {cfpTotal > 0 ? <span className="text-accent-text">{cfpTotal}</span> : <span className="text-text-muted">-</span>}
         </td>
         <td className={`${px} ${py} text-center text-xs ${compact ? 'whitespace-nowrap' : 'md:text-sm'}`}>
-          {nattyWp ? <span className="text-yellow-300 font-semibold">{nattyWp.points}</span> : <span className="text-gray-600">-</span>}
+          {nattyWp ? <span className="text-warning-text font-semibold">{nattyWp.points}</span> : <span className="text-text-muted">-</span>}
         </td>
       </>
     )
@@ -283,27 +283,27 @@ export default function LeaderboardClient({
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
           <div>
-            <h2 className="text-xl font-semibold text-white flex items-center gap-2">
+            <h2 className="text-xl font-semibold text-text-primary flex items-center gap-2">
               Leaderboard
               {isLive && (
-                <span className="flex items-center gap-1 text-xs font-normal text-green-400">
-                  <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>
+                <span className="flex items-center gap-1 text-xs font-normal text-success-text">
+                  <span className="w-2 h-2 bg-live-indicator rounded-full animate-pulse"></span>
                   Live
                 </span>
               )}
             </h2>
-            <p className="text-gray-400 text-sm">
+            <p className="text-text-secondary text-sm">
               Week {currentWeek}
               {lastUpdate && (
-                <span className="text-gray-500 text-xs ml-2">
+                <span className="text-text-muted text-xs ml-2">
                   Updated {lastUpdate.toLocaleTimeString()}
                 </span>
               )}
             </p>
           </div>
           {settings?.high_points_enabled && (
-            <div className="bg-yellow-900/30 border border-yellow-700 rounded-lg px-3 py-1.5 self-start">
-              <span className="text-yellow-400 text-xs">
+            <div className="bg-highlight-special border border-warning rounded-lg px-3 py-1.5 self-start">
+              <span className="text-warning-text text-xs">
                 High Points: ${settings.high_points_weekly_amount}/week
               </span>
             </div>
@@ -311,8 +311,8 @@ export default function LeaderboardClient({
         </div>
 
         {/* Standings Table */}
-        <div className="bg-gray-700/30 rounded-lg overflow-hidden">
-          <div className="md:hidden px-4 py-2 bg-gray-700/50 text-gray-400 text-xs flex items-center gap-2">
+        <div className="bg-surface-subtle rounded-lg overflow-hidden">
+          <div className="md:hidden px-4 py-2 bg-surface-inset text-text-secondary text-xs flex items-center gap-2">
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
             </svg>
@@ -321,21 +321,21 @@ export default function LeaderboardClient({
           <div className="overflow-x-auto">
             <table className="min-w-max">
               <thead>
-                <tr className="bg-gray-700/50">
-                  <th className="px-2 md:px-4 py-3 text-left text-gray-400 font-medium sticky left-0 z-20 text-sm" style={{ backgroundColor: '#374151' }}>#</th>
-                  <th className="px-2 md:px-4 py-3 text-left text-gray-400 font-medium sticky left-6 md:left-10 z-20 text-sm" style={{ backgroundColor: '#374151' }}>Team</th>
-                  <th className="px-2 md:px-4 py-3 text-right text-gray-400 font-medium text-sm">Total</th>
+                <tr className="bg-surface-inset">
+                  <th className="px-2 md:px-4 py-3 text-left text-text-secondary font-medium sticky left-0 z-20 text-sm" style={{ backgroundColor: 'var(--palette-border)' }}>#</th>
+                  <th className="px-2 md:px-4 py-3 text-left text-text-secondary font-medium sticky left-6 md:left-10 z-20 text-sm" style={{ backgroundColor: 'var(--palette-border)' }}>Team</th>
+                  <th className="px-2 md:px-4 py-3 text-right text-text-secondary font-medium text-sm">Total</th>
                   {regularWeeks.map(week => (
-                    <th key={week} className="px-2 py-3 text-center text-gray-400 font-medium text-xs whitespace-nowrap">
+                    <th key={week} className="px-2 py-3 text-center text-text-secondary font-medium text-xs whitespace-nowrap">
                       {getWeekLabel(week)}
                     </th>
                   ))}
                   {showPostseason && (
                     <>
-                      <th className="px-2 py-3 text-center text-purple-400 font-medium text-xs whitespace-nowrap">Heis</th>
-                      <th className="px-2 py-3 text-center text-green-400 font-medium text-xs whitespace-nowrap">Bowls</th>
-                      <th className="px-2 py-3 text-center text-orange-400 font-medium text-xs whitespace-nowrap">CFP</th>
-                      <th className="px-2 py-3 text-center text-yellow-300 font-medium text-xs whitespace-nowrap">Natty</th>
+                      <th className="px-2 py-3 text-center text-info-text font-medium text-xs whitespace-nowrap">Heis</th>
+                      <th className="px-2 py-3 text-center text-success-text font-medium text-xs whitespace-nowrap">Bowls</th>
+                      <th className="px-2 py-3 text-center text-accent-text font-medium text-xs whitespace-nowrap">CFP</th>
+                      <th className="px-2 py-3 text-center text-warning-text font-medium text-xs whitespace-nowrap">Natty</th>
                     </>
                   )}
                 </tr>
@@ -348,11 +348,11 @@ export default function LeaderboardClient({
                   return (
                     <tr
                       key={team.id}
-                      className={`border-t border-gray-700/50 transition-colors ${
-                        isCurrentUser ? 'bg-blue-900/20' : 'hover:bg-gray-700/30'
+                      className={`border-t border-border-subtle transition-colors ${
+                        isCurrentUser ? 'bg-highlight-row' : 'hover:bg-surface-subtle'
                       }`}
                     >
-                      <td className="px-2 md:px-4 py-2 text-gray-400 sticky left-0 z-10 text-sm" style={{ backgroundColor: stickyBgColor }}>
+                      <td className="px-2 md:px-4 py-2 text-text-secondary sticky left-0 z-10 text-sm" style={{ backgroundColor: stickyBgColor }}>
                         {index + 1}
                       </td>
                       <td className="px-2 md:px-4 py-2 sticky left-6 md:left-10 z-10" style={{ backgroundColor: stickyBgColor }}>
@@ -368,25 +368,25 @@ export default function LeaderboardClient({
                             </div>
                           )}
                           <div className="min-w-0">
-                            <p className="text-white font-medium text-sm truncate max-w-[100px] md:max-w-none">{team.name}</p>
-                            <p className="text-gray-500 text-[10px] truncate hidden sm:block">
+                            <p className="text-text-primary font-medium text-sm truncate max-w-[100px] md:max-w-none">{team.name}</p>
+                            <p className="text-text-muted text-[10px] truncate hidden sm:block">
                               {team.profiles?.display_name || team.profiles?.email?.split('@')[0]}
                             </p>
                           </div>
                         </div>
                       </td>
                       <td className="px-2 md:px-4 py-2 text-right">
-                        <span className="text-white font-bold">{team.total_points}</span>
+                        <span className="text-text-primary font-bold">{team.total_points}</span>
                       </td>
                       {regularWeeks.map(week => {
                         const wp = teamWeekly?.get(week)
                         const isHighPoints = wp?.is_high_points_winner
                         return (
-                          <td key={week} className={`px-1 py-2 text-center text-xs whitespace-nowrap ${isHighPoints ? 'bg-yellow-900/30' : ''}`}>
+                          <td key={week} className={`px-1 py-2 text-center text-xs whitespace-nowrap ${isHighPoints ? 'bg-highlight-special' : ''}`}>
                             {wp ? (
-                              <span className={isHighPoints ? 'text-yellow-400 font-semibold' : 'text-gray-300'}>{wp.points}</span>
+                              <span className={isHighPoints ? 'text-warning-text font-semibold' : 'text-text-secondary'}>{wp.points}</span>
                             ) : (
-                              <span className="text-gray-600">-</span>
+                              <span className="text-text-muted">-</span>
                             )}
                           </td>
                         )
@@ -402,30 +402,30 @@ export default function LeaderboardClient({
 
         {/* High Points Summary - Table Format */}
         {settings?.high_points_enabled && (
-          <div className="bg-gray-700/30 rounded-lg overflow-hidden">
+          <div className="bg-surface-subtle rounded-lg overflow-hidden">
             <div className="overflow-x-auto">
               <table className="min-w-max">
                 <thead>
-                  <tr className="bg-gray-700/50">
-                    <th className="px-2 md:px-4 py-3 text-left text-gray-400 font-medium sticky left-0 z-20 text-sm" style={{ backgroundColor: '#374151' }}>#</th>
-                    <th className="px-2 md:px-4 py-3 text-left text-gray-400 font-medium sticky left-6 md:left-10 z-20 text-sm" style={{ backgroundColor: '#374151' }}>Team</th>
-                    <th className="px-2 md:px-4 py-3 text-center text-yellow-400 font-medium text-sm">
+                  <tr className="bg-surface-inset">
+                    <th className="px-2 md:px-4 py-3 text-left text-text-secondary font-medium sticky left-0 z-20 text-sm" style={{ backgroundColor: 'var(--palette-border)' }}>#</th>
+                    <th className="px-2 md:px-4 py-3 text-left text-text-secondary font-medium sticky left-6 md:left-10 z-20 text-sm" style={{ backgroundColor: 'var(--palette-border)' }}>Team</th>
+                    <th className="px-2 md:px-4 py-3 text-center text-warning-text font-medium text-sm">
                       <div className="flex flex-col items-center">
-                        <span className="text-[10px] text-yellow-400/70 leading-none">HP</span>
+                        <span className="text-[10px] text-warning-text/70 leading-none">HP</span>
                         <span>Total</span>
                       </div>
                     </th>
                     {regularWeeks.map(week => (
-                      <th key={week} className="px-2 py-3 text-center text-gray-400 font-medium text-xs whitespace-nowrap">
+                      <th key={week} className="px-2 py-3 text-center text-text-secondary font-medium text-xs whitespace-nowrap">
                         {getWeekLabel(week)}
                       </th>
                     ))}
                     {showPostseason && (
                       <>
-                        <th className="px-2 py-3 text-center text-purple-400 font-medium text-xs whitespace-nowrap">Heis</th>
-                        <th className="px-2 py-3 text-center text-green-400 font-medium text-xs whitespace-nowrap">Bowls</th>
-                        <th className="px-2 py-3 text-center text-orange-400 font-medium text-xs whitespace-nowrap">CFP</th>
-                        <th className="px-2 py-3 text-center text-yellow-300 font-medium text-xs whitespace-nowrap">Natty</th>
+                        <th className="px-2 py-3 text-center text-info-text font-medium text-xs whitespace-nowrap">Heis</th>
+                        <th className="px-2 py-3 text-center text-success-text font-medium text-xs whitespace-nowrap">Bowls</th>
+                        <th className="px-2 py-3 text-center text-accent-text font-medium text-xs whitespace-nowrap">CFP</th>
+                        <th className="px-2 py-3 text-center text-warning-text font-medium text-xs whitespace-nowrap">Natty</th>
                       </>
                     )}
                   </tr>
@@ -444,11 +444,11 @@ export default function LeaderboardClient({
                       return (
                         <tr
                           key={team.id}
-                          className={`border-t border-gray-700/50 transition-colors ${
-                            isCurrentUser ? 'bg-blue-900/20' : hasAnyWins ? 'bg-yellow-900/10' : 'hover:bg-gray-700/30'
+                          className={`border-t border-border-subtle transition-colors ${
+                            isCurrentUser ? 'bg-highlight-row' : hasAnyWins ? 'bg-highlight-special' : 'hover:bg-surface-subtle'
                           }`}
                         >
-                          <td className="px-2 md:px-4 py-2 text-gray-400 sticky left-0 z-10 text-sm" style={{ backgroundColor: hpStickyBgColor }}>{index + 1}</td>
+                          <td className="px-2 md:px-4 py-2 text-text-secondary sticky left-0 z-10 text-sm" style={{ backgroundColor: hpStickyBgColor }}>{index + 1}</td>
                           <td className="px-2 md:px-4 py-2 sticky left-6 md:left-10 z-10" style={{ backgroundColor: hpStickyBgColor }}>
                             <div className="flex items-center gap-2">
                               {team.image_url ? (
@@ -462,8 +462,8 @@ export default function LeaderboardClient({
                                 </div>
                               )}
                               <div className="min-w-0">
-                                <p className="text-white font-medium text-sm truncate max-w-[100px] md:max-w-none">{team.name}</p>
-                                <p className="text-gray-500 text-[10px] truncate hidden sm:block">
+                                <p className="text-text-primary font-medium text-sm truncate max-w-[100px] md:max-w-none">{team.name}</p>
+                                <p className="text-text-muted text-[10px] truncate hidden sm:block">
                                   {team.profiles?.display_name || team.profiles?.email?.split('@')[0]}
                                 </p>
                               </div>
@@ -471,29 +471,29 @@ export default function LeaderboardClient({
                           </td>
                           <td className="px-2 md:px-4 py-2 text-center">
                             {team.high_points_winnings > 0 ? (
-                              <span className="text-yellow-400 font-bold">${team.high_points_winnings}</span>
+                              <span className="text-warning-text font-bold">${team.high_points_winnings}</span>
                             ) : (
-                              <span className="text-gray-600">$0</span>
+                              <span className="text-text-muted">$0</span>
                             )}
                           </td>
                           {regularWeeks.map(week => {
                             const win = getWinForWeek(week)
                             return (
-                              <td key={week} className={`px-1 py-2 text-center text-xs whitespace-nowrap ${win ? 'bg-yellow-900/30' : ''}`}>
+                              <td key={week} className={`px-1 py-2 text-center text-xs whitespace-nowrap ${win ? 'bg-highlight-special' : ''}`}>
                                 {win ? (
-                                  <span className="text-yellow-400 font-semibold">${win.amount}</span>
+                                  <span className="text-warning-text font-semibold">${win.amount}</span>
                                 ) : (
-                                  <span className="text-gray-600">-</span>
+                                  <span className="text-text-muted">-</span>
                                 )}
                               </td>
                             )
                           })}
                           {showPostseason && (
                             <>
-                              <td className="px-1 py-2 text-center text-xs whitespace-nowrap"><span className="text-gray-600">-</span></td>
-                              <td className="px-1 py-2 text-center text-xs whitespace-nowrap"><span className="text-gray-600">-</span></td>
-                              <td className="px-1 py-2 text-center text-xs whitespace-nowrap"><span className="text-gray-600">-</span></td>
-                              <td className="px-1 py-2 text-center text-xs whitespace-nowrap"><span className="text-gray-600">-</span></td>
+                              <td className="px-1 py-2 text-center text-xs whitespace-nowrap"><span className="text-text-muted">-</span></td>
+                              <td className="px-1 py-2 text-center text-xs whitespace-nowrap"><span className="text-text-muted">-</span></td>
+                              <td className="px-1 py-2 text-center text-xs whitespace-nowrap"><span className="text-text-muted">-</span></td>
+                              <td className="px-1 py-2 text-center text-xs whitespace-nowrap"><span className="text-text-muted">-</span></td>
                             </>
                           )}
                         </tr>
@@ -506,18 +506,18 @@ export default function LeaderboardClient({
         )}
 
         {/* Legend */}
-        <div className="flex items-center gap-4 text-xs text-gray-400">
+        <div className="flex items-center gap-4 text-xs text-text-secondary">
           <div className="flex items-center gap-1">
-            <div className="w-3 h-3 bg-yellow-900/30 rounded"></div>
+            <div className="w-3 h-3 bg-highlight-special rounded"></div>
             <span>High Points</span>
           </div>
           <div className="flex items-center gap-1">
-            <div className="w-3 h-3 bg-blue-900/30 rounded"></div>
+            <div className="w-3 h-3 bg-highlight-row rounded"></div>
             <span>Your Team</span>
           </div>
           {isLive && (
             <div className="flex items-center gap-1">
-              <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+              <div className="w-2 h-2 bg-live-indicator rounded-full animate-pulse"></div>
               <span>Live</span>
             </div>
           )}
@@ -528,15 +528,15 @@ export default function LeaderboardClient({
 
   // --- Full variant ---
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-900 to-gray-800">
+    <div className="min-h-screen bg-gradient-to-b from-gradient-from to-gradient-to">
       <Header userName={userName} userEmail={userEmail}>
         <Link
           href={`/leagues/${leagueId}`}
-          className="text-gray-400 hover:text-white transition-colors text-sm md:text-base truncate max-w-[120px] md:max-w-none"
+          className="text-text-secondary hover:text-text-primary transition-colors text-sm md:text-base truncate max-w-[120px] md:max-w-none"
         >
           {leagueName}
         </Link>
-        <Link href="/dashboard" className="text-gray-400 hover:text-white transition-colors">
+        <Link href="/dashboard" className="text-text-secondary hover:text-text-primary transition-colors">
           My Leagues
         </Link>
       </Header>
@@ -544,27 +544,27 @@ export default function LeaderboardClient({
       <main className="container mx-auto px-3 md:px-4 py-4 md:py-8">
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-6 md:mb-8">
           <div>
-            <h1 className="text-2xl md:text-3xl font-bold text-white flex items-center gap-2 md:gap-3">
+            <h1 className="text-2xl md:text-3xl font-bold text-text-primary flex items-center gap-2 md:gap-3">
               Leaderboard
               {isLive && (
-                <span className="flex items-center gap-1 md:gap-2 text-xs md:text-sm font-normal text-green-400">
-                  <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>
+                <span className="flex items-center gap-1 md:gap-2 text-xs md:text-sm font-normal text-success-text">
+                  <span className="w-2 h-2 bg-live-indicator rounded-full animate-pulse"></span>
                   Live
                 </span>
               )}
             </h1>
-            <p className="text-gray-400 mt-1 text-sm md:text-base">
+            <p className="text-text-secondary mt-1 text-sm md:text-base">
               {seasonName} - Week {currentWeek}
               {lastUpdate && (
-                <span className="text-gray-500 text-xs md:text-sm ml-2 hidden sm:inline">
+                <span className="text-text-muted text-xs md:text-sm ml-2 hidden sm:inline">
                   Updated {lastUpdate.toLocaleTimeString()}
                 </span>
               )}
             </p>
           </div>
           {settings?.high_points_enabled && (
-            <div className="bg-yellow-900/30 border border-yellow-700 rounded-lg px-3 md:px-4 py-1.5 md:py-2 self-start sm:self-auto">
-              <span className="text-yellow-400 text-xs md:text-sm">
+            <div className="bg-highlight-special border border-warning rounded-lg px-3 md:px-4 py-1.5 md:py-2 self-start sm:self-auto">
+              <span className="text-warning-text text-xs md:text-sm">
                 High Points: ${settings.high_points_weekly_amount}/week
               </span>
             </div>
@@ -572,9 +572,9 @@ export default function LeaderboardClient({
         </div>
 
         {/* Main Standings Table */}
-        <div className="bg-gray-800 rounded-lg overflow-hidden mb-8">
+        <div className="bg-surface rounded-lg overflow-hidden mb-8">
           {/* Mobile hint */}
-          <div className="md:hidden px-4 py-2 bg-gray-700/30 text-gray-400 text-xs flex items-center gap-2">
+          <div className="md:hidden px-4 py-2 bg-surface-subtle text-text-secondary text-xs flex items-center gap-2">
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
             </svg>
@@ -583,27 +583,27 @@ export default function LeaderboardClient({
           <div className="overflow-x-auto">
             <table className="min-w-max">
               <thead>
-                <tr className="bg-gray-700">
-                  <th className="px-2 md:px-4 py-3 text-left text-gray-400 font-medium sticky left-0 z-30 text-sm md:text-base isolate" style={{ backgroundColor: '#374151' }}>#</th>
-                  <th className="px-2 md:px-4 py-3 text-left text-gray-400 font-medium sticky left-6 md:left-10 z-30 text-sm md:text-base min-w-[150px] shadow-[2px_0_8px_rgba(0,0,0,0.3)] isolate" style={{ backgroundColor: '#374151' }}>Team</th>
-                  <th className="px-2 md:px-4 py-3 text-right text-gray-400 font-medium text-sm md:text-base">Total</th>
+                <tr className="bg-surface">
+                  <th className="px-2 md:px-4 py-3 text-left text-text-secondary font-medium sticky left-0 z-30 text-sm md:text-base isolate" style={{ backgroundColor: 'var(--palette-border)' }}>#</th>
+                  <th className="px-2 md:px-4 py-3 text-left text-text-secondary font-medium sticky left-6 md:left-10 z-30 text-sm md:text-base min-w-[150px] shadow-[2px_0_8px_rgba(0,0,0,0.3)] isolate" style={{ backgroundColor: 'var(--palette-border)' }}>Team</th>
+                  <th className="px-2 md:px-4 py-3 text-right text-text-secondary font-medium text-sm md:text-base">Total</th>
                   {/* Regular season weeks */}
                   {regularWeeks.map(week => (
-                    <th key={week} className="px-2 md:px-3 py-3 text-center text-gray-400 font-medium text-xs md:text-sm">
+                    <th key={week} className="px-2 md:px-3 py-3 text-center text-text-secondary font-medium text-xs md:text-sm">
                       {getWeekLabel(week)}
                     </th>
                   ))}
                   {/* Postseason columns - show after week 14 */}
                   {showPostseason && (
                     <>
-                      <th className="px-2 md:px-3 py-3 text-center text-purple-400 font-medium text-xs md:text-sm">Heis</th>
-                      <th className="px-2 md:px-3 py-3 text-center text-green-400 font-medium text-xs md:text-sm">Bowls</th>
-                      <th className="px-2 md:px-3 py-3 text-center text-orange-400 font-medium text-xs md:text-sm">CFP</th>
-                      <th className="px-2 md:px-3 py-3 text-center text-yellow-300 font-medium text-xs md:text-sm">Natty</th>
+                      <th className="px-2 md:px-3 py-3 text-center text-info-text font-medium text-xs md:text-sm">Heis</th>
+                      <th className="px-2 md:px-3 py-3 text-center text-success-text font-medium text-xs md:text-sm">Bowls</th>
+                      <th className="px-2 md:px-3 py-3 text-center text-accent-text font-medium text-xs md:text-sm">CFP</th>
+                      <th className="px-2 md:px-3 py-3 text-center text-warning-text font-medium text-xs md:text-sm">Natty</th>
                     </>
                   )}
                   {settings?.high_points_enabled && (
-                    <th className="px-2 md:px-4 py-3 text-right text-yellow-400 font-medium text-sm md:text-base">HP $</th>
+                    <th className="px-2 md:px-4 py-3 text-right text-warning-text font-medium text-sm md:text-base">HP $</th>
                   )}
                 </tr>
               </thead>
@@ -618,12 +618,12 @@ export default function LeaderboardClient({
                   return (
                     <tr
                       key={team.id}
-                      className={`border-t border-gray-700/50 transition-colors ${
-                        isCurrentUser ? 'bg-blue-900/20' : 'hover:bg-gray-700/30'
+                      className={`border-t border-border-subtle transition-colors ${
+                        isCurrentUser ? 'bg-highlight-row' : 'hover:bg-surface-subtle'
                       }`}
                     >
                       <td
-                        className="px-2 md:px-4 py-2 md:py-3 text-gray-400 sticky left-0 z-20 text-sm"
+                        className="px-2 md:px-4 py-2 md:py-3 text-text-secondary sticky left-0 z-20 text-sm"
                         style={{ backgroundColor: stickyBgColor }}
                       >
                         {index + 1}
@@ -651,15 +651,15 @@ export default function LeaderboardClient({
                             </div>
                           )}
                           <div className="min-w-0">
-                            <p className="text-white font-medium text-sm md:text-base truncate max-w-[100px] md:max-w-none">{team.name}</p>
-                            <p className="text-gray-500 text-[10px] md:text-xs truncate hidden sm:block">
+                            <p className="text-text-primary font-medium text-sm md:text-base truncate max-w-[100px] md:max-w-none">{team.name}</p>
+                            <p className="text-text-muted text-[10px] md:text-xs truncate hidden sm:block">
                               {team.profiles?.display_name || team.profiles?.email?.split('@')[0]}
                             </p>
                           </div>
                         </div>
                       </td>
                       <td className="px-2 md:px-4 py-2 md:py-3 text-right">
-                        <span className="text-white font-bold text-base md:text-lg">{team.total_points}</span>
+                        <span className="text-text-primary font-bold text-base md:text-lg">{team.total_points}</span>
                       </td>
                       {/* Regular season weeks */}
                       {regularWeeks.map(week => {
@@ -670,15 +670,15 @@ export default function LeaderboardClient({
                           <td
                             key={week}
                             className={`px-1 md:px-3 py-2 md:py-3 text-center text-xs md:text-sm transition-colors ${
-                              isHighPoints ? 'bg-yellow-900/30' : ''
+                              isHighPoints ? 'bg-highlight-special' : ''
                             }`}
                           >
                             {wp ? (
-                              <span className={isHighPoints ? 'text-yellow-400 font-semibold' : 'text-gray-300'}>
+                              <span className={isHighPoints ? 'text-warning-text font-semibold' : 'text-text-secondary'}>
                                 {wp.points}
                               </span>
                             ) : (
-                              <span className="text-gray-600">-</span>
+                              <span className="text-text-muted">-</span>
                             )}
                           </td>
                         )
@@ -688,11 +688,11 @@ export default function LeaderboardClient({
                       {settings?.high_points_enabled && (
                         <td className="px-2 md:px-4 py-2 md:py-3 text-right">
                           {team.high_points_winnings > 0 ? (
-                            <span className="text-yellow-400 font-semibold text-sm md:text-base">
+                            <span className="text-warning-text font-semibold text-sm md:text-base">
                               ${team.high_points_winnings}
                             </span>
                           ) : (
-                            <span className="text-gray-600">-</span>
+                            <span className="text-text-muted">-</span>
                           )}
                         </td>
                       )}
@@ -706,9 +706,9 @@ export default function LeaderboardClient({
 
         {/* High Points Summary */}
         {settings?.high_points_enabled && highPointsWinners.size > 0 && (
-          <div className="bg-gray-800 rounded-lg p-6">
-            <h2 className="text-xl font-semibold text-white mb-4 flex items-center gap-2">
-              <span className="text-yellow-400">*</span>
+          <div className="bg-surface rounded-lg p-6">
+            <h2 className="text-xl font-semibold text-text-primary mb-4 flex items-center gap-2">
+              <span className="text-warning-text">*</span>
               High Points Winners
             </h2>
             <div className="grid md:grid-cols-3 lg:grid-cols-5 gap-4">
@@ -719,17 +719,17 @@ export default function LeaderboardClient({
                 return (
                   <div
                     key={week}
-                    className="bg-gray-700/50 rounded-lg p-4 border border-yellow-700/30"
+                    className="bg-surface-inset rounded-lg p-4 border border-warning/30"
                   >
-                    <p className="text-gray-400 text-sm mb-2">{getWeekLabel(week)}</p>
+                    <p className="text-text-secondary text-sm mb-2">{getWeekLabel(week)}</p>
                     {winners.map(winner => {
                       const team = teams.find(t => t.id === winner.teamId)
                       return (
                         <div key={winner.teamId} className="mb-2 last:mb-0">
-                          <p className="text-white font-medium text-sm">{team?.name}</p>
+                          <p className="text-text-primary font-medium text-sm">{team?.name}</p>
                           <div className="flex justify-between items-center">
-                            <span className="text-gray-400 text-xs">{winner.points} pts</span>
-                            <span className="text-yellow-400 text-sm font-semibold">${winner.amount}</span>
+                            <span className="text-text-secondary text-xs">{winner.points} pts</span>
+                            <span className="text-warning-text text-sm font-semibold">${winner.amount}</span>
                           </div>
                         </div>
                       )
@@ -745,7 +745,7 @@ export default function LeaderboardClient({
         <div className="mt-8">
           <button
             onClick={() => setShowStats(!showStats)}
-            className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors mb-4"
+            className="flex items-center gap-2 text-text-secondary hover:text-text-primary transition-colors mb-4"
           >
             <svg
               className={`w-4 h-4 transition-transform ${showStats ? 'rotate-90' : ''}`}
@@ -761,57 +761,57 @@ export default function LeaderboardClient({
           {showStats && stats && (
             <div className="grid md:grid-cols-2 gap-6">
               {/* Ideal Team */}
-              <div className="bg-gray-800 rounded-lg p-6">
-                <h3 className="text-lg font-semibold text-white mb-2">Ideal Team</h3>
-                <p className="text-gray-400 text-sm mb-4">
+              <div className="bg-surface rounded-lg p-6">
+                <h3 className="text-lg font-semibold text-text-primary mb-2">Ideal Team</h3>
+                <p className="text-text-secondary text-sm mb-4">
                   Best possible draft based on season results
                 </p>
                 <div className="mb-4">
-                  <span className="text-3xl font-bold text-green-400">{stats.idealTeam.totalPoints}</span>
-                  <span className="text-gray-400 ml-2">total points</span>
+                  <span className="text-3xl font-bold text-success-text">{stats.idealTeam.totalPoints}</span>
+                  <span className="text-text-secondary ml-2">total points</span>
                 </div>
                 <div className="space-y-2 max-h-64 overflow-y-auto">
                   {stats.idealTeam.schools.map((school, idx) => (
                     <div
                       key={school.id}
-                      className="flex items-center justify-between p-2 bg-gray-700/30 rounded"
+                      className="flex items-center justify-between p-2 bg-surface-subtle rounded"
                     >
                       <div className="flex items-center gap-2">
-                        <span className="text-gray-500 text-sm w-5">{idx + 1}.</span>
+                        <span className="text-text-muted text-sm w-5">{idx + 1}.</span>
                         {school.logo_url ? (
                           <img src={school.logo_url} alt="" className="w-6 h-6 object-contain" />
                         ) : (
-                          <div className="w-6 h-6 bg-gray-600 rounded-full" />
+                          <div className="w-6 h-6 bg-surface-subtle rounded-full" />
                         )}
-                        <span className="text-white text-sm">{school.name}</span>
+                        <span className="text-text-primary text-sm">{school.name}</span>
                       </div>
-                      <span className="text-green-400 font-medium">{school.total_points}</span>
+                      <span className="text-success-text font-medium">{school.total_points}</span>
                     </div>
                   ))}
                 </div>
               </div>
 
               {/* Current Week Max */}
-              <div className="bg-gray-800 rounded-lg p-6">
-                <h3 className="text-lg font-semibold text-white mb-2">Week {currentWeek} Maximum</h3>
-                <p className="text-gray-400 text-sm mb-4">
+              <div className="bg-surface rounded-lg p-6">
+                <h3 className="text-lg font-semibold text-text-primary mb-2">Week {currentWeek} Maximum</h3>
+                <p className="text-text-secondary text-sm mb-4">
                   Best possible points this week
                 </p>
                 <div className="mb-4">
-                  <span className="text-3xl font-bold text-blue-400">{stats.currentWeekMax.maxPoints}</span>
-                  <span className="text-gray-400 ml-2">max points</span>
+                  <span className="text-3xl font-bold text-brand-text">{stats.currentWeekMax.maxPoints}</span>
+                  <span className="text-text-secondary ml-2">max points</span>
                 </div>
                 <div className="space-y-2 max-h-64 overflow-y-auto">
                   {stats.currentWeekMax.topSchools.map((school, idx) => (
                     <div
                       key={school.id}
-                      className="flex items-center justify-between p-2 bg-gray-700/30 rounded"
+                      className="flex items-center justify-between p-2 bg-surface-subtle rounded"
                     >
                       <div className="flex items-center gap-2">
-                        <span className="text-gray-500 text-sm w-5">{idx + 1}.</span>
-                        <span className="text-white text-sm">{school.name}</span>
+                        <span className="text-text-muted text-sm w-5">{idx + 1}.</span>
+                        <span className="text-text-primary text-sm">{school.name}</span>
                       </div>
-                      <span className="text-blue-400 font-medium">{school.points}</span>
+                      <span className="text-brand-text font-medium">{school.points}</span>
                     </div>
                   ))}
                 </div>
@@ -821,18 +821,18 @@ export default function LeaderboardClient({
         </div>
 
         {/* Legend */}
-        <div className="mt-6 flex items-center gap-6 text-sm text-gray-400">
+        <div className="mt-6 flex items-center gap-6 text-sm text-text-secondary">
           <div className="flex items-center gap-2">
-            <div className="w-4 h-4 bg-yellow-900/30 rounded"></div>
+            <div className="w-4 h-4 bg-highlight-special rounded"></div>
             <span>High Points Winner</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-4 h-4 bg-blue-900/30 rounded"></div>
+            <div className="w-4 h-4 bg-highlight-row rounded"></div>
             <span>Your Team</span>
           </div>
           {isLive && (
             <div className="flex items-center gap-2">
-              <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+              <div className="w-2 h-2 bg-live-indicator rounded-full animate-pulse"></div>
               <span>Live Updates Active</span>
             </div>
           )}

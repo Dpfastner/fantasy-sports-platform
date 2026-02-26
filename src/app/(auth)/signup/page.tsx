@@ -60,40 +60,40 @@ export default function SignUpPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-900 to-gray-800 flex items-center justify-center px-4">
+    <div className="min-h-screen bg-gradient-to-b from-gradient-from to-gradient-to flex items-center justify-center px-4">
       <div className="max-w-md w-full">
         <div className="text-center mb-8">
-          <Link href="/" className="text-3xl font-bold text-white">
+          <Link href="/" className="text-3xl font-bold text-text-primary">
             Rivyls
           </Link>
-          <p className="text-gray-400 mt-2">Create your account</p>
+          <p className="text-text-secondary mt-2">Create your account</p>
         </div>
 
         {success ? (
-          <div className="bg-gray-800 rounded-lg p-8 shadow-lg text-center">
-            <div className="text-green-400 text-5xl mb-4">✓</div>
-            <h2 className="text-2xl font-bold text-white mb-4">Check your email</h2>
-            <p className="text-gray-400 mb-6">
-              We sent a confirmation link to <span className="text-white">{email}</span>.
+          <div className="bg-surface rounded-lg p-8 shadow-lg text-center">
+            <div className="text-success-text text-5xl mb-4">✓</div>
+            <h2 className="text-2xl font-bold text-text-primary mb-4">Check your email</h2>
+            <p className="text-text-secondary mb-6">
+              We sent a confirmation link to <span className="text-text-primary">{email}</span>.
               Click the link to activate your account.
             </p>
             <Link
               href="/login"
-              className="text-blue-400 hover:text-blue-300"
+              className="text-brand-text hover:text-brand-text"
             >
               Go to login
             </Link>
           </div>
         ) : (
-        <form onSubmit={handleSignUp} className="bg-gray-800 rounded-lg p-8 shadow-lg">
+        <form onSubmit={handleSignUp} className="bg-surface rounded-lg p-8 shadow-lg">
           {error && (
-            <div className="bg-red-500/10 border border-red-500 text-red-500 px-4 py-3 rounded-lg mb-6">
+            <div className="bg-danger/10 border border-danger text-danger px-4 py-3 rounded-lg mb-6">
               {error}
             </div>
           )}
 
           <div className="mb-4">
-            <label htmlFor="displayName" className="block text-gray-300 mb-2">
+            <label htmlFor="displayName" className="block text-text-secondary mb-2">
               Display Name (optional)
             </label>
             <input
@@ -101,13 +101,13 @@ export default function SignUpPage() {
               id="displayName"
               value={displayName}
               onChange={(e) => setDisplayName(e.target.value)}
-              className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-500"
+              className="w-full px-4 py-3 bg-surface border border-border rounded-lg text-text-primary placeholder-text-muted focus:outline-none focus:border-brand"
               placeholder="Your name"
             />
           </div>
 
           <div className="mb-4">
-            <label htmlFor="email" className="block text-gray-300 mb-2">
+            <label htmlFor="email" className="block text-text-secondary mb-2">
               Email
             </label>
             <input
@@ -116,13 +116,13 @@ export default function SignUpPage() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-500"
+              className="w-full px-4 py-3 bg-surface border border-border rounded-lg text-text-primary placeholder-text-muted focus:outline-none focus:border-brand"
               placeholder="you@example.com"
             />
           </div>
 
           <div className="mb-4">
-            <label htmlFor="password" className="block text-gray-300 mb-2">
+            <label htmlFor="password" className="block text-text-secondary mb-2">
               Password
             </label>
             <div className="relative">
@@ -132,13 +132,13 @@ export default function SignUpPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-500 pr-12"
+                className="w-full px-4 py-3 bg-surface border border-border rounded-lg text-text-primary placeholder-text-muted focus:outline-none focus:border-brand pr-12"
                 placeholder="At least 6 characters"
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white transition-colors"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-text-secondary hover:text-text-primary transition-colors"
                 tabIndex={-1}
               >
                 {showPassword ? (
@@ -156,7 +156,7 @@ export default function SignUpPage() {
           </div>
 
           <div className="mb-6">
-            <label htmlFor="confirmPassword" className="block text-gray-300 mb-2">
+            <label htmlFor="confirmPassword" className="block text-text-secondary mb-2">
               Confirm Password
             </label>
             <div className="relative">
@@ -166,13 +166,13 @@ export default function SignUpPage() {
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 required
-                className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-500 pr-12"
+                className="w-full px-4 py-3 bg-surface border border-border rounded-lg text-text-primary placeholder-text-muted focus:outline-none focus:border-brand pr-12"
                 placeholder="Confirm your password"
               />
               <button
                 type="button"
                 onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white transition-colors"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-text-secondary hover:text-text-primary transition-colors"
                 tabIndex={-1}
               >
                 {showConfirmPassword ? (
@@ -192,14 +192,14 @@ export default function SignUpPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-600/50 disabled:cursor-not-allowed text-white font-semibold py-3 px-4 rounded-lg transition-colors"
+            className="w-full bg-brand hover:bg-brand-hover disabled:bg-brand/50 disabled:cursor-not-allowed text-text-primary font-semibold py-3 px-4 rounded-lg transition-colors"
           >
             {loading ? 'Creating account...' : 'Create Account'}
           </button>
 
-          <p className="text-gray-400 text-center mt-6">
+          <p className="text-text-secondary text-center mt-6">
             Already have an account?{' '}
-            <Link href="/login" className="text-blue-400 hover:text-blue-300">
+            <Link href="/login" className="text-brand-text hover:text-brand-text">
               Sign in
             </Link>
           </p>

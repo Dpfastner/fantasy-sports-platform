@@ -7,14 +7,14 @@ interface SkeletonProps {
 export function Skeleton({ className = '' }: SkeletonProps) {
   return (
     <div
-      className={`animate-pulse bg-gray-700/50 rounded ${className}`}
+      className={`animate-pulse bg-surface-inset rounded ${className}`}
     />
   )
 }
 
 export function CardSkeleton() {
   return (
-    <div className="bg-gray-800 rounded-lg p-6 space-y-4">
+    <div className="bg-surface rounded-lg p-6 space-y-4">
       <Skeleton className="h-6 w-1/3" />
       <Skeleton className="h-4 w-full" />
       <Skeleton className="h-4 w-2/3" />
@@ -28,7 +28,7 @@ export function CardSkeleton() {
 
 export function TableRowSkeleton({ columns = 4 }: { columns?: number }) {
   return (
-    <tr className="border-t border-gray-700/50">
+    <tr className="border-t border-border/50">
       {Array.from({ length: columns }).map((_, i) => (
         <td key={i} className="px-4 py-3">
           <Skeleton className="h-4 w-full" />
@@ -40,8 +40,8 @@ export function TableRowSkeleton({ columns = 4 }: { columns?: number }) {
 
 export function LeaderboardSkeleton() {
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-900 to-gray-800">
-      <header className="bg-gray-800/50 border-b border-gray-700">
+    <div className="min-h-screen bg-gradient-to-b from-gradient-from to-gradient-to">
+      <header className="bg-surface/50 border-b border-border">
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
           <Skeleton className="h-8 w-48" />
           <Skeleton className="h-6 w-32" />
@@ -56,7 +56,7 @@ export function LeaderboardSkeleton() {
           </div>
         </div>
 
-        <div className="bg-gray-800 rounded-lg overflow-hidden">
+        <div className="bg-surface rounded-lg overflow-hidden">
           <div className="p-4 space-y-4">
             {Array.from({ length: 8 }).map((_, i) => (
               <div key={i} className="flex items-center gap-4">
@@ -78,8 +78,8 @@ export function LeaderboardSkeleton() {
 
 export function TeamPageSkeleton() {
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-900 to-gray-800">
-      <header className="bg-gray-800/50 border-b border-gray-700">
+    <div className="min-h-screen bg-gradient-to-b from-gradient-from to-gradient-to">
+      <header className="bg-surface/50 border-b border-border">
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
           <Skeleton className="h-8 w-48" />
           <Skeleton className="h-6 w-32" />
@@ -88,7 +88,7 @@ export function TeamPageSkeleton() {
 
       <main className="container mx-auto px-4 py-8">
         {/* Team Header */}
-        <div className="bg-gray-800 rounded-lg p-6 mb-8">
+        <div className="bg-surface rounded-lg p-6 mb-8">
           <div className="flex items-center gap-6">
             <Skeleton className="w-16 h-16 rounded-lg" />
             <div className="flex-1">
@@ -101,7 +101,7 @@ export function TeamPageSkeleton() {
 
         <div className="grid lg:grid-cols-3 gap-8">
           {/* Roster */}
-          <div className="lg:col-span-2 bg-gray-800 rounded-lg p-6">
+          <div className="lg:col-span-2 bg-surface rounded-lg p-6">
             <Skeleton className="h-6 w-32 mb-4" />
             <div className="space-y-3">
               {Array.from({ length: 6 }).map((_, i) => (
@@ -118,7 +118,7 @@ export function TeamPageSkeleton() {
           </div>
 
           {/* Sidebar */}
-          <div className="bg-gray-800 rounded-lg p-6">
+          <div className="bg-surface rounded-lg p-6">
             <Skeleton className="h-6 w-32 mb-4" />
             <div className="space-y-3">
               {Array.from({ length: 4 }).map((_, i) => (
@@ -137,8 +137,8 @@ export function TeamPageSkeleton() {
 
 export function DraftSkeleton() {
   return (
-    <div className="min-h-screen bg-gray-900 flex flex-col">
-      <header className="bg-gray-800 border-b border-gray-700 px-4 py-3">
+    <div className="min-h-screen bg-page flex flex-col">
+      <header className="bg-surface border-b border-border px-4 py-3">
         <div className="flex justify-between items-center">
           <div className="flex items-center gap-4">
             <Skeleton className="h-6 w-16" />
@@ -153,7 +153,7 @@ export function DraftSkeleton() {
 
       <div className="flex flex-1 overflow-hidden">
         {/* Left Panel */}
-        <div className="w-1/3 border-r border-gray-700 p-4">
+        <div className="w-1/3 border-r border-border p-4">
           <Skeleton className="h-6 w-32 mb-4" />
           <div className="flex gap-2 mb-4">
             <Skeleton className="h-10 flex-1" />
@@ -177,7 +177,7 @@ export function DraftSkeleton() {
         </div>
 
         {/* Right Panel */}
-        <div className="w-1/4 border-l border-gray-700 p-4">
+        <div className="w-1/4 border-l border-border p-4">
           <Skeleton className="h-6 w-32 mb-4" />
           <div className="space-y-2">
             {Array.from({ length: 5 }).map((_, i) => (
@@ -192,8 +192,8 @@ export function DraftSkeleton() {
 
 export function DashboardSkeleton() {
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-900 to-gray-800">
-      <header className="bg-gray-800/50 border-b border-gray-700">
+    <div className="min-h-screen bg-gradient-to-b from-gradient-from to-gradient-to">
+      <header className="bg-surface/50 border-b border-border">
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
           <Skeleton className="h-8 w-48" />
           <Skeleton className="h-6 w-32" />
@@ -221,10 +221,10 @@ export function DashboardSkeleton() {
 
 export function PageLoadingSpinner() {
   return (
-    <div className="min-h-screen bg-gray-900 flex items-center justify-center">
+    <div className="min-h-screen bg-page flex items-center justify-center">
       <div className="text-center">
-        <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-        <p className="text-gray-400">Loading...</p>
+        <div className="w-12 h-12 border-4 border-brand border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+        <p className="text-text-secondary">Loading...</p>
       </div>
     </div>
   )

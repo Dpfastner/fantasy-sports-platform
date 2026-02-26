@@ -301,8 +301,8 @@ export function PlayoffBracket({ seasonId, rosterSchoolIds = [], leagueId }: Pro
     // BYE opponent slot - dimmed row
     if (team.isBye && team.name === 'BYE') {
       return (
-        <div className="flex items-center gap-2 p-2 bg-gray-800/30 border-l-2 border-gray-700">
-          <span className="text-sm text-gray-600 italic">BYE</span>
+        <div className="flex items-center gap-2 p-2 bg-surface/30 border-l-2 border-border">
+          <span className="text-sm text-text-muted italic">BYE</span>
         </div>
       )
     }
@@ -310,33 +310,33 @@ export function PlayoffBracket({ seasonId, rosterSchoolIds = [], leagueId }: Pro
     return (
       <div
         className={`flex items-center gap-2 p-2 ${
-          team.isWinner ? 'bg-green-900/30 border-green-500' :
-          team.isOnRoster ? 'bg-purple-900/20 border-purple-500' :
-          'bg-gray-700/50 border-gray-600'
+          team.isWinner ? 'bg-success/20 border-success' :
+          team.isOnRoster ? 'bg-info/10 border-info' :
+          'bg-surface-inset border-border'
         } border-l-2`}
       >
         {team.seed && (
-          <span className="text-xs text-gray-400 w-4">{team.seed}</span>
+          <span className="text-xs text-text-secondary w-4">{team.seed}</span>
         )}
         {team.logo ? (
           <img src={team.logo} alt="" className="w-6 h-6 object-contain" />
         ) : (
-          <div className="w-6 h-6 bg-gray-600 rounded" />
+          <div className="w-6 h-6 bg-surface-subtle rounded" />
         )}
         <span className={`flex-1 text-sm truncate ${
-          team.isOnRoster ? 'text-purple-300 font-medium' : 'text-white'
+          team.isOnRoster ? 'text-info-text font-medium' : 'text-text-primary'
         }`}>
           {team.name}
         </span>
         {team.score !== null && team.score !== undefined && (
           <span className={`text-sm font-bold ${
-            team.isWinner ? 'text-green-400' : 'text-gray-400'
+            team.isWinner ? 'text-success-text' : 'text-text-secondary'
           }`}>
             {team.score}
           </span>
         )}
         {isLive && (
-          <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
+          <span className="w-2 h-2 bg-danger rounded-full animate-pulse" />
         )}
       </div>
     )
@@ -348,21 +348,21 @@ export function PlayoffBracket({ seasonId, rosterSchoolIds = [], leagueId }: Pro
 
     return (
       <div className="w-48">
-        <div className="bg-gray-800 rounded-lg overflow-hidden border border-gray-700">
+        <div className="bg-surface rounded-lg overflow-hidden border border-border">
           {renderTeamSlot(bracketGame.topTeam, isLive)}
-          <div className="border-t border-gray-600" />
+          <div className="border-t border-border" />
           {renderTeamSlot(bracketGame.bottomTeam, isLive)}
         </div>
         {gameInfo && (
           <div className="text-center mt-1">
             {gameInfo.status === 'live' ? (
-              <span className="text-xs text-yellow-400 animate-pulse">
+              <span className="text-xs text-warning-text animate-pulse">
                 Q{gameInfo.quarter} {gameInfo.clock}
               </span>
             ) : gameInfo.status === 'completed' ? (
-              <span className="text-xs text-green-400">Final</span>
+              <span className="text-xs text-success-text">Final</span>
             ) : (
-              <span className="text-xs text-gray-500">
+              <span className="text-xs text-text-muted">
                 {new Date(`${gameInfo.game_date}T${gameInfo.game_time || '12:00:00'}`).toLocaleDateString('en-US', {
                   month: 'short',
                   day: 'numeric'
@@ -370,7 +370,7 @@ export function PlayoffBracket({ seasonId, rosterSchoolIds = [], leagueId }: Pro
               </span>
             )}
             {gameInfo.bowl_name && (
-              <p className="text-xs text-gray-500 truncate">{gameInfo.bowl_name}</p>
+              <p className="text-xs text-text-muted truncate">{gameInfo.bowl_name}</p>
             )}
           </div>
         )}
@@ -380,13 +380,13 @@ export function PlayoffBracket({ seasonId, rosterSchoolIds = [], leagueId }: Pro
 
   if (loading) {
     return (
-      <div className="bg-gray-800 rounded-lg p-6">
-        <h2 className="text-xl font-semibold text-white mb-4">Playoff Bracket</h2>
+      <div className="bg-surface rounded-lg p-6">
+        <h2 className="text-xl font-semibold text-text-primary mb-4">Playoff Bracket</h2>
         <div className="animate-pulse flex gap-8">
           {[1, 2, 3, 4].map(i => (
             <div key={i} className="space-y-4">
               {[1, 2, 3, 4].slice(0, 5 - i).map(j => (
-                <div key={j} className="w-48 h-20 bg-gray-700 rounded" />
+                <div key={j} className="w-48 h-20 bg-surface rounded" />
               ))}
             </div>
           ))}
@@ -397,9 +397,9 @@ export function PlayoffBracket({ seasonId, rosterSchoolIds = [], leagueId }: Pro
 
   if (games.length === 0) {
     return (
-      <div className="bg-gray-800 rounded-lg p-6">
-        <h2 className="text-xl font-semibold text-white mb-4">Playoff Bracket</h2>
-        <p className="text-gray-400">Playoff games have not been scheduled yet.</p>
+      <div className="bg-surface rounded-lg p-6">
+        <h2 className="text-xl font-semibold text-text-primary mb-4">Playoff Bracket</h2>
+        <p className="text-text-secondary">Playoff games have not been scheduled yet.</p>
       </div>
     )
   }
@@ -432,27 +432,27 @@ export function PlayoffBracket({ seasonId, rosterSchoolIds = [], leagueId }: Pro
   }
 
   return (
-    <div className="bg-gray-800 rounded-lg p-6">
+    <div className="bg-surface rounded-lg p-6">
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-xl font-semibold text-white">College Football Playoff</h2>
+        <h2 className="text-xl font-semibold text-text-primary">College Football Playoff</h2>
         <div className="flex items-center gap-4 text-xs">
           <span className="flex items-center gap-1">
-            <span className="w-3 h-3 bg-purple-500/30 border border-purple-500 rounded" />
-            <span className="text-gray-400">On Roster</span>
+            <span className="w-3 h-3 bg-info/30 border border-info rounded" />
+            <span className="text-text-secondary">On Roster</span>
           </span>
           <span className="flex items-center gap-1">
-            <span className="w-3 h-3 bg-green-500/30 border border-green-500 rounded" />
-            <span className="text-gray-400">Winner</span>
+            <span className="w-3 h-3 bg-success/30 border border-success rounded" />
+            <span className="text-text-secondary">Winner</span>
           </span>
         </div>
       </div>
 
       {/* Roster Schools in Playoffs Summary */}
       {rosterSchoolsInfo.length > 0 && (
-        <div className="mb-6 p-4 bg-purple-900/20 border border-purple-500/30 rounded-lg">
+        <div className="mb-6 p-4 bg-info/10 border border-info/30 rounded-lg">
           <div className="flex items-center gap-2 mb-3">
-            <span className="text-purple-400 font-medium">Your Schools in the Playoffs</span>
-            <span className="bg-purple-600 text-white text-xs font-bold px-2 py-0.5 rounded-full">
+            <span className="text-info-text font-medium">Your Schools in the Playoffs</span>
+            <span className="bg-info text-text-primary text-xs font-bold px-2 py-0.5 rounded-full">
               {rosterSchoolsInfo.length}
             </span>
           </div>
@@ -460,14 +460,14 @@ export function PlayoffBracket({ seasonId, rosterSchoolIds = [], leagueId }: Pro
             {rosterSchoolsInfo.map((school) => (
               <div
                 key={school.id}
-                className="flex items-center gap-2 bg-gray-800/50 px-3 py-2 rounded-lg border border-purple-500/30"
+                className="flex items-center gap-2 bg-surface/50 px-3 py-2 rounded-lg border border-info/30"
               >
                 {school.logo ? (
                   <img src={school.logo} alt="" className="w-6 h-6 object-contain" />
                 ) : (
-                  <div className="w-6 h-6 bg-gray-600 rounded" />
+                  <div className="w-6 h-6 bg-surface-subtle rounded" />
                 )}
-                <span className="text-purple-300 text-sm font-medium">{school.name}</span>
+                <span className="text-info-text text-sm font-medium">{school.name}</span>
               </div>
             ))}
           </div>
@@ -482,7 +482,7 @@ export function PlayoffBracket({ seasonId, rosterSchoolIds = [], leagueId }: Pro
             <div className="flex gap-8 min-w-max">
               {/* First Round */}
               <div className="space-y-4">
-                <h3 className="text-sm font-medium text-gray-400 text-center">First Round</h3>
+                <h3 className="text-sm font-medium text-text-secondary text-center">First Round</h3>
                 {hasByes ? (
                   <div className="space-y-6">
                     {[0, 1, 2, 3].map(i => (
@@ -503,7 +503,7 @@ export function PlayoffBracket({ seasonId, rosterSchoolIds = [], leagueId }: Pro
 
               {/* Quarterfinals */}
               <div className={`space-y-4 ${hasByes ? 'pt-14' : 'pt-8'}`}>
-                <h3 className="text-sm font-medium text-gray-400 text-center">Quarterfinals</h3>
+                <h3 className="text-sm font-medium text-text-secondary text-center">Quarterfinals</h3>
                 <div className={hasByes ? 'space-y-28' : 'space-y-16'}>
                   {bracketGames.quarterfinal.map((game, idx) => (
                     <div key={idx}>{renderMatchup(game)}</div>
@@ -513,7 +513,7 @@ export function PlayoffBracket({ seasonId, rosterSchoolIds = [], leagueId }: Pro
 
               {/* Semifinals */}
               <div className={`space-y-4 ${hasByes ? 'pt-32' : 'pt-24'}`}>
-                <h3 className="text-sm font-medium text-gray-400 text-center">Semifinals</h3>
+                <h3 className="text-sm font-medium text-text-secondary text-center">Semifinals</h3>
                 <div className={hasByes ? 'space-y-64' : 'space-y-32'}>
                   {bracketGames.semifinal.map((game, idx) => (
                     <div key={idx}>{renderMatchup(game)}</div>
@@ -523,7 +523,7 @@ export function PlayoffBracket({ seasonId, rosterSchoolIds = [], leagueId }: Pro
 
               {/* Championship */}
               <div className={`space-y-4 ${hasByes ? 'pt-56' : 'pt-40'}`}>
-                <h3 className="text-sm font-medium text-gray-400 text-center">Championship</h3>
+                <h3 className="text-sm font-medium text-text-secondary text-center">Championship</h3>
                 <div>
                   {bracketGames.championship.map((game, idx) => (
                     <div key={idx}>{renderMatchup(game)}</div>

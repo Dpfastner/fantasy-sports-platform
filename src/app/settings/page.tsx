@@ -171,57 +171,57 @@ export default function SettingsPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-gray-900 to-gray-800 flex items-center justify-center">
-        <div className="text-white">Loading...</div>
+      <div className="min-h-screen bg-gradient-to-b from-gradient-from to-gradient-to flex items-center justify-center">
+        <div className="text-text-primary">Loading...</div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-900 to-gray-800">
+    <div className="min-h-screen bg-gradient-to-b from-gradient-from to-gradient-to">
       <Header userName={profile?.display_name} userEmail={userEmail} />
 
       <main className="container mx-auto px-4 py-8 max-w-2xl">
         <div className="mb-6">
-          <button onClick={() => router.back()} className="text-gray-400 hover:text-white transition-colors">
+          <button onClick={() => router.back()} className="text-text-secondary hover:text-text-primary transition-colors">
             &larr; Back
           </button>
         </div>
 
-        <h1 className="text-3xl font-bold text-white mb-8">Account Settings</h1>
+        <h1 className="text-3xl font-bold text-text-primary mb-8">Account Settings</h1>
 
         {/* Success/Error Messages */}
         {successMessage && (
-          <div className="bg-green-500/10 border border-green-500 text-green-400 px-4 py-3 rounded-lg mb-6">
+          <div className="bg-success/10 border border-success text-success-text px-4 py-3 rounded-lg mb-6">
             {successMessage}
           </div>
         )}
         {errorMessage && (
-          <div className="bg-red-500/10 border border-red-500 text-red-400 px-4 py-3 rounded-lg mb-6">
+          <div className="bg-danger/10 border border-danger text-danger-text px-4 py-3 rounded-lg mb-6">
             {errorMessage}
           </div>
         )}
 
         {/* Profile Settings */}
-        <div className="bg-gray-800 rounded-lg p-6 mb-6">
-          <h2 className="text-xl font-semibold text-white mb-4">Profile</h2>
+        <div className="bg-surface rounded-lg p-6 mb-6">
+          <h2 className="text-xl font-semibold text-text-primary mb-4">Profile</h2>
           <form onSubmit={handleUpdateProfile} className="space-y-4">
             <div>
-              <label className="block text-gray-300 text-sm mb-1">Display Name</label>
+              <label className="block text-text-secondary text-sm mb-1">Display Name</label>
               <input
                 type="text"
                 value={displayName}
                 onChange={(e) => setDisplayName(e.target.value)}
-                className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
+                className="w-full px-4 py-2 bg-surface border border-border rounded-lg text-text-primary focus:outline-none focus:border-brand"
                 placeholder="Your display name"
               />
             </div>
             <div>
-              <label className="block text-gray-300 text-sm mb-1">Timezone</label>
+              <label className="block text-text-secondary text-sm mb-1">Timezone</label>
               <select
                 value={timezone}
                 onChange={(e) => setTimezone(e.target.value)}
-                className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
+                className="w-full px-4 py-2 bg-surface border border-border rounded-lg text-text-primary focus:outline-none focus:border-brand"
               >
                 {timezones.map((tz) => (
                   <option key={tz} value={tz}>
@@ -233,7 +233,7 @@ export default function SettingsPage() {
             <button
               type="submit"
               disabled={saving}
-              className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-600/50 text-white font-semibold py-2 px-4 rounded-lg transition-colors"
+              className="bg-brand hover:bg-brand-hover disabled:bg-brand/50 text-text-primary font-semibold py-2 px-4 rounded-lg transition-colors"
             >
               {saving ? 'Saving...' : 'Save Profile'}
             </button>
@@ -241,60 +241,60 @@ export default function SettingsPage() {
         </div>
 
         {/* Email Settings */}
-        <div className="bg-gray-800 rounded-lg p-6 mb-6">
-          <h2 className="text-xl font-semibold text-white mb-4">Email Address</h2>
+        <div className="bg-surface rounded-lg p-6 mb-6">
+          <h2 className="text-xl font-semibold text-text-primary mb-4">Email Address</h2>
           <form onSubmit={handleUpdateEmail} className="space-y-4">
             <div>
-              <label className="block text-gray-300 text-sm mb-1">Current Email</label>
+              <label className="block text-text-secondary text-sm mb-1">Current Email</label>
               <input
                 type="email"
                 value={userEmail}
                 disabled
-                className="w-full px-4 py-2 bg-gray-600 border border-gray-600 rounded-lg text-gray-400 cursor-not-allowed"
+                className="w-full px-4 py-2 bg-surface-subtle border border-border rounded-lg text-text-secondary cursor-not-allowed"
               />
             </div>
             <div>
-              <label className="block text-gray-300 text-sm mb-1">New Email</label>
+              <label className="block text-text-secondary text-sm mb-1">New Email</label>
               <input
                 type="email"
                 value={newEmail}
                 onChange={(e) => setNewEmail(e.target.value)}
-                className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
+                className="w-full px-4 py-2 bg-surface border border-border rounded-lg text-text-primary focus:outline-none focus:border-brand"
                 placeholder="new@email.com"
               />
             </div>
             <button
               type="submit"
               disabled={saving || newEmail === userEmail}
-              className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-600/50 text-white font-semibold py-2 px-4 rounded-lg transition-colors"
+              className="bg-brand hover:bg-brand-hover disabled:bg-brand/50 text-text-primary font-semibold py-2 px-4 rounded-lg transition-colors"
             >
               {saving ? 'Sending...' : 'Update Email'}
             </button>
-            <p className="text-gray-500 text-sm">
+            <p className="text-text-muted text-sm">
               A confirmation email will be sent to your new address.
             </p>
           </form>
         </div>
 
         {/* Password Settings */}
-        <div className="bg-gray-800 rounded-lg p-6">
-          <h2 className="text-xl font-semibold text-white mb-4">Change Password</h2>
+        <div className="bg-surface rounded-lg p-6">
+          <h2 className="text-xl font-semibold text-text-primary mb-4">Change Password</h2>
           <form onSubmit={handleUpdatePassword} className="space-y-4">
             <div>
-              <label className="block text-gray-300 text-sm mb-1">New Password</label>
+              <label className="block text-text-secondary text-sm mb-1">New Password</label>
               <div className="relative">
                 <input
                   type={showNewPassword ? 'text' : 'password'}
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
-                  className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500 pr-12"
+                  className="w-full px-4 py-2 bg-surface border border-border rounded-lg text-text-primary focus:outline-none focus:border-brand pr-12"
                   placeholder="New password"
                   minLength={6}
                 />
                 <button
                   type="button"
                   onClick={() => setShowNewPassword(!showNewPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white transition-colors"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-text-secondary hover:text-text-primary transition-colors"
                   tabIndex={-1}
                 >
                   {showNewPassword ? (
@@ -311,20 +311,20 @@ export default function SettingsPage() {
               </div>
             </div>
             <div>
-              <label className="block text-gray-300 text-sm mb-1">Confirm New Password</label>
+              <label className="block text-text-secondary text-sm mb-1">Confirm New Password</label>
               <div className="relative">
                 <input
                   type={showConfirmPassword ? 'text' : 'password'}
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
-                  className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500 pr-12"
+                  className="w-full px-4 py-2 bg-surface border border-border rounded-lg text-text-primary focus:outline-none focus:border-brand pr-12"
                   placeholder="Confirm new password"
                   minLength={6}
                 />
                 <button
                   type="button"
                   onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white transition-colors"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-text-secondary hover:text-text-primary transition-colors"
                   tabIndex={-1}
                 >
                   {showConfirmPassword ? (
@@ -343,7 +343,7 @@ export default function SettingsPage() {
             <button
               type="submit"
               disabled={saving || !newPassword || !confirmPassword}
-              className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-600/50 text-white font-semibold py-2 px-4 rounded-lg transition-colors"
+              className="bg-brand hover:bg-brand-hover disabled:bg-brand/50 text-text-primary font-semibold py-2 px-4 rounded-lg transition-colors"
             >
               {saving ? 'Updating...' : 'Update Password'}
             </button>

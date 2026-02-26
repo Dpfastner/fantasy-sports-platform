@@ -74,35 +74,35 @@ export default function AdminReportsPage() {
   }
 
   const categoryColors: Record<string, string> = {
-    bug: 'bg-red-500/20 text-red-400',
-    feature: 'bg-blue-500/20 text-blue-400',
-    other: 'bg-gray-500/20 text-gray-400',
+    bug: 'bg-danger/20 text-danger-text',
+    feature: 'bg-brand/20 text-brand-text',
+    other: 'bg-surface-subtle/20 text-text-secondary',
   }
 
   const statusColors: Record<string, string> = {
-    new: 'bg-yellow-500/20 text-yellow-400',
-    in_progress: 'bg-blue-500/20 text-blue-400',
-    resolved: 'bg-green-500/20 text-green-400',
+    new: 'bg-warning/20 text-warning-text',
+    in_progress: 'bg-brand/20 text-brand-text',
+    resolved: 'bg-success/20 text-success-text',
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-900 to-gray-800">
-      <header className="bg-gray-800/50 border-b border-gray-700">
+    <div className="min-h-screen bg-gradient-to-b from-gradient-from to-gradient-to">
+      <header className="bg-surface/50 border-b border-border">
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-          <Link href="/dashboard" className="text-2xl font-bold text-white">
+          <Link href="/dashboard" className="text-2xl font-bold text-text-primary">
             Rivyls
           </Link>
           <div className="flex items-center gap-4">
-            <Link href="/admin/sync" className="text-gray-400 hover:text-white">
+            <Link href="/admin/sync" className="text-text-secondary hover:text-text-primary">
               Data Sync
             </Link>
-            <span className="text-white font-medium">Issue Reports</span>
+            <span className="text-text-primary font-medium">Issue Reports</span>
           </div>
         </div>
       </header>
 
       <main className="container mx-auto px-4 py-8">
-        <h1 className="text-3xl font-bold text-white mb-6">Issue Reports</h1>
+        <h1 className="text-3xl font-bold text-text-primary mb-6">Issue Reports</h1>
 
         {/* Filter tabs */}
         <div className="flex gap-2 mb-6">
@@ -112,8 +112,8 @@ export default function AdminReportsPage() {
               onClick={() => setFilter(status)}
               className={`px-4 py-2 rounded-lg transition-colors ${
                 filter === status
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                  ? 'bg-brand text-text-primary'
+                  : 'bg-surface text-text-secondary hover:bg-surface-subtle'
               }`}
             >
               {status.replace('_', ' ').charAt(0).toUpperCase() + status.slice(1).replace('_', ' ')}
@@ -123,15 +123,15 @@ export default function AdminReportsPage() {
         </div>
 
         {loading ? (
-          <div className="text-gray-400">Loading reports...</div>
+          <div className="text-text-secondary">Loading reports...</div>
         ) : filteredReports.length === 0 ? (
-          <div className="bg-gray-800 rounded-lg p-8 text-center">
-            <p className="text-gray-400">No reports found.</p>
+          <div className="bg-surface rounded-lg p-8 text-center">
+            <p className="text-text-secondary">No reports found.</p>
           </div>
         ) : (
           <div className="space-y-4">
             {filteredReports.map(report => (
-              <div key={report.id} className="bg-gray-800 rounded-lg p-6">
+              <div key={report.id} className="bg-surface rounded-lg p-6">
                 <div className="flex items-start justify-between gap-4 mb-4">
                   <div className="flex items-center gap-3">
                     <span className={`px-2 py-1 rounded text-xs font-medium ${categoryColors[report.category] || categoryColors.other}`}>
@@ -140,7 +140,7 @@ export default function AdminReportsPage() {
                     <span className={`px-2 py-1 rounded text-xs font-medium ${statusColors[report.status] || statusColors.new}`}>
                       {report.status.replace('_', ' ')}
                     </span>
-                    <span className="text-gray-500 text-sm">
+                    <span className="text-text-muted text-sm">
                       {new Date(report.created_at).toLocaleString()}
                     </span>
                   </div>
@@ -149,7 +149,7 @@ export default function AdminReportsPage() {
                       <button
                         onClick={() => updateStatus(report.id, 'in_progress')}
                         disabled={updating === report.id}
-                        className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded transition-colors disabled:opacity-50"
+                        className="px-3 py-1 bg-brand hover:bg-brand-hover text-text-primary text-sm rounded transition-colors disabled:opacity-50"
                       >
                         Mark In Progress
                       </button>
@@ -158,7 +158,7 @@ export default function AdminReportsPage() {
                       <button
                         onClick={() => updateStatus(report.id, 'resolved')}
                         disabled={updating === report.id}
-                        className="px-3 py-1 bg-green-600 hover:bg-green-700 text-white text-sm rounded transition-colors disabled:opacity-50"
+                        className="px-3 py-1 bg-success hover:bg-success-hover text-text-primary text-sm rounded transition-colors disabled:opacity-50"
                       >
                         Mark Resolved
                       </button>
@@ -167,7 +167,7 @@ export default function AdminReportsPage() {
                       <button
                         onClick={() => updateStatus(report.id, 'new')}
                         disabled={updating === report.id}
-                        className="px-3 py-1 bg-gray-600 hover:bg-gray-500 text-white text-sm rounded transition-colors disabled:opacity-50"
+                        className="px-3 py-1 bg-surface-subtle hover:bg-surface-subtle text-text-primary text-sm rounded transition-colors disabled:opacity-50"
                       >
                         Reopen
                       </button>
@@ -175,9 +175,9 @@ export default function AdminReportsPage() {
                   </div>
                 </div>
 
-                <p className="text-white mb-4">{report.description}</p>
+                <p className="text-text-primary mb-4">{report.description}</p>
 
-                <div className="flex flex-wrap gap-4 text-sm text-gray-400">
+                <div className="flex flex-wrap gap-4 text-sm text-text-secondary">
                   {report.profiles && (
                     <span>User: {report.profiles.display_name || report.profiles.email}</span>
                   )}

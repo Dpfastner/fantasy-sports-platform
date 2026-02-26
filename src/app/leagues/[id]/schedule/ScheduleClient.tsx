@@ -188,21 +188,21 @@ export default function ScheduleClient({
   ] : []
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-900 to-gray-800">
+    <div className="min-h-screen bg-gradient-to-b from-gradient-from to-gradient-to">
       <Header userName={userName} userEmail={userEmail}>
         <Link
           href={`/leagues/${leagueId}/team`}
-          className="text-gray-400 hover:text-white transition-colors"
+          className="text-text-secondary hover:text-text-primary transition-colors"
         >
           My Roster
         </Link>
         <Link
           href={`/leagues/${leagueId}`}
-          className="text-gray-400 hover:text-white transition-colors"
+          className="text-text-secondary hover:text-text-primary transition-colors"
         >
           {leagueName}
         </Link>
-        <Link href="/dashboard" className="text-gray-400 hover:text-white transition-colors">
+        <Link href="/dashboard" className="text-text-secondary hover:text-text-primary transition-colors">
           My Leagues
         </Link>
       </Header>
@@ -210,27 +210,27 @@ export default function ScheduleClient({
       <main className="container mx-auto px-4 py-6">
         {/* Page Header */}
         <div className="mb-6">
-          <h1 className="text-2xl md:text-3xl font-bold text-white mb-1">Schedule</h1>
-          <p className="text-gray-400">{seasonName}</p>
+          <h1 className="text-2xl md:text-3xl font-bold text-text-primary mb-1">Schedule</h1>
+          <p className="text-text-secondary">{seasonName}</p>
         </div>
 
         {/* Quick Nav */}
-        <div className="flex flex-wrap items-center gap-2 mb-6 pb-4 border-b border-gray-700">
+        <div className="flex flex-wrap items-center gap-2 mb-6 pb-4 border-b border-border">
           <Link
             href={`/leagues/${leagueId}`}
-            className="bg-gray-700 hover:bg-gray-600 text-white text-sm py-2 px-4 rounded-lg transition-colors"
+            className="bg-surface hover:bg-surface-subtle text-text-primary text-sm py-2 px-4 rounded-lg transition-colors"
           >
             League Home
           </Link>
           <Link
             href={`/leagues/${leagueId}/transactions`}
-            className="bg-gray-700 hover:bg-gray-600 text-white text-sm py-2 px-4 rounded-lg transition-colors"
+            className="bg-surface hover:bg-surface-subtle text-text-primary text-sm py-2 px-4 rounded-lg transition-colors"
           >
             Add/Drop
           </Link>
           <Link
             href={`/leagues/${leagueId}/stats`}
-            className="bg-gray-700 hover:bg-gray-600 text-white text-sm py-2 px-4 rounded-lg transition-colors"
+            className="bg-surface hover:bg-surface-subtle text-text-primary text-sm py-2 px-4 rounded-lg transition-colors"
           >
             League Stats
           </Link>
@@ -242,8 +242,8 @@ export default function ScheduleClient({
             onClick={() => setActiveView('schedule')}
             className={`flex-1 py-3 px-4 text-sm font-medium rounded-l-lg transition-colors ${
               activeView === 'schedule'
-                ? 'bg-blue-600 text-white'
-                : 'bg-gray-700 text-gray-400 hover:bg-gray-600'
+                ? 'bg-brand text-text-primary'
+                : 'bg-surface text-text-secondary hover:bg-surface-subtle'
             }`}
           >
             Schedule
@@ -252,8 +252,8 @@ export default function ScheduleClient({
             onClick={() => setActiveView('bracket')}
             className={`flex-1 py-3 px-4 text-sm font-medium rounded-r-lg transition-colors ${
               activeView === 'bracket'
-                ? 'bg-orange-600 text-white'
-                : 'bg-gray-700 text-gray-400 hover:bg-gray-600'
+                ? 'bg-accent text-text-primary'
+                : 'bg-surface text-text-secondary hover:bg-surface-subtle'
             }`}
           >
             CFP Bracket
@@ -267,7 +267,7 @@ export default function ScheduleClient({
           <select
             value={selectedWeek}
             onChange={(e) => handleWeekChange(e.target.value)}
-            className="bg-gray-700 text-white text-sm rounded-lg px-4 py-2 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="bg-surface text-text-primary text-sm rounded-lg px-4 py-2 border border-border focus:outline-none focus:ring-2 focus:ring-brand"
           >
             <optgroup label="Regular Season">
               {regularWeeks.map((week) => (
@@ -292,8 +292,8 @@ export default function ScheduleClient({
               onClick={() => setFilter('all')}
               className={`px-3 py-1.5 text-sm rounded-lg transition-colors ${
                 filter === 'all'
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-gray-700 text-gray-400 hover:bg-gray-600'
+                  ? 'bg-brand text-text-primary'
+                  : 'bg-surface text-text-secondary hover:bg-surface-subtle'
               }`}
             >
               All Games ({games.length})
@@ -302,8 +302,8 @@ export default function ScheduleClient({
               onClick={() => setFilter('roster')}
               className={`px-3 py-1.5 text-sm rounded-lg transition-colors ${
                 filter === 'roster'
-                  ? 'bg-purple-600 text-white'
-                  : 'bg-gray-700 text-gray-400 hover:bg-gray-600'
+                  ? 'bg-info text-text-primary'
+                  : 'bg-surface text-text-secondary hover:bg-surface-subtle'
               }`}
             >
               My Roster ({rosterGamesCount})
@@ -312,8 +312,8 @@ export default function ScheduleClient({
               onClick={() => setFilter('ranked')}
               className={`px-3 py-1.5 text-sm rounded-lg transition-colors ${
                 filter === 'ranked'
-                  ? 'bg-orange-600 text-white'
-                  : 'bg-gray-700 text-gray-400 hover:bg-gray-600'
+                  ? 'bg-accent text-text-primary'
+                  : 'bg-surface text-text-secondary hover:bg-surface-subtle'
               }`}
             >
               Ranked
@@ -323,11 +323,11 @@ export default function ScheduleClient({
                 onClick={() => setFilter('live')}
                 className={`px-3 py-1.5 text-sm rounded-lg transition-colors flex items-center gap-1 ${
                   filter === 'live'
-                    ? 'bg-red-600 text-white'
-                    : 'bg-gray-700 text-gray-400 hover:bg-gray-600'
+                    ? 'bg-danger text-text-primary'
+                    : 'bg-surface text-text-secondary hover:bg-surface-subtle'
                 }`}
               >
-                <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>
+                <span className="w-2 h-2 bg-danger rounded-full animate-pulse"></span>
                 Live ({liveGamesCount})
               </button>
             )}
@@ -336,14 +336,14 @@ export default function ScheduleClient({
 
         {/* Games List */}
         {filteredGames.length === 0 ? (
-          <div className="bg-gray-800 rounded-lg p-8 text-center">
-            <p className="text-gray-400">No games found for the selected filters.</p>
+          <div className="bg-surface rounded-lg p-8 text-center">
+            <p className="text-text-secondary">No games found for the selected filters.</p>
           </div>
         ) : (
           <div className="space-y-6">
             {[...gamesByDate.entries()].map(([date, dateGames]) => (
               <div key={date}>
-                <h3 className="text-sm font-medium text-gray-400 mb-3">
+                <h3 className="text-sm font-medium text-text-secondary mb-3">
                   {new Date(date + 'T12:00:00').toLocaleDateString('en-US', {
                     weekday: 'long',
                     month: 'long',
@@ -363,12 +363,12 @@ export default function ScheduleClient({
                     return (
                       <div
                         key={game.id}
-                        className={`bg-gray-800 rounded-lg p-4 border ${
+                        className={`bg-surface rounded-lg p-4 border ${
                           isLive
-                            ? 'border-red-500/50 bg-red-900/10'
+                            ? 'border-danger/50 bg-danger/10'
                             : isRosterGame
-                            ? 'border-purple-500/30'
-                            : 'border-gray-700'
+                            ? 'border-info/30'
+                            : 'border-border'
                         }`}
                       >
                         <div className="flex items-center justify-between">
@@ -376,7 +376,7 @@ export default function ScheduleClient({
                           <div className={`flex items-center gap-3 flex-1 ${awayWon ? '' : isCompleted ? 'opacity-60' : ''}`}>
                             <div className="flex items-center gap-2">
                               {game.away_rank && game.away_rank <= 25 && (
-                                <span className="text-xs text-yellow-400 font-medium w-4">
+                                <span className="text-xs text-warning-text font-medium w-4">
                                   #{game.away_rank}
                                 </span>
                               )}
@@ -387,13 +387,13 @@ export default function ScheduleClient({
                                   className="w-8 h-8 object-contain"
                                 />
                               ) : (
-                                <div className="w-8 h-8 bg-gray-600 rounded-full" />
+                                <div className="w-8 h-8 bg-surface-subtle rounded-full" />
                               )}
                             </div>
                             <div>
                               <p className={`font-medium ${
-                                isAwayRoster ? 'text-purple-300' : 'text-white'
-                              } ${awayWon ? 'text-green-400' : ''}`}>
+                                isAwayRoster ? 'text-info-text' : 'text-text-primary'
+                              } ${awayWon ? 'text-success-text' : ''}`}>
                                 {game.away_team_name || 'TBD'}
                               </p>
                             </div>
@@ -404,24 +404,24 @@ export default function ScheduleClient({
                             {isLive ? (
                               <>
                                 <div className="flex items-center gap-3 text-xl font-bold">
-                                  <span className={game.possession_team_id === game.away_school_id ? 'text-yellow-400' : 'text-white'}>
+                                  <span className={game.possession_team_id === game.away_school_id ? 'text-warning-text' : 'text-text-primary'}>
                                     {game.away_score ?? 0}
                                     {game.possession_team_id === game.away_school_id && <span className="text-xs ml-0.5">\u25C0</span>}
                                   </span>
-                                  <span className="text-gray-500">-</span>
-                                  <span className={game.possession_team_id === game.home_school_id ? 'text-yellow-400' : 'text-white'}>
+                                  <span className="text-text-muted">-</span>
+                                  <span className={game.possession_team_id === game.home_school_id ? 'text-warning-text' : 'text-text-primary'}>
                                     {game.possession_team_id === game.home_school_id && <span className="text-xs mr-0.5">\u25B6</span>}
                                     {game.home_score ?? 0}
                                   </span>
                                 </div>
-                                <div className="flex items-center gap-1 text-xs text-red-400">
-                                  <span className="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse"></span>
+                                <div className="flex items-center gap-1 text-xs text-danger-text">
+                                  <span className="w-1.5 h-1.5 bg-danger rounded-full animate-pulse"></span>
                                   {game.quarter && game.clock
                                     ? `Q${game.quarter} ${game.clock}`
                                     : 'LIVE'}
                                 </div>
                                 {game.down_distance && (
-                                  <div className={`text-xs mt-0.5 ${game.is_red_zone ? 'text-red-400 font-medium' : 'text-gray-400'}`}>
+                                  <div className={`text-xs mt-0.5 ${game.is_red_zone ? 'text-danger-text font-medium' : 'text-text-secondary'}`}>
                                     {game.is_red_zone && '\u{1F3C8} '}
                                     {game.down_distance}
                                   </div>
@@ -430,19 +430,19 @@ export default function ScheduleClient({
                             ) : isCompleted ? (
                               <>
                                 <div className="flex items-center gap-3 text-xl font-bold">
-                                  <span className={awayWon ? 'text-green-400' : 'text-gray-400'}>
+                                  <span className={awayWon ? 'text-success-text' : 'text-text-secondary'}>
                                     {game.away_score}
                                   </span>
-                                  <span className="text-gray-500">-</span>
-                                  <span className={homeWon ? 'text-green-400' : 'text-gray-400'}>
+                                  <span className="text-text-muted">-</span>
+                                  <span className={homeWon ? 'text-success-text' : 'text-text-secondary'}>
                                     {game.home_score}
                                   </span>
                                 </div>
-                                <span className="text-xs text-gray-500">Final</span>
+                                <span className="text-xs text-text-muted">Final</span>
                               </>
                             ) : (
                               <>
-                                <span className="text-sm text-gray-400">
+                                <span className="text-sm text-text-secondary">
                                   {game.game_time
                                     ? new Date(`2000-01-01T${game.game_time}`).toLocaleTimeString('en-US', {
                                         hour: 'numeric',
@@ -451,7 +451,7 @@ export default function ScheduleClient({
                                     : 'TBD'}
                                 </span>
                                 {game.broadcast && (
-                                  <span className="text-xs text-gray-500">{game.broadcast}</span>
+                                  <span className="text-xs text-text-muted">{game.broadcast}</span>
                                 )}
                               </>
                             )}
@@ -461,8 +461,8 @@ export default function ScheduleClient({
                           <div className={`flex items-center gap-3 flex-1 justify-end ${homeWon ? '' : isCompleted ? 'opacity-60' : ''}`}>
                             <div className="text-right">
                               <p className={`font-medium ${
-                                isHomeRoster ? 'text-purple-300' : 'text-white'
-                              } ${homeWon ? 'text-green-400' : ''}`}>
+                                isHomeRoster ? 'text-info-text' : 'text-text-primary'
+                              } ${homeWon ? 'text-success-text' : ''}`}>
                                 {game.home_team_name || 'TBD'}
                               </p>
                             </div>
@@ -474,10 +474,10 @@ export default function ScheduleClient({
                                   className="w-8 h-8 object-contain"
                                 />
                               ) : (
-                                <div className="w-8 h-8 bg-gray-600 rounded-full" />
+                                <div className="w-8 h-8 bg-surface-subtle rounded-full" />
                               )}
                               {game.home_rank && game.home_rank <= 25 && (
-                                <span className="text-xs text-yellow-400 font-medium w-4">
+                                <span className="text-xs text-warning-text font-medium w-4">
                                   #{game.home_rank}
                                 </span>
                               )}
@@ -487,19 +487,19 @@ export default function ScheduleClient({
 
                         {/* Game Info */}
                         {(game.is_conference_game || game.is_playoff_game || game.bowl_name) && (
-                          <div className="mt-2 pt-2 border-t border-gray-700 flex items-center gap-2 text-xs">
+                          <div className="mt-2 pt-2 border-t border-border flex items-center gap-2 text-xs">
                             {game.is_conference_game && (
-                              <span className="bg-blue-900/30 text-blue-400 px-2 py-0.5 rounded">
+                              <span className="bg-highlight-row text-brand-text px-2 py-0.5 rounded">
                                 Conference
                               </span>
                             )}
                             {game.is_playoff_game && (
-                              <span className="bg-orange-900/30 text-orange-400 px-2 py-0.5 rounded">
+                              <span className="bg-accent/20 text-accent-text px-2 py-0.5 rounded">
                                 CFP
                               </span>
                             )}
                             {game.bowl_name && (
-                              <span className="text-gray-500">{game.bowl_name}</span>
+                              <span className="text-text-muted">{game.bowl_name}</span>
                             )}
                           </div>
                         )}
@@ -513,17 +513,17 @@ export default function ScheduleClient({
         )}
 
         {/* Legend */}
-        <div className="mt-6 flex items-center gap-4 text-xs text-gray-400">
+        <div className="mt-6 flex items-center gap-4 text-xs text-text-secondary">
           <div className="flex items-center gap-1">
-            <div className="w-3 h-3 border border-purple-500/30 rounded"></div>
+            <div className="w-3 h-3 border border-info/30 rounded"></div>
             <span>My Roster</span>
           </div>
           <div className="flex items-center gap-1">
-            <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
+            <div className="w-2 h-2 bg-danger rounded-full animate-pulse"></div>
             <span>Live</span>
           </div>
           <div className="flex items-center gap-1">
-            <span className="text-yellow-400">#</span>
+            <span className="text-warning-text">#</span>
             <span>Ranked</span>
           </div>
         </div>
@@ -533,8 +533,8 @@ export default function ScheduleClient({
         {/* CFP Bracket View */}
         {activeView === 'bracket' && (
           <div>
-            <h2 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
-              <span className="text-orange-400">🏆</span>
+            <h2 className="text-xl font-bold text-text-primary mb-6 flex items-center gap-2">
+              <span className="text-accent-text">🏆</span>
               College Football Playoff Bracket
             </h2>
             <PlayoffBracket

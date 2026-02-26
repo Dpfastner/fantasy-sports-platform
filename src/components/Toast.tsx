@@ -91,14 +91,14 @@ function ToastContainer({ toasts, removeToast }: ToastContainerProps) {
 function getToastStyles(type: ToastType): string {
   switch (type) {
     case 'success':
-      return 'bg-green-600 text-white'
+      return 'bg-success text-text-primary'
     case 'error':
-      return 'bg-red-600 text-white'
+      return 'bg-danger text-text-primary'
     case 'warning':
-      return 'bg-yellow-600 text-white'
+      return 'bg-warning text-text-primary'
     case 'info':
     default:
-      return 'bg-blue-600 text-white'
+      return 'bg-info text-text-primary'
   }
 }
 

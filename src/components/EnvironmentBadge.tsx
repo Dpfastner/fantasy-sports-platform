@@ -27,7 +27,7 @@ export default function EnvironmentBadge() {
         </span>
         {displayName}
         {env === 'sandbox' && (
-          <span className="text-yellow-100 text-[10px]">2025 Data</span>
+          <span className="text-warning-text text-[10px]">2025 Data</span>
         )}
       </div>
     </div>

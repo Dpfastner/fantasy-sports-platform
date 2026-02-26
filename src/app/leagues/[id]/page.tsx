@@ -177,17 +177,17 @@ export default async function LeaguePage({ params }: PageProps) {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-900 to-gray-800">
+    <div className="min-h-screen bg-gradient-to-b from-gradient-from to-gradient-to">
       <Header userName={profile?.display_name} userEmail={user.email}>
         {isDraftComplete && userTeam && (
           <Link
             href={`/leagues/${id}/team`}
-            className="text-blue-400 hover:text-blue-300 transition-colors font-medium"
+            className="text-brand-text hover:text-brand-text transition-colors font-medium"
           >
             My Roster
           </Link>
         )}
-        <Link href="/dashboard" className="text-gray-400 hover:text-white transition-colors">
+        <Link href="/dashboard" className="text-text-secondary hover:text-text-primary transition-colors">
           My Leagues
         </Link>
       </Header>
@@ -197,14 +197,14 @@ export default async function LeaguePage({ params }: PageProps) {
         <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-4 mb-4">
           <div>
             <div className="flex items-center gap-3 mb-1">
-              <h1 className="text-2xl md:text-3xl font-bold text-white">{league.name}</h1>
+              <h1 className="text-2xl md:text-3xl font-bold text-text-primary">{league.name}</h1>
               {isCommissioner && (
-                <span className="bg-yellow-500/20 text-yellow-400 text-xs px-2 py-1 rounded">
+                <span className="bg-warning/20 text-warning-text text-xs px-2 py-1 rounded">
                   Commissioner
                 </span>
               )}
             </div>
-            <p className="text-gray-400 text-sm">
+            <p className="text-text-secondary text-sm">
               {league.sports?.name} &bull; {league.seasons?.name} &bull; Week {currentWeek}
             </p>
           </div>
@@ -213,7 +213,7 @@ export default async function LeaguePage({ params }: PageProps) {
           {isCommissioner && (
             <Link
               href={`/leagues/${id}/settings`}
-              className="bg-gray-700 hover:bg-gray-600 text-white text-sm font-medium py-2 px-4 rounded-lg transition-colors"
+              className="bg-surface hover:bg-surface-subtle text-text-primary text-sm font-medium py-2 px-4 rounded-lg transition-colors"
             >
               Commissioner Tools
             </Link>
@@ -222,22 +222,22 @@ export default async function LeaguePage({ params }: PageProps) {
 
         {/* Quick Navigation Bar */}
         {isDraftComplete && (
-          <div className="flex flex-wrap items-center gap-2 mb-6 pb-4 border-b border-gray-700">
+          <div className="flex flex-wrap items-center gap-2 mb-6 pb-4 border-b border-border">
             <Link
               href={`/leagues/${id}/schedule`}
-              className="bg-gray-700 hover:bg-gray-600 text-white text-sm py-2 px-4 rounded-lg transition-colors"
+              className="bg-surface hover:bg-surface-subtle text-text-primary text-sm py-2 px-4 rounded-lg transition-colors"
             >
               Schedule
             </Link>
             <Link
               href={`/leagues/${id}/transactions`}
-              className="bg-gray-700 hover:bg-gray-600 text-white text-sm py-2 px-4 rounded-lg transition-colors"
+              className="bg-surface hover:bg-surface-subtle text-text-primary text-sm py-2 px-4 rounded-lg transition-colors"
             >
               Add/Drop
             </Link>
             <Link
               href={`/leagues/${id}/stats`}
-              className="bg-gray-700 hover:bg-gray-600 text-white text-sm py-2 px-4 rounded-lg transition-colors"
+              className="bg-surface hover:bg-surface-subtle text-text-primary text-sm py-2 px-4 rounded-lg transition-colors"
             >
               League Stats
             </Link>
@@ -246,9 +246,9 @@ export default async function LeaguePage({ params }: PageProps) {
 
         {/* Invite Code (Commissioner only) */}
         {isCommissioner && (
-          <div className="bg-blue-900/30 border border-blue-700 rounded-lg p-3 mb-6 flex items-center gap-3">
-            <span className="text-blue-300 text-sm">Invite Code:</span>
-            <code className="text-lg font-mono text-white tracking-wider">
+          <div className="bg-highlight-row border border-brand rounded-lg p-3 mb-6 flex items-center gap-3">
+            <span className="text-brand-text text-sm">Invite Code:</span>
+            <code className="text-lg font-mono text-text-primary tracking-wider">
               {league.invite_code}
             </code>
           </div>
@@ -272,7 +272,7 @@ export default async function LeaguePage({ params }: PageProps) {
 
             {/* Leaderboard (only when draft IS completed) */}
             {isDraftComplete && teams && teams.length > 0 && (
-              <div className="bg-gray-800 rounded-lg p-4 md:p-6">
+              <div className="bg-surface rounded-lg p-4 md:p-6">
                 <ErrorBoundary sectionName="leaderboard">
                   <LeaderboardClient
                     leagueId={id}
@@ -295,13 +295,13 @@ export default async function LeaguePage({ params }: PageProps) {
           <div className="space-y-4">
             {/* Your Team Summary - Compact */}
             {userTeam && (
-              <div className="bg-gray-800 rounded-lg p-4">
+              <div className="bg-surface rounded-lg p-4">
                 <div className="flex items-center justify-between mb-3">
-                  <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-wide">Your Team</h2>
+                  <h2 className="text-sm font-semibold text-text-secondary uppercase tracking-wide">Your Team</h2>
                   {isDraftComplete && (
                     <Link
                       href={`/leagues/${id}/team`}
-                      className="text-blue-400 hover:text-blue-300 text-xs"
+                      className="text-brand-text hover:text-brand-text text-xs"
                     >
                       View Roster →
                     </Link>
@@ -322,35 +322,35 @@ export default async function LeaguePage({ params }: PageProps) {
                     </div>
                   )}
                   <div>
-                    <p className="text-white font-medium text-sm">{userTeam.name}</p>
-                    <p className="text-gray-500 text-xs">
+                    <p className="text-text-primary font-medium text-sm">{userTeam.name}</p>
+                    <p className="text-text-muted text-xs">
                       Rank #{(teams?.findIndex(t => t.id === userTeam.id) || 0) + 1} of {teams?.length || 0}
                     </p>
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-2 text-center">
-                  <div className="bg-gray-700/50 rounded p-2">
-                    <p className="text-lg font-bold text-white">{userTeam.total_points}</p>
-                    <p className="text-gray-400 text-[10px] uppercase">Points</p>
+                  <div className="bg-surface-inset rounded p-2">
+                    <p className="text-lg font-bold text-text-primary">{userTeam.total_points}</p>
+                    <p className="text-text-secondary text-[10px] uppercase">Points</p>
                   </div>
-                  <div className="bg-gray-700/50 rounded p-2">
-                    <p className="text-lg font-bold text-white">{userTeam.add_drops_used}/{settings?.max_add_drops_per_season || 50}</p>
-                    <p className="text-gray-400 text-[10px] uppercase">Add/Drops</p>
+                  <div className="bg-surface-inset rounded p-2">
+                    <p className="text-lg font-bold text-text-primary">{userTeam.add_drops_used}/{settings?.max_add_drops_per_season || 50}</p>
+                    <p className="text-text-secondary text-[10px] uppercase">Add/Drops</p>
                   </div>
                   {settings?.double_points_enabled && (
-                    <div className="bg-gray-700/50 rounded p-2">
-                      <p className="text-lg font-bold text-purple-400">
+                    <div className="bg-surface-inset rounded p-2">
+                      <p className="text-lg font-bold text-info-text">
                         {doublePicksUsed}/{settings.max_double_picks_per_season > 0 ? settings.max_double_picks_per_season : '∞'}
                       </p>
-                      <p className="text-gray-400 text-[10px] uppercase">2x Picks</p>
+                      <p className="text-text-secondary text-[10px] uppercase">2x Picks</p>
                     </div>
                   )}
                   {settings?.high_points_enabled && (
-                    <div className="bg-gray-700/50 rounded p-2">
-                      <p className="text-lg font-bold text-yellow-400">
+                    <div className="bg-surface-inset rounded p-2">
+                      <p className="text-lg font-bold text-warning-text">
                         ${userTeam.high_points_winnings || 0}
                       </p>
-                      <p className="text-gray-400 text-[10px] uppercase">HP Won</p>
+                      <p className="text-text-secondary text-[10px] uppercase">HP Won</p>
                     </div>
                   )}
                 </div>
@@ -358,75 +358,75 @@ export default async function LeaguePage({ params }: PageProps) {
             )}
 
             {/* League Info - Compact */}
-            <div className="bg-gray-800 rounded-lg p-4">
-              <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-wide mb-3">League Info</h2>
+            <div className="bg-surface rounded-lg p-4">
+              <h2 className="text-sm font-semibold text-text-secondary uppercase tracking-wide mb-3">League Info</h2>
               <div className="space-y-2 text-xs">
                 <div className="flex justify-between">
-                  <span className="text-gray-400">Teams</span>
-                  <span className="text-white">{teams?.length || 0} / {league.max_teams}</span>
+                  <span className="text-text-secondary">Teams</span>
+                  <span className="text-text-primary">{teams?.length || 0} / {league.max_teams}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-400">Schools per Team</span>
-                  <span className="text-white">{settings?.schools_per_team || 12}</span>
+                  <span className="text-text-secondary">Schools per Team</span>
+                  <span className="text-text-primary">{settings?.schools_per_team || 12}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-400">School Limit (League)</span>
-                  <span className="text-white">{settings?.max_school_selections_total || 3}x max</span>
+                  <span className="text-text-secondary">School Limit (League)</span>
+                  <span className="text-text-primary">{settings?.max_school_selections_total || 3}x max</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-400">Draft Type</span>
-                  <span className="text-white capitalize">{settings?.draft_type || 'Snake'}</span>
+                  <span className="text-text-secondary">Draft Type</span>
+                  <span className="text-text-primary capitalize">{settings?.draft_type || 'Snake'}</span>
                 </div>
                 {settings?.entry_fee && settings.entry_fee > 0 && (
                   <div className="flex justify-between">
-                    <span className="text-gray-400">Entry Fee</span>
-                    <span className="text-white">${settings.entry_fee}</span>
+                    <span className="text-text-secondary">Entry Fee</span>
+                    <span className="text-text-primary">${settings.entry_fee}</span>
                   </div>
                 )}
                 {settings?.prize_pool && settings.prize_pool > 0 && (
                   <div className="flex justify-between">
-                    <span className="text-gray-400">Prize Pool</span>
-                    <span className="text-green-400 font-medium">${settings.prize_pool}</span>
+                    <span className="text-text-secondary">Prize Pool</span>
+                    <span className="text-success-text font-medium">${settings.prize_pool}</span>
                   </div>
                 )}
                 {settings?.high_points_enabled && (
                   <div className="flex justify-between">
-                    <span className="text-gray-400">High Points</span>
-                    <span className="text-yellow-400">${settings.high_points_weekly_amount}/wk</span>
+                    <span className="text-text-secondary">High Points</span>
+                    <span className="text-warning-text">${settings.high_points_weekly_amount}/wk</span>
                   </div>
                 )}
                 {settings?.double_points_enabled && (
                   <div className="flex justify-between">
-                    <span className="text-gray-400">Double Points</span>
-                    <span className="text-purple-400">Enabled</span>
+                    <span className="text-text-secondary">Double Points</span>
+                    <span className="text-info-text">Enabled</span>
                   </div>
                 )}
               </div>
             </div>
 
             {/* Key Dates */}
-            <div className="bg-gray-800 rounded-lg p-4">
-              <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-wide mb-3">Key Dates</h2>
+            <div className="bg-surface rounded-lg p-4">
+              <h2 className="text-sm font-semibold text-text-secondary uppercase tracking-wide mb-3">Key Dates</h2>
               <div className="space-y-3 text-xs">
                 <div className="flex items-start gap-2">
-                  <div className="w-2 h-2 mt-1 bg-yellow-500 rounded-full flex-shrink-0"></div>
+                  <div className="w-2 h-2 mt-1 bg-warning rounded-full flex-shrink-0"></div>
                   <div>
-                    <p className="text-white font-medium">Heisman Trophy</p>
-                    <p className="text-gray-400">Dec 14, {year}</p>
+                    <p className="text-text-primary font-medium">Heisman Trophy</p>
+                    <p className="text-text-secondary">Dec 14, {year}</p>
                   </div>
                 </div>
                 <div className="flex items-start gap-2">
-                  <div className="w-2 h-2 mt-1 bg-orange-500 rounded-full flex-shrink-0"></div>
+                  <div className="w-2 h-2 mt-1 bg-accent rounded-full flex-shrink-0"></div>
                   <div>
-                    <p className="text-white font-medium">College Football Playoffs</p>
-                    <p className="text-gray-400">Dec 20, {year} - Jan 10, {year + 1}</p>
+                    <p className="text-text-primary font-medium">College Football Playoffs</p>
+                    <p className="text-text-secondary">Dec 20, {year} - Jan 10, {year + 1}</p>
                   </div>
                 </div>
                 <div className="flex items-start gap-2">
-                  <div className="w-2 h-2 mt-1 bg-red-500 rounded-full flex-shrink-0"></div>
+                  <div className="w-2 h-2 mt-1 bg-danger rounded-full flex-shrink-0"></div>
                   <div>
-                    <p className="text-white font-medium">National Championship</p>
-                    <p className="text-gray-400">Jan 20, {year + 1}</p>
+                    <p className="text-text-primary font-medium">National Championship</p>
+                    <p className="text-text-secondary">Jan 20, {year + 1}</p>
                   </div>
                 </div>
               </div>

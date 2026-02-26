@@ -108,8 +108,8 @@ export function SandboxWeekSelector({ currentWeek, environment }: Props) {
       <button
         onClick={() => setIsOpen(!isOpen)}
         className={`flex items-center gap-2 px-3 py-2 rounded-lg shadow-lg transition-colors ${
-          environment === 'sandbox' ? 'bg-yellow-600 hover:bg-yellow-500' : 'bg-blue-600 hover:bg-blue-500'
-        } text-white text-sm font-medium`}
+          environment === 'sandbox' ? 'bg-warning hover:bg-warning' : 'bg-brand hover:bg-brand'
+        } text-text-primary text-sm font-medium`}
       >
         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
@@ -127,23 +127,23 @@ export function SandboxWeekSelector({ currentWeek, environment }: Props) {
 
       {/* Dropdown panel */}
       {isOpen && (
-        <div className="absolute bottom-12 right-0 w-72 bg-gray-800 border border-gray-700 rounded-lg shadow-xl p-4">
+        <div className="absolute bottom-12 right-0 w-72 bg-surface border border-border rounded-lg shadow-xl p-4">
           <div className="flex items-center justify-between mb-3">
-            <h3 className="text-white font-semibold text-sm">Sandbox Time Override</h3>
+            <h3 className="text-text-primary font-semibold text-sm">Sandbox Time Override</h3>
             <span className={`text-xs px-2 py-0.5 rounded ${
-              environment === 'sandbox' ? 'bg-yellow-600/30 text-yellow-400' : 'bg-blue-600/30 text-blue-400'
+              environment === 'sandbox' ? 'bg-warning/30 text-warning-text' : 'bg-brand/30 text-brand-text'
             }`}>
               {environment}
             </span>
           </div>
 
-          <p className="text-gray-400 text-xs mb-3">
+          <p className="text-text-secondary text-xs mb-3">
             Override week and day for testing deadlines and game states.
           </p>
 
           {/* Week grid */}
           <div className="mb-3">
-            <p className="text-gray-500 text-xs mb-1">Week</p>
+            <p className="text-text-muted text-xs mb-1">Week</p>
             <div className="grid grid-cols-7 gap-1">
               {weeks.map(week => (
                 <button
@@ -151,10 +151,10 @@ export function SandboxWeekSelector({ currentWeek, environment }: Props) {
                   onClick={() => handleWeekChange(week)}
                   className={`p-1.5 text-xs rounded transition-colors ${
                     week === currentWeek
-                      ? 'bg-blue-600 text-white'
+                      ? 'bg-brand text-text-primary'
                       : week >= 17
-                        ? 'bg-orange-900/30 text-orange-400 hover:bg-orange-900/50'
-                        : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                        ? 'bg-accent/20 text-accent-text hover:bg-accent-hover'
+                        : 'bg-surface text-text-secondary hover:bg-surface-subtle'
                   }`}
                   title={specialWeeks[week] || `Week ${week}`}
                 >
@@ -166,7 +166,7 @@ export function SandboxWeekSelector({ currentWeek, environment }: Props) {
 
           {/* Day selector */}
           <div className="mb-3">
-            <p className="text-gray-500 text-xs mb-1">Day (for deadline testing)</p>
+            <p className="text-text-muted text-xs mb-1">Day (for deadline testing)</p>
             <div className="grid grid-cols-7 gap-1">
               {DAYS.map(day => (
                 <button
@@ -174,8 +174,8 @@ export function SandboxWeekSelector({ currentWeek, environment }: Props) {
                   onClick={() => handleDayChange(day.key)}
                   className={`p-1.5 text-xs rounded transition-colors ${
                     selectedDay === day.key
-                      ? 'bg-green-600 text-white'
-                      : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                      ? 'bg-success text-text-primary'
+                      : 'bg-surface text-text-secondary hover:bg-surface-subtle'
                   }`}
                   title={day.description}
                 >
@@ -183,7 +183,7 @@ export function SandboxWeekSelector({ currentWeek, environment }: Props) {
                 </button>
               ))}
             </div>
-            <p className="text-gray-500 text-[10px] mt-1">
+            <p className="text-text-muted text-[10px] mt-1">
               {selectedDay === 'mon' && 'Monday - start of week'}
               {selectedDay === 'tue' && 'Tuesday - before any games'}
               {selectedDay === 'wed' && 'Wednesday - mid-week'}
@@ -197,7 +197,7 @@ export function SandboxWeekSelector({ currentWeek, environment }: Props) {
 
           {/* Time selector */}
           <div className="mb-3">
-            <p className="text-gray-500 text-xs mb-1">Time (optional)</p>
+            <p className="text-text-muted text-xs mb-1">Time (optional)</p>
             <div className="grid grid-cols-5 gap-1">
               {TIME_PRESETS.map(time => (
                 <button
@@ -205,8 +205,8 @@ export function SandboxWeekSelector({ currentWeek, environment }: Props) {
                   onClick={() => handleTimeChange(time.key)}
                   className={`p-1.5 text-xs rounded transition-colors ${
                     selectedTime === time.key
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                      ? 'bg-brand text-text-primary'
+                      : 'bg-surface text-text-secondary hover:bg-surface-subtle'
                   }`}
                   title={time.description}
                 >
@@ -214,22 +214,22 @@ export function SandboxWeekSelector({ currentWeek, environment }: Props) {
                 </button>
               ))}
             </div>
-            <p className="text-gray-500 text-[10px] mt-1">
+            <p className="text-text-muted text-[10px] mt-1">
               {selectedTime && `Simulating ${selectedTime.replace(':00', ':00')} local time`}
               {!selectedTime && 'Defaults to 12 PM if not set'}
             </p>
           </div>
 
           {/* Legend */}
-          <div className="flex items-center gap-3 text-xs text-gray-500 mb-3">
+          <div className="flex items-center gap-3 text-xs text-text-muted mb-3">
             <span>0-16: Regular</span>
-            <span className="text-orange-400">17: Bowls, 18-21: CFP</span>
+            <span className="text-accent-text">17: Bowls, 18-21: CFP</span>
           </div>
 
           {/* Clear button */}
           <button
             onClick={handleClearOverride}
-            className="w-full py-2 bg-gray-700 hover:bg-gray-600 text-gray-300 text-xs rounded transition-colors"
+            className="w-full py-2 bg-surface hover:bg-surface-subtle text-text-secondary text-xs rounded transition-colors"
           >
             Clear Override (Use Real Date)
           </button>

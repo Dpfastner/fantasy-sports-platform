@@ -165,11 +165,11 @@ export default function CreateLeaguePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-900 to-gray-800">
+    <div className="min-h-screen bg-gradient-to-b from-gradient-from to-gradient-to">
       {/* Header */}
-      <header className="bg-gray-800/50 border-b border-gray-700">
+      <header className="bg-surface/50 border-b border-border">
         <div className="container mx-auto px-4 py-4">
-          <Link href="/dashboard" className="text-2xl font-bold text-white">
+          <Link href="/dashboard" className="text-2xl font-bold text-text-primary">
             Rivyls
           </Link>
         </div>
@@ -178,22 +178,22 @@ export default function CreateLeaguePage() {
       <main className="container mx-auto px-4 py-8">
         <div className="max-w-2xl mx-auto">
           <div className="mb-8">
-            <Link href="/dashboard" className="text-gray-400 hover:text-white transition-colors">
+            <Link href="/dashboard" className="text-text-secondary hover:text-text-primary transition-colors">
               &larr; Back to Dashboard
             </Link>
           </div>
 
-          <h1 className="text-3xl font-bold text-white mb-8">Create a New League</h1>
+          <h1 className="text-3xl font-bold text-text-primary mb-8">Create a New League</h1>
 
-          <form onSubmit={handleSubmit} className="bg-gray-800 rounded-lg p-8">
+          <form onSubmit={handleSubmit} className="bg-surface rounded-lg p-8">
             {error && (
-              <div className="bg-red-500/10 border border-red-500 text-red-500 px-4 py-3 rounded-lg mb-6">
+              <div className="bg-danger/10 border border-danger text-danger px-4 py-3 rounded-lg mb-6">
                 {error}
               </div>
             )}
 
             <div className="mb-6">
-              <label htmlFor="name" className="block text-gray-300 mb-2">
+              <label htmlFor="name" className="block text-text-secondary mb-2">
                 League Name *
               </label>
               <input
@@ -203,13 +203,13 @@ export default function CreateLeaguePage() {
                 onChange={(e) => setName(e.target.value)}
                 required
                 maxLength={100}
-                className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-500"
+                className="w-full px-4 py-3 bg-surface border border-border rounded-lg text-text-primary placeholder-text-muted focus:outline-none focus:border-brand"
                 placeholder="e.g., College Football Fanatics 2025"
               />
             </div>
 
             <div className="mb-6">
-              <label htmlFor="description" className="block text-gray-300 mb-2">
+              <label htmlFor="description" className="block text-text-secondary mb-2">
                 Description (optional)
               </label>
               <textarea
@@ -218,13 +218,13 @@ export default function CreateLeaguePage() {
                 onChange={(e) => setDescription(e.target.value)}
                 rows={3}
                 maxLength={500}
-                className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-500 resize-none"
+                className="w-full px-4 py-3 bg-surface border border-border rounded-lg text-text-primary placeholder-text-muted focus:outline-none focus:border-brand resize-none"
                 placeholder="Tell your friends what this league is about..."
               />
             </div>
 
             <div className="mb-6">
-              <label htmlFor="teamName" className="block text-gray-300 mb-2">
+              <label htmlFor="teamName" className="block text-text-secondary mb-2">
                 Your Team Name *
               </label>
               <input
@@ -234,17 +234,17 @@ export default function CreateLeaguePage() {
                 onChange={(e) => setTeamName(e.target.value)}
                 required
                 maxLength={100}
-                className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-500"
+                className="w-full px-4 py-3 bg-surface border border-border rounded-lg text-text-primary placeholder-text-muted focus:outline-none focus:border-brand"
                 placeholder="e.g., The Gridiron Gang"
               />
-              <p className="text-gray-500 text-sm mt-1">
+              <p className="text-text-muted text-sm mt-1">
                 As the commissioner, you'll need a team to participate in the draft
               </p>
             </div>
 
             <div className="grid md:grid-cols-2 gap-6 mb-6">
               <div>
-                <label htmlFor="sport" className="block text-gray-300 mb-2">
+                <label htmlFor="sport" className="block text-text-secondary mb-2">
                   Sport *
                 </label>
                 <select
@@ -252,7 +252,7 @@ export default function CreateLeaguePage() {
                   value={sportId}
                   onChange={(e) => setSportId(e.target.value)}
                   required
-                  className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
+                  className="w-full px-4 py-3 bg-surface border border-border rounded-lg text-text-primary focus:outline-none focus:border-brand"
                 >
                   <option value="">Select a sport</option>
                   {sports.map((sport) => (
@@ -264,7 +264,7 @@ export default function CreateLeaguePage() {
               </div>
 
               <div>
-                <label htmlFor="maxTeams" className="block text-gray-300 mb-2">
+                <label htmlFor="maxTeams" className="block text-text-secondary mb-2">
                   Maximum Teams
                 </label>
                 <input
@@ -277,9 +277,9 @@ export default function CreateLeaguePage() {
                   }}
                   min={1}
                   max={30}
-                  className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
+                  className="w-full px-4 py-3 bg-surface border border-border rounded-lg text-text-primary focus:outline-none focus:border-brand"
                 />
-                <p className="text-gray-500 text-sm mt-1">
+                <p className="text-text-muted text-sm mt-1">
                   Enter a number between 1-30
                 </p>
               </div>
@@ -291,11 +291,11 @@ export default function CreateLeaguePage() {
                   type="checkbox"
                   checked={isPublic}
                   onChange={(e) => setIsPublic(e.target.checked)}
-                  className="w-5 h-5 rounded border-gray-600 bg-gray-700 text-blue-600 focus:ring-blue-500"
+                  className="w-5 h-5 rounded border-border bg-surface text-brand focus:ring-brand"
                 />
-                <span className="text-gray-300">Make this league public</span>
+                <span className="text-text-secondary">Make this league public</span>
               </label>
-              <p className="text-gray-500 text-sm mt-1 ml-8">
+              <p className="text-text-muted text-sm mt-1 ml-8">
                 Public leagues can be found by anyone. Private leagues require an invite code.
               </p>
             </div>
@@ -303,14 +303,14 @@ export default function CreateLeaguePage() {
             <div className="flex gap-4">
               <Link
                 href="/dashboard"
-                className="flex-1 text-center bg-gray-700 hover:bg-gray-600 text-white font-semibold py-3 px-4 rounded-lg transition-colors"
+                className="flex-1 text-center bg-surface hover:bg-surface-subtle text-text-primary font-semibold py-3 px-4 rounded-lg transition-colors"
               >
                 Cancel
               </Link>
               <button
                 type="submit"
                 disabled={loading}
-                className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-600/50 disabled:cursor-not-allowed text-white font-semibold py-3 px-4 rounded-lg transition-colors"
+                className="flex-1 bg-brand hover:bg-brand-hover disabled:bg-brand/50 disabled:cursor-not-allowed text-text-primary font-semibold py-3 px-4 rounded-lg transition-colors"
               >
                 {loading ? 'Creating...' : 'Create League'}
               </button>

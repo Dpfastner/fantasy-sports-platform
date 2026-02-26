@@ -1019,16 +1019,16 @@ export default function DraftRoomPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
-        <div className="text-white text-xl">Loading draft room...</div>
+      <div className="min-h-screen bg-page flex items-center justify-center">
+        <div className="text-text-primary text-xl">Loading draft room...</div>
       </div>
     )
   }
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
-        <div className="text-red-500 text-xl">{error}</div>
+      <div className="min-h-screen bg-page flex items-center justify-center">
+        <div className="text-danger text-xl">{error}</div>
       </div>
     )
   }
@@ -1103,26 +1103,26 @@ export default function DraftRoomPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-900 flex flex-col">
+    <div className="min-h-screen bg-page flex flex-col">
       {/* Header with Timer and On the Clock */}
-      <header className="bg-gray-800 border-b border-gray-700 px-3 md:px-4 py-2">
+      <header className="bg-surface border-b border-border px-3 md:px-4 py-2">
         {/* Mobile: Stack layout */}
         <div className="flex flex-col gap-2 md:flex-row md:justify-between md:items-center">
           {/* Row 1: Back + Title + Status (on mobile shows compactly) */}
           <div className="flex items-center justify-between md:justify-start md:gap-4">
             <div className="flex items-center gap-2 md:gap-4">
-              <Link href={`/leagues/${leagueId}`} className="text-gray-400 hover:text-white text-sm">
+              <Link href={`/leagues/${leagueId}`} className="text-text-secondary hover:text-text-primary text-sm">
                 &larr;
               </Link>
-              <h1 className="text-base md:text-lg font-bold text-white truncate max-w-[150px] md:max-w-none">{leagueName} Draft</h1>
+              <h1 className="text-base md:text-lg font-bold text-text-primary truncate max-w-[150px] md:max-w-none">{leagueName} Draft</h1>
             </div>
             {/* Status badge - shown on mobile in header row */}
             <div className="md:hidden">
               <span className={`px-2 py-0.5 rounded text-xs font-medium ${
-                draft?.status === 'in_progress' ? 'bg-green-600 text-white' :
-                draft?.status === 'paused' ? 'bg-yellow-600 text-white' :
-                draft?.status === 'completed' ? 'bg-blue-600 text-white' :
-                'bg-gray-600 text-white'
+                draft?.status === 'in_progress' ? 'bg-success text-text-primary' :
+                draft?.status === 'paused' ? 'bg-warning text-text-primary' :
+                draft?.status === 'completed' ? 'bg-brand text-text-primary' :
+                'bg-surface-subtle text-text-primary'
               }`}>
                 {draft?.status === 'in_progress' ? 'Live' :
                  draft?.status === 'paused' ? 'Paused' :
@@ -1136,20 +1136,20 @@ export default function DraftRoomPage() {
             {draft?.status === 'in_progress' && currentTeam && (
               <>
                 <div className="flex items-center gap-1 md:gap-3 flex-1 md:flex-none min-w-0">
-                  <span className="text-gray-400 text-xs md:text-sm hidden sm:inline">ON THE CLOCK:</span>
-                  <span className={`text-sm md:text-lg font-bold truncate ${isMyPick ? 'text-green-400' : 'text-white'}`}>
+                  <span className="text-text-secondary text-xs md:text-sm hidden sm:inline">ON THE CLOCK:</span>
+                  <span className={`text-sm md:text-lg font-bold truncate ${isMyPick ? 'text-success-text' : 'text-text-primary'}`}>
                     {currentTeam.name}
                   </span>
-                  <span className="text-gray-500 text-xs md:text-sm whitespace-nowrap">
+                  <span className="text-text-muted text-xs md:text-sm whitespace-nowrap">
                     R{draft.current_round} P{draft.current_pick}
                   </span>
                 </div>
                 {timeRemaining !== null && (
                   <div className={`text-lg md:text-2xl font-mono font-bold whitespace-nowrap ${
-                    timerExpired ? 'text-red-500 animate-pulse' :
-                    timeRemaining <= 10 ? 'text-red-500 animate-pulse' :
-                    timeRemaining <= 30 ? 'text-yellow-500' :
-                    'text-white'
+                    timerExpired ? 'text-danger animate-pulse' :
+                    timeRemaining <= 10 ? 'text-danger animate-pulse' :
+                    timeRemaining <= 30 ? 'text-warning' :
+                    'text-text-primary'
                   }`}>
                     {timerExpired ? 'TIME!' : `${Math.floor(timeRemaining / 60)}:${(timeRemaining % 60).toString().padStart(2, '0')}`}
                   </div>
@@ -1161,13 +1161,13 @@ export default function DraftRoomPage() {
           {/* Right: Status + Controls - hidden on mobile, controls shown below */}
           <div className="hidden md:flex items-center gap-3">
             {actionError && (
-              <span className="text-red-400 text-sm">{actionError}</span>
+              <span className="text-danger-text text-sm">{actionError}</span>
             )}
             <span className={`px-3 py-1 rounded text-sm font-medium ${
-              draft?.status === 'in_progress' ? 'bg-green-600 text-white' :
-              draft?.status === 'paused' ? 'bg-yellow-600 text-white' :
-              draft?.status === 'completed' ? 'bg-blue-600 text-white' :
-              'bg-gray-600 text-white'
+              draft?.status === 'in_progress' ? 'bg-success text-text-primary' :
+              draft?.status === 'paused' ? 'bg-warning text-text-primary' :
+              draft?.status === 'completed' ? 'bg-brand text-text-primary' :
+              'bg-surface-subtle text-text-primary'
             }`}>
               {draft?.status === 'in_progress' ? 'Live' :
                draft?.status === 'paused' ? 'Paused' :
@@ -1178,13 +1178,13 @@ export default function DraftRoomPage() {
             {isCommissioner && draft?.status === 'not_started' && teams.length >= 1 && teams.length >= memberCount && (
               <button
                 onClick={handleStartDraft}
-                className="bg-green-600 hover:bg-green-700 text-white px-4 py-1.5 rounded text-sm font-medium"
+                className="bg-success hover:bg-success-hover text-text-primary px-4 py-1.5 rounded text-sm font-medium"
               >
                 Start Draft
               </button>
             )}
             {isCommissioner && draft?.status === 'not_started' && teams.length >= 1 && teams.length < memberCount && (
-              <span className="text-yellow-400 text-sm">
+              <span className="text-warning-text text-sm">
                 Waiting for teams ({teams.length}/{memberCount})
               </span>
             )}
@@ -1193,8 +1193,8 @@ export default function DraftRoomPage() {
               <button
                 onClick={handleTogglePause}
                 className={`${
-                  draft.status === 'paused' ? 'bg-green-600 hover:bg-green-700' : 'bg-yellow-600 hover:bg-yellow-700'
-                } text-white px-4 py-1.5 rounded text-sm font-medium`}
+                  draft.status === 'paused' ? 'bg-success hover:bg-success-hover' : 'bg-warning hover:bg-warning-hover'
+                } text-text-primary px-4 py-1.5 rounded text-sm font-medium`}
               >
                 {draft.status === 'paused' ? 'Resume' : 'Pause'}
               </button>
@@ -1204,7 +1204,7 @@ export default function DraftRoomPage() {
             {isCommissioner && (draft?.status === 'in_progress' || draft?.status === 'paused' || draft?.status === 'completed' || picks.length > 0) && (
               <button
                 onClick={() => setShowResetConfirm(true)}
-                className="bg-red-600 hover:bg-red-700 text-white px-4 py-1.5 rounded text-sm font-medium"
+                className="bg-danger hover:bg-danger-hover text-text-primary px-4 py-1.5 rounded text-sm font-medium"
               >
                 Reset Draft
               </button>
@@ -1215,18 +1215,18 @@ export default function DraftRoomPage() {
           {isCommissioner && (
             <div className="flex md:hidden items-center gap-2 pt-1">
               {actionError && (
-                <span className="text-red-400 text-xs flex-1">{actionError}</span>
+                <span className="text-danger-text text-xs flex-1">{actionError}</span>
               )}
               {draft?.status === 'not_started' && teams.length >= 1 && teams.length >= memberCount && (
                 <button
                   onClick={handleStartDraft}
-                  className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-xs font-medium"
+                  className="bg-success hover:bg-success-hover text-text-primary px-3 py-1 rounded text-xs font-medium"
                 >
                   Start Draft
                 </button>
               )}
               {draft?.status === 'not_started' && teams.length >= 1 && teams.length < memberCount && (
-                <span className="text-yellow-400 text-xs">
+                <span className="text-warning-text text-xs">
                   Waiting ({teams.length}/{memberCount})
                 </span>
               )}
@@ -1234,8 +1234,8 @@ export default function DraftRoomPage() {
                 <button
                   onClick={handleTogglePause}
                   className={`${
-                    draft.status === 'paused' ? 'bg-green-600 hover:bg-green-700' : 'bg-yellow-600 hover:bg-yellow-700'
-                  } text-white px-3 py-1 rounded text-xs font-medium`}
+                    draft.status === 'paused' ? 'bg-success hover:bg-success-hover' : 'bg-warning hover:bg-warning-hover'
+                  } text-text-primary px-3 py-1 rounded text-xs font-medium`}
                 >
                   {draft.status === 'paused' ? 'Resume' : 'Pause'}
                 </button>
@@ -1243,7 +1243,7 @@ export default function DraftRoomPage() {
               {(draft?.status === 'in_progress' || draft?.status === 'paused' || draft?.status === 'completed' || picks.length > 0) && (
                 <button
                   onClick={() => setShowResetConfirm(true)}
-                  className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-xs font-medium"
+                  className="bg-danger hover:bg-danger-hover text-text-primary px-3 py-1 rounded text-xs font-medium"
                 >
                   Reset
                 </button>
@@ -1255,7 +1255,7 @@ export default function DraftRoomPage() {
 
       {/* Draft Ticker - Horizontal scrolling pick order */}
       {(draft?.status === 'in_progress' || draft?.status === 'paused' || picks.length > 0) && (
-        <div className="bg-gray-800/50 border-b border-gray-700 px-4 py-2">
+        <div className="bg-surface/50 border-b border-border px-4 py-2">
           <div className="flex items-center gap-2 overflow-x-auto pb-1" style={{ scrollbarWidth: 'thin' }}>
             {draftBoard.map((slot, idx) => {
               const isCurrent = slot.pickNumber === draft?.current_pick
@@ -1269,10 +1269,10 @@ export default function DraftRoomPage() {
                   key={slot.pickNumber}
                   className={`flex-shrink-0 px-3 py-1.5 rounded text-xs ${
                     isCurrent
-                      ? 'bg-green-600 text-white ring-2 ring-green-400'
+                      ? 'bg-success text-text-primary ring-2 ring-success'
                       : isPast
-                      ? 'bg-gray-700/50 text-gray-500'
-                      : 'bg-gray-700 text-gray-300'
+                      ? 'bg-surface-inset text-text-muted'
+                      : 'bg-surface text-text-secondary'
                   }`}
                 >
                   <div className="font-medium">{slot.team.name}</div>
@@ -1286,33 +1286,33 @@ export default function DraftRoomPage() {
 
       {/* Timer Expired Warning */}
       {timerExpired && draft?.status === 'in_progress' && (
-        <div className="bg-red-600 text-white text-center py-3 font-bold animate-pulse">
+        <div className="bg-danger text-text-primary text-center py-3 font-bold animate-pulse">
           TIME EXPIRED! {currentTeam?.name} must make a selection to continue the draft.
         </div>
       )}
 
       {/* Your Turn Notification */}
       {isMyPick && draft?.status === 'in_progress' && !timerExpired && (
-        <div className="bg-green-600 text-white text-center py-2 font-semibold animate-pulse">
+        <div className="bg-success text-text-primary text-center py-2 font-semibold animate-pulse">
           It&apos;s your turn! Select a school from the left panel.
         </div>
       )}
 
       {/* Your Turn + Timer Expired */}
       {isMyPick && draft?.status === 'in_progress' && timerExpired && (
-        <div className="bg-red-600 text-white text-center py-2 font-semibold animate-pulse">
+        <div className="bg-danger text-text-primary text-center py-2 font-semibold animate-pulse">
           Your time is up! Please make your selection now.
         </div>
       )}
 
       {/* Mobile Tab Navigation */}
-      <div className="md:hidden flex border-b border-gray-700">
+      <div className="md:hidden flex border-b border-border">
         <button
           onClick={() => setMobileTab('schools')}
           className={`flex-1 py-3 text-sm font-medium transition-colors ${
             mobileTab === 'schools'
-              ? 'text-white border-b-2 border-blue-500 bg-gray-800'
-              : 'text-gray-400 hover:text-white'
+              ? 'text-text-primary border-b-2 border-brand bg-surface'
+              : 'text-text-secondary hover:text-text-primary'
           }`}
         >
           Schools ({availableSchools.length})
@@ -1321,8 +1321,8 @@ export default function DraftRoomPage() {
           onClick={() => setMobileTab('history')}
           className={`flex-1 py-3 text-sm font-medium transition-colors ${
             mobileTab === 'history'
-              ? 'text-white border-b-2 border-blue-500 bg-gray-800'
-              : 'text-gray-400 hover:text-white'
+              ? 'text-text-primary border-b-2 border-brand bg-surface'
+              : 'text-text-secondary hover:text-text-primary'
           }`}
         >
           History ({picks.length})
@@ -1331,8 +1331,8 @@ export default function DraftRoomPage() {
           onClick={() => setMobileTab('teams')}
           className={`flex-1 py-3 text-sm font-medium transition-colors ${
             mobileTab === 'teams'
-              ? 'text-white border-b-2 border-blue-500 bg-gray-800'
-              : 'text-gray-400 hover:text-white'
+              ? 'text-text-primary border-b-2 border-brand bg-surface'
+              : 'text-text-secondary hover:text-text-primary'
           }`}
         >
           Teams
@@ -1341,21 +1341,21 @@ export default function DraftRoomPage() {
 
       <div className="flex flex-1 overflow-hidden">
         {/* Left Panel - Available Schools */}
-        <div className={`${mobileTab === 'schools' ? 'flex' : 'hidden'} md:flex w-full md:w-1/3 border-r border-gray-700 flex-col`}>
-          <div className="p-3 border-b border-gray-700">
-            <h2 className="text-sm font-semibold text-white mb-2 hidden md:block">Available Schools</h2>
+        <div className={`${mobileTab === 'schools' ? 'flex' : 'hidden'} md:flex w-full md:w-1/3 border-r border-border flex-col`}>
+          <div className="p-3 border-b border-border">
+            <h2 className="text-sm font-semibold text-text-primary mb-2 hidden md:block">Available Schools</h2>
             <div className="flex gap-2">
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search..."
-                className="flex-1 px-2 py-1.5 bg-gray-800 border border-gray-600 rounded text-sm text-white placeholder-gray-400"
+                className="flex-1 px-2 py-1.5 bg-surface border border-border rounded text-sm text-text-primary placeholder-text-muted"
               />
               <select
                 value={selectedConference}
                 onChange={(e) => setSelectedConference(e.target.value)}
-                className="px-2 py-1.5 bg-gray-800 border border-gray-600 rounded text-sm text-white"
+                className="px-2 py-1.5 bg-surface border border-border rounded text-sm text-text-primary"
               >
                 <option value="all">All</option>
                 {conferences.map(conf => (
@@ -1377,7 +1377,7 @@ export default function DraftRoomPage() {
                     disabled={!isMyPick || draft?.status !== 'in_progress'}
                     className={`w-full p-2 rounded text-left transition-colors ${
                       isMyPick && draft?.status === 'in_progress'
-                        ? 'hover:ring-2 hover:ring-blue-500 cursor-pointer'
+                        ? 'hover:ring-2 hover:ring-brand cursor-pointer'
                         : 'cursor-not-allowed opacity-60'
                     }`}
                     style={{
@@ -1390,7 +1390,7 @@ export default function DraftRoomPage() {
                         <img
                           src={school.logo_url}
                           alt={school.name}
-                          className="w-8 h-8 rounded-full bg-white p-0.5"
+                          className="w-8 h-8 rounded-full bg-text-primary p-0.5"
                         />
                       ) : (
                         <div
@@ -1419,25 +1419,25 @@ export default function DraftRoomPage() {
               {maxedOutSchools.map(school => (
                 <div
                   key={school.id}
-                  className="w-full p-2 rounded text-left bg-gray-700 cursor-not-allowed"
+                  className="w-full p-2 rounded text-left bg-surface cursor-not-allowed"
                 >
                   <div className="flex items-center gap-2">
                     {school.logo_url ? (
                       <img
                         src={school.logo_url}
                         alt={school.name}
-                        className="w-8 h-8 rounded-full bg-white p-0.5 opacity-50 grayscale"
+                        className="w-8 h-8 rounded-full bg-text-primary p-0.5 opacity-50 grayscale"
                       />
                     ) : (
-                      <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold bg-gray-600 text-gray-400">
+                      <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold bg-surface-subtle text-text-secondary">
                         {school.abbreviation?.slice(0, 2) || school.name.slice(0, 2)}
                       </div>
                     )}
                     <div className="flex-1 min-w-0">
-                      <div className="font-bold text-sm truncate text-gray-500 line-through">{school.name}</div>
-                      <div className="text-xs text-gray-600">{school.conference}</div>
+                      <div className="font-bold text-sm truncate text-text-muted line-through">{school.name}</div>
+                      <div className="text-xs text-text-muted">{school.conference}</div>
                     </div>
-                    <div className="text-xs px-1.5 py-0.5 rounded bg-gray-600 text-gray-400">
+                    <div className="text-xs px-1.5 py-0.5 rounded bg-surface-subtle text-text-secondary">
                       {maxSelectionsTotal}/{maxSelectionsTotal}
                     </div>
                   </div>
@@ -1448,11 +1448,11 @@ export default function DraftRoomPage() {
         </div>
 
         {/* Center Panel - Draft History */}
-        <div className={`${mobileTab === 'history' ? 'flex' : 'hidden'} md:flex flex-1 flex-col border-r border-gray-700`}>
+        <div className={`${mobileTab === 'history' ? 'flex' : 'hidden'} md:flex flex-1 flex-col border-r border-border`}>
           {/* Draft Status Messages */}
           {draft?.status === 'not_started' && (
             <div className="p-6">
-              <div className="text-center text-gray-400 mb-6">
+              <div className="text-center text-text-secondary mb-6">
                 <p className="text-xl mb-2">Draft has not started yet</p>
                 {teams.length < 1 && (
                   <p>Need at least 2 teams to start the draft</p>
@@ -1464,9 +1464,9 @@ export default function DraftRoomPage() {
 
               {/* Manual Draft Order Setup */}
               {isCommissioner && settings?.draft_order_type === 'manual' && teams.length >= 1 && (
-                <div className="max-w-md mx-auto bg-gray-800 rounded-lg p-4">
-                  <h3 className="text-white font-semibold mb-3">Set Draft Order</h3>
-                  <p className="text-gray-400 text-sm mb-4">
+                <div className="max-w-md mx-auto bg-surface rounded-lg p-4">
+                  <h3 className="text-text-primary font-semibold mb-3">Set Draft Order</h3>
+                  <p className="text-text-secondary text-sm mb-4">
                     Use the arrows to reorder teams.
                   </p>
                   <div className="space-y-2">
@@ -1475,22 +1475,22 @@ export default function DraftRoomPage() {
                       .map((team, index) => (
                         <div
                           key={team.id}
-                          className="flex items-center gap-3 bg-gray-700 p-3 rounded"
+                          className="flex items-center gap-3 bg-surface p-3 rounded"
                         >
-                          <span className="text-gray-400 font-mono w-6">{index + 1}.</span>
-                          <span className="text-white flex-1">{team.name}</span>
+                          <span className="text-text-secondary font-mono w-6">{index + 1}.</span>
+                          <span className="text-text-primary flex-1">{team.name}</span>
                           <div className="flex gap-1">
                             <button
                               onClick={() => handleMoveTeam(team.id, 'up')}
                               disabled={index === 0}
-                              className="text-gray-400 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed p-1"
+                              className="text-text-secondary hover:text-text-primary disabled:opacity-30 disabled:cursor-not-allowed p-1"
                             >
                               ▲
                             </button>
                             <button
                               onClick={() => handleMoveTeam(team.id, 'down')}
                               disabled={index === teams.length - 1}
-                              className="text-gray-400 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed p-1"
+                              className="text-text-secondary hover:text-text-primary disabled:opacity-30 disabled:cursor-not-allowed p-1"
                             >
                               ▼
                             </button>
@@ -1504,11 +1504,11 @@ export default function DraftRoomPage() {
               {/* Random Order Info */}
               {isCommissioner && settings?.draft_order_type === 'random' && teams.length >= 1 && (
                 <div className="max-w-md mx-auto text-center">
-                  <p className="text-gray-500 text-sm">
-                    Draft order is set to <strong className="text-gray-400">Random</strong>.
+                  <p className="text-text-muted text-sm">
+                    Draft order is set to <strong className="text-text-secondary">Random</strong>.
                   </p>
-                  <p className="text-gray-600 text-xs mt-2">
-                    Change this in <Link href={`/leagues/${leagueId}/settings`} className="text-blue-400 hover:text-blue-300">League Settings</Link>
+                  <p className="text-text-muted text-xs mt-2">
+                    Change this in <Link href={`/leagues/${leagueId}/settings`} className="text-brand-text hover:text-brand-text">League Settings</Link>
                   </p>
                 </div>
               )}
@@ -1517,19 +1517,19 @@ export default function DraftRoomPage() {
 
           {draft?.status === 'paused' && (
             <div className="p-6 text-center">
-              <div className="text-yellow-500 text-xl">Draft is paused</div>
+              <div className="text-warning text-xl">Draft is paused</div>
               {isCommissioner && (
-                <p className="text-gray-400 mt-2">Click &quot;Resume&quot; to continue</p>
+                <p className="text-text-secondary mt-2">Click &quot;Resume&quot; to continue</p>
               )}
             </div>
           )}
 
           {draft?.status === 'completed' && (
             <div className="p-6 text-center">
-              <div className="text-blue-400 text-xl">Draft Complete!</div>
+              <div className="text-brand-text text-xl">Draft Complete!</div>
               <Link
                 href={`/leagues/${leagueId}`}
-                className="text-blue-400 hover:text-blue-300 mt-2 inline-block"
+                className="text-brand-text hover:text-brand-text mt-2 inline-block"
               >
                 Return to League
               </Link>
@@ -1538,9 +1538,9 @@ export default function DraftRoomPage() {
 
           {/* Draft History - All picks in order */}
           <div className="flex-1 overflow-y-auto p-3">
-            <h3 className="text-sm font-semibold text-white mb-3">Draft History</h3>
+            <h3 className="text-sm font-semibold text-text-primary mb-3">Draft History</h3>
             {picks.length === 0 ? (
-              <p className="text-gray-500 text-sm">No picks yet</p>
+              <p className="text-text-muted text-sm">No picks yet</p>
             ) : (
               <div className="space-y-1">
                 {picks.map(pick => (
@@ -1559,7 +1559,7 @@ export default function DraftRoomPage() {
                       <img
                         src={pick.schools.logo_url}
                         alt={pick.schools.name}
-                        className="w-6 h-6 rounded-full bg-white p-0.5"
+                        className="w-6 h-6 rounded-full bg-text-primary p-0.5"
                       />
                     ) : (
                       <div
@@ -1580,13 +1580,13 @@ export default function DraftRoomPage() {
 
         {/* Right Panel - My Team / View Teams */}
         <div className={`${mobileTab === 'teams' ? 'flex' : 'hidden'} md:flex w-full md:w-1/4 flex-col`}>
-          <div className="p-3 border-b border-gray-700">
+          <div className="p-3 border-b border-border">
             <div className="flex items-center justify-between mb-2">
-              <h2 className="text-sm font-semibold text-white">Team Roster</h2>
+              <h2 className="text-sm font-semibold text-text-primary">Team Roster</h2>
               <select
                 value={viewingTeamId || myTeam?.id || ''}
                 onChange={(e) => setViewingTeamId(e.target.value || null)}
-                className="px-2 py-1 bg-gray-800 border border-gray-600 rounded text-xs text-white"
+                className="px-2 py-1 bg-surface border border-border rounded text-xs text-text-primary"
               >
                 {myTeam && (
                   <option value={myTeam.id}>My Team: {myTeam.name}</option>
@@ -1600,7 +1600,7 @@ export default function DraftRoomPage() {
               </select>
             </div>
             {viewingTeam && (
-              <div className="text-gray-400 text-xs">
+              <div className="text-text-secondary text-xs">
                 {viewingTeamPicks.length}/{settings?.schools_per_team || 12} schools drafted
               </div>
             )}
@@ -1610,7 +1610,7 @@ export default function DraftRoomPage() {
             {viewingTeam ? (
               <div className="space-y-1">
                 {viewingTeamPicks.length === 0 ? (
-                  <p className="text-gray-500 text-sm">No picks yet</p>
+                  <p className="text-text-muted text-sm">No picks yet</p>
                 ) : (
                   viewingTeamPicks.map((pick, idx) => (
                     <div
@@ -1626,7 +1626,7 @@ export default function DraftRoomPage() {
                         <img
                           src={pick.schools.logo_url}
                           alt={pick.schools.name}
-                          className="w-6 h-6 rounded-full bg-white p-0.5"
+                          className="w-6 h-6 rounded-full bg-text-primary p-0.5"
                         />
                       ) : (
                         <div
@@ -1648,7 +1648,7 @@ export default function DraftRoomPage() {
                 )}
               </div>
             ) : (
-              <p className="text-gray-500 text-sm">No team selected</p>
+              <p className="text-text-muted text-sm">No team selected</p>
             )}
           </div>
         </div>
@@ -1657,8 +1657,8 @@ export default function DraftRoomPage() {
       {/* Pick Confirmation Modal */}
       {pendingPick && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
-          <div className="bg-gray-800 rounded-lg p-6 max-w-md w-full mx-4 shadow-xl">
-            <h3 className="text-xl font-bold text-white mb-4">Confirm Pick</h3>
+          <div className="bg-surface rounded-lg p-6 max-w-md w-full mx-4 shadow-xl">
+            <h3 className="text-xl font-bold text-text-primary mb-4">Confirm Pick</h3>
 
             <div
               className="p-4 rounded-lg mb-6 flex items-center gap-4"
@@ -1671,7 +1671,7 @@ export default function DraftRoomPage() {
                 <img
                   src={pendingPick.logo_url}
                   alt={pendingPick.name}
-                  className="w-16 h-16 rounded-full bg-white p-1"
+                  className="w-16 h-16 rounded-full bg-text-primary p-1"
                 />
               ) : (
                 <div
@@ -1687,24 +1687,24 @@ export default function DraftRoomPage() {
               </div>
             </div>
 
-            <p className="text-gray-300 mb-6">
+            <p className="text-text-secondary mb-6">
               Are you sure you want to draft <strong>{pendingPick.name}</strong>?
               <br />
-              <span className="text-gray-500 text-sm">Round {draft?.current_round}, Pick {draft?.current_pick}</span>
+              <span className="text-text-muted text-sm">Round {draft?.current_round}, Pick {draft?.current_pick}</span>
             </p>
 
             <div className="flex gap-3">
               <button
                 onClick={handleCancelPick}
                 disabled={isSubmittingPick}
-                className="flex-1 px-4 py-3 bg-gray-700 hover:bg-gray-600 text-white rounded-lg font-medium transition-colors disabled:opacity-50"
+                className="flex-1 px-4 py-3 bg-surface hover:bg-surface-subtle text-text-primary rounded-lg font-medium transition-colors disabled:opacity-50"
               >
                 Cancel
               </button>
               <button
                 onClick={handleConfirmPick}
                 disabled={isSubmittingPick}
-                className="flex-1 px-4 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg font-semibold transition-colors disabled:opacity-50"
+                className="flex-1 px-4 py-3 bg-success hover:bg-success-hover text-text-primary rounded-lg font-semibold transition-colors disabled:opacity-50"
               >
                 {isSubmittingPick ? 'Drafting...' : 'Confirm Pick'}
               </button>
@@ -1716,18 +1716,18 @@ export default function DraftRoomPage() {
       {/* Reset Draft Confirmation Modal */}
       {showResetConfirm && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
-          <div className="bg-gray-800 rounded-lg p-6 max-w-md w-full mx-4 shadow-xl">
-            <h3 className="text-xl font-bold text-white mb-4">Reset Draft?</h3>
+          <div className="bg-surface rounded-lg p-6 max-w-md w-full mx-4 shadow-xl">
+            <h3 className="text-xl font-bold text-text-primary mb-4">Reset Draft?</h3>
 
-            <div className="bg-red-900/30 border border-red-700 rounded-lg p-4 mb-6">
-              <p className="text-red-300 font-medium mb-2">Warning: This action cannot be undone!</p>
-              <p className="text-red-200 text-sm">
+            <div className="bg-danger/20 border border-danger rounded-lg p-4 mb-6">
+              <p className="text-danger-text font-medium mb-2">Warning: This action cannot be undone!</p>
+              <p className="text-danger-text text-sm">
                 This will delete all draft picks, clear the draft order, and remove all schools from team rosters.
                 The draft will return to &quot;Not Started&quot; status.
               </p>
             </div>
 
-            <p className="text-gray-300 mb-6">
+            <p className="text-text-secondary mb-6">
               Are you sure you want to reset the draft for <strong>{leagueName}</strong>?
             </p>
 
@@ -1735,14 +1735,14 @@ export default function DraftRoomPage() {
               <button
                 onClick={() => setShowResetConfirm(false)}
                 disabled={isResettingDraft}
-                className="flex-1 px-4 py-3 bg-gray-700 hover:bg-gray-600 text-white rounded-lg font-medium transition-colors disabled:opacity-50"
+                className="flex-1 px-4 py-3 bg-surface hover:bg-surface-subtle text-text-primary rounded-lg font-medium transition-colors disabled:opacity-50"
               >
                 Cancel
               </button>
               <button
                 onClick={handleResetDraft}
                 disabled={isResettingDraft}
-                className="flex-1 px-4 py-3 bg-red-600 hover:bg-red-700 text-white rounded-lg font-semibold transition-colors disabled:opacity-50"
+                className="flex-1 px-4 py-3 bg-danger hover:bg-danger-hover text-text-primary rounded-lg font-semibold transition-colors disabled:opacity-50"
               >
                 {isResettingDraft ? 'Resetting...' : 'Reset Draft'}
               </button>

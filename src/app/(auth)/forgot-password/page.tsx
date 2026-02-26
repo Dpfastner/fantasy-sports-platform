@@ -35,24 +35,24 @@ export default function ForgotPasswordPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-900 to-gray-800 flex items-center justify-center px-4">
+    <div className="min-h-screen bg-gradient-to-b from-gradient-from to-gradient-to flex items-center justify-center px-4">
       <div className="max-w-md w-full">
         <div className="text-center mb-8">
-          <Link href="/" className="text-3xl font-bold text-white">
+          <Link href="/" className="text-3xl font-bold text-text-primary">
             Rivyls
           </Link>
-          <p className="text-gray-400 mt-2">Reset your password</p>
+          <p className="text-text-secondary mt-2">Reset your password</p>
         </div>
 
-        <div className="bg-gray-800 rounded-lg p-8 shadow-lg">
+        <div className="bg-surface rounded-lg p-8 shadow-lg">
           {success ? (
             <div>
-              <div className="bg-green-500/10 border border-green-500 text-green-500 px-4 py-3 rounded-lg mb-6">
+              <div className="bg-success/10 border border-success text-success-text px-4 py-3 rounded-lg mb-6">
                 Check your email for a password reset link.
               </div>
               <Link
                 href="/login"
-                className="block w-full text-center bg-gray-700 hover:bg-gray-600 text-white font-semibold py-3 px-4 rounded-lg transition-colors"
+                className="block w-full text-center bg-surface hover:bg-surface-subtle text-text-primary font-semibold py-3 px-4 rounded-lg transition-colors"
               >
                 Back to Sign In
               </Link>
@@ -60,17 +60,17 @@ export default function ForgotPasswordPage() {
           ) : (
             <form onSubmit={handleSubmit}>
               {error && (
-                <div className="bg-red-500/10 border border-red-500 text-red-500 px-4 py-3 rounded-lg mb-6">
+                <div className="bg-danger/10 border border-danger text-danger px-4 py-3 rounded-lg mb-6">
                   {error}
                 </div>
               )}
 
-              <p className="text-gray-400 mb-6">
+              <p className="text-text-secondary mb-6">
                 Enter your email address and we&apos;ll send you a link to reset your password.
               </p>
 
               <div className="mb-6">
-                <label htmlFor="email" className="block text-gray-300 mb-2">
+                <label htmlFor="email" className="block text-text-secondary mb-2">
                   Email
                 </label>
                 <input
@@ -79,7 +79,7 @@ export default function ForgotPasswordPage() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
-                  className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-500"
+                  className="w-full px-4 py-3 bg-surface border border-border rounded-lg text-text-primary placeholder-text-muted focus:outline-none focus:border-brand"
                   placeholder="you@example.com"
                 />
               </div>
@@ -87,14 +87,14 @@ export default function ForgotPasswordPage() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-600/50 disabled:cursor-not-allowed text-white font-semibold py-3 px-4 rounded-lg transition-colors"
+                className="w-full bg-brand hover:bg-brand-hover disabled:bg-brand/50 disabled:cursor-not-allowed text-text-primary font-semibold py-3 px-4 rounded-lg transition-colors"
               >
                 {loading ? 'Sending...' : 'Send Reset Link'}
               </button>
 
-              <p className="text-gray-400 text-center mt-6">
+              <p className="text-text-secondary text-center mt-6">
                 Remember your password?{' '}
-                <Link href="/login" className="text-blue-400 hover:text-blue-300">
+                <Link href="/login" className="text-brand-text hover:text-brand-text">
                   Sign in
                 </Link>
               </p>

@@ -444,16 +444,16 @@ export function RosterList({
   return (
     <div className="space-y-2">
       {/* Header with week preview and expand button */}
-      <div className="flex items-center justify-between px-3 py-2 text-xs text-gray-500 uppercase tracking-wide border-b border-gray-700">
+      <div className="flex items-center justify-between px-3 py-2 text-xs text-text-muted uppercase tracking-wide border-b border-border">
         <div className="flex items-center gap-3">
           <span>Roster</span>
           {/* Week Preview Dropdown */}
           <div className="flex items-center gap-2">
-            <span className="text-gray-400 normal-case text-xs">Preview Week:</span>
+            <span className="text-text-secondary normal-case text-xs">Preview Week:</span>
             <select
               value={previewWeek}
               onChange={(e) => setPreviewWeek(parseInt(e.target.value))}
-              className="bg-gray-700 text-gray-200 text-xs rounded px-2 py-1 border border-gray-600 focus:border-blue-500 focus:outline-none"
+              className="bg-surface text-text-primary text-xs rounded px-2 py-1 border border-border focus:border-brand focus:outline-none"
             >
               {availableWeeks.map(week => (
                 <option key={week} value={week}>
@@ -471,7 +471,7 @@ export function RosterList({
             {previewWeek !== currentWeek && (
               <button
                 onClick={() => setPreviewWeek(currentWeek)}
-                className="text-blue-400 hover:text-blue-300 text-xs"
+                className="text-brand-text hover:text-brand-text text-xs"
               >
                 Reset
               </button>
@@ -480,7 +480,7 @@ export function RosterList({
         </div>
         <button
           onClick={() => setExpanded(!expanded)}
-          className="flex items-center gap-1 px-2 py-1 bg-gray-700 hover:bg-gray-600 rounded text-gray-300 transition-colors"
+          className="flex items-center gap-1 px-2 py-1 bg-surface hover:bg-surface-subtle rounded text-text-secondary transition-colors"
         >
           <svg
             className={`w-4 h-4 transition-transform ${expanded ? 'rotate-180' : ''}`}
@@ -499,23 +499,23 @@ export function RosterList({
         {/* Fixed left section */}
         <div className="flex-shrink-0">
           {/* Header row */}
-          <div className="flex items-center h-8 px-3 text-xs text-gray-500 uppercase tracking-wide border-b border-gray-700">
+          <div className="flex items-center h-8 px-3 text-xs text-text-muted uppercase tracking-wide border-b border-border">
             <span className="w-6 text-center">#</span>
             <span className="w-10"></span>
             <span className="w-32">School</span>
-            <span className="w-px mx-1 h-5 bg-gray-700"></span>
+            <span className="w-px mx-1 h-5 bg-surface"></span>
             {doublePointsEnabled && (
               <>
                 <span className="w-10 text-center">2x</span>
-                <span className="w-px mx-1 h-5 bg-gray-700"></span>
+                <span className="w-px mx-1 h-5 bg-surface"></span>
               </>
             )}
             <span className="w-48">
               {previewWeek === currentWeek ? 'Opponent' : `Week ${previewWeek} Matchup`}
             </span>
-            <span className="w-px mx-1 h-5 bg-gray-700"></span>
+            <span className="w-px mx-1 h-5 bg-surface"></span>
             <span className="w-20 text-center">Status</span>
-            <span className="w-px mx-1 h-5 bg-gray-700"></span>
+            <span className="w-px mx-1 h-5 bg-surface"></span>
             <span className="w-16 text-right">Total</span>
           </div>
 
@@ -554,10 +554,10 @@ export function RosterList({
             }
 
             return (
-              <div key={slot.id} className="flex items-center h-14 px-3 bg-gray-700/50 border-b border-gray-800">
+              <div key={slot.id} className="flex items-center h-14 px-3 bg-surface-inset border-b border-surface">
                 {/* Number */}
                 <div className="w-6 flex-shrink-0 text-center">
-                  <span className="text-gray-500 font-medium text-sm">{index + 1}</span>
+                  <span className="text-text-muted font-medium text-sm">{index + 1}</span>
                 </div>
 
                 {/* School Logo */}
@@ -566,7 +566,7 @@ export function RosterList({
                     <img src={school.logo_url} alt={school.name} className="w-8 h-8 object-contain" />
                   ) : (
                     <div
-                      className="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-xs"
+                      className="w-8 h-8 rounded-full flex items-center justify-center text-text-primary font-bold text-xs"
                       style={{ backgroundColor: school.primary_color }}
                     >
                       {school.abbreviation || school.name.substring(0, 2)}
@@ -579,7 +579,7 @@ export function RosterList({
                   <div className="flex items-center gap-1">
                     <button
                       onClick={() => handleSchoolClick(school)}
-                      className="text-white font-medium text-sm truncate hover:text-blue-400 transition-colors text-left"
+                      className="text-text-primary font-medium text-sm truncate hover:text-brand-text transition-colors text-left"
                       title="Click to view schedule"
                     >
                       {school.name}
@@ -587,19 +587,19 @@ export function RosterList({
                     {schoolRecordsMap[slot.school_id] && (
                       <span className={`text-xs flex-shrink-0 ${
                         schoolRecordsMap[slot.school_id].wins > schoolRecordsMap[slot.school_id].losses
-                          ? 'text-green-400'
+                          ? 'text-success-text'
                           : schoolRecordsMap[slot.school_id].wins < schoolRecordsMap[slot.school_id].losses
-                            ? 'text-red-400'
-                            : 'text-gray-400'
+                            ? 'text-danger-text'
+                            : 'text-text-secondary'
                       }`}>
                         ({schoolRecordsMap[slot.school_id].wins}-{schoolRecordsMap[slot.school_id].losses})
                       </span>
                     )}
                   </div>
-                  <p className="text-gray-400 text-xs truncate">{school.conference}</p>
+                  <p className="text-text-secondary text-xs truncate">{school.conference}</p>
                 </div>
 
-                <div className="w-px h-10 bg-gray-600 flex-shrink-0 mx-1" />
+                <div className="w-px h-10 bg-surface-subtle flex-shrink-0 mx-1" />
 
                 {/* Double Points */}
                 {doublePointsEnabled && (
@@ -610,8 +610,8 @@ export function RosterList({
                         <button
                           onClick={handleDoublePointsDeselect}
                           disabled={!canPick || saving}
-                          className={`bg-purple-600 text-white text-xs font-bold px-2 py-1 rounded ${
-                            canPick && !saving ? 'hover:bg-purple-500 cursor-pointer' : 'opacity-75 cursor-not-allowed'
+                          className={`bg-info text-text-primary text-xs font-bold px-2 py-1 rounded ${
+                            canPick && !saving ? 'hover:bg-info cursor-pointer' : 'opacity-75 cursor-not-allowed'
                           } transition-colors`}
                           title={canPick ? 'Click to remove 2x selection' : 'Cannot change after deadline'}
                         >
@@ -619,20 +619,20 @@ export function RosterList({
                         </button>
                       ) : doublePickSchoolId ? (
                         // Another school is selected - hide button
-                        <span className="text-gray-700 text-xs">-</span>
+                        <span className="text-text-muted text-xs">-</span>
                       ) : canPick && !maxPicksReached && !saving ? (
                         // No selection yet - show selectable button
                         <button
                           onClick={() => handleDoublePointsSelect(slot.school_id)}
-                          className="text-purple-400 hover:text-purple-300 text-xs border border-purple-500 px-1.5 py-0.5 rounded hover:bg-purple-500/20 transition-colors"
+                          className="text-info-text hover:text-info-text text-xs border border-info px-1.5 py-0.5 rounded hover:bg-info-subtle transition-colors"
                         >
                           2x
                         </button>
                       ) : (
-                        <span className="text-gray-600 text-xs">-</span>
+                        <span className="text-text-muted text-xs">-</span>
                       )}
                     </div>
-                    <div className="w-px h-10 bg-gray-600 flex-shrink-0 mx-1" />
+                    <div className="w-px h-10 bg-surface-subtle flex-shrink-0 mx-1" />
                   </>
                 )}
 
@@ -644,56 +644,56 @@ export function RosterList({
                         {opponentLogo ? (
                           <img src={opponentLogo} alt="" className="w-8 h-8 object-contain" />
                         ) : (
-                          <div className="w-8 h-8 bg-gray-600 rounded-full flex items-center justify-center text-gray-400 text-xs">
+                          <div className="w-8 h-8 bg-surface-subtle rounded-full flex items-center justify-center text-text-secondary text-xs">
                             ?
                           </div>
                         )}
                       </div>
                       <div className="flex flex-col min-w-0 flex-1">
-                        <span className="text-gray-300 text-xs truncate">
-                          <span className="text-gray-400">{isHome ? 'vs' : '@'} </span>
-                          {opponentRank && opponentRank <= 25 && <span className="text-gray-500">#{opponentRank} </span>}
+                        <span className="text-text-secondary text-xs truncate">
+                          <span className="text-text-secondary">{isHome ? 'vs' : '@'} </span>
+                          {opponentRank && opponentRank <= 25 && <span className="text-text-muted">#{opponentRank} </span>}
                           {opponentName}
-                          {opponentConfAbbr && <span className="text-gray-500"> {opponentConfAbbr}</span>}
+                          {opponentConfAbbr && <span className="text-text-muted"> {opponentConfAbbr}</span>}
                         </span>
-                        <span className="text-gray-500 text-xs">{getGameDateTime()}</span>
+                        <span className="text-text-muted text-xs">{getGameDateTime()}</span>
                       </div>
                     </>
                   ) : (
-                    <span className="text-gray-500 text-xs">Bye week</span>
+                    <span className="text-text-muted text-xs">Bye week</span>
                   )}
                 </div>
 
-                <div className="w-px h-10 bg-gray-600 flex-shrink-0 mx-1" />
+                <div className="w-px h-10 bg-surface-subtle flex-shrink-0 mx-1" />
 
                 {/* Game Status - narrower */}
                 <div className="w-20 flex-shrink-0 text-center overflow-hidden">
                   {thisWeekGame ? (
                     thisWeekGame.status === 'live' ? (
                       <div className="flex flex-col items-center">
-                        <span className="text-white font-semibold text-sm">{myScore ?? 0}-{oppScore ?? 0}</span>
-                        <span className="text-yellow-400 text-xs animate-pulse">LIVE</span>
+                        <span className="text-text-primary font-semibold text-sm">{myScore ?? 0}-{oppScore ?? 0}</span>
+                        <span className="text-warning-text text-xs animate-pulse">LIVE</span>
                       </div>
                     ) : thisWeekGame.status === 'completed' ? (
                       <div className="flex flex-col items-center">
-                        <span className={`font-semibold text-sm ${(myScore || 0) > (oppScore || 0) ? 'text-green-400' : (myScore || 0) < (oppScore || 0) ? 'text-red-400' : 'text-gray-400'}`}>
+                        <span className={`font-semibold text-sm ${(myScore || 0) > (oppScore || 0) ? 'text-success-text' : (myScore || 0) < (oppScore || 0) ? 'text-danger-text' : 'text-text-secondary'}`}>
                           {myScore}-{oppScore}
                         </span>
-                        <span className="text-gray-500 text-xs">Final</span>
+                        <span className="text-text-muted text-xs">Final</span>
                       </div>
                     ) : (
-                      <span className="text-gray-500 text-xs">Upcoming</span>
+                      <span className="text-text-muted text-xs">Upcoming</span>
                     )
                   ) : (
-                    <span className="text-gray-600 text-xs">-</span>
+                    <span className="text-text-muted text-xs">-</span>
                   )}
                 </div>
 
-                <div className="w-px h-10 bg-gray-600 flex-shrink-0 mx-1" />
+                <div className="w-px h-10 bg-surface-subtle flex-shrink-0 mx-1" />
 
                 {/* Total Points */}
                 <div className="w-16 flex-shrink-0 text-right">
-                  <p className="text-white font-semibold text-sm">{total} pts</p>
+                  <p className="text-text-primary font-semibold text-sm">{total} pts</p>
                 </div>
               </div>
             )
@@ -702,13 +702,13 @@ export function RosterList({
 
         {/* Scrollable right section - Weekly Points */}
         {expanded && (
-          <div className="flex-1 overflow-x-auto border-l border-gray-600">
+          <div className="flex-1 overflow-x-auto border-l border-border">
             {/* Header row for weeks */}
-            <div className="flex items-center h-8 text-xs text-gray-500 uppercase tracking-wide border-b border-gray-700 min-w-max">
+            <div className="flex items-center h-8 text-xs text-text-muted uppercase tracking-wide border-b border-border min-w-max">
               {regularWeeks.map(week => (
                 <div
                   key={week}
-                  className={`w-9 flex-shrink-0 text-center ${week === currentWeek ? 'text-blue-400' : ''}`}
+                  className={`w-9 flex-shrink-0 text-center ${week === currentWeek ? 'text-brand-text' : ''}`}
                 >
                   W{week}
                 </div>
@@ -727,7 +727,7 @@ export function RosterList({
               const schoolDoublePicks = doublePicksMap.get(slot.school_id)
 
               return (
-                <div key={slot.id} className="flex items-center h-14 bg-gray-700/50 border-b border-gray-800 min-w-max">
+                <div key={slot.id} className="flex items-center h-14 bg-surface-inset border-b border-surface min-w-max">
                   {/* Regular season weeks - includes event bonuses for week 15 (conf championship) */}
                   {regularWeeks.map(week => {
                     const gamePts = pointsMap.get(week) || 0
@@ -741,21 +741,21 @@ export function RosterList({
                       <div
                         key={week}
                         className={`w-9 flex-shrink-0 py-1 text-center relative ${
-                          hadDoublePick ? 'bg-purple-600/30 border border-purple-500/50' :
-                          isCurrent ? 'bg-blue-600/30' : ''
+                          hadDoublePick ? 'bg-info-subtle border border-info/50' :
+                          isCurrent ? 'bg-brand-subtle' : ''
                         }`}
                       >
                         {wasOnRoster ? (
                           <div className="flex flex-col items-center">
                             {hadDoublePick && (
-                              <span className="text-purple-400 text-[8px] font-bold leading-none">2x</span>
+                              <span className="text-info-text text-[8px] font-bold leading-none">2x</span>
                             )}
-                            <span className={`text-xs ${pts > 0 ? 'text-white font-medium' : 'text-gray-500'}`}>
+                            <span className={`text-xs ${pts > 0 ? 'text-text-primary font-medium' : 'text-text-muted'}`}>
                               {pts}
                             </span>
                           </div>
                         ) : (
-                          <span className="text-gray-700 text-xs">-</span>
+                          <span className="text-text-muted text-xs">-</span>
                         )}
                       </div>
                     )
@@ -768,7 +768,7 @@ export function RosterList({
                     const totalPts = gamePts + eventBonus
                     return (
                       <div key={week} className={`w-11 flex-shrink-0 py-1 text-center ${color}`}>
-                        <span className={`text-xs ${totalPts > 0 ? 'text-white font-medium' : 'text-gray-500'}`}>
+                        <span className={`text-xs ${totalPts > 0 ? 'text-text-primary font-medium' : 'text-text-muted'}`}>
                           {totalPts}
                         </span>
                       </div>
@@ -782,13 +782,13 @@ export function RosterList({
       </div>
 
       {/* Footer info */}
-      <div className="flex items-center justify-between px-3 py-2 text-xs text-gray-500 border-t border-gray-700 mt-2">
+      <div className="flex items-center justify-between px-3 py-2 text-xs text-text-muted border-t border-border mt-2">
         {doublePointsEnabled ? (
           <>
             <span>
               Double Points: {maxDoublePicksPerSeason > 0 ? `${picksUsed}/${maxDoublePicksPerSeason} used` : 'Unlimited'}
             </span>
-            {!canPick && <span className="text-yellow-500">Deadline passed for this week</span>}
+            {!canPick && <span className="text-warning-text">Deadline passed for this week</span>}
           </>
         ) : (
           <span>Double Points: Disabled</span>
@@ -798,31 +798,31 @@ export function RosterList({
       {/* School Schedule Modal */}
       {showScheduleModal && selectedSchool && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
-          <div className="bg-gray-800 rounded-lg max-w-2xl w-full max-h-[80vh] overflow-hidden shadow-xl">
+          <div className="bg-surface rounded-lg max-w-2xl w-full max-h-[80vh] overflow-hidden shadow-xl">
             {/* Modal Header */}
-            <div className="flex items-center justify-between p-4 border-b border-gray-700">
+            <div className="flex items-center justify-between p-4 border-b border-border">
               <div className="flex items-center gap-3">
                 {selectedSchool.logo_url ? (
                   <img src={selectedSchool.logo_url} alt={selectedSchool.name} className="w-10 h-10 object-contain" />
                 ) : (
                   <div
-                    className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold"
+                    className="w-10 h-10 rounded-full flex items-center justify-center text-text-primary font-bold"
                     style={{ backgroundColor: selectedSchool.primary_color }}
                   >
                     {selectedSchool.abbreviation || selectedSchool.name.substring(0, 2)}
                   </div>
                 )}
                 <div>
-                  <h2 className="text-white font-bold text-lg">{selectedSchool.name}</h2>
-                  <p className="text-gray-400 text-sm">
+                  <h2 className="text-text-primary font-bold text-lg">{selectedSchool.name}</h2>
+                  <p className="text-text-secondary text-sm">
                     {selectedSchool.conference}
                     {schoolRecordsMap[selectedSchool.id] && (
                       <span className={`ml-2 ${
                         schoolRecordsMap[selectedSchool.id].wins > schoolRecordsMap[selectedSchool.id].losses
-                          ? 'text-green-400'
+                          ? 'text-success-text'
                           : schoolRecordsMap[selectedSchool.id].wins < schoolRecordsMap[selectedSchool.id].losses
-                            ? 'text-red-400'
-                            : 'text-gray-400'
+                            ? 'text-danger-text'
+                            : 'text-text-secondary'
                       }`}>
                         ({schoolRecordsMap[selectedSchool.id].wins}-{schoolRecordsMap[selectedSchool.id].losses})
                       </span>
@@ -832,7 +832,7 @@ export function RosterList({
               </div>
               <button
                 onClick={() => setShowScheduleModal(false)}
-                className="text-gray-400 hover:text-white p-2 rounded-lg hover:bg-gray-700 transition-colors"
+                className="text-text-secondary hover:text-text-primary p-2 rounded-lg hover:bg-surface transition-colors"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -842,7 +842,7 @@ export function RosterList({
 
             {/* Schedule List */}
             <div className="overflow-y-auto max-h-[60vh] p-4">
-              <h3 className="text-gray-400 text-xs uppercase tracking-wide mb-3">Season Schedule</h3>
+              <h3 className="text-text-secondary text-xs uppercase tracking-wide mb-3">Season Schedule</h3>
               <div className="space-y-2">
                 {(() => {
                   const schoolGames = getSchoolGames(selectedSchool.id)
@@ -889,27 +889,27 @@ export function RosterList({
                       <div
                         key={game.id}
                         className={`flex items-center gap-3 p-3 rounded-lg ${
-                          isCurrentWeek ? 'bg-blue-600/20 border border-blue-500/50' :
-                          isPast ? 'bg-gray-700/30' : 'bg-gray-700/50'
+                          isCurrentWeek ? 'bg-brand-subtle border border-brand/50' :
+                          isPast ? 'bg-surface-subtle' : 'bg-surface-inset'
                         }`}
                       >
                         {/* Week */}
                         <div className="w-20 flex-shrink-0">
-                          <span className={`text-xs font-medium ${isCurrentWeek ? 'text-blue-400' : 'text-gray-400'}`}>
+                          <span className={`text-xs font-medium ${isCurrentWeek ? 'text-brand-text' : 'text-text-secondary'}`}>
                             {weekLabel}
                           </span>
                         </div>
 
                         {/* Opponent */}
                         <div className="flex items-center gap-2 flex-1 min-w-0">
-                          <span className="text-gray-400 text-xs w-6">{isHome ? 'vs' : '@'}</span>
+                          <span className="text-text-secondary text-xs w-6">{isHome ? 'vs' : '@'}</span>
                           {opponentLogo ? (
                             <img src={opponentLogo} alt="" className="w-6 h-6 object-contain flex-shrink-0" />
                           ) : (
-                            <div className="w-6 h-6 bg-gray-600 rounded-full flex-shrink-0" />
+                            <div className="w-6 h-6 bg-surface-subtle rounded-full flex-shrink-0" />
                           )}
-                          <span className="text-white text-sm truncate">
-                            {opponentRank && opponentRank <= 25 && <span className="text-gray-500">#{opponentRank} </span>}
+                          <span className="text-text-primary text-sm truncate">
+                            {opponentRank && opponentRank <= 25 && <span className="text-text-muted">#{opponentRank} </span>}
                             {opponentName}
                           </span>
                         </div>
@@ -919,23 +919,23 @@ export function RosterList({
                           {game.status === 'completed' ? (
                             <div className="flex flex-col items-end">
                               <span className={`text-sm font-semibold ${
-                                isWin ? 'text-green-400' : isLoss ? 'text-red-400' : 'text-gray-400'
+                                isWin ? 'text-success-text' : isLoss ? 'text-danger-text' : 'text-text-secondary'
                               }`}>
                                 {isWin ? 'W' : isLoss ? 'L' : 'T'} {myScore}-{oppScore}
                               </span>
                               <div className="flex flex-wrap items-center justify-end gap-1">
-                                {gamePoints > 0 && <span className="text-xs text-blue-400">+{gamePoints} pts</span>}
+                                {gamePoints > 0 && <span className="text-xs text-brand-text">+{gamePoints} pts</span>}
                                 {eventBonusList.map((eb, i) => (
-                                  <span key={i} className="text-xs text-purple-400">
+                                  <span key={i} className="text-xs text-info-text">
                                     +{eb.points} {eb.label}
                                   </span>
                                 ))}
                               </div>
                             </div>
                           ) : game.status === 'live' ? (
-                            <span className="text-yellow-400 text-sm animate-pulse">LIVE</span>
+                            <span className="text-warning-text text-sm animate-pulse">LIVE</span>
                           ) : (
-                            <span className="text-gray-500 text-xs">
+                            <span className="text-text-muted text-xs">
                               {new Date(`${game.game_date}T${game.game_time || '12:00:00'}`).toLocaleDateString('en-US', { month: 'numeric', day: 'numeric' })}
                             </span>
                           )}
@@ -946,16 +946,16 @@ export function RosterList({
                 })()}
 
                 {getSchoolGames(selectedSchool.id).length === 0 && (
-                  <p className="text-gray-500 text-sm text-center py-4">No games scheduled</p>
+                  <p className="text-text-muted text-sm text-center py-4">No games scheduled</p>
                 )}
               </div>
             </div>
 
             {/* Modal Footer */}
-            <div className="p-4 border-t border-gray-700 bg-gray-800/50">
+            <div className="p-4 border-t border-border bg-surface/50">
               <button
                 onClick={() => setShowScheduleModal(false)}
-                className="w-full py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors text-sm"
+                className="w-full py-2 bg-surface hover:bg-surface-subtle text-text-primary rounded-lg transition-colors text-sm"
               >
                 Close
               </button>

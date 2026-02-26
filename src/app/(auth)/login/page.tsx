@@ -48,24 +48,24 @@ function LoginForm() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-900 to-gray-800 flex items-center justify-center px-4">
+    <div className="min-h-screen bg-gradient-to-b from-gradient-from to-gradient-to flex items-center justify-center px-4">
       <div className="max-w-md w-full">
         <div className="text-center mb-8">
-          <Link href="/" className="text-3xl font-bold text-white">
+          <Link href="/" className="text-3xl font-bold text-text-primary">
             Rivyls
           </Link>
-          <p className="text-gray-400 mt-2">Sign in to your account</p>
+          <p className="text-text-secondary mt-2">Sign in to your account</p>
         </div>
 
-        <form onSubmit={handleLogin} className="bg-gray-800 rounded-lg p-8 shadow-lg">
+        <form onSubmit={handleLogin} className="bg-surface rounded-lg p-8 shadow-lg">
           {error && (
-            <div className="bg-red-500/10 border border-red-500 text-red-500 px-4 py-3 rounded-lg mb-6">
+            <div className="bg-danger/10 border border-danger text-danger px-4 py-3 rounded-lg mb-6">
               {error}
             </div>
           )}
 
           <div className="mb-4">
-            <label htmlFor="email" className="block text-gray-300 mb-2">
+            <label htmlFor="email" className="block text-text-secondary mb-2">
               Email
             </label>
             <input
@@ -74,17 +74,17 @@ function LoginForm() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-500"
+              className="w-full px-4 py-3 bg-surface border border-border rounded-lg text-text-primary placeholder-text-muted focus:outline-none focus:border-brand"
               placeholder="you@example.com"
             />
           </div>
 
           <div className="mb-6">
             <div className="flex justify-between items-center mb-2">
-              <label htmlFor="password" className="text-gray-300">
+              <label htmlFor="password" className="text-text-secondary">
                 Password
               </label>
-              <Link href="/forgot-password" className="text-sm text-blue-400 hover:text-blue-300">
+              <Link href="/forgot-password" className="text-sm text-brand-text hover:text-brand-text">
                 Forgot password?
               </Link>
             </div>
@@ -95,13 +95,13 @@ function LoginForm() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-500 pr-12"
+                className="w-full px-4 py-3 bg-surface border border-border rounded-lg text-text-primary placeholder-text-muted focus:outline-none focus:border-brand pr-12"
                 placeholder="Your password"
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white transition-colors"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-text-secondary hover:text-text-primary transition-colors"
                 tabIndex={-1}
               >
                 {showPassword ? (
@@ -121,14 +121,14 @@ function LoginForm() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-600/50 disabled:cursor-not-allowed text-white font-semibold py-3 px-4 rounded-lg transition-colors"
+            className="w-full bg-brand hover:bg-brand-hover disabled:bg-brand/50 disabled:cursor-not-allowed text-text-primary font-semibold py-3 px-4 rounded-lg transition-colors"
           >
             {loading ? 'Signing in...' : 'Sign In'}
           </button>
 
-          <p className="text-gray-400 text-center mt-6">
+          <p className="text-text-secondary text-center mt-6">
             Don&apos;t have an account?{' '}
-            <Link href="/signup" className="text-blue-400 hover:text-blue-300">
+            <Link href="/signup" className="text-brand-text hover:text-brand-text">
               Create one
             </Link>
           </p>
@@ -141,8 +141,8 @@ function LoginForm() {
 export default function LoginPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen bg-gradient-to-b from-gray-900 to-gray-800 flex items-center justify-center">
-        <div className="text-white">Loading...</div>
+      <div className="min-h-screen bg-gradient-to-b from-gradient-from to-gradient-to flex items-center justify-center">
+        <div className="text-text-primary">Loading...</div>
       </div>
     }>
       <LoginForm />
