@@ -156,13 +156,42 @@ export function PlayoffBracket({ seasonId, rosterSchoolIds = [], leagueId }: Pro
       if (g.game?.away_school_id) firstRoundSchoolIds.add(g.game.away_school_id)
     }
 
-    // For each quarterfinal game, check if either team has a bye (seed 1-4, not in first round)
+    // For each quarterfinal game, find bye teams (seed 1-4, not in first round)
+    // and create first-round bye entries so the bracket shows them properly
+    const byeTeams: BracketSlot[] = []
     for (const qf of rounds.quarterfinal) {
       for (const slot of [qf.topTeam, qf.bottomTeam]) {
         if (slot.seed && slot.seed <= 4 && slot.schoolId && !firstRoundSchoolIds.has(slot.schoolId)) {
-          slot.isBye = true
+          byeTeams.push({ ...slot })
         }
       }
+    }
+
+    // Interleave bye entries with actual first-round games (bye above its paired game)
+    if (byeTeams.length > 0) {
+      const actualGames = [...rounds.first_round]
+      const combined: BracketGame[] = []
+      for (let i = 0; i < Math.max(byeTeams.length, actualGames.length); i++) {
+        if (i < byeTeams.length) {
+          const bt = byeTeams[i]
+          combined.push({
+            topTeam: {
+              seed: bt.seed,
+              schoolId: bt.schoolId,
+              name: bt.name || 'TBD',
+              logo: bt.logo,
+              isOnRoster: bt.isOnRoster,
+            },
+            bottomTeam: { name: 'BYE', isBye: true },
+            round: 'first_round',
+            position: combined.length,
+          })
+        }
+        if (i < actualGames.length) {
+          combined.push(actualGames[i])
+        }
+      }
+      rounds.first_round = combined
     }
 
     // Ensure proper ordering and fill in bye placeholders
@@ -218,8 +247,10 @@ export function PlayoffBracket({ seasonId, rosterSchoolIds = [], leagueId }: Pro
   }
 
   const ensureFirstRoundSlots = (games: BracketGame[]): BracketGame[] => {
-    // 4 first round games expected (seeds 5v12, 6v11, 7v10, 8v9)
-    while (games.length < 4) {
+    // If byes are present, expect 8 entries (4 bye + 4 games). Otherwise 4 games.
+    const hasByes = games.some(g => g.bottomTeam.isBye || g.topTeam.isBye)
+    const targetSlots = hasByes ? 8 : 4
+    while (games.length < targetSlots) {
       games.push({
         topTeam: { name: 'TBD' },
         bottomTeam: { name: 'TBD' },
@@ -267,6 +298,15 @@ export function PlayoffBracket({ seasonId, rosterSchoolIds = [], leagueId }: Pro
   }
 
   const renderTeamSlot = (team: BracketSlot, isLive: boolean = false) => {
+    // BYE opponent slot - dimmed row
+    if (team.isBye && team.name === 'BYE') {
+      return (
+        <div className="flex items-center gap-2 p-2 bg-gray-800/30 border-l-2 border-gray-700">
+          <span className="text-sm text-gray-600 italic">BYE</span>
+        </div>
+      )
+    }
+
     return (
       <div
         className={`flex items-center gap-2 p-2 ${
@@ -288,9 +328,6 @@ export function PlayoffBracket({ seasonId, rosterSchoolIds = [], leagueId }: Pro
         }`}>
           {team.name}
         </span>
-        {team.isBye && (
-          <span className="text-xs text-yellow-400 font-medium">BYE</span>
-        )}
         {team.score !== null && team.score !== undefined && (
           <span className={`text-sm font-bold ${
             team.isWinner ? 'text-green-400' : 'text-gray-400'
@@ -438,49 +475,65 @@ export function PlayoffBracket({ seasonId, rosterSchoolIds = [], leagueId }: Pro
       )}
 
       {/* Bracket layout - horizontal scroll on mobile */}
-      <div className="overflow-x-auto pb-4">
-        <div className="flex gap-8 min-w-max">
-          {/* First Round */}
-          <div className="space-y-4">
-            <h3 className="text-sm font-medium text-gray-400 text-center">First Round</h3>
-            <div className="space-y-8">
-              {bracketGames.first_round.map((game, idx) => (
-                <div key={idx}>{renderMatchup(game)}</div>
-              ))}
-            </div>
-          </div>
+      {(() => {
+        const hasByes = bracketGames.first_round.length > 4
+        return (
+          <div className="overflow-x-auto pb-4">
+            <div className="flex gap-8 min-w-max">
+              {/* First Round */}
+              <div className="space-y-4">
+                <h3 className="text-sm font-medium text-gray-400 text-center">First Round</h3>
+                {hasByes ? (
+                  <div className="space-y-6">
+                    {[0, 1, 2, 3].map(i => (
+                      <div key={i} className="space-y-1">
+                        {bracketGames.first_round[i * 2] && renderMatchup(bracketGames.first_round[i * 2])}
+                        {bracketGames.first_round[i * 2 + 1] && renderMatchup(bracketGames.first_round[i * 2 + 1])}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="space-y-8">
+                    {bracketGames.first_round.map((game, idx) => (
+                      <div key={idx}>{renderMatchup(game)}</div>
+                    ))}
+                  </div>
+                )}
+              </div>
 
-          {/* Quarterfinals */}
-          <div className="space-y-4 pt-8">
-            <h3 className="text-sm font-medium text-gray-400 text-center">Quarterfinals</h3>
-            <div className="space-y-16">
-              {bracketGames.quarterfinal.map((game, idx) => (
-                <div key={idx}>{renderMatchup(game)}</div>
-              ))}
-            </div>
-          </div>
+              {/* Quarterfinals */}
+              <div className={`space-y-4 ${hasByes ? 'pt-14' : 'pt-8'}`}>
+                <h3 className="text-sm font-medium text-gray-400 text-center">Quarterfinals</h3>
+                <div className={hasByes ? 'space-y-28' : 'space-y-16'}>
+                  {bracketGames.quarterfinal.map((game, idx) => (
+                    <div key={idx}>{renderMatchup(game)}</div>
+                  ))}
+                </div>
+              </div>
 
-          {/* Semifinals */}
-          <div className="space-y-4 pt-24">
-            <h3 className="text-sm font-medium text-gray-400 text-center">Semifinals</h3>
-            <div className="space-y-32">
-              {bracketGames.semifinal.map((game, idx) => (
-                <div key={idx}>{renderMatchup(game)}</div>
-              ))}
-            </div>
-          </div>
+              {/* Semifinals */}
+              <div className={`space-y-4 ${hasByes ? 'pt-32' : 'pt-24'}`}>
+                <h3 className="text-sm font-medium text-gray-400 text-center">Semifinals</h3>
+                <div className={hasByes ? 'space-y-64' : 'space-y-32'}>
+                  {bracketGames.semifinal.map((game, idx) => (
+                    <div key={idx}>{renderMatchup(game)}</div>
+                  ))}
+                </div>
+              </div>
 
-          {/* Championship */}
-          <div className="space-y-4 pt-40">
-            <h3 className="text-sm font-medium text-gray-400 text-center">Championship</h3>
-            <div>
-              {bracketGames.championship.map((game, idx) => (
-                <div key={idx}>{renderMatchup(game)}</div>
-              ))}
+              {/* Championship */}
+              <div className={`space-y-4 ${hasByes ? 'pt-56' : 'pt-40'}`}>
+                <h3 className="text-sm font-medium text-gray-400 text-center">Championship</h3>
+                <div>
+                  {bracketGames.championship.map((game, idx) => (
+                    <div key={idx}>{renderMatchup(game)}</div>
+                  ))}
+                </div>
+              </div>
             </div>
           </div>
-        </div>
-      </div>
+        )
+      })()}
     </div>
   )
 }
