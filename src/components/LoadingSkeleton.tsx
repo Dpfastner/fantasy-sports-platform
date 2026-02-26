@@ -105,7 +105,7 @@ export function TeamPageSkeleton() {
             <Skeleton className="h-6 w-32 mb-4" />
             <div className="space-y-3">
               {Array.from({ length: 6 }).map((_, i) => (
-                <div key={i} className="flex items-center gap-4 p-3 bg-gray-700/30 rounded-lg">
+                <div key={i} className="flex items-center gap-4 p-3 bg-surface-subtle rounded-lg">
                   <Skeleton className="w-10 h-10 rounded-full" />
                   <div className="flex-1">
                     <Skeleton className="h-5 w-32 mb-1" />
