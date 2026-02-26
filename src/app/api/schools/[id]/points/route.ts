@@ -164,6 +164,8 @@ export async function GET(
           totalPoints: Number(wp.total_points),
         },
       })),
+    }, {
+      headers: { 'Cache-Control': 'public, max-age=300, stale-while-revalidate=600' },
     })
   } catch (error) {
     console.error('School points error:', error)

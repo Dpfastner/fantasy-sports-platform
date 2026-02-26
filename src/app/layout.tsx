@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono, Montserrat, Inter } from "next/font/google";
+import { Analytics } from "@vercel/analytics/react";
 import "./globals.css";
 import { Providers } from "@/components/Providers";
 import EnvironmentBadge from "@/components/EnvironmentBadge";
@@ -43,6 +44,7 @@ export default function RootLayout({
         <Providers>
           {children}
           <EnvironmentBadge />
+          <Analytics />
         </Providers>
       </body>
     </html>

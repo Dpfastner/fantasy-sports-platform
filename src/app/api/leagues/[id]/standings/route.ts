@@ -154,6 +154,8 @@ export async function GET(
         weeklyAmount: Number(settings.high_points_weekly_amount),
         weeks: settings.high_points_weeks,
       } : null,
+    }, {
+      headers: { 'Cache-Control': 'private, max-age=30, stale-while-revalidate=60' },
     })
   } catch (error) {
     console.error('Standings error:', error)

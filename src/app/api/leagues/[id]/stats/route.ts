@@ -215,6 +215,8 @@ export async function GET(
 
       // All schools ranked
       allSchoolsRanked: schoolStats,
+    }, {
+      headers: { 'Cache-Control': 'private, max-age=30, stale-while-revalidate=60' },
     })
   } catch (error) {
     console.error('Stats calculation error:', error)

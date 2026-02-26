@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import * as Sentry from '@sentry/nextjs'
 import { createAdminClient } from '@/lib/supabase/server'
 import { areCronsEnabled, getEnvironment } from '@/lib/env'
 
@@ -187,6 +188,7 @@ export async function POST(request: NextRequest) {
     })
   } catch (error) {
     console.error('Reconciliation error:', error)
+    Sentry.captureException(error, { tags: { cron: 'reconcile' } })
     return NextResponse.json(
       { error: 'Reconciliation failed', details: String(error) },
       { status: 500 }

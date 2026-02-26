@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import * as Sentry from '@sentry/nextjs'
 import { createAdminClient } from '@/lib/supabase/server'
 import { fetchScoreboard } from '@/lib/api/espn'
 import { calculateAllPoints } from '@/lib/points/calculator'
@@ -253,6 +254,7 @@ export async function GET(request: Request) {
     })
   } catch (error) {
     console.error('Gameday sync cron error:', error)
+    Sentry.captureException(error, { tags: { cron: 'gameday-sync' } })
     return NextResponse.json(
       { error: 'Cron job failed', details: String(error) },
       { status: 500 }
