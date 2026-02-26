@@ -102,12 +102,6 @@ export default async function BracketPage({ params }: PageProps) {
               My Team
             </Link>
             <Link
-              href={`/leagues/${leagueId}/leaderboard`}
-              className="py-3 px-4 text-gray-400 hover:text-white transition-colors whitespace-nowrap"
-            >
-              Leaderboard
-            </Link>
-            <Link
               href={`/leagues/${leagueId}/bracket`}
               className="py-3 px-4 text-white border-b-2 border-blue-500 whitespace-nowrap"
             >
