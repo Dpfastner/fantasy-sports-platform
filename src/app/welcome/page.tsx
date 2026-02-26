@@ -116,6 +116,23 @@ export default function WelcomePage() {
         </div>
       </section>
 
+      {/* ── Commissioner CTA ── */}
+      <section className="bg-brand-subtle py-16 md:py-24">
+        <div className="container mx-auto px-4 md:px-8 max-w-3xl text-center">
+          <h2 className="brand-h2 text-2xl md:text-4xl text-text-primary mb-4">
+            Be a Founding Commissioner
+          </h2>
+          <p className="text-lg text-text-secondary mb-10 leading-relaxed">
+            Build your league first, free for life. As a founding commissioner,
+            you&apos;ll shape the Rivyls experience and lock in permanent perks
+            for your league.
+          </p>
+          <Suspense fallback={<div className="h-48" />}>
+            <EmailCaptureForm source="commissioner" />
+          </Suspense>
+        </div>
+      </section>
+
       {/* ── Features ── */}
       <section className="container mx-auto px-4 md:px-8 py-16 md:py-24">
         <h2 className="brand-h2 text-2xl md:text-4xl text-text-primary text-center mb-12 md:mb-16">
@@ -160,23 +177,6 @@ export default function WelcomePage() {
               <p className="text-text-secondary text-sm leading-relaxed">{desc}</p>
             </div>
           ))}
-        </div>
-      </section>
-
-      {/* ── Commissioner CTA ── */}
-      <section className="bg-accent-subtle py-16 md:py-24">
-        <div className="container mx-auto px-4 md:px-8 max-w-3xl text-center">
-          <h2 className="brand-h2 text-2xl md:text-4xl text-text-primary mb-4">
-            Be a Founding Commissioner
-          </h2>
-          <p className="text-lg text-text-secondary mb-10 leading-relaxed">
-            Build your league first, free for life. As a founding commissioner,
-            you&apos;ll shape the Rivyls experience and lock in permanent perks
-            for your league.
-          </p>
-          <Suspense fallback={<div className="h-48" />}>
-            <EmailCaptureForm source="commissioner" />
-          </Suspense>
         </div>
       </section>
 
