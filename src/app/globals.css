@@ -28,6 +28,9 @@
   --palette-text-muted: #64748B;
   --palette-text-inverse: #0D1520;
 
+  /* Brand swatches */
+  --palette-tertiary: #F5A623;
+
   /* Brand action */
   --palette-brand: #E8513D;
   --palette-brand-hover: #D4432F;
@@ -79,6 +82,7 @@
   --palette-text-secondary: #B8A88A;
   --palette-text-muted: #7A6F5C;
   --palette-text-inverse: #0E2218;
+  --palette-tertiary: #F2E8D5;
   --palette-brand: #C47A3A;
   --palette-brand-hover: #B06A2E;
   --palette-brand-text: #C47A3A;
@@ -119,6 +123,7 @@
   --palette-text-secondary: #C4B5D4;
   --palette-text-muted: #8B7BA0;
   --palette-text-inverse: #1A0F28;
+  --palette-tertiary: #FAF5EE;
   --palette-brand: #F59E0B;
   --palette-brand-hover: #D97706;
   --palette-brand-text: #F59E0B;
@@ -159,6 +164,7 @@
   --palette-text-secondary: #5D6D7E;
   --palette-text-muted: #95A5A6;
   --palette-text-inverse: #FAF7F2;
+  --palette-tertiary: #E07A3A;
   --palette-brand: #3D5A80;
   --palette-brand-hover: #2C4A6E;
   --palette-brand-text: #3D5A80;
@@ -210,6 +216,9 @@
   --color-text-secondary: var(--palette-text-secondary);
   --color-text-muted: var(--palette-text-muted);
   --color-text-inverse: var(--palette-text-inverse);
+
+  /* Tertiary */
+  --color-tertiary: var(--palette-tertiary);
 
   /* Brand */
   --color-brand: var(--palette-brand);
