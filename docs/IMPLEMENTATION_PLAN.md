@@ -22,8 +22,8 @@
    - [Phase 17: Landing Page & Email Capture](#phase-17-landing-page--email-capture) ✅
 8. **SHOULD DO IF TIME — Pre-Season Polish**
    - [Phase 18: Standard Practices](#phase-18-standard-practices) ✅
-   - [Phase 19: Analytics & Tracking](#phase-19-analytics--tracking)
-   - [Phase 20: User Profiles & Tiers](#phase-20-user-profiles--tiers)
+   - [Phase 19: Analytics & Tracking](#phase-19-analytics--tracking) ✅
+   - [Phase 20: User Profiles & Tiers](#phase-20-user-profiles--tiers) ✅
 9. **DEFER — Post-Launch**
    - [Phase 21: Share & Social Features](#phase-21-share--social-features)
    - [Phase 22: Multi-Sport Architecture](#phase-22-multi-sport-architecture)
@@ -418,7 +418,7 @@ Phase 17: Landing Page & Email Capture  ████████████  CO
 ```
 Phase 18: Standard Practices            ████████████  COMPLETE ✅
 Phase 19: Analytics & Tracking          ████████████  COMPLETE ✅
-Phase 20: User Profiles & Tiers         ░░░░░░░░░░░░  Founding Commissioner program
+Phase 20: User Profiles & Tiers         ████████████  COMPLETE ✅
 ```
 
 ### DEFER — Post-Launch
@@ -456,7 +456,7 @@ Phase 18 (Std Practices)     ████████████  COMPLETE ✅
         ↓
 Phase 19 (Analytics)         ████████████  COMPLETE ✅
         ↓
-Phase 20 (Profiles & Tiers)  ░░░░░░░░░░░░
+Phase 20 (Profiles & Tiers)  ████████████  COMPLETE ✅
 
 ━━━ DEFER (Post-Launch) ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Phase 21 (Share & Social)    ░░░░░░░░░░░░
@@ -941,7 +941,7 @@ The business plan sets Year 1 targets: 1,000 users and 100 leagues. Without anal
 ## Phase 20: User Profiles & Tiers
 *Implement Founding Commissioner program, user profile enhancements, and tier management*
 
-**Status: NOT STARTED**
+**Status: COMPLETE** ✅
 
 **Depends on**: Phase 14 (tier column, feature_flags tables), Phase 19 (commissioner metrics for Founding Commissioner selection)
 
@@ -982,11 +982,29 @@ These features will NEVER be gated behind premium:
 
 ### Verification
 
-- [ ] User profile page shows correct tier and badge
-- [ ] Founding Commissioner badge displays distinctly
-- [ ] Admin can grant Founding Commissioner status
-- [ ] `hasFeature()` returns `true` for all features in Year 1
-- [ ] Feature flags table is populated with all planned premium features
+- [x] User profile page shows correct tier and badge
+- [x] Founding Commissioner badge displays distinctly
+- [x] Admin can grant Founding Commissioner status
+- [x] `hasFeature()` returns `true` for all features in Year 1
+- [x] Feature flags table is populated with all planned premium features
+
+### Implementation Notes
+
+**Deviation from plan**: Instead of a simple `is_founding_commissioner` boolean, implemented a **flexible badge system** with three tables:
+- `badge_definitions` — catalog of badge types (founding_commissioner, season_champion, contest_winner)
+- `user_badges` — instances earned by users, with metadata (sport, year, league) and soft-delete via `revoked_at`
+- `season_champions` — permanent winner records with pre-signup backfill support
+
+**Key files**:
+- Migration: `supabase/migrations/021_badges_system.sql`
+- Badge utilities: `src/lib/badges.ts` (getUserBadges, getUsersBadges)
+- Badge display: `src/components/UserBadges.tsx` (pills with icon_url or fallback SVGs, season champion multiplier)
+- Admin: `src/app/admin/badges/page.tsx` + `BadgeAdminTable.tsx` (grant/revoke/icon upload)
+- Feature flags: `src/lib/features.ts` (returns true Year 1, commented Year 2 code)
+- Profile: `src/app/profile/page.tsx`
+- Settings: `src/app/settings/page.tsx` (notification preferences + display name)
+- Admin nav: `src/components/AdminNav.tsx` (shared layout component)
+- Supabase Storage: `badge-icons` bucket for uploaded badge icon PNGs/SVGs
 
 ---
 
