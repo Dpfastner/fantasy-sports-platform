@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { UserBadges } from '@/components/UserBadges'
+import { TrophyCase } from '@/components/TrophyCase'
 import { CopyButton } from '@/components/CopyButton'
 import { ShareButton } from '@/components/ShareButton'
 import { buildShareUrl } from '@/lib/share'
@@ -100,6 +101,16 @@ export default async function ProfilePage() {
             </Link>
           </div>
         </div>
+
+        {/* Trophy Case */}
+        {badges.length > 0 && (
+          <div className="bg-surface rounded-lg p-6 mb-6">
+            <TrophyCase
+              badges={badges}
+              displayName={profile.display_name || 'You'}
+            />
+          </div>
+        )}
 
         {/* My Leagues */}
         <div className="bg-surface rounded-lg p-6 mb-6">

@@ -1,6 +1,6 @@
 import { SITE_URL } from '@/lib/og/constants'
 
-type ShareSource = 'leaderboard' | 'bracket' | 'recap' | 'invite' | 'referral'
+type ShareSource = 'leaderboard' | 'bracket' | 'recap' | 'invite' | 'referral' | 'badge' | 'profile'
 
 export function buildShareUrl(
   path: string,

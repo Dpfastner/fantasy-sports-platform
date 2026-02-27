@@ -22,7 +22,7 @@ export async function GET(request: Request) {
 
   const supabase = createAdminClient()
 
-  const [leagueResult, weeklyResult, prevWeekResult] = await Promise.all([
+  const [leagueResult, weeklyResult] = await Promise.all([
     supabase
       .from('leagues')
       .select('name')
@@ -34,12 +34,6 @@ export async function GET(request: Request) {
       .eq('league_id', leagueId)
       .eq('week_number', weekNum)
       .order('points', { ascending: false }),
-    weekNum > 1
-      ? supabase
-          .from('fantasy_teams')
-          .select('id, total_points')
-          .eq('league_id', leagueId)
-      : { data: [] },
   ])
 
   if (!leagueResult.data) {
@@ -58,18 +52,16 @@ export async function GET(request: Request) {
 
   const weeklyData = (weeklyResult.data || []) as unknown as WeeklyRow[]
 
-  // Top scorer
   const topScorer = weeklyData[0]
   const topScorerName = topScorer?.fantasy_teams?.name || 'N/A'
   const topScorerPoints = topScorer?.points || 0
 
-  // High points winner
   const highPointsWinner = weeklyData.find((w) => w.is_high_points_winner)
   const highPointsName = highPointsWinner?.fantasy_teams?.name
   const highPointsAmount = highPointsWinner?.high_points_amount || 0
 
-  // Top 5 for this week
-  const top5 = weeklyData.slice(0, 5)
+  // Top 3 runners-up (skip #1 since they're in the hero)
+  const runnersUp = weeklyData.slice(1, 4)
 
   return new ImageResponse(
     (
@@ -78,7 +70,7 @@ export async function GET(request: Request) {
           <div
             style={{
               display: 'flex',
-              fontSize: 36,
+              fontSize: 32,
               fontFamily: 'Montserrat',
               fontWeight: 700,
               color: OG.textPrimary,
@@ -87,47 +79,116 @@ export async function GET(request: Request) {
           >
             {leagueResult.data.name}
           </div>
-          <div style={{ display: 'flex', fontSize: 20, color: OG.textSecondary, marginBottom: 24 }}>
-            Week {weekNum} Recap
+
+          {/* Winner Hero */}
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              backgroundColor: 'rgba(245, 166, 35, 0.08)',
+              border: `2px solid ${OG.gold}`,
+              borderRadius: 12,
+              padding: '20px 32px',
+              marginBottom: 20,
+              marginTop: 8,
+            }}
+          >
+            <div
+              style={{
+                display: 'flex',
+                fontSize: 14,
+                fontFamily: 'Montserrat',
+                fontWeight: 700,
+                color: OG.textMuted,
+                letterSpacing: '0.2em',
+                marginBottom: 4,
+              }}
+            >
+              WEEK {weekNum}
+            </div>
+            <div style={{ display: 'flex', fontSize: 48, marginBottom: 4 }}>
+              🏆
+            </div>
+            <div
+              style={{
+                display: 'flex',
+                fontFamily: 'Montserrat',
+                fontWeight: 700,
+                fontSize: 44,
+                color: OG.gold,
+                textAlign: 'center',
+                lineHeight: 1.1,
+                marginBottom: 6,
+              }}
+            >
+              {topScorerName}
+            </div>
+            <div
+              style={{
+                display: 'flex',
+                fontSize: 14,
+                fontFamily: 'Montserrat',
+                fontWeight: 700,
+                letterSpacing: '0.3em',
+                color: OG.textSecondary,
+                marginBottom: 8,
+              }}
+            >
+              WINNER
+            </div>
+            <div
+              style={{
+                display: 'flex',
+                backgroundColor: OG.gold,
+                color: OG.bgPage,
+                fontFamily: 'Montserrat',
+                fontWeight: 700,
+                fontSize: 20,
+                borderRadius: 20,
+                padding: '4px 20px',
+              }}
+            >
+              {topScorerPoints} pts
+            </div>
           </div>
 
-          {/* Highlights */}
-          <div style={{ display: 'flex', gap: 24, marginBottom: 24 }}>
-            <HighlightBox
-              emoji="🏆"
-              label="Top Scorer"
-              value={topScorerName}
-              sub={`${topScorerPoints} pts`}
-            />
-            {highPointsName && (
-              <HighlightBox
-                emoji="💰"
-                label="High Points"
-                value={highPointsName}
-                sub={`$${highPointsAmount}`}
-              />
-            )}
-          </div>
+          {/* High points bonus */}
+          {highPointsName && (
+            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 16 }}>
+              <div
+                style={{
+                  display: 'flex',
+                  fontSize: 16,
+                  color: OG.textSecondary,
+                  backgroundColor: OG.bgSurface,
+                  borderRadius: 8,
+                  padding: '8px 20px',
+                }}
+              >
+                💰 High Points: {highPointsName} (+${highPointsAmount})
+              </div>
+            </div>
+          )}
 
-          {/* Week scores */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {top5.map((entry, i) => (
+          {/* Runners up */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            {runnersUp.map((entry, i) => (
               <div
                 key={entry.fantasy_team_id}
                 style={{
                   display: 'flex',
                   justifyContent: 'space-between',
                   alignItems: 'center',
-                  padding: '8px 16px',
-                  backgroundColor: i === 0 ? 'rgba(245, 166, 35, 0.15)' : 'transparent',
+                  padding: '6px 16px',
                   borderRadius: 6,
                 }}
               >
-                <div style={{ display: 'flex', fontSize: 20, color: OG.textPrimary }}>
-                  <span style={{ width: 30, color: OG.textMuted }}>{i + 1}.</span>
+                <div style={{ display: 'flex', fontSize: 18, color: OG.textPrimary }}>
+                  <span style={{ width: 30, color: OG.textMuted }}>{i + 2}.</span>
                   {entry.fantasy_teams?.name || 'Unknown'}
                 </div>
-                <div style={{ display: 'flex', fontSize: 20, color: OG.textSecondary, fontFamily: 'Montserrat', fontWeight: 700 }}>
+                <div style={{ display: 'flex', fontSize: 18, color: OG.textSecondary, fontFamily: 'Montserrat', fontWeight: 700 }}>
                   {entry.points} pts
                 </div>
               </div>
@@ -144,40 +205,5 @@ export async function GET(request: Request) {
         { name: 'Inter', data: fonts.interRegular, weight: 400 as const },
       ],
     }
-  )
-}
-
-function HighlightBox({
-  emoji,
-  label,
-  value,
-  sub,
-}: {
-  emoji: string
-  label: string
-  value: string
-  sub: string
-}) {
-  return (
-    <div
-      style={{
-        display: 'flex',
-        flexDirection: 'column',
-        backgroundColor: OG.bgSurface,
-        borderRadius: 8,
-        padding: '16px 24px',
-        flexGrow: 1,
-      }}
-    >
-      <div style={{ display: 'flex', fontSize: 14, color: OG.textMuted, marginBottom: 4 }}>
-        {emoji} {label}
-      </div>
-      <div style={{ display: 'flex', fontSize: 22, fontFamily: 'Montserrat', fontWeight: 700, color: OG.textPrimary }}>
-        {value}
-      </div>
-      <div style={{ display: 'flex', fontSize: 16, color: OG.gold }}>
-        {sub}
-      </div>
-    </div>
   )
 }
