@@ -24,7 +24,7 @@ export function Header({ userName, userEmail, showUserMenu = true, children }: H
           {showUserMenu && (
             <>
               <Link
-                href="/settings"
+                href="/profile"
                 className="text-text-secondary hover:text-text-primary transition-colors"
               >
                 {displayName}

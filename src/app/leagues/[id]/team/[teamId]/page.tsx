@@ -1,6 +1,6 @@
 import { redirect, notFound } from 'next/navigation'
 import Link from 'next/link'
-import { createClient } from '@/lib/supabase/server'
+import { createClient, createAdminClient } from '@/lib/supabase/server'
 import { Header } from '@/components/Header'
 import { getLeagueYear } from '@/lib/league-helpers'
 import { getCurrentWeek } from '@/lib/week'
@@ -59,6 +59,7 @@ interface SchoolPoints {
 export default async function TeamViewPage({ params }: PageProps) {
   const { id: leagueId, teamId } = await params
   const supabase = await createClient()
+  const adminDb = createAdminClient()
 
   const { data: { user } } = await supabase.auth.getUser()
 
@@ -73,8 +74,8 @@ export default async function TeamViewPage({ params }: PageProps) {
     .eq('id', user.id)
     .single()
 
-  // Get league info
-  const { data: league } = await supabase
+  // Get league info (admin to bypass RLS)
+  const { data: league } = await adminDb
     .from('leagues')
     .select('id, name, season_id, seasons(year)')
     .eq('id', leagueId)
@@ -84,8 +85,8 @@ export default async function TeamViewPage({ params }: PageProps) {
     notFound()
   }
 
-  // Get target team
-  const { data: team } = await supabase
+  // Get target team (admin to read other users' teams)
+  const { data: team } = await adminDb
     .from('fantasy_teams')
     .select('*, profiles(display_name, email)')
     .eq('id', teamId)
@@ -105,7 +106,7 @@ export default async function TeamViewPage({ params }: PageProps) {
   const currentWeek = await getCurrentWeek(year)
 
   // Get league settings for scoring
-  const { data: settings } = await supabase
+  const { data: settings } = await adminDb
     .from('league_settings')
     .select(`
       points_win, points_conference_game, points_over_50, points_shutout, points_ranked_25, points_ranked_10,
@@ -124,7 +125,7 @@ export default async function TeamViewPage({ params }: PageProps) {
     .single()
 
   // Get current roster
-  const { data: rosterData } = await supabase
+  const { data: rosterData } = await adminDb
     .from('roster_periods')
     .select(`
       id, school_id, slot_number, start_week, end_week,
@@ -141,7 +142,7 @@ export default async function TeamViewPage({ params }: PageProps) {
   // Get all games for roster schools
   let gamesData: Game[] = []
   if (schoolIds.length > 0) {
-    const { data } = await supabase
+    const { data } = await adminDb
       .from('games')
       .select('id, week_number, game_date, status, home_school_id, away_school_id, home_score, away_score, home_rank, away_rank, is_bowl_game, is_playoff_game, playoff_round')
       .eq('season_id', league.season_id)
@@ -157,7 +158,7 @@ export default async function TeamViewPage({ params }: PageProps) {
   }
   const conferenceMap = new Map<string, string>()
   if (gameSchoolIds.size > 0) {
-    const { data: confData } = await supabase
+    const { data: confData } = await adminDb
       .from('schools')
       .select('id, conference')
       .in('id', Array.from(gameSchoolIds))
@@ -249,7 +250,7 @@ export default async function TeamViewPage({ params }: PageProps) {
   }
 
   // Get team standing
-  const { data: allTeams } = await supabase
+  const { data: allTeams } = await adminDb
     .from('fantasy_teams')
     .select('id, total_points')
     .eq('league_id', leagueId)
