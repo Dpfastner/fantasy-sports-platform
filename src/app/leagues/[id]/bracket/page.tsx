@@ -1,8 +1,12 @@
 import { redirect, notFound } from 'next/navigation'
 import Link from 'next/link'
+import type { Metadata } from 'next'
 import { createClient } from '@/lib/supabase/server'
 import { PlayoffBracket } from '@/components/PlayoffBracket'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
+import { ShareButton } from '@/components/ShareButton'
+import { buildShareUrl } from '@/lib/share'
+import { SITE_URL } from '@/lib/og/constants'
 import { getLeagueYear } from '@/lib/league-helpers'
 
 // Force dynamic rendering to ensure fresh data from database
@@ -10,6 +14,20 @@ export const dynamic = 'force-dynamic'
 
 interface PageProps {
   params: Promise<{ id: string }>
+}
+
+export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+  const { id: leagueId } = await params
+  const ogImageUrl = `${SITE_URL}/api/og/bracket?leagueId=${leagueId}`
+  return {
+    openGraph: {
+      images: [{ url: ogImageUrl, width: 1200, height: 630 }],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      images: [ogImageUrl],
+    },
+  }
 }
 
 export default async function BracketPage({ params }: PageProps) {
@@ -118,9 +136,20 @@ export default async function BracketPage({ params }: PageProps) {
       </nav>
 
       <main className="container mx-auto px-4 py-8">
-        <div className="mb-6">
-          <h1 className="text-3xl font-bold text-text-primary">{year} College Football Playoff</h1>
-          <p className="text-text-secondary mt-2">12-team bracket with schools from your roster highlighted</p>
+        <div className="mb-6 flex items-start justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-text-primary">{year} College Football Playoff</h1>
+            <p className="text-text-secondary mt-2">12-team bracket with schools from your roster highlighted</p>
+          </div>
+          <ShareButton
+            shareData={{
+              title: `${year} CFP Bracket — ${league.name}`,
+              text: `Check out the ${year} College Football Playoff bracket on Rivyls!`,
+              url: buildShareUrl(`/leagues/${leagueId}/bracket`, { source: 'bracket' }),
+            }}
+            ogImageUrl={`${SITE_URL}/api/og/bracket?leagueId=${leagueId}`}
+            label="Share Bracket"
+          />
         </div>
 
         <ErrorBoundary sectionName="playoff bracket">

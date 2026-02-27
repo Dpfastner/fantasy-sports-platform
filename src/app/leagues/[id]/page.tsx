@@ -1,4 +1,5 @@
 import { redirect, notFound } from 'next/navigation'
+import type { Metadata } from 'next'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { Header } from '@/components/Header'
@@ -6,15 +7,42 @@ import DraftStatusSection from '@/components/DraftStatusSection'
 import LeaderboardClient from '@/components/LeaderboardClient'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { SandboxWeekSelector } from '@/components/SandboxWeekSelector'
+import { ShareButton } from '@/components/ShareButton'
 import { getCurrentWeek } from '@/lib/week'
 import { getEnvironment } from '@/lib/env'
 import { getLeagueYear } from '@/lib/league-helpers'
+import { buildShareUrl } from '@/lib/share'
+import { SITE_URL } from '@/lib/og/constants'
 
 // Force dynamic rendering to ensure fresh data from database
 export const dynamic = 'force-dynamic'
 
 interface PageProps {
   params: Promise<{ id: string }>
+}
+
+export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+  const { id } = await params
+  const supabase = await createClient()
+  const { data } = await supabase.from('leagues').select('name').eq('id', id).single()
+  const name = data?.name || 'League'
+
+  return {
+    title: `${name} — Rivyls`,
+    openGraph: {
+      title: `${name} Standings — Rivyls`,
+      description: 'Check out the latest standings in our Rivyls fantasy college football league!',
+      images: [`${SITE_URL}/api/og/leaderboard?leagueId=${id}`],
+      url: `${SITE_URL}/leagues/${id}`,
+      siteName: 'Rivyls',
+      type: 'website',
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: `${name} Standings — Rivyls`,
+      description: 'Check out the latest standings in our Rivyls fantasy college football league!',
+    },
+  }
 }
 
 interface LeagueData {
@@ -251,6 +279,17 @@ export default async function LeaguePage({ params }: PageProps) {
             <code className="text-lg font-mono text-text-primary tracking-wider">
               {league.invite_code}
             </code>
+            <div className="ml-auto">
+              <ShareButton
+                shareData={{
+                  title: `Join ${league.name} on Rivyls!`,
+                  text: `Join my fantasy college football league "${league.name}" on Rivyls! Use invite code: ${league.invite_code}`,
+                  url: buildShareUrl('/leagues/join', { source: 'invite', campaign: league.name }),
+                }}
+                ogImageUrl={`/api/og/invite?leagueId=${id}`}
+                label="Share Invite"
+              />
+            </div>
           </div>
         )}
 
@@ -273,6 +312,28 @@ export default async function LeaguePage({ params }: PageProps) {
             {/* Leaderboard (only when draft IS completed) */}
             {isDraftComplete && teams && teams.length > 0 && (
               <div className="bg-surface rounded-lg p-4 md:p-6">
+                <div className="flex items-center justify-end gap-2 mb-4">
+                  <ShareButton
+                    shareData={{
+                      title: `${league.name} Standings — Rivyls`,
+                      text: `Check out the standings in ${league.name}!`,
+                      url: buildShareUrl(`/leagues/${id}`, { source: 'leaderboard' }),
+                    }}
+                    ogImageUrl={`/api/og/leaderboard?leagueId=${id}`}
+                    label="Share Standings"
+                  />
+                  {currentWeek > 0 && (
+                    <ShareButton
+                      shareData={{
+                        title: `${league.name} — Week ${currentWeek} Recap`,
+                        text: `Week ${currentWeek} recap for ${league.name} on Rivyls!`,
+                        url: buildShareUrl(`/leagues/${id}`, { source: 'recap', campaign: `week-${currentWeek}` }),
+                      }}
+                      ogImageUrl={`/api/og/recap?leagueId=${id}&week=${currentWeek}`}
+                      label="Share Recap"
+                    />
+                  )}
+                </div>
                 <ErrorBoundary sectionName="leaderboard">
                   <LeaderboardClient
                     leagueId={id}

@@ -3,6 +3,9 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { UserBadges } from '@/components/UserBadges'
 import { CopyButton } from '@/components/CopyButton'
+import { ShareButton } from '@/components/ShareButton'
+import { buildShareUrl } from '@/lib/share'
+import { SITE_URL } from '@/lib/og/constants'
 import { getUserBadges } from '@/lib/badges'
 import type { UserTier } from '@/types/database'
 
@@ -173,6 +176,15 @@ export default async function ProfilePage() {
               className="flex-1 px-4 py-2 bg-surface-subtle border border-border rounded-lg text-text-secondary text-sm font-mono"
             />
             <CopyButton text={referralUrl} />
+            <ShareButton
+              shareData={{
+                title: 'Join Rivyls — Fantasy College Football',
+                text: `${profile.display_name || 'A friend'} wants you to start a league on Rivyls!`,
+                url: buildShareUrl(`/welcome?ref=${user.id}`, { source: 'referral' }),
+              }}
+              ogImageUrl={`${SITE_URL}/api/og/referral?userId=${user.id}`}
+              label="Share"
+            />
           </div>
         </div>
       </main>
