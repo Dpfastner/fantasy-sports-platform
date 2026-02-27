@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Header } from '@/components/Header'
+import { trackActivity } from '@/app/actions/activity'
 
 interface Profile {
   display_name: string | null
@@ -96,6 +97,7 @@ export default function SettingsPage() {
 
       if (error) throw error
 
+      trackActivity('profile.updated', null, { displayName, timezone })
       showMessage('success', 'Profile updated successfully!')
     } catch (error) {
       showMessage('error', `Failed to update profile: ${error}`)
@@ -119,6 +121,7 @@ export default function SettingsPage() {
 
       if (error) throw error
 
+      trackActivity('profile.email_changed')
       showMessage('success', 'Confirmation email sent to your new address. Please check your inbox.')
     } catch (error) {
       showMessage('error', `Failed to update email: ${error}`)

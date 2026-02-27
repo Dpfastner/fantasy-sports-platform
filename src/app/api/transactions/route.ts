@@ -5,6 +5,7 @@ import { requireAuth, verifyLeagueMembership } from '@/lib/auth'
 import { validateBody } from '@/lib/api/validation'
 import { transactionSchema } from '@/lib/api/schemas'
 import { createRateLimiter, getClientIp } from '@/lib/api/rate-limit'
+import { logActivity } from '@/lib/activity'
 
 const limiter = createRateLimiter({ windowMs: 60_000, max: 10 })
 
@@ -240,6 +241,13 @@ export async function POST(request: NextRequest) {
       console.error('Failed to update team transaction count:', teamUpdateError)
       // Don't fail the whole transaction for this
     }
+
+    logActivity({
+      userId: user.id,
+      leagueId,
+      action: 'transaction.completed',
+      details: { teamId, droppedSchoolId, addedSchoolId, weekNumber, slotNumber },
+    })
 
     return NextResponse.json({
       success: true,

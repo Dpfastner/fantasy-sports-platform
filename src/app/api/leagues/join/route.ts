@@ -3,6 +3,7 @@ import { createClient as createServerClient, createAdminClient } from '@/lib/sup
 import { validateBody } from '@/lib/api/validation'
 import { leagueJoinSchema } from '@/lib/api/schemas'
 import { createRateLimiter, getClientIp } from '@/lib/api/rate-limit'
+import { logActivity } from '@/lib/activity'
 
 const limiter = createRateLimiter({ windowMs: 60_000, max: 10 })
 
@@ -117,6 +118,13 @@ export async function POST(request: Request) {
     if (teamError) {
       return NextResponse.json({ error: 'Failed to create team' }, { status: 500 })
     }
+
+    logActivity({
+      userId: user.id,
+      leagueId: league.id,
+      action: 'league.joined',
+      details: { teamName: teamName.trim(), inviteCode },
+    })
 
     return NextResponse.json({
       success: true,

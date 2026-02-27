@@ -3,6 +3,7 @@ import { createClient, createAdminClient } from '@/lib/supabase/server'
 import { validateBody } from '@/lib/api/validation'
 import { draftResetSchema } from '@/lib/api/schemas'
 import { createRateLimiter, getClientIp } from '@/lib/api/rate-limit'
+import { logActivity } from '@/lib/activity'
 
 const limiter = createRateLimiter({ windowMs: 60_000, max: 3 })
 
@@ -116,6 +117,13 @@ export async function POST(request: Request) {
 
     // Reset team draft positions (optional - they can re-randomize)
     // We'll leave draft_position intact so manual order is preserved
+
+    logActivity({
+      userId: user.id,
+      leagueId,
+      action: 'draft.reset',
+      details: { draftId: draft.id, teamsCleared: teamIds.length },
+    })
 
     return NextResponse.json({
       success: true,

@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { trackActivity } from '@/app/actions/activity'
 
 export default function JoinLeaguePage() {
   const [inviteCode, setInviteCode] = useState('')
@@ -45,6 +46,7 @@ export default function JoinLeaguePage() {
         return
       }
 
+      trackActivity('invite_code.looked_up', data.league.id, { inviteCode: inviteCode.trim() })
       setLeaguePreview(data.league)
     } catch {
       setError('An unexpected error occurred')

@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
+import { track } from '@vercel/analytics'
 
 export default function SignUpPage() {
   const [email, setEmail] = useState('')
@@ -51,6 +52,7 @@ export default function SignUpPage() {
       }
 
       // Show success message - user needs to confirm email
+      track('signup_completed')
       setSuccess(true)
     } catch {
       setError('An unexpected error occurred')

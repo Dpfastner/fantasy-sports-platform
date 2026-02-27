@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
+import { trackActivity } from '@/app/actions/activity'
 
 interface PageProps {
   params: Promise<{ id: string }>
@@ -96,6 +97,7 @@ export default function TeamEditPage({ params }: PageProps) {
       return
     }
 
+    trackActivity('team.edited', leagueId, { teamId, teamName: name.trim() })
     setSuccess(true)
     setSaving(false)
 

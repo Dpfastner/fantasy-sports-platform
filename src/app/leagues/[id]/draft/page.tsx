@@ -5,6 +5,8 @@ import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { useToast } from '@/components/Toast'
+import { trackActivity } from '@/app/actions/activity'
+import { track } from '@vercel/analytics'
 
 interface School {
   id: string
@@ -641,6 +643,7 @@ export default function DraftRoomPage() {
       }
 
       console.log('Draft started successfully!', updateData[0])
+      trackActivity('draft.started', leagueId, { draftId: draft.id, teamsCount: teams.length })
       // Force local state update
       setDraft(updateData[0] as DraftState)
 
@@ -788,6 +791,8 @@ export default function DraftRoomPage() {
         return
       }
 
+      trackActivity('draft.pick_made', leagueId, { schoolId, round: draft.current_round, pick: draft.current_pick })
+
       // Immediately update local picks state so the school is filtered out
       const selectedSchool = schools.find(s => s.id === schoolId)
       if (selectedSchool) {
@@ -837,6 +842,7 @@ export default function DraftRoomPage() {
   // Skip current pick (commissioner or timeout)
   const handleSkipPick = useCallback(async () => {
     if (!draft || draft.status !== 'in_progress') return
+    trackActivity('draft.pick_skipped', leagueId, { pick: draft.current_pick, round: draft.current_round })
     await advanceToNextPick()
   }, [draft])
 
@@ -867,6 +873,8 @@ export default function DraftRoomPage() {
       if (error) {
         console.error('Error completing draft:', error)
       } else {
+        trackActivity('draft.completed', leagueId, { draftId: draft.id, totalPicks: picks.length + 1 })
+        track('draft_completed')
         // Force local state update
         setDraft(prev => prev ? { ...prev, status: 'completed', current_team_id: null, pick_deadline: null } : null)
       }
@@ -968,6 +976,7 @@ export default function DraftRoomPage() {
       console.error('Error toggling pause:', error)
       setActionError('Failed to pause/resume: ' + error.message)
     } else {
+      trackActivity(newStatus === 'paused' ? 'draft.paused' : 'draft.resumed', leagueId, { draftId: draft.id })
       // Force local state update
       setDraft(prev => prev ? { ...prev, status: newStatus, pick_deadline: newDeadline } : null)
     }

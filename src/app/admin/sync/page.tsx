@@ -107,9 +107,17 @@ export default function SyncPage() {
       <header className="bg-surface/50 border-b border-border">
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
           <h1 className="text-xl font-bold text-text-primary">Admin - Data Sync</h1>
-          <Link href="/dashboard" className="text-text-secondary hover:text-text-primary">
-            Back to Dashboard
-          </Link>
+          <div className="flex items-center gap-4">
+            <Link href="/admin/reports" className="text-text-secondary hover:text-text-primary">
+              Reports
+            </Link>
+            <Link href="/admin/analytics" className="text-text-secondary hover:text-text-primary">
+              Analytics
+            </Link>
+            <Link href="/dashboard" className="text-text-secondary hover:text-text-primary">
+              Dashboard
+            </Link>
+          </div>
         </div>
       </header>
 

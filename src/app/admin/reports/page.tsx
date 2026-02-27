@@ -96,6 +96,9 @@ export default function AdminReportsPage() {
             <Link href="/admin/sync" className="text-text-secondary hover:text-text-primary">
               Data Sync
             </Link>
+            <Link href="/admin/analytics" className="text-text-secondary hover:text-text-primary">
+              Analytics
+            </Link>
             <span className="text-text-primary font-medium">Issue Reports</span>
           </div>
         </div>

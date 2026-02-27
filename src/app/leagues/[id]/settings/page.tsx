@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
+import { trackActivity } from '@/app/actions/activity'
 
 // Full settings interface matching database schema
 interface LeagueSettings {
@@ -232,6 +233,7 @@ export default function CommissionerToolsPage() {
 
       if (updateError) throw updateError
 
+      trackActivity('league.settings_changed', leagueId)
       setSuccess('Settings saved successfully!')
       setTimeout(() => setSuccess(null), 3000)
     } catch (err) {
@@ -280,6 +282,7 @@ export default function CommissionerToolsPage() {
 
       if (error) throw error
 
+      trackActivity('member.payment_toggled', leagueId, { memberId, hasPaid: !currentPaid })
       setMembers(members.map(m =>
         m.id === memberId ? { ...m, has_paid: !currentPaid } : m
       ))
@@ -302,6 +305,7 @@ export default function CommissionerToolsPage() {
 
       if (error) throw error
 
+      trackActivity('member.removed', leagueId, { memberId, memberName })
       setMembers(members.filter(m => m.id !== memberId))
       setSuccess('Member removed successfully')
       setTimeout(() => setSuccess(null), 3000)
@@ -369,6 +373,7 @@ export default function CommissionerToolsPage() {
         setMembers(combinedMembers as unknown as LeagueMember[])
       }
 
+      trackActivity('member.role_changed', leagueId, { memberId, newRole })
       setSuccess('Role updated successfully')
       setTimeout(() => setSuccess(null), 3000)
     } catch (err) {
@@ -407,6 +412,7 @@ export default function CommissionerToolsPage() {
         ) || null
       })))
 
+      trackActivity('second_owner.added', leagueId, { teamId, secondOwnerEmail: email })
       setEditingSecondOwner(null)
       setSecondOwnerEmail('')
       setSuccess('Second owner added')
@@ -434,6 +440,7 @@ export default function CommissionerToolsPage() {
         ) || null
       })))
 
+      trackActivity('second_owner.removed', leagueId, { teamId })
       setSuccess('Second owner removed')
       setTimeout(() => setSuccess(null), 3000)
     } catch (err) {

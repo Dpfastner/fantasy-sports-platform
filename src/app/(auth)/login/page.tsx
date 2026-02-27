@@ -4,6 +4,7 @@ import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
+import { trackActivity } from '@/app/actions/activity'
 
 function LoginForm() {
   const [email, setEmail] = useState('')
@@ -38,6 +39,7 @@ function LoginForm() {
         return
       }
 
+      trackActivity('login.success')
       router.push('/dashboard')
       router.refresh()
     } catch {

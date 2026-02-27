@@ -4,6 +4,7 @@ import { requireAuth } from '@/lib/auth'
 import { validateBody } from '@/lib/api/validation'
 import { reportSchema } from '@/lib/api/schemas'
 import { createRateLimiter, getClientIp } from '@/lib/api/rate-limit'
+import { logActivity } from '@/lib/activity'
 
 const limiter = createRateLimiter({ windowMs: 60_000, max: 5 })
 
@@ -61,6 +62,12 @@ export async function POST(request: NextRequest) {
         timestamp: new Date().toISOString(),
       })
     }
+
+    logActivity({
+      userId: user.id,
+      action: 'issue_report.submitted',
+      details: { category },
+    })
 
     return NextResponse.json({ success: true })
   } catch (error) {

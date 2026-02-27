@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useToast } from '@/components/Toast'
+import { trackActivity } from '@/app/actions/activity'
 import {
   REGULAR_WEEK_COUNT,
   ROSTER_SPECIAL_COLUMNS,
@@ -225,6 +226,7 @@ export function RosterList({
         setPicksUsed(prev => prev + 1)
       }
 
+      trackActivity('double_points.pick_made', null, { teamId, schoolId, week: currentWeek })
       setDoublePickSchoolId(schoolId)
     } catch (err) {
       console.error('Error saving double pick:', err)
@@ -246,6 +248,7 @@ export function RosterList({
         .eq('fantasy_team_id', teamId)
         .eq('week_number', currentWeek)
 
+      trackActivity('double_points.pick_removed', null, { teamId, week: currentWeek })
       setDoublePickSchoolId(null)
       setPicksUsed(prev => Math.max(0, prev - 1))
     } catch (err) {

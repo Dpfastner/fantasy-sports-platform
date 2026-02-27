@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
+import { trackActivity } from '@/app/actions/activity'
+import { track } from '@vercel/analytics'
 
 interface Sport {
   id: string
@@ -154,6 +156,10 @@ export default function CreateLeaguePage() {
         // League was created but team failed - show error but still redirect
         console.error('Failed to create team:', teamError)
       }
+
+      // Track events
+      trackActivity('league.created', league.id, { leagueName: name.trim(), maxTeams })
+      track('league_created')
 
       // Redirect to the new league page
       router.push(`/leagues/${league.id}`)
