@@ -2,9 +2,7 @@ import type { NextConfig } from "next";
 import { withSentryConfig } from "@sentry/nextjs";
 
 const nextConfig: NextConfig = {
-  outputFileTracingIncludes: {
-    '/api/og/*': ['./src/lib/og/fonts/**/*.ttf'],
-  },
+  /* config options here */
 };
 
 export default withSentryConfig(nextConfig, {

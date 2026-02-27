@@ -1,33 +1,27 @@
 /**
  * Load fonts for Satori/OG image rendering.
- * Reads bundled .ttf files via fs.readFile.
- * Requires outputFileTracingIncludes in next.config.ts to bundle on Vercel.
+ * Fonts are embedded as base64 strings — no filesystem or network dependency.
  */
 
-import { readFile } from 'fs/promises'
-import { join } from 'path'
+import { MONTSERRAT_BOLD_BASE64, INTER_REGULAR_BASE64 } from './font-data'
 
 let fontCache: { montserratBold: ArrayBuffer; interRegular: ArrayBuffer } | null = null
 
-export async function loadFonts() {
+function base64ToArrayBuffer(base64: string): ArrayBuffer {
+  const binary = atob(base64)
+  const bytes = new Uint8Array(binary.length)
+  for (let i = 0; i < binary.length; i++) {
+    bytes[i] = binary.charCodeAt(i)
+  }
+  return bytes.buffer as ArrayBuffer
+}
+
+export function loadFonts() {
   if (fontCache) return fontCache
 
-  const fontsDir = join(process.cwd(), 'src', 'lib', 'og', 'fonts')
-
-  const [montserratBuffer, interBuffer] = await Promise.all([
-    readFile(join(fontsDir, 'Montserrat-Bold.ttf')),
-    readFile(join(fontsDir, 'Inter-Regular.ttf')),
-  ])
-
   fontCache = {
-    montserratBold: montserratBuffer.buffer.slice(
-      montserratBuffer.byteOffset,
-      montserratBuffer.byteOffset + montserratBuffer.byteLength
-    ) as ArrayBuffer,
-    interRegular: interBuffer.buffer.slice(
-      interBuffer.byteOffset,
-      interBuffer.byteOffset + interBuffer.byteLength
-    ) as ArrayBuffer,
+    montserratBold: base64ToArrayBuffer(MONTSERRAT_BOLD_BASE64),
+    interRegular: base64ToArrayBuffer(INTER_REGULAR_BASE64),
   }
   return fontCache
 }

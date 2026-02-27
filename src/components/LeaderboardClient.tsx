@@ -368,10 +368,10 @@ export default function LeaderboardClient({
                             </div>
                           )}
                           <div className="min-w-0">
-                            <p className="text-text-primary font-medium text-sm truncate max-w-[100px] md:max-w-none">{team.name}</p>
-                            <p className="text-text-muted text-[10px] truncate hidden sm:block">
+                            <Link href={`/leagues/${leagueId}/team/${team.id}`} className="text-text-primary font-medium text-sm truncate max-w-[100px] md:max-w-none hover:underline block">{team.name}</Link>
+                            <Link href={`/profile/${team.user_id}`} className="text-text-muted text-[10px] truncate hidden sm:block hover:underline">
                               {team.profiles?.display_name || team.profiles?.email?.split('@')[0]}
-                            </p>
+                            </Link>
                           </div>
                         </div>
                       </td>
@@ -462,10 +462,10 @@ export default function LeaderboardClient({
                                 </div>
                               )}
                               <div className="min-w-0">
-                                <p className="text-text-primary font-medium text-sm truncate max-w-[100px] md:max-w-none">{team.name}</p>
-                                <p className="text-text-muted text-[10px] truncate hidden sm:block">
+                                <Link href={`/leagues/${leagueId}/team/${team.id}`} className="text-text-primary font-medium text-sm truncate max-w-[100px] md:max-w-none hover:underline block">{team.name}</Link>
+                                <Link href={`/profile/${team.user_id}`} className="text-text-muted text-[10px] truncate hidden sm:block hover:underline">
                                   {team.profiles?.display_name || team.profiles?.email?.split('@')[0]}
-                                </p>
+                                </Link>
                               </div>
                             </div>
                           </td>
@@ -651,10 +651,10 @@ export default function LeaderboardClient({
                             </div>
                           )}
                           <div className="min-w-0">
-                            <p className="text-text-primary font-medium text-sm md:text-base truncate max-w-[100px] md:max-w-none">{team.name}</p>
-                            <p className="text-text-muted text-[10px] md:text-xs truncate hidden sm:block">
+                            <Link href={`/leagues/${leagueId}/team/${team.id}`} className="text-text-primary font-medium text-sm md:text-base truncate max-w-[100px] md:max-w-none hover:underline block">{team.name}</Link>
+                            <Link href={`/profile/${team.user_id}`} className="text-text-muted text-[10px] md:text-xs truncate hidden sm:block hover:underline">
                               {team.profiles?.display_name || team.profiles?.email?.split('@')[0]}
-                            </p>
+                            </Link>
                           </div>
                         </div>
                       </td>
