@@ -1,7 +1,6 @@
 'use client'
 
 import { useState } from 'react'
-import Link from 'next/link'
 import { runSync } from './actions'
 
 type SyncType = 'schools' | 'games' | 'rankings' | 'bulk' | 'live'
@@ -104,26 +103,6 @@ export default function SyncPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gradient-from to-gradient-to">
-      <header className="bg-surface/50 border-b border-border">
-        <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-          <h1 className="text-xl font-bold text-text-primary">Admin - Data Sync</h1>
-          <div className="flex items-center gap-4">
-            <Link href="/admin/reports" className="text-text-secondary hover:text-text-primary">
-              Reports
-            </Link>
-            <Link href="/admin/analytics" className="text-text-secondary hover:text-text-primary">
-              Analytics
-            </Link>
-            <Link href="/admin/badges" className="text-text-secondary hover:text-text-primary">
-              Badges
-            </Link>
-            <Link href="/dashboard" className="text-text-secondary hover:text-text-primary">
-              Dashboard
-            </Link>
-          </div>
-        </div>
-      </header>
-
       <main className="container mx-auto px-4 py-8 max-w-4xl">
         <div className="bg-surface rounded-lg p-6 mb-8">
           <h2 className="text-xl font-semibold text-text-primary mb-4">ESPN Data Sync</h2>

@@ -2,8 +2,6 @@
 
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import Link from 'next/link'
-
 interface Report {
   id: string
   category: string
@@ -87,26 +85,6 @@ export default function AdminReportsPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gradient-from to-gradient-to">
-      <header className="bg-surface/50 border-b border-border">
-        <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-          <Link href="/dashboard" className="text-2xl font-bold text-text-primary">
-            Rivyls
-          </Link>
-          <div className="flex items-center gap-4">
-            <Link href="/admin/sync" className="text-text-secondary hover:text-text-primary">
-              Data Sync
-            </Link>
-            <Link href="/admin/analytics" className="text-text-secondary hover:text-text-primary">
-              Analytics
-            </Link>
-            <Link href="/admin/badges" className="text-text-secondary hover:text-text-primary">
-              Badges
-            </Link>
-            <span className="text-text-primary font-medium">Issue Reports</span>
-          </div>
-        </div>
-      </header>
-
       <main className="container mx-auto px-4 py-8">
         <h1 className="text-3xl font-bold text-text-primary mb-6">Issue Reports</h1>
 
