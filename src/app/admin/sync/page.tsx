@@ -114,6 +114,9 @@ export default function SyncPage() {
             <Link href="/admin/analytics" className="text-text-secondary hover:text-text-primary">
               Analytics
             </Link>
+            <Link href="/admin/badges" className="text-text-secondary hover:text-text-primary">
+              Badges
+            </Link>
             <Link href="/dashboard" className="text-text-secondary hover:text-text-primary">
               Dashboard
             </Link>

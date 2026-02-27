@@ -31,6 +31,13 @@ export default function SettingsPage() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [timezone, setTimezone] = useState('America/New_York')
 
+  // Notification preferences
+  const [emailGameResults, setEmailGameResults] = useState(true)
+  const [emailDraftReminders, setEmailDraftReminders] = useState(true)
+  const [emailTransactionConfirmations, setEmailTransactionConfirmations] = useState(true)
+  const [emailLeagueAnnouncements, setEmailLeagueAnnouncements] = useState(true)
+  const [savingNotifications, setSavingNotifications] = useState(false)
+
   // Messages
   const [successMessage, setSuccessMessage] = useState('')
   const [errorMessage, setErrorMessage] = useState('')
@@ -57,6 +64,20 @@ export default function SettingsPage() {
         setProfile(profileData)
         setDisplayName(profileData.display_name || '')
         setTimezone(profileData.timezone || 'America/New_York')
+      }
+
+      // Load notification preferences
+      const { data: notifData } = await supabase
+        .from('notification_preferences')
+        .select('email_game_results, email_draft_reminders, email_transaction_confirmations, email_league_announcements')
+        .eq('user_id', user.id)
+        .maybeSingle()
+
+      if (notifData) {
+        setEmailGameResults(notifData.email_game_results)
+        setEmailDraftReminders(notifData.email_draft_reminders)
+        setEmailTransactionConfirmations(notifData.email_transaction_confirmations)
+        setEmailLeagueAnnouncements(notifData.email_league_announcements)
       }
 
       setLoading(false)
@@ -159,6 +180,36 @@ export default function SettingsPage() {
       showMessage('error', `Failed to update password: ${error}`)
     } finally {
       setSaving(false)
+    }
+  }
+
+  const handleUpdateNotifications = async () => {
+    setSavingNotifications(true)
+
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) throw new Error('Not authenticated')
+
+      const prefs = {
+        user_id: user.id,
+        email_game_results: emailGameResults,
+        email_draft_reminders: emailDraftReminders,
+        email_transaction_confirmations: emailTransactionConfirmations,
+        email_league_announcements: emailLeagueAnnouncements,
+      }
+
+      // Upsert: create if not exists, update if exists
+      const { error } = await supabase
+        .from('notification_preferences')
+        .upsert(prefs, { onConflict: 'user_id' })
+
+      if (error) throw error
+
+      showMessage('success', 'Notification preferences saved!')
+    } catch (error) {
+      showMessage('error', `Failed to save notifications: ${error}`)
+    } finally {
+      setSavingNotifications(false)
     }
   }
 
@@ -352,7 +403,82 @@ export default function SettingsPage() {
             </button>
           </form>
         </div>
+
+        {/* Notification Preferences */}
+        <div className="bg-surface rounded-lg p-6 mt-6">
+          <h2 className="text-xl font-semibold text-text-primary mb-2">Notifications</h2>
+          <p className="text-text-muted text-sm mb-4">
+            Choose which email notifications you&apos;d like to receive.
+          </p>
+          <div className="space-y-3">
+            <NotificationToggle
+              label="Game Results"
+              description="Weekly score updates when games are completed"
+              checked={emailGameResults}
+              onChange={setEmailGameResults}
+            />
+            <NotificationToggle
+              label="Draft Reminders"
+              description="Reminders when your draft is about to start"
+              checked={emailDraftReminders}
+              onChange={setEmailDraftReminders}
+            />
+            <NotificationToggle
+              label="Transaction Confirmations"
+              description="Confirmation when add/drop transactions are processed"
+              checked={emailTransactionConfirmations}
+              onChange={setEmailTransactionConfirmations}
+            />
+            <NotificationToggle
+              label="League Announcements"
+              description="Updates from your league commissioners"
+              checked={emailLeagueAnnouncements}
+              onChange={setEmailLeagueAnnouncements}
+            />
+          </div>
+          <button
+            type="button"
+            onClick={handleUpdateNotifications}
+            disabled={savingNotifications}
+            className="mt-4 bg-brand hover:bg-brand-hover disabled:bg-brand/50 text-text-primary font-semibold py-2 px-4 rounded-lg transition-colors"
+          >
+            {savingNotifications ? 'Saving...' : 'Save Notifications'}
+          </button>
+        </div>
       </main>
     </div>
+  )
+}
+
+function NotificationToggle({
+  label,
+  description,
+  checked,
+  onChange,
+}: {
+  label: string
+  description: string
+  checked: boolean
+  onChange: (val: boolean) => void
+}) {
+  return (
+    <label className="flex items-center justify-between py-2 cursor-pointer">
+      <div>
+        <p className="text-text-primary text-sm font-medium">{label}</p>
+        <p className="text-text-muted text-xs">{description}</p>
+      </div>
+      <div
+        onClick={() => onChange(!checked)}
+        className={`relative w-10 h-6 rounded-full transition-colors ${
+          checked ? 'bg-brand' : 'bg-surface-inset'
+        }`}
+      >
+        <div
+          className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-transform ${
+            checked ? 'translate-x-5' : 'translate-x-1'
+          }`}
+        />
+      </div>
+    </label>
   )
 }

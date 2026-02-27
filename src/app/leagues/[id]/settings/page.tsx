@@ -5,6 +5,8 @@ import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { trackActivity } from '@/app/actions/activity'
+import { UserBadges } from '@/components/UserBadges'
+import type { UserTier, UserBadgeWithDefinition } from '@/types/database'
 
 // Full settings interface matching database schema
 interface LeagueSettings {
@@ -81,6 +83,7 @@ interface LeagueMember {
     id: string
     email: string
     display_name: string | null
+    tier?: string
   }
   fantasy_teams: {
     id: string
@@ -109,6 +112,7 @@ export default function CommissionerToolsPage() {
   const [league, setLeague] = useState<League | null>(null)
   const [settings, setSettings] = useState<LeagueSettings | null>(null)
   const [members, setMembers] = useState<LeagueMember[]>([])
+  const [memberBadges, setMemberBadges] = useState<Map<string, UserBadgeWithDefinition[]>>(new Map())
 
   // Tab state
   const [activeTab, setActiveTab] = useState<TabType>('league')
@@ -183,18 +187,34 @@ export default function CommissionerToolsPage() {
         }
 
         if (membersData && membersData.length > 0) {
-          // Fetch profiles and teams for these members
+          // Fetch profiles, teams, and badges for these members
           const userIds = membersData.map(m => m.user_id)
 
-          const { data: profilesData } = await supabase
-            .from('profiles')
-            .select('id, email, display_name')
-            .in('id', userIds)
+          const [{ data: profilesData }, { data: teamsData }, { data: badgesData }] = await Promise.all([
+            supabase
+              .from('profiles')
+              .select('id, email, display_name, tier')
+              .in('id', userIds),
+            supabase
+              .from('fantasy_teams')
+              .select('id, name, user_id, second_owner_id')
+              .eq('league_id', leagueId),
+            supabase
+              .from('user_badges')
+              .select('id, user_id, badge_definition_id, metadata, granted_at, badge_definitions(*)')
+              .in('user_id', userIds)
+              .is('revoked_at', null),
+          ])
 
-          const { data: teamsData } = await supabase
-            .from('fantasy_teams')
-            .select('id, name, user_id, second_owner_id')
-            .eq('league_id', leagueId)
+          // Build badges map
+          const badgesMap = new Map<string, UserBadgeWithDefinition[]>()
+          for (const badge of (badgesData || [])) {
+            const typed = badge as unknown as UserBadgeWithDefinition
+            const existing = badgesMap.get(typed.user_id) || []
+            existing.push(typed)
+            badgesMap.set(typed.user_id, existing)
+          }
+          setMemberBadges(badgesMap)
 
           // Combine the data
           const combinedMembers = membersData.map(member => ({
@@ -358,7 +378,7 @@ export default function CommissionerToolsPage() {
         const userIds = membersData.map(m => m.user_id)
         const { data: profilesData } = await supabase
           .from('profiles')
-          .select('id, email, display_name')
+          .select('id, email, display_name, tier')
           .in('id', userIds)
         const { data: teamsData } = await supabase
           .from('fantasy_teams')
@@ -387,7 +407,7 @@ export default function CommissionerToolsPage() {
       // Look up user by email
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
-        .select('id, email, display_name')
+        .select('id, email, display_name, tier')
         .eq('email', email.toLowerCase().trim())
         .single()
 
@@ -1312,7 +1332,10 @@ export default function CommissionerToolsPage() {
                                 {team?.name || <span className="text-warning">No team</span>}
                               </td>
                               <td className="py-4 pr-4 text-text-primary">
-                                {member.profiles?.display_name || 'Unknown'}
+                                <span className="inline-flex items-center gap-2">
+                                  {member.profiles?.display_name || 'Unknown'}
+                                  <UserBadges badges={memberBadges.get(member.user_id) || []} tier={member.profiles?.tier as UserTier} size="sm" />
+                                </span>
                               </td>
                               <td className="py-4 pr-4 text-text-secondary">
                                 {member.profiles?.email || 'N/A'}

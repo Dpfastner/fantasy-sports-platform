@@ -14,7 +14,7 @@ export type GameStatus = 'scheduled' | 'live' | 'completed' | 'postponed' | 'can
 export type LeagueRole = 'commissioner' | 'co_commissioner' | 'member'
 export type UserRole = 'user' | 'admin'
 export type DraftOrderType = 'random' | 'manual'
-export type UserTier = 'free' | 'pro' | 'founding_commissioner'
+export type UserTier = 'free' | 'pro'
 
 export interface Database {
   public: {
@@ -1375,6 +1375,145 @@ export interface Database {
           created_at?: string
         }
       }
+
+      // ============================================
+      // BADGE TABLES
+      // ============================================
+
+      // Badge definitions (catalog of badge types)
+      badge_definitions: {
+        Row: {
+          id: string
+          slug: string
+          category: string
+          label: string
+          description: string | null
+          icon_url: string | null
+          fallback_icon: string
+          color: string
+          bg_color: string
+          sort_order: number
+          is_active: boolean
+          requires_metadata: boolean
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          slug: string
+          category: string
+          label: string
+          description?: string | null
+          icon_url?: string | null
+          fallback_icon?: string
+          color?: string
+          bg_color?: string
+          sort_order?: number
+          is_active?: boolean
+          requires_metadata?: boolean
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          slug?: string
+          category?: string
+          label?: string
+          description?: string | null
+          icon_url?: string | null
+          fallback_icon?: string
+          color?: string
+          bg_color?: string
+          sort_order?: number
+          is_active?: boolean
+          requires_metadata?: boolean
+          created_at?: string
+        }
+      }
+
+      // User badges (instances earned by users)
+      user_badges: {
+        Row: {
+          id: string
+          user_id: string
+          badge_definition_id: string
+          metadata: Json
+          granted_by: string | null
+          granted_at: string
+          revoked_at: string | null
+          source: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          badge_definition_id: string
+          metadata?: Json
+          granted_by?: string | null
+          granted_at?: string
+          revoked_at?: string | null
+          source?: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          badge_definition_id?: string
+          metadata?: Json
+          granted_by?: string | null
+          granted_at?: string
+          revoked_at?: string | null
+          source?: string
+          created_at?: string
+        }
+      }
+
+      // Season champions (permanent winner records)
+      season_champions: {
+        Row: {
+          id: string
+          league_id: string
+          season_id: string
+          user_id: string | null
+          email: string | null
+          fantasy_team_id: string | null
+          team_name: string
+          total_points: number
+          final_rank: number
+          sport: string
+          year: number
+          league_name: string
+          recorded_at: string
+        }
+        Insert: {
+          id?: string
+          league_id: string
+          season_id: string
+          user_id?: string | null
+          email?: string | null
+          fantasy_team_id?: string | null
+          team_name: string
+          total_points: number
+          final_rank?: number
+          sport: string
+          year: number
+          league_name: string
+          recorded_at?: string
+        }
+        Update: {
+          id?: string
+          league_id?: string
+          season_id?: string
+          user_id?: string | null
+          email?: string | null
+          fantasy_team_id?: string | null
+          team_name?: string
+          total_points?: number
+          final_rank?: number
+          sport?: string
+          year?: number
+          league_name?: string
+          recorded_at?: string
+        }
+      }
     }
     Views: {
       [_ in never]: never
@@ -1432,3 +1571,16 @@ export type Trade = Tables<'trades'>
 export type TradeItem = Tables<'trade_items'>
 export type LeagueInvite = Tables<'league_invites'>
 export type WaitlistEntry = Tables<'waitlist'>
+export type BadgeDefinition = Tables<'badge_definitions'>
+export type UserBadge = Tables<'user_badges'>
+export type SeasonChampion = Tables<'season_champions'>
+
+// Composite type for badge display (badge instance + joined definition)
+export interface UserBadgeWithDefinition {
+  id: string
+  user_id: string
+  badge_definition_id: string
+  metadata: Record<string, unknown>
+  granted_at: string
+  badge_definitions: BadgeDefinition
+}

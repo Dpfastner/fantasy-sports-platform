@@ -150,6 +150,9 @@ export default async function AdminAnalyticsPage() {
             <Link href="/admin/reports" className="text-text-secondary hover:text-text-primary">
               Reports
             </Link>
+            <Link href="/admin/badges" className="text-text-secondary hover:text-text-primary">
+              Badges
+            </Link>
             <span className="text-text-primary font-medium">Analytics</span>
           </div>
         </div>

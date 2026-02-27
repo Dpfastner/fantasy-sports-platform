@@ -33,6 +33,9 @@ export type ActivityAction =
   // Profile
   | 'profile.updated'
   | 'profile.email_changed'
+  // Admin / Badges
+  | 'badge.granted'
+  | 'badge.revoked'
   // Other
   | 'invite_code.looked_up'
   | 'issue_report.submitted'
