@@ -1,26 +1,18 @@
 /**
  * Load fonts for Satori/OG image rendering.
- * Reads static TTF files bundled in public/fonts/.
+ * Uses fetch + new URL() pattern so the bundler traces and includes the font files.
  */
-
-import { readFile } from 'fs/promises'
-import { join } from 'path'
 
 let fontCache: { montserratBold: ArrayBuffer; interRegular: ArrayBuffer } | null = null
 
 export async function loadFonts() {
   if (fontCache) return fontCache
 
-  const fontsDir = join(process.cwd(), 'public', 'fonts')
-
   const [montserratBold, interRegular] = await Promise.all([
-    readFile(join(fontsDir, 'Montserrat-Bold.ttf')),
-    readFile(join(fontsDir, 'Inter-Regular.ttf')),
+    fetch(new URL('./fonts/Montserrat-Bold.ttf', import.meta.url)).then((res) => res.arrayBuffer()),
+    fetch(new URL('./fonts/Inter-Regular.ttf', import.meta.url)).then((res) => res.arrayBuffer()),
   ])
 
-  fontCache = {
-    montserratBold: montserratBold.buffer as ArrayBuffer,
-    interRegular: interRegular.buffer as ArrayBuffer,
-  }
+  fontCache = { montserratBold, interRegular }
   return fontCache
 }
