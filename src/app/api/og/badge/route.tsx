@@ -1,4 +1,4 @@
-import { ImageResponse } from '@vercel/og'
+import { ImageResponse } from 'next/og'
 import { createAdminClient } from '@/lib/supabase/server'
 import { TradingCardLayout } from '@/lib/og/trading-card-layout'
 import { loadFonts } from '@/lib/og/fonts'

@@ -1,4 +1,4 @@
-import { ImageResponse } from '@vercel/og'
+import { ImageResponse } from 'next/og'
 import { CardLayout } from '@/lib/og/card-layout'
 import { loadFonts } from '@/lib/og/fonts'
 import { OG } from '@/lib/og/constants'
