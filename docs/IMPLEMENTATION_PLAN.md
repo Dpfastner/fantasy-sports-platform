@@ -3,7 +3,7 @@
 > **Platform Name**: Rivyls (rivyls.com)
 > **Current Sport**: College Football (base for multi-sport expansion)
 > **Last Updated**: February 27, 2026
-> **Audit Date**: February 22, 2026
+> **Audit Date**: February 27, 2026 (full codebase audit of Phases 0-21)
 
 ---
 
@@ -24,11 +24,16 @@
    - [Phase 18: Standard Practices](#phase-18-standard-practices) ✅
    - [Phase 19: Analytics & Tracking](#phase-19-analytics--tracking) ✅
    - [Phase 20: User Profiles & Tiers](#phase-20-user-profiles--tiers) ✅
-9. **DEFER — Post-Launch**
-   - [Phase 21: Share & Social Features](#phase-21-share--social-features)
-   - [Phase 22: Multi-Sport Architecture](#phase-22-multi-sport-architecture)
-   - [Phase 23: Free Feature Enhancements](#phase-23-free-feature-enhancements)
-   - [Future Phases](#future-phases)
+9. **POST-LAUNCH — Completed**
+   - [Phase 21: Share & Social Features](#phase-21-share--social-features) ✅
+10. **CURRENT — Pre-Launch Hardening**
+    - [Phase 22: Audit Fixes & Quick Wins](#phase-22-audit-fixes--quick-wins)
+    - [Phase 23: Legal & Compliance](#phase-23-legal--compliance) ⚠️ LAUNCH BLOCKER
+    - [Phase 24: Schema Additions](#phase-24-schema-additions)
+11. **NEXT — Pre-Season Features (TBD ordering)**
+    - [Phase 25: Multi-Sport Architecture](#phase-25-multi-sport-architecture)
+    - [Phase 26: Free Feature Enhancements](#phase-26-free-feature-enhancements)
+    - [Future Phases 27-33](#future-phases)
 
 ---
 
@@ -421,15 +426,30 @@ Phase 19: Analytics & Tracking          ████████████  CO
 Phase 20: User Profiles & Tiers         ████████████  COMPLETE ✅
 ```
 
-### DEFER — Post-Launch
-
-*Build after Season 1 starts. None of these block the core experience.*
+### POST-LAUNCH — Completed
 
 ```
-Phase 21: Share & Social Features       ░░░░░░░░░░░░  Organic growth tools
-Phase 22: Multi-Sport Architecture      ░░░░░░░░░░░░  Year 2 expansion prep
-Phase 23: Free Feature Enhancements     ░░░░░░░░░░░░  Extras (presets, watchlists, chat, etc.)
-Future Phases 24-31                     ░░░░░░░░░░░░  Year 2+ features
+Phase 21: Share & Social Features       ████████████  COMPLETE ✅
+```
+
+### CURRENT — Pre-Launch Hardening
+
+*Audit gaps, legal compliance, and schema additions before real users sign up.*
+
+```
+Phase 22: Audit Fixes & Quick Wins     ░░░░░░░░░░░░  Auth gaps, dead routes, middleware redirect
+Phase 23: Legal & Compliance           ░░░░░░░░░░░░  ⚠️ LAUNCH BLOCKER (ToS, age gate, account deletion)
+Phase 24: Schema Additions             ░░░░░░░░░░░░  "Schema Now" tables from business plan
+```
+
+### NEXT — Pre-Season Features (ordering TBD)
+
+*Decided per feature discussion. Some may be pulled into pre-Season 1 window.*
+
+```
+Phase 25: Multi-Sport Architecture      ░░░░░░░░░░░░  Year 2 expansion prep
+Phase 26: Free Feature Enhancements     ░░░░░░░░░░░░  Extras (presets, watchlists, chat, etc.)
+Future Phases 27-33                     ░░░░░░░░░░░░  Year 2+ features
 ```
 
 ### Visual Build Order
@@ -458,10 +478,21 @@ Phase 19 (Analytics)         ████████████  COMPLETE ✅
         ↓
 Phase 20 (Profiles & Tiers)  ████████████  COMPLETE ✅
 
-━━━ DEFER (Post-Launch) ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Phase 21 (Share & Social)    ░░░░░░░░░░░░
-Phase 22 (Multi-Sport)       ░░░░░░░░░░░░
-Phase 23 (Free Enhancements) ░░░░░░░░░░░░
+━━━ POST-LAUNCH (Completed) ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Phase 21 (Share & Social)    ████████████  COMPLETE ✅
+
+━━━ CURRENT (Pre-Launch Hardening) ━━━━━━━━━━━━━━━━━━━━━━━━━
+        ↓
+Phase 22 (Audit Fixes)       ░░░░░░░░░░░░  ← YOU ARE HERE
+        ↓
+Phase 23 (Legal/Compliance)  ░░░░░░░░░░░░  ⚠️ LAUNCH BLOCKER
+        ↓
+Phase 24 (Schema Additions)  ░░░░░░░░░░░░
+
+━━━ NEXT (Pre-Season, ordering TBD) ━━━━━━━━━━━━━━━━━━━━━━━━
+Phase 25 (Multi-Sport)       ░░░░░░░░░░░░
+Phase 26 (Free Enhancements) ░░░░░░░░░░░░
+Future Phases 27-33          ░░░░░░░░░░░░
 ```
 
 ### June Deadline Decision Framework
@@ -479,10 +510,17 @@ STOP POINT 2 (If time allows):  ★ REACHED ★
   ✅ Phase 18 done      → Tests catch regressions, monitoring in place
   → Solid engineering foundation for Season 1.
 
-STOP POINT 3 (If still more time):
+STOP POINT 3 (If still more time):  ★ REACHED ★
   ✅ Phase 19 done      → Analytics measuring growth targets
   ✅ Phase 20 done      → Founding Commissioner program live
+  ✅ Phase 21 done      → Social sharing and OG images
   → Full pre-launch experience.
+
+STOP POINT 4 (Before real users):
+  ⬜ Phase 22 done      → Audit gaps fixed
+  ⬜ Phase 23 done      → Legal compliance (ToS, age gate, account deletion)
+  ⬜ Phase 24 done      → Schema ready for Year 2 features
+  → Platform is legally and technically ready for public launch.
 ```
 
 ---
@@ -1011,7 +1049,7 @@ These features will NEVER be gated behind premium:
 ## Phase 21: Share & Social Features
 *Add social sharing capabilities for marketing and user engagement*
 
-**Status: NOT STARTED**
+**Status: COMPLETE** ✅
 
 **Depends on**: Phase 16 (brand styling for share cards), Phase 17 (landing page as share destination)
 
@@ -1033,18 +1071,126 @@ The marketing plan relies on organic sharing as a key growth channel. Users shou
 
 ### Verification
 
-- [ ] Share cards generate correctly with brand colors and logo
-- [ ] Web Share API works on mobile Safari and Android Chrome
-- [ ] Desktop fallback (copy to clipboard) works
-- [ ] Share links include correct UTM parameters for tracking
-- [ ] Leaderboard, bracket, and invite shares produce clean images
+- [x] Share cards generate correctly with brand colors and logo
+- [x] Custom share dropdown works (Copy, X, Facebook, WhatsApp, Instagram, TikTok, Download)
+- [x] Desktop fallback (copy to clipboard) works
+- [x] Share links include correct UTM parameters for tracking
+- [x] Leaderboard, bracket, and invite shares produce clean images
 
 ---
 
-## Phase 22: Multi-Sport Architecture
-*Refactor the architecture so college football patterns don't block other sports*
+## Phase 22: Audit Fixes & Quick Wins
+*Fix gaps found in the Feb 27 full-codebase audit. All small, targeted changes.*
 
 **Status: NOT STARTED**
+
+**Audit context**: Full audit of Phases 0-21 cross-referenced the implementation plan against the actual codebase. Found 3 security/routing gaps, 4 minor issues, and 19 unchecked verification items from earlier phases.
+
+### Tasks
+
+| Task | Description | File(s) |
+|------|-------------|---------|
+| 22.1 | **Add auth to `/api/schools/[id]/points`** — Add `requireAuth()` to GET handler. This route uses `createAdminClient()` with no auth check — anyone can query school scoring data. Was listed in task 13.1 but missed. | `src/app/api/schools/[id]/points/route.ts` |
+| 22.2 | **Delete `/api/migrate/double-points`** — One-off migration route is still live and unprotected. Migration is complete. | Delete `src/app/api/migrate/double-points/` directory |
+| 22.3 | **Redirect unauthenticated `/` to `/welcome`** — Root route shows minimal "Get Started" page instead of landing page. Add middleware redirect for unauthenticated visitors. | `src/lib/supabase/middleware.ts` |
+| 22.4 | **Add OG image to welcome page metadata** — Welcome page openGraph metadata is missing `images:` field. Social shares of `/welcome` get no preview image. | `src/app/welcome/page.tsx` |
+| 22.5 | **Fix reconcile auth inconsistency** — Uses `CRON_SECRET || SYNC_API_KEY` instead of `CRON_SECRET`-only like the other 3 cron routes. | `src/app/api/cron/reconcile/route.ts` |
+| 22.6 | **Remove dead `userId` from ReportIssue** — Component sends `userId` in request body but server ignores it (uses session). Dead code. | `src/components/ReportIssue.tsx` |
+| 22.7 | **Remove unused Geist fonts** — `layout.tsx` loads Geist and Geist_Mono alongside Montserrat/Inter. Geist is unused. Also clean up `globals.css` fallback references. | `src/app/layout.tsx`, `src/app/globals.css` |
+| 22.8 | **Check off Phase 16 verification items** — Palette (dark mode default), fonts (Montserrat + Inter) were decided but never formally checked off. | `docs/IMPLEMENTATION_PLAN.md` |
+
+### Verification — Code Changes
+- `curl` unauthenticated to `/api/schools/1/points` → 401
+- `/api/migrate/double-points` → 404
+- Incognito visit to `rivyls.com` → landing page
+- Share `rivyls.com/welcome` on social media → OG image preview
+- `npm run build` passes
+
+### Verification — Inherited from Phases 12-13 (previously unchecked)
+These were never formally tested. Run during Phase 22 or note which can't be tested yet (e.g., gameday tests require live games):
+- [ ] Create two test leagues with different scoring settings → verify different point totals
+- [ ] Compare RosterList modal points to leaderboard points → they should match
+- [ ] Verify week boundary is consistent across UTC+0 and UTC-8 timezones
+- [ ] Verify `daily-sync` fires from Vercel dashboard at 10 AM UTC
+- [ ] Verify `gameday-sync` fires from GitHub Actions every minute
+- [ ] Verify `reconcile` fires from GitHub Actions at 8 AM UTC
+- [ ] Test with sandbox data: set sandbox week to 21 (championship) and verify sync/scoring works
+- [ ] Test late-game scenario: game with `status = 'live'` after midnight
+- [ ] Unauthenticated requests to `/api/transactions`, `/api/leagues/[id]/standings`, `/api/leagues/[id]/stats` return 401
+- [ ] Authenticated users can only access leagues they belong to
+- [ ] Sync endpoints reject requests without valid `SYNC_API_KEY`
+- [ ] Cron endpoints reject requests without valid `CRON_SECRET`
+- [ ] OG image and meta tags render correctly when shared on Twitter/Facebook
+
+---
+
+## Phase 23: Legal & Compliance
+*Business plan requires all of these before any user creates an account. None exist in the codebase.*
+
+**Status: NOT STARTED** ⚠️ **LAUNCH BLOCKER**
+
+**Context**: The Rivyls business plan (maintained separately) lists legal requirements for launch by July 2026. A full audit on Feb 27 confirmed that none of these features exist in the codebase. The ToS and Privacy Policy content has not been drafted yet.
+
+### Tasks
+
+| Task | Description | Details |
+|------|-------------|---------|
+| 23.1 | **Create Terms of Service page** | Static page at `/terms`. Content TBD (needs drafting — include financial disclaimer per NAICS 713990 classification). |
+| 23.2 | **Create Privacy Policy page** | Static page at `/privacy`. Content TBD (needs drafting — cover data collection, Supabase storage, analytics, cookies). |
+| 23.3 | **Create `tos_agreements` migration** | Table: `id` (UUID), `user_id` (FK→profiles), `tos_version` (text), `agreed_at` (timestamptz), `ip_address` (text). RLS: users can only read their own rows. |
+| 23.4 | **Add age gate to signup** | Checkbox: "I confirm I am 18 years of age or older." Store confirmation timestamp. Block signup if unchecked. File: `src/app/(auth)/signup/page.tsx` |
+| 23.5 | **Add ToS/Privacy consent to signup** | Checkbox with links: "I agree to the [Terms of Service](/terms) and [Privacy Policy](/privacy)". Log to `tos_agreements` table on successful signup with version string, timestamp, and IP. File: `src/app/(auth)/signup/page.tsx` |
+| 23.6 | **ToS version update prompt** | When `tos_version` changes, show consent modal on next login for existing users. Block access until re-accepted. Implement in middleware or layout wrapper. |
+| 23.7 | **Account deletion** | "Delete My Account" button in Settings with two-step confirmation dialog. API route that anonymizes/deletes: profile data, league memberships (reassign commissioner if needed), activity log entries, badges, tos_agreements, roster data. Must comply with GDPR/CCPA. Files: `src/app/settings/page.tsx` + new `src/app/api/account/delete/route.ts` |
+| 23.8 | **Email unsubscribe route** | Tokenized `/unsubscribe?token=...` route for CAN-SPAM compliance in email footers. Note: `notification_preferences` table already exists — this adds the one-click external link. **Blocked until DNS transfer (Apr 21) enables Resend email sending.** |
+| 23.9 | **Financial disclaimer in ToS** | Include in ToS content: "Rivyls does not currently collect entry fees, pool money, process payments, or distribute prizes. Any financial arrangements between league members are conducted entirely outside the Rivyls platform and are the sole responsibility of the individuals involved." Required by NAICS 713990 (recreation, not gambling) classification. |
+
+### Verification
+- [ ] Signup requires both checkboxes (age 18+ and ToS consent) — can't submit without them
+- [ ] `/terms` and `/privacy` pages load and display legal content
+- [ ] `tos_agreements` row created on signup with version, timestamp, IP address
+- [ ] Existing users prompted to re-accept when ToS version changes
+- [ ] Settings page shows "Delete My Account" with confirmation dialog
+- [ ] Account deletion removes/anonymizes all personal data
+- [ ] `npm run build` passes
+
+### Notes
+- Task 23.8 (email unsubscribe) is blocked until DNS transfer from Wix to Cloudflare (ICANN 60-day lock expires **Apr 21, 2026**), which then unblocks Resend custom SMTP
+- ToS and Privacy Policy text needs to be drafted first (in the business plan conversation, not this codebase conversation)
+
+---
+
+## Phase 24: Schema Additions
+*"Schema Now, Build Later" — tables from the business plan that don't exist yet. No UI — just migrations and type sync.*
+
+**Status: NOT STARTED**
+
+**Context**: The business plan specifies several database tables following the "Schema Now, Build Later" principle. Most were created in Phase 14 (feature_flags, user_feature_flags, trades, trade_items, watchlists, activity_log, notification_preferences, waitlist, league_invites). Six tables are still missing.
+
+### Tasks
+
+| Task | Description | Details |
+|------|-------------|---------|
+| 24.1 | **Create `tos_agreements` table** | See Phase 23.3 — may be created there instead. Include here for completeness. |
+| 24.2 | **Create `program_analytics` table** | `school_id` (FK), `season_year` (int), `power_score` (numeric), `sos_rank` (int), `returning_production_pct` (numeric), `recruiting_rank` (int), `preseason_rank` (int), `composite_score` (numeric). Used by future Pro Analytics feature. |
+| 24.3 | **Create `program_trends` table** | `school_id` (FK), `week` (int), `trend_score` (numeric), `recent_points_avg` (numeric), `upcoming_sos` (numeric). Used by future Pro Draft Intelligence. |
+| 24.4 | **Create `league_announcements` table** | `id` (UUID), `league_id` (FK), `commissioner_id` (FK→profiles), `title` (text), `body` (text), `created_at` (timestamptz), `pinned` (boolean, default false). Used by Phase 26 free feature (commissioner announcements). |
+| 24.5 | **Create `league_seasons` table** | `id` (UUID), `league_id` (FK), `season_year` (int), `final_standings` (JSONB), `champion_user_id` (FK→profiles), `archived_at` (timestamptz). Used by league history / trophy room feature. |
+| 24.6 | **Create `draft_messages` table** | `id` (UUID), `draft_id` (FK), `user_id` (FK→profiles), `message` (text), `created_at` (timestamptz). Used by Phase 26 draft chat feature. |
+| 24.7 | **Re-sync TypeScript types** | Update `src/types/database.ts` with all new tables from 24.1-24.6. |
+
+### Verification
+- [ ] All migrations run without errors in Supabase SQL Editor
+- [ ] TypeScript compilation passes (`npx tsc --noEmit`)
+- [ ] New tables visible in Supabase dashboard with correct columns and constraints
+- [ ] RLS policies applied (users can only read their own tos_agreements, league members can read their league's announcements, etc.)
+
+---
+
+## Phase 25: Multi-Sport Architecture
+*Refactor the architecture so college football patterns don't block other sports*
+
+**Status: NOT STARTED** (Year 2 expansion prep — no Year 1 urgency)
 
 ### Background
 
@@ -1067,15 +1213,15 @@ College football is sport #1. Future sports include hockey, baseball, basketball
 
 | Task | Description | Details |
 |------|-------------|---------|
-| 22.1 | **Abstract week/season structure** | Move season config (start date, max weeks, playoff start week, week labels) into the `seasons` table or a new `season_config` JSONB column. Replace all hardcoded week numbers with lookups from this config. The `getCurrentWeek()` function should accept sport/season and calculate based on DB config, not hardcoded August 24. |
-| 22.2 | **Generalize ranking system** | Rename `ap_rankings_history` to `rankings_history`. Add `ranking_type` column (e.g., 'ap_poll', 'power_ranking', 'standings'). The scoring engine should look up the ranking type for the sport, not assume AP Top 25. Not all sports use rankings for bonus points — make ranking-based scoring optional per sport. |
-| 22.3 | **Generalize game types** | Currently `games` has `is_bowl_game`, `is_playoff_game`, `bowl_name`, `playoff_round` — all football-specific. Replace with: `game_type` ENUM ('regular_season', 'conference_championship', 'postseason', 'playoff', 'championship', 'exhibition'). Add `game_type_detail` TEXT for sport-specific detail (e.g., bowl name for CFB, "Stanley Cup Finals" for NHL). Move `is_conference_game` logic to derive from the game data rather than storing as a separate boolean. |
-| 22.4 | **Abstract scoring rules schema** | The `league_settings` table has 20+ football-specific point columns. Replace with a `scoring_rules` JSONB column or a normalized `scoring_rules` table: `{ rule_type: 'win', points: 1 }, { rule_type: 'conference_game', points: 1 }, { rule_type: 'ranked_opponent_top10', points: 2 }`. Each sport defines its available rule types. The scoring engine reads rules dynamically instead of accessing fixed columns. |
-| 22.5 | **Generalize individual awards** | Rename `heisman_winners` to `individual_awards`. Add `award_type` column ('heisman', 'hart_trophy', 'mvp', etc.) and `sport_id`. The scoring engine checks for awards associated with schools on rosters, regardless of which specific award it is. |
-| 22.6 | **Rename "schools" to "teams" (or keep with alias)** | College sports use "schools," pro sports use "teams." Options: (a) rename table to `teams` (breaking change), (b) keep `schools` for college sports and add `teams` for pro, (c) keep `schools` table name but use "teams" in the UI with a display alias per sport. Recommend option (c) for now — least disruptive. |
-| 22.7 | **Create sport configuration table** | Create `sport_configs` table with: `sport_id`, `season_week_count`, `playoff_format` ('single_elimination', 'best_of_7', etc.), `ranking_type`, `available_scoring_rules` (JSONB), `api_provider`, `api_base_url`. This is the single source of truth for how each sport works. |
-| 22.8 | **Create sport-specific API adapters** | Currently `src/lib/api/espn.ts` is football-specific. Create an adapter pattern: `src/lib/api/adapters/espn-cfb.ts`, `src/lib/api/adapters/nhl.ts`, etc. Each adapter implements a common interface: `fetchTeams()`, `fetchGames(week)`, `fetchRankings()`, `fetchScores()`. The sync routes call the adapter for the given sport. |
-| 22.9 | **Abstract scoring engine** | Refactor `src/lib/points/calculator.ts` to be sport-agnostic. The engine reads scoring rules from the sport config and league settings, then applies them generically. Sport-specific logic (e.g., "bowl games don't get ranked bonus") lives in sport-specific rule files, not in the main calculator. |
+| 25.1 | **Abstract week/season structure** | Move season config (start date, max weeks, playoff start week, week labels) into the `seasons` table or a new `season_config` JSONB column. Replace all hardcoded week numbers with lookups from this config. The `getCurrentWeek()` function should accept sport/season and calculate based on DB config, not hardcoded August 24. |
+| 25.2 | **Generalize ranking system** | Rename `ap_rankings_history` to `rankings_history`. Add `ranking_type` column (e.g., 'ap_poll', 'power_ranking', 'standings'). The scoring engine should look up the ranking type for the sport, not assume AP Top 25. Not all sports use rankings for bonus points — make ranking-based scoring optional per sport. |
+| 25.3 | **Generalize game types** | Currently `games` has `is_bowl_game`, `is_playoff_game`, `bowl_name`, `playoff_round` — all football-specific. Replace with: `game_type` ENUM ('regular_season', 'conference_championship', 'postseason', 'playoff', 'championship', 'exhibition'). Add `game_type_detail` TEXT for sport-specific detail (e.g., bowl name for CFB, "Stanley Cup Finals" for NHL). Move `is_conference_game` logic to derive from the game data rather than storing as a separate boolean. |
+| 25.4 | **Abstract scoring rules schema** | The `league_settings` table has 20+ football-specific point columns. Replace with a `scoring_rules` JSONB column or a normalized `scoring_rules` table: `{ rule_type: 'win', points: 1 }, { rule_type: 'conference_game', points: 1 }, { rule_type: 'ranked_opponent_top10', points: 2 }`. Each sport defines its available rule types. The scoring engine reads rules dynamically instead of accessing fixed columns. |
+| 25.5 | **Generalize individual awards** | Rename `heisman_winners` to `individual_awards`. Add `award_type` column ('heisman', 'hart_trophy', 'mvp', etc.) and `sport_id`. The scoring engine checks for awards associated with schools on rosters, regardless of which specific award it is. |
+| 25.6 | **Rename "schools" to "teams" (or keep with alias)** | College sports use "schools," pro sports use "teams." Options: (a) rename table to `teams` (breaking change), (b) keep `schools` for college sports and add `teams` for pro, (c) keep `schools` table name but use "teams" in the UI with a display alias per sport. Recommend option (c) for now — least disruptive. |
+| 25.7 | **Create sport configuration table** | Create `sport_configs` table with: `sport_id`, `season_week_count`, `playoff_format` ('single_elimination', 'best_of_7', etc.), `ranking_type`, `available_scoring_rules` (JSONB), `api_provider`, `api_base_url`. This is the single source of truth for how each sport works. |
+| 25.8 | **Create sport-specific API adapters** | Currently `src/lib/api/espn.ts` is football-specific. Create an adapter pattern: `src/lib/api/adapters/espn-cfb.ts`, `src/lib/api/adapters/nhl.ts`, etc. Each adapter implements a common interface: `fetchTeams()`, `fetchGames(week)`, `fetchRankings()`, `fetchScores()`. The sync routes call the adapter for the given sport. |
+| 25.9 | **Abstract scoring engine** | Refactor `src/lib/points/calculator.ts` to be sport-agnostic. The engine reads scoring rules from the sport config and league settings, then applies them generically. Sport-specific logic (e.g., "bowl games don't get ranked bonus") lives in sport-specific rule files, not in the main calculator. |
 
 ### What NOT to Change
 
@@ -1083,7 +1229,7 @@ These are intentionally sport-specific and don't need generalization:
 - **Heisman scraping logic** — only relevant for CFB; other sports will have their own award detection
 - **CFP bracket component** — other sports will have different bracket formats; build new components per sport
 - **Conference abbreviation mapping** — sport-specific display data
-- **ESPN API endpoints** — each sport has different endpoints; handled by the adapter pattern (22.8)
+- **ESPN API endpoints** — each sport has different endpoints; handled by the adapter pattern (25.8)
 
 ### Migration Path
 
@@ -1096,12 +1242,12 @@ This phase is the largest refactor. Recommended approach:
 
 ---
 
-## Phase 23: Free Feature Enhancements
+## Phase 26: Free Feature Enhancements
 *Post-launch free features that enhance the experience but aren't required for the core loop*
 
-**Status: NOT STARTED — DEFERRED**
+**Status: NOT STARTED — DEFERRED** (ordering within pre-Season 1 window TBD)
 
-**Depends on**: Phase 16 (brand styling), Phase 14 (schema for watchlists, scoring_preset, notification_preferences)
+**Depends on**: Phase 16 (brand styling), Phase 14 (schema for watchlists, scoring_preset, notification_preferences), Phase 24 (schema for announcements, draft_messages, league_seasons)
 
 ### Background
 
@@ -1111,37 +1257,82 @@ These are features we've designated as free (never gated behind premium) but tha
 
 | Task | Description | Details | Schema Ready? |
 |------|-------------|---------|---------------|
-| 23.1 | **Scoring presets UI** | Add a preset dropdown to the league settings page ("Standard", "High Stakes", "Simple", "Chaos Mode"). When selected, auto-fills the existing scoring columns with predefined values. Commissioner can still tweak individual values after selecting a preset. This is a UX convenience for new commissioners — reduces the intimidation of 20+ scoring sliders. | Yes — `scoring_preset` column added in Phase 14.16 |
-| 23.2 | **Watchlist UI** | Add a "Watch" button to school cards in the available schools browser and draft board. Create a `/watchlist` page (or section on team page) showing all watched programs with their upcoming games and recent performance. Helps users track programs they want to draft or pick up via add/drop. | Yes — `watchlists` table created in Phase 14.14 |
-| 23.3 | **League announcements** | Add a commissioner announcement feature: text post that appears at the top of the league home page for all members. Simple CRUD — commissioner creates/edits/deletes announcements. Could be a new `league_announcements` table or a JSONB column on `leagues`. | No — needs schema (simple table: `id`, `league_id`, `author_id`, `content`, `pinned`, `created_at`) |
-| 23.4 | **Draft chat** | Add a real-time chat panel to the draft room using Supabase Realtime. Messages appear alongside the draft board. Simple text messages only (no images/files). Could use a `draft_messages` table or Supabase Realtime broadcast channels. | No — needs schema (table: `id`, `draft_id`, `user_id`, `message`, `created_at`) |
-| 23.5 | **Basic notifications** | Build notification delivery for key events: draft starting, your turn to pick, game results posted, transaction confirmed. Start with in-app notifications (a bell icon with unread count). Email notifications come later (Phase 24). Uses `notification_preferences` from Phase 14.12. | Partial — preferences schema ready, needs `notifications` table |
-| 23.6 | **League history / trophy room** | Display past season results: league champion, final standings, individual awards (most points in a week, biggest comeback, etc.). For Year 1 this is empty — becomes valuable starting Season 2 when there's history to show. | No — needs `league_seasons` archive table |
+| 26.1 | **Scoring presets UI** | Add a preset dropdown to the league settings page ("Standard", "High Stakes", "Simple", "Chaos Mode"). When selected, auto-fills the existing scoring columns with predefined values. Commissioner can still tweak individual values after selecting a preset. This is a UX convenience for new commissioners — reduces the intimidation of 20+ scoring sliders. | Yes — `scoring_preset` column added in Phase 14.16 |
+| 26.2 | **Watchlist UI** | Add a "Watch" button to school cards in the available schools browser and draft board. Create a `/watchlist` page (or section on team page) showing all watched programs with their upcoming games and recent performance. Helps users track programs they want to draft or pick up via add/drop. | Yes — `watchlists` table created in Phase 14.14 |
+| 26.3 | **League announcements** | Add a commissioner announcement feature: text post that appears at the top of the league home page for all members. Simple CRUD — commissioner creates/edits/deletes announcements. Uses `league_announcements` table from Phase 24.4. | Yes — after Phase 24 |
+| 26.4 | **Draft chat** | Add a real-time chat panel to the draft room using Supabase Realtime. Messages appear alongside the draft board. Simple text messages only (no images/files). Uses `draft_messages` table from Phase 24.6 or Supabase Realtime broadcast channels. | Yes — after Phase 24 |
+| 26.5 | **Basic notifications** | Build notification delivery for key events: draft starting, your turn to pick, game results posted, transaction confirmed. Start with in-app notifications (a bell icon with unread count). Email notifications come later. Uses `notification_preferences` from Phase 14.12. | Partial — preferences schema ready, needs `notifications` table |
+| 26.6 | **League history / trophy room** | Display past season results: league champion, final standings, individual awards (most points in a week, biggest comeback, etc.). For Year 1 this is empty — becomes valuable starting Season 2 when there's history to show. Uses `league_seasons` table from Phase 24.5. | Yes — after Phase 24 |
 
 ### Priority Within This Phase
 
 If building post-launch, suggested order:
-1. **23.1 Scoring presets** — small effort, big UX win for new commissioners
-2. **23.2 Watchlists** — schema ready, moderate effort, adds engagement
-3. **23.5 Basic notifications** — users will ask for this first
-4. **23.3 League announcements** — commissioner tool, moderate effort
-5. **23.4 Draft chat** — fun but lowest priority (users already use group chats)
-6. **23.6 League history** — only valuable after Season 1 ends
+1. **26.1 Scoring presets** — small effort, big UX win for new commissioners
+2. **26.2 Watchlists** — schema ready, moderate effort, adds engagement
+3. **26.5 Basic notifications** — users will ask for this first
+4. **26.3 League announcements** — commissioner tool, moderate effort
+5. **26.4 Draft chat** — fun but lowest priority (users already use group chats)
+6. **26.6 League history** — only valuable after Season 1 ends
 
 ---
 
 ## Future Phases
 
-| Phase | Features | Notes |
-|-------|----------|-------|
-| **Phase 24** | Auto-pick for draft, draft pause/resume | Enhancement to draft system |
-| **Phase 25** | Email/push notifications | Game updates, draft reminders, transaction confirmations. Uses `notification_preferences` schema from Phase 14.12. Extends Phase 23.5 in-app notifications with email delivery. |
-| **Phase 26** | Historical season caching | Archive past seasons, returning user experience. Extends Phase 23.6 with full multi-season data. |
-| **Phase 27** | Multi-sport launch (Hockey) | First sport after CFB using Phase 22 architecture |
-| **Phase 28** | Team-to-team trading | Mid-season roster trades between users. Uses `trades` schema from Phase 14.13. |
-| **Phase 29** | Premium features launch (Year 2) | Activate feature flags, build premium UI, implement: pre-draft intelligence, live analytics, transaction intelligence, custom scoring templates, what-if simulator, power rankings, custom league themes, early draft access. Stripe integration for Pro subscriptions. |
-| **Phase 30** | Payment integration (Stripe) | Entry fees, prize payouts, charity pooling, Pro subscription billing |
-| **Phase 31** | Native mobile / PWA | Mobile-optimized experience |
+*Ordering within these phases is TBD — pending discussion about which features to pull into the pre-Season 1 window (before Aug 2026).*
+
+| Phase | Features | Notes | Timeline |
+|-------|----------|-------|----------|
+| **Phase 27** | Auto-pick for draft, draft pause/resume | Enhancement to draft system. Useful for Aug 2026 draft season. | Pre-Season 1? |
+| **Phase 28** | Email/push notifications | Game updates, draft reminders, transaction confirmations. Uses `notification_preferences` schema from Phase 14.12. Extends Phase 26.5 in-app notifications with email delivery. **Blocked until Apr 21 DNS transfer.** | Apr-May 2026 |
+| **Phase 29** | Team-to-team trading | Mid-season roster trades between users. Uses `trades` schema from Phase 14.13. | Pre-Season 1? |
+| **Phase 30** | Historical season caching | Archive past seasons, returning user experience. Extends Phase 26.6 with full multi-season data. | Post-Season 1 |
+| **Phase 31** | Multi-sport launch (Hockey) | First sport after CFB using Phase 25 architecture | Year 2 |
+| **Phase 32** | Premium features launch (Year 2) | Activate feature flags, build premium UI, implement: pre-draft intelligence, live analytics, transaction intelligence, custom scoring templates, what-if simulator, power rankings, custom league themes, early draft access. Stripe integration for Pro subscriptions ($4.99/mo or $29.99/yr). | Year 2 |
+| **Phase 33** | Payment integration (Stripe) | Entry fees, prize payouts, charity pooling, Pro subscription billing. **Requires gaming attorney consultation if adding paid entry leagues (NAICS reclassification risk).** | Year 2 |
+| **Phase 34** | Native mobile / PWA | Mobile-optimized experience | Year 2+ |
+
+---
+
+## Business Plan Integration
+
+*The Rivyls business plan is maintained in a separate conversation. This section captures key business decisions that affect development.*
+
+### Company Status (as of Feb 27, 2026)
+- **Entity**: Rivyls LLC (Georgia, filed 02/27/2026, awaiting approval)
+- **NAICS**: 713990 — All Other Amusement and Recreation Industries (NOT gambling)
+- **Domain**: rivyls.com (registered via Wix, DNS transfer to Cloudflare after Apr 21, 2026)
+- **Trademark**: "Rivyls" — USPTO search clear, intent-to-use filing pending
+- **EIN**: Pending (applying once LLC approval confirmed)
+
+### Revenue Model
+- **Year 1**: Everything free. $0 revenue. Goal: 100 leagues, 1,000 users playing a full season.
+- **Year 2**: Rivyls Pro at $4.99/mo or $29.99/yr. Stripe integration. Founding Commissioners get Pro free for life.
+
+### NAICS 713990 Implications for Development
+The platform is classified as recreation/entertainment, NOT gambling. This means:
+- **No money flows through the platform in Year 1** — entry fees, prize pools, and payouts happen outside the platform
+- Entry fee tracking in commissioner tools is **informational only** (calculator, not payment processor)
+- If the platform later adds features that move money between users tied to contest outcomes, Rivyls may need to reclassify to NAICS 713290 (gambling), triggering state gaming registration, money transmitter licensing, and higher payment processing fees
+- The ToS must include a financial disclaimer (see Phase 23.9)
+
+### Key Business Dates
+| Date | Milestone |
+|------|-----------|
+| Feb 27, 2026 | LLC filed, domain secured |
+| Apr 21, 2026 | ICANN 60-day lock expires → DNS transfer to Cloudflare → Resend email |
+| May 2026 | Landing page live, email collection active |
+| Early Jul 2026 | Platform launch-ready (signup, leagues, invites, draft) |
+| Mid Jul 2026 | Public launch, commissioner recruitment |
+| Aug 2026 | Peak draft period |
+| Late Aug 2026 | Season kickoff, live scoring operational |
+| Sep 2026 – Jan 2027 | In-season operations |
+| Feb 2027 | Season review, Year 2 planning |
+
+### Cost Summary
+- **Current burn**: $100/mo (Claude)
+- **At scale (500+ users)**: ~$165-185/mo (Claude + Supabase Pro + Vercel Pro + Resend Pro)
+- **One-time costs**: $500-950 (LLC + trademark + business license)
+- **Year 1 total estimate**: ~$2,200-3,200
 
 ---
 
@@ -1188,4 +1379,4 @@ If building post-launch, suggested order:
 
 ---
 
-*Last Updated: February 27, 2026*
+*Last Updated: February 27, 2026 (audit + new phases 22-24 + business plan integration)*
