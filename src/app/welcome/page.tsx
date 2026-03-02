@@ -14,6 +14,14 @@ export const metadata: Metadata = {
     url: 'https://rivyls.com/welcome',
     siteName: 'Rivyls',
     type: 'website',
+    images: [
+      {
+        url: 'https://rivyls.com/api/og/default',
+        width: 1200,
+        height: 630,
+        alt: 'Rivyls — Fantasy College Football',
+      },
+    ],
   },
   twitter: {
     card: 'summary_large_image',

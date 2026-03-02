@@ -1,11 +1,15 @@
 import { NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/server'
+import { requireAuth } from '@/lib/auth'
 
 export async function GET(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const authResult = await requireAuth()
+    if (authResult instanceof NextResponse) return authResult
+
     const { id: schoolId } = await params
     const { searchParams } = new URL(request.url)
     const year = parseInt(searchParams.get('year') || String(new Date().getFullYear()))

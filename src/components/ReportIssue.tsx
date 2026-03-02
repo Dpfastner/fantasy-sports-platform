@@ -3,12 +3,7 @@
 import { useState } from 'react'
 import { useToast } from './Toast'
 
-interface ReportIssueProps {
-  userId?: string
-  currentPage?: string
-}
-
-export default function ReportIssue({ userId, currentPage }: ReportIssueProps) {
+export default function ReportIssue() {
   const [isOpen, setIsOpen] = useState(false)
   const [category, setCategory] = useState<'bug' | 'feature' | 'other'>('bug')
   const [description, setDescription] = useState('')
@@ -32,8 +27,7 @@ export default function ReportIssue({ userId, currentPage }: ReportIssueProps) {
         body: JSON.stringify({
           category,
           description: description.trim(),
-          userId,
-          page: currentPage || window.location.pathname,
+          page: window.location.pathname,
           userAgent: navigator.userAgent,
         }),
       })

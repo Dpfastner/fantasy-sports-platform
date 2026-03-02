@@ -60,6 +60,13 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(url)
   }
 
+  // Redirect root path: authenticated → dashboard, unauthenticated → welcome
+  if (request.nextUrl.pathname === '/') {
+    const url = request.nextUrl.clone()
+    url.pathname = user ? '/dashboard' : '/welcome'
+    return NextResponse.redirect(url)
+  }
+
   // Redirect logged-in users away from auth pages
   const authPaths = ['/login', '/signup']
   const isAuthPath = authPaths.some(path =>
