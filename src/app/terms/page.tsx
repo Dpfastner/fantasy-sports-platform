@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
+import BackButton from '@/components/BackButton'
 
 export const metadata: Metadata = {
   title: 'Terms of Service — Rivyls',
@@ -16,9 +17,7 @@ export default function TermsPage() {
           <Link href="/" className="brand-nav text-xl tracking-wide">
             RIVYLS
           </Link>
-          <Link href="/welcome" className="text-text-secondary hover:text-text-primary text-sm transition-colors">
-            Back to site
-          </Link>
+          <BackButton />
         </div>
       </nav>
 
