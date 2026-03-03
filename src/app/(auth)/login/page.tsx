@@ -41,7 +41,6 @@ function LoginForm() {
 
       trackActivity('login.success')
       router.push('/dashboard')
-      router.refresh()
     } catch {
       setError('An unexpected error occurred')
     } finally {
