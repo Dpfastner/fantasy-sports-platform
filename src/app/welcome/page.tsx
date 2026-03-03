@@ -188,19 +188,6 @@ export default function WelcomePage() {
         </div>
       </section>
 
-      {/* ── Footer ── */}
-      <footer className="border-t border-border py-8">
-        <div className="container mx-auto px-4 md:px-8 text-text-muted text-sm">
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-            <p>&copy; 2026 Rivyls. All rights reserved.</p>
-            <div className="flex gap-4">
-              <Link href="/terms" className="hover:text-text-primary transition-colors">Terms</Link>
-              <Link href="/privacy" className="hover:text-text-primary transition-colors">Privacy</Link>
-              <Link href="/do-not-sell" className="hover:text-text-primary transition-colors">Do Not Sell</Link>
-            </div>
-          </div>
-        </div>
-      </footer>
     </div>
   )
 }

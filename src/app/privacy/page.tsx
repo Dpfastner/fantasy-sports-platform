@@ -151,13 +151,6 @@ export default function PrivacyPage() {
         </div>
       </main>
 
-      {/* Footer */}
-      <footer className="border-t border-border py-8">
-        <div className="max-w-3xl mx-auto px-4 md:px-8 flex justify-between text-text-muted text-sm">
-          <p>&copy; 2026 Rivyls. All rights reserved.</p>
-          <Link href="/terms" className="hover:text-text-primary transition-colors">Terms of Service</Link>
-        </div>
-      </footer>
     </div>
   )
 }
