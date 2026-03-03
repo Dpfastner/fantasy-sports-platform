@@ -1,8 +1,12 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { usePathname } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
+
+// Pages where the ToS gate should never appear
+const EXCLUDED_PATHS = ['/terms', '/privacy', '/welcome', '/login', '/signup', '/forgot-password', '/reset-password', '/auth/callback', '/unsubscribe']
 
 const CURRENT_TOS_VERSION = '2026-04-01'
 
@@ -10,9 +14,13 @@ export default function TosGate() {
   const [showModal, setShowModal] = useState(false)
   const [accepting, setAccepting] = useState(false)
   const [userId, setUserId] = useState<string | null>(null)
+  const pathname = usePathname()
   const supabase = createClient()
 
   useEffect(() => {
+    // Don't show on public/legal pages
+    if (EXCLUDED_PATHS.some(p => pathname.startsWith(p))) return
+
     async function checkTos() {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return // Not logged in — skip
@@ -33,7 +41,7 @@ export default function TosGate() {
     }
 
     checkTos()
-  }, [supabase])
+  }, [supabase, pathname])
 
   const handleAccept = async () => {
     if (!userId) return
