@@ -38,6 +38,11 @@ export default function SettingsPage() {
   const [emailLeagueAnnouncements, setEmailLeagueAnnouncements] = useState(true)
   const [savingNotifications, setSavingNotifications] = useState(false)
 
+  // Account deletion
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [deleteConfirmText, setDeleteConfirmText] = useState('')
+  const [deleting, setDeleting] = useState(false)
+
   // Messages
   const [successMessage, setSuccessMessage] = useState('')
   const [errorMessage, setErrorMessage] = useState('')
@@ -210,6 +215,26 @@ export default function SettingsPage() {
       showMessage('error', `Failed to save notifications: ${error}`)
     } finally {
       setSavingNotifications(false)
+    }
+  }
+
+  const handleDeleteAccount = async () => {
+    if (deleteConfirmText !== 'DELETE') return
+    setDeleting(true)
+
+    try {
+      const response = await fetch('/api/account/delete', { method: 'DELETE' })
+      if (!response.ok) {
+        const data = await response.json()
+        throw new Error(data.error || 'Failed to delete account')
+      }
+
+      // Sign out and redirect to welcome page
+      await supabase.auth.signOut()
+      router.push('/welcome')
+    } catch (error) {
+      showMessage('error', `${error}`)
+      setDeleting(false)
     }
   }
 
@@ -444,6 +469,57 @@ export default function SettingsPage() {
           >
             {savingNotifications ? 'Saving...' : 'Save Notifications'}
           </button>
+        </div>
+
+        {/* Danger Zone — Account Deletion */}
+        <div className="bg-surface rounded-lg p-6 mt-6 border border-danger/30">
+          <h2 className="text-xl font-semibold text-danger-text mb-2">Danger Zone</h2>
+          <p className="text-text-muted text-sm mb-4">
+            Permanently delete your account and all associated data. This action cannot be undone.
+          </p>
+
+          {!showDeleteConfirm ? (
+            <button
+              type="button"
+              onClick={() => setShowDeleteConfirm(true)}
+              className="bg-danger/20 hover:bg-danger/30 text-danger-text font-semibold py-2 px-4 rounded-lg transition-colors"
+            >
+              Delete My Account
+            </button>
+          ) : (
+            <div className="space-y-3">
+              <p className="text-danger-text text-sm font-medium">
+                This will permanently delete your account, remove you from all leagues, and anonymize your data. Type <strong>DELETE</strong> to confirm.
+              </p>
+              <input
+                type="text"
+                value={deleteConfirmText}
+                onChange={(e) => setDeleteConfirmText(e.target.value)}
+                placeholder="Type DELETE to confirm"
+                className="w-full px-4 py-2 bg-surface border border-danger/50 rounded-lg text-text-primary focus:outline-none focus:border-danger"
+              />
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowDeleteConfirm(false)
+                    setDeleteConfirmText('')
+                  }}
+                  className="flex-1 py-2 px-4 bg-surface hover:bg-surface-subtle text-text-primary rounded-lg font-medium transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleDeleteAccount}
+                  disabled={deleteConfirmText !== 'DELETE' || deleting}
+                  className="flex-1 py-2 px-4 bg-danger hover:bg-danger/80 disabled:bg-danger/30 text-white rounded-lg font-medium transition-colors"
+                >
+                  {deleting ? 'Deleting...' : 'Permanently Delete'}
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </main>
     </div>

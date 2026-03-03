@@ -13,6 +13,8 @@ export default function SignUpPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [displayName, setDisplayName] = useState('')
+  const [ageConfirmed, setAgeConfirmed] = useState(false)
+  const [tosAccepted, setTosAccepted] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -33,10 +35,20 @@ export default function SignUpPage() {
       return
     }
 
+    if (!ageConfirmed) {
+      setError('You must confirm you are at least 18 years old')
+      return
+    }
+
+    if (!tosAccepted) {
+      setError('You must agree to the Terms of Service and Privacy Policy')
+      return
+    }
+
     setLoading(true)
 
     try {
-      const { error } = await supabase.auth.signUp({
+      const { error, data } = await supabase.auth.signUp({
         email,
         password,
         options: {
@@ -49,6 +61,21 @@ export default function SignUpPage() {
       if (error) {
         setError(error.message)
         return
+      }
+
+      // Log ToS acceptance (uses admin client, no session needed)
+      if (data.user?.id) {
+        fetch('/api/tos/accept', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            userId: data.user.id,
+            tosVersion: '2026-04-01',
+          }),
+        }).catch(() => {
+          // Non-blocking — signup still succeeds even if ToS logging fails
+          console.error('Failed to log ToS acceptance')
+        })
       }
 
       // Show success message - user needs to confirm email
@@ -191,9 +218,42 @@ export default function SignUpPage() {
             </div>
           </div>
 
+          {/* Age Gate */}
+          <label className="flex items-start gap-3 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={ageConfirmed}
+              onChange={(e) => setAgeConfirmed(e.target.checked)}
+              className="mt-1 w-4 h-4 accent-brand shrink-0"
+            />
+            <span className="text-text-secondary text-sm">
+              I confirm that I am at least 18 years of age.
+            </span>
+          </label>
+
+          {/* ToS + Privacy Consent */}
+          <label className="flex items-start gap-3 cursor-pointer mb-2">
+            <input
+              type="checkbox"
+              checked={tosAccepted}
+              onChange={(e) => setTosAccepted(e.target.checked)}
+              className="mt-1 w-4 h-4 accent-brand shrink-0"
+            />
+            <span className="text-text-secondary text-sm">
+              I agree to the{' '}
+              <Link href="/terms" target="_blank" className="text-brand-text hover:underline">
+                Terms of Service
+              </Link>{' '}
+              and{' '}
+              <Link href="/privacy" target="_blank" className="text-brand-text hover:underline">
+                Privacy Policy
+              </Link>.
+            </span>
+          </label>
+
           <button
             type="submit"
-            disabled={loading}
+            disabled={loading || !ageConfirmed || !tosAccepted}
             className="w-full bg-brand hover:bg-brand-hover disabled:bg-brand/50 disabled:cursor-not-allowed text-text-primary font-semibold py-3 px-4 rounded-lg transition-colors"
           >
             {loading ? 'Creating account...' : 'Create Account'}
