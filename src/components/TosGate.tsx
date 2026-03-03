@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 
 // Pages where the ToS gate should never appear
-const EXCLUDED_PATHS = ['/terms', '/privacy', '/welcome', '/login', '/signup', '/forgot-password', '/reset-password', '/auth/callback', '/unsubscribe']
+const EXCLUDED_PATHS = ['/terms', '/privacy', '/do-not-sell', '/welcome', '/login', '/signup', '/forgot-password', '/reset-password', '/auth/callback', '/unsubscribe']
 
 const CURRENT_TOS_VERSION = '2026-04-01'
 

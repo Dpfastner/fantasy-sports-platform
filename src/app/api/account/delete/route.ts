@@ -54,10 +54,12 @@ export async function DELETE() {
 
     // 2. Delete user data from tables (cascade handles some, but be explicit)
     // Order matters to respect foreign key constraints
+    // Note: tos_agreements is intentionally NOT deleted here.
+    // Privacy Policy Section 5 requires 7-year retention of consent records.
+    // The FK is ON DELETE SET NULL so records survive auth user deletion.
     const tables = [
       'activity_log',
       'user_badges',
-      'tos_agreements',
       'notification_preferences',
       'fantasy_team_weekly_points',
     ]
