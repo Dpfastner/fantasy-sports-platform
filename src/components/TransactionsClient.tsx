@@ -604,23 +604,53 @@ export default function TransactionsClient({
                         </svg>
                       </button>
                       {watchlistExpanded && (
-                        <div className="px-3 py-2 flex flex-wrap gap-2">
-                          {watchlistedSchools.map(school => (
-                            <span
-                              key={school.id}
-                              className="inline-flex items-center gap-1.5 px-2 py-1 bg-surface-subtle rounded-full text-xs text-text-primary"
-                            >
-                              {school.logo_url ? (
-                                <img src={school.logo_url} alt="" className="w-4 h-4 object-contain" />
-                              ) : (
-                                <span
-                                  className="w-4 h-4 rounded-full inline-block"
-                                  style={{ backgroundColor: school.primary_color }}
-                                />
-                              )}
-                              {school.abbreviation || school.name}
-                            </span>
-                          ))}
+                        <div className="space-y-1 p-2 max-h-48 overflow-y-auto">
+                          {watchlistedSchools.map(school => {
+                            const record = schoolRecordsMap[school.id] || { wins: 0, losses: 0, confWins: 0, confLosses: 0 }
+                            const selCount = schoolSelectionCounts[school.id] || 0
+                            const isMaxed = selCount >= maxSelectionsPerSchool
+                            return (
+                              <button
+                                key={school.id}
+                                onClick={() => !isMaxed && handleSelectAdd(school)}
+                                disabled={isMaxed}
+                                className={`w-full flex items-center justify-between p-2 rounded-lg transition-colors text-left ${
+                                  isMaxed ? 'opacity-50 cursor-not-allowed' : 'hover:bg-warning/10 cursor-pointer'
+                                }`}
+                              >
+                                <div className="flex items-center gap-2">
+                                  <WatchlistStar
+                                    schoolId={school.id}
+                                    leagueId={leagueId}
+                                    initialWatchlisted={true}
+                                    size="sm"
+                                    onToggle={handleWatchlistToggle}
+                                  />
+                                  {school.logo_url ? (
+                                    <img src={school.logo_url} alt="" className="w-6 h-6 object-contain" />
+                                  ) : (
+                                    <span className="w-6 h-6 rounded-full inline-block" style={{ backgroundColor: school.primary_color }} />
+                                  )}
+                                  <div>
+                                    <span className="text-text-primary text-xs font-medium">
+                                      {rankingsMap[school.id] && <span className="text-warning-text mr-1">#{rankingsMap[school.id]}</span>}
+                                      {school.name}
+                                    </span>
+                                    <div className="flex items-center gap-1.5 text-[10px]">
+                                      <span className="text-text-muted">{school.conference}</span>
+                                      <span className={record.wins > record.losses ? 'text-success-text' : record.wins < record.losses ? 'text-danger-text' : 'text-text-secondary'}>
+                                        {record.wins}-{record.losses}
+                                      </span>
+                                    </div>
+                                  </div>
+                                </div>
+                                <div className="text-right">
+                                  <p className="text-text-primary text-xs font-medium">{schoolPointsMap[school.id] || 0} pts</p>
+                                  {isMaxed && <p className="text-text-muted text-[10px]">Unavailable</p>}
+                                </div>
+                              </button>
+                            )
+                          })}
                         </div>
                       )}
                     </div>
@@ -635,9 +665,10 @@ export default function TransactionsClient({
                         const selectionCount = schoolSelectionCounts[school.id] || 0
                         const record = schoolRecordsMap[school.id] || { wins: 0, losses: 0 }
                         return (
-                          <div
+                          <button
                             key={school.id}
-                            className={`w-full flex items-center justify-between p-3 rounded-lg transition-colors text-left ${
+                            onClick={() => handleSelectAdd(school)}
+                            className={`w-full flex items-center justify-between p-3 rounded-lg transition-colors text-left cursor-pointer ${
                               localWatchlist.has(school.id)
                                 ? 'bg-warning/5 hover:bg-warning/10'
                                 : 'bg-surface-subtle hover:bg-surface-inset'
@@ -651,10 +682,6 @@ export default function TransactionsClient({
                                 size="md"
                                 onToggle={handleWatchlistToggle}
                               />
-                              <button
-                                onClick={() => handleSelectAdd(school)}
-                                className="flex items-center gap-3 text-left"
-                              >
                               {school.logo_url ? (
                                 <img
                                   src={school.logo_url}
@@ -686,12 +713,8 @@ export default function TransactionsClient({
                                   )}
                                 </div>
                               </div>
-                              </button>
                             </div>
-                            <button
-                              onClick={() => handleSelectAdd(school)}
-                              className="text-right"
-                            >
+                            <div className="text-right">
                               <p className="text-text-primary text-sm font-medium">
                                 {schoolPointsMap[school.id] || 0} pts
                               </p>
@@ -700,8 +723,8 @@ export default function TransactionsClient({
                                   {selectionCount}/{maxSelectionsPerSchool} taken
                                 </p>
                               )}
-                            </button>
-                          </div>
+                            </div>
+                          </button>
                         )
                       })
                     )}
