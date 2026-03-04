@@ -452,7 +452,7 @@ Phase 24: Schema Additions             ████████████  ✅
 *Free features and draft improvements needed before August 2026 season.*
 
 ```
-Phase 25: Free Feature Enhancements     ██░░░░░░░░░░  Presets ✅, watchlist, announcements, chat, notifications, history, message board
+Phase 25: Free Feature Enhancements     ████░░░░░░░░  Presets ✅, Watchlist ✅, announcements, chat, notifications, history, message board
 Phase 26: Draft Enhancements            ░░░░░░░░░░░░  Auto-pick, pause/resume
 Phase 27: Team-to-Team Trading          ░░░░░░░░░░░░  Trade proposals, review, veto (FREE tier)
 ```
@@ -513,7 +513,7 @@ Phase 24 (Schema Additions)  ████████████  ✅ COMPLETE
 
 ━━━ SEASON 1 FEATURES (Build First) ━━━━━━━━━━━━━━━━━━━━━━━━━
         ↓
-Phase 25 (Free Features)     ██░░░░░░░░░░  25.1 ✅
+Phase 25 (Free Features)     ████░░░░░░░░  25.1 ✅ 25.2 ✅
         ↓
 Phase 26 (Draft Enhancements)░░░░░░░░░░░░
         ↓
@@ -1257,7 +1257,7 @@ These are features designated as free (never gated behind premium) that improve 
 | Task | Description | Status |
 |------|-------------|--------|
 | 25.1 | **Scoring presets UI** — Preset dropdown (Standard, Conservative, Aggressive, Chaos Mode) in league settings. Auto-fills all 21 scoring fields. Auto-detects "Custom" on manual edit. `src/lib/scoring-presets.ts` + settings page. | ✅ Done |
-| 25.2 | **Watchlist UI** — Star/bookmark on school cards in draft + add/drop. Watchlist section on team page. Filter to show unavailable schools for watchlisting. Notification when watched school becomes available. | |
+| 25.2 | **Watchlist UI** — Star/bookmark on school cards in draft + add/drop. Watchlist section on team page. Filter to show unavailable schools for watchlisting. Collapsible watchlist summary panel on add/drop page. | ✅ Done |
 | 25.3 | **League announcements** — Commissioner CRUD for announcements on league home page. Pinned + chronological display. `league_announcements` table from Phase 24. | |
 | 25.4 | **Draft chat** — Real-time chat panel in draft room using Supabase Realtime + `draft_messages` table from Phase 24. | |
 | 25.5 | **Basic in-app notifications** — Bell icon in header with unread count. 12 notification types including draft pick throttle (max 3 when absent, resets on return). Needs `notifications` table migration. | |
@@ -1267,7 +1267,7 @@ These are features designated as free (never gated behind premium) that improve 
 ### Build Order
 
 1. ~~**25.1 Scoring presets**~~ ✅ Done
-2. **25.2 Watchlists** — schema ready, moderate effort, adds engagement
+2. ~~**25.2 Watchlists**~~ ✅ Done
 3. **25.7 League message board** — build before notifications so notifications can reference it
 4. **25.3 League announcements** — commissioner tool, moderate effort
 5. **25.4 Draft chat** — uses same Realtime pattern as message board

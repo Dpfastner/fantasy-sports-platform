@@ -176,6 +176,15 @@ export default async function TransactionsPage({ params }: PageProps) {
 
   const roster = rosterData as unknown as RosterSchool[] || []
 
+  // Get user's watchlist for this league
+  const { data: watchlistData } = await supabase
+    .from('watchlists')
+    .select('school_id')
+    .eq('user_id', user.id)
+    .eq('league_id', leagueId)
+
+  const watchlistedSchoolIds = (watchlistData || []).map(w => w.school_id)
+
   // Get all schools with their points
   const { data: schoolsData } = await supabase
     .from('schools')
@@ -412,6 +421,7 @@ export default async function TransactionsPage({ params }: PageProps) {
           heismanWinner: settings?.points_heisman_winner || 0,
         }}
         eventBonuses={eventBonuses}
+        watchlistedSchoolIds={watchlistedSchoolIds}
       />
       </ErrorBoundary>
       <SandboxWeekSelector currentWeek={currentWeek} environment={environment} />

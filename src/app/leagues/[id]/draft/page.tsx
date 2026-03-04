@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { useToast } from '@/components/Toast'
+import { WatchlistStar } from '@/components/WatchlistStar'
 import { trackActivity } from '@/app/actions/activity'
 import { track } from '@vercel/analytics'
 
@@ -88,6 +89,7 @@ export default function DraftRoomPage() {
   const [isResettingDraft, setIsResettingDraft] = useState(false)
   const [showResetConfirm, setShowResetConfirm] = useState(false)
   const [mobileTab, setMobileTab] = useState<'schools' | 'history' | 'teams'>('schools')
+  const [watchlistedSchoolIds, setWatchlistedSchoolIds] = useState<Set<string>>(new Set())
 
   // Track if timer has expired (for showing warning)
   const [timerExpired, setTimerExpired] = useState(false)
@@ -143,12 +145,29 @@ export default function DraftRoomPage() {
     return myTeamPickCount >= maxSelectionsPerTeam
   }
 
-  // Filter schools into available and maxed-out categories
+  const handleWatchlistToggle = useCallback((schoolId: string, watchlisted: boolean) => {
+    setWatchlistedSchoolIds(prev => {
+      const next = new Set(prev)
+      if (watchlisted) {
+        next.add(schoolId)
+      } else {
+        next.delete(schoolId)
+      }
+      return next
+    })
+  }, [])
+
+  // Filter schools into available and maxed-out categories, watchlisted first
   const availableSchools = schools.filter(school => {
     if (!schoolMatchesFilters(school)) return false
     if (isSchoolMaxedOut(school)) return false
     if (isSchoolOnMyTeam(school)) return false
     return true
+  }).sort((a, b) => {
+    const aWatched = watchlistedSchoolIds.has(a.id) ? 0 : 1
+    const bWatched = watchlistedSchoolIds.has(b.id) ? 0 : 1
+    if (aWatched !== bWatched) return aWatched - bWatched
+    return a.name.localeCompare(b.name)
   })
 
   // Schools that are maxed out globally (show at bottom with strikethrough)
@@ -249,6 +268,17 @@ export default function DraftRoomPage() {
 
         if (schoolsData) {
           setSchools(schoolsData as School[])
+        }
+
+        // Get user's watchlist for this league
+        const { data: watchlistData } = await supabase
+          .from('watchlists')
+          .select('school_id')
+          .eq('user_id', authUser.id)
+          .eq('league_id', leagueId)
+
+        if (watchlistData) {
+          setWatchlistedSchoolIds(new Set(watchlistData.map(w => w.school_id)))
         }
 
         // Get draft order
@@ -1380,11 +1410,11 @@ export default function DraftRoomPage() {
                 const globalPickCount = schoolPickCounts[school.id] || 0
 
                 return (
-                  <button
+                  <div
                     key={school.id}
-                    onClick={() => handleSelectSchool(school)}
-                    disabled={!isMyPick || draft?.status !== 'in_progress'}
                     className={`w-full p-2 rounded text-left transition-colors ${
+                      watchlistedSchoolIds.has(school.id) ? 'ring-2 ring-warning/60' : ''
+                    } ${
                       isMyPick && draft?.status === 'in_progress'
                         ? 'hover:ring-2 hover:ring-brand cursor-pointer'
                         : 'cursor-not-allowed opacity-60'
@@ -1395,6 +1425,18 @@ export default function DraftRoomPage() {
                     }}
                   >
                     <div className="flex items-center gap-2">
+                      <WatchlistStar
+                        schoolId={school.id}
+                        leagueId={leagueId as string}
+                        initialWatchlisted={watchlistedSchoolIds.has(school.id)}
+                        size="sm"
+                        onToggle={handleWatchlistToggle}
+                      />
+                      <button
+                        onClick={() => handleSelectSchool(school)}
+                        disabled={!isMyPick || draft?.status !== 'in_progress'}
+                        className="flex items-center gap-2 flex-1 min-w-0 text-left"
+                      >
                       {school.logo_url ? (
                         <img
                           src={school.logo_url}
@@ -1419,8 +1461,9 @@ export default function DraftRoomPage() {
                       >
                         {globalPickCount}/{maxSelectionsTotal}
                       </div>
+                      </button>
                     </div>
-                  </button>
+                  </div>
                 )
               })}
 

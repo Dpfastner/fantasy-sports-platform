@@ -1,9 +1,10 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useCallback } from 'react'
 import Link from 'next/link'
 import { useToast } from './Toast'
 import { Header } from './Header'
+import { WatchlistStar } from './WatchlistStar'
 
 interface RosterSchool {
   id: string
@@ -108,6 +109,7 @@ interface TransactionsClientProps {
   userEmail?: string | null
   specialEventSettings?: SpecialEventSettings
   eventBonuses?: EventBonus[]
+  watchlistedSchoolIds?: string[]
 }
 
 type TransactionStep = 'select-drop' | 'select-add' | 'confirm'
@@ -138,6 +140,7 @@ export default function TransactionsClient({
   userEmail,
   specialEventSettings,
   eventBonuses = [],
+  watchlistedSchoolIds: watchlistedSchoolIdsProp = [],
 }: TransactionsClientProps) {
   const { addToast } = useToast()
   const [step, setStep] = useState<TransactionStep>('select-drop')
@@ -151,6 +154,23 @@ export default function TransactionsClient({
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [showHistory, setShowHistory] = useState(false)
+  const [showUnavailable, setShowUnavailable] = useState(false)
+  const [localWatchlist, setLocalWatchlist] = useState<Set<string>>(
+    () => new Set(watchlistedSchoolIdsProp)
+  )
+  const [watchlistExpanded, setWatchlistExpanded] = useState(true)
+
+  const handleWatchlistToggle = useCallback((schoolId: string, watchlisted: boolean) => {
+    setLocalWatchlist(prev => {
+      const next = new Set(prev)
+      if (watchlisted) {
+        next.add(schoolId)
+      } else {
+        next.delete(schoolId)
+      }
+      return next
+    })
+  }, [])
 
   // Get unique conferences
   const conferences = useMemo(() => {
@@ -198,8 +218,12 @@ export default function TransactionsClient({
       return true
     })
 
-    // Sort
+    // Sort — watchlisted schools first, then by selected sort
     schools.sort((a, b) => {
+      const aWatched = localWatchlist.has(a.id) ? 0 : 1
+      const bWatched = localWatchlist.has(b.id) ? 0 : 1
+      if (aWatched !== bWatched) return aWatched - bWatched
+
       if (sortBy === 'name') {
         return a.name.localeCompare(b.name)
       } else if (sortBy === 'points') {
@@ -225,7 +249,32 @@ export default function TransactionsClient({
     })
 
     return schools
-  }, [allSchools, rosterSchoolIds, schoolSelectionCounts, maxSelectionsPerSchool, searchQuery, conferenceFilter, showRankedOnly, sortBy, schoolPointsMap, rankingsMap, schoolRecordsMap])
+  }, [allSchools, rosterSchoolIds, schoolSelectionCounts, maxSelectionsPerSchool, searchQuery, conferenceFilter, showRankedOnly, sortBy, schoolPointsMap, rankingsMap, schoolRecordsMap, localWatchlist])
+
+  // Unavailable (maxed-out) schools — shown when "Show unavailable" is toggled
+  const unavailableSchools = useMemo(() => {
+    if (!showUnavailable) return []
+    return allSchools.filter(school => {
+      if (rosterSchoolIds.has(school.id)) return false
+      const currentCount = schoolSelectionCounts[school.id] || 0
+      if (currentCount < maxSelectionsPerSchool) return false
+      if (searchQuery) {
+        const query = searchQuery.toLowerCase().trim()
+        const nameMatch = school.name.toLowerCase().includes(query)
+        const abbrMatch = school.abbreviation && school.abbreviation.toLowerCase().includes(query)
+        const confMatch = school.conference.toLowerCase().includes(query)
+        if (!nameMatch && !abbrMatch && !confMatch) return false
+      }
+      if (conferenceFilter !== 'all' && school.conference !== conferenceFilter) return false
+      if (showRankedOnly && !rankingsMap[school.id]) return false
+      return true
+    }).sort((a, b) => a.name.localeCompare(b.name))
+  }, [showUnavailable, allSchools, rosterSchoolIds, schoolSelectionCounts, maxSelectionsPerSchool, searchQuery, conferenceFilter, showRankedOnly, rankingsMap])
+
+  // Watchlisted schools for summary panel
+  const watchlistedSchools = useMemo(() => {
+    return allSchools.filter(s => localWatchlist.has(s.id))
+  }, [allSchools, localWatchlist])
 
   const handleSelectDrop = (rosterEntry: RosterSchool) => {
     setSelectedDrop(rosterEntry)
@@ -526,7 +575,56 @@ export default function TransactionsClient({
                       />
                       Ranked only
                     </label>
+                    <label className="col-span-2 md:col-span-1 flex items-center gap-2 text-text-secondary text-sm">
+                      <input
+                        type="checkbox"
+                        checked={showUnavailable}
+                        onChange={(e) => setShowUnavailable(e.target.checked)}
+                        className="rounded bg-surface border-border"
+                      />
+                      Show unavailable
+                    </label>
                   </div>
+
+                  {/* Watchlist Summary Panel */}
+                  {watchlistedSchools.length > 0 && (
+                    <div className="mb-4 border border-warning/30 rounded-lg overflow-hidden">
+                      <button
+                        onClick={() => setWatchlistExpanded(!watchlistExpanded)}
+                        className="w-full flex items-center justify-between px-3 py-2 bg-warning/10 text-sm"
+                      >
+                        <span className="text-text-primary font-medium flex items-center gap-1.5">
+                          <svg className="w-4 h-4 text-warning" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+                          </svg>
+                          Your Watchlist ({watchlistedSchools.length})
+                        </span>
+                        <svg className={`w-4 h-4 text-text-muted transition-transform ${watchlistExpanded ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </button>
+                      {watchlistExpanded && (
+                        <div className="px-3 py-2 flex flex-wrap gap-2">
+                          {watchlistedSchools.map(school => (
+                            <span
+                              key={school.id}
+                              className="inline-flex items-center gap-1.5 px-2 py-1 bg-surface-subtle rounded-full text-xs text-text-primary"
+                            >
+                              {school.logo_url ? (
+                                <img src={school.logo_url} alt="" className="w-4 h-4 object-contain" />
+                              ) : (
+                                <span
+                                  className="w-4 h-4 rounded-full inline-block"
+                                  style={{ backgroundColor: school.primary_color }}
+                                />
+                              )}
+                              {school.abbreviation || school.name}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
 
                   {/* Available Schools */}
                   <div className="space-y-2 max-h-96 overflow-y-auto">
@@ -537,12 +635,26 @@ export default function TransactionsClient({
                         const selectionCount = schoolSelectionCounts[school.id] || 0
                         const record = schoolRecordsMap[school.id] || { wins: 0, losses: 0 }
                         return (
-                          <button
+                          <div
                             key={school.id}
-                            onClick={() => handleSelectAdd(school)}
-                            className="w-full flex items-center justify-between p-3 bg-surface-subtle hover:bg-surface-inset rounded-lg transition-colors text-left"
+                            className={`w-full flex items-center justify-between p-3 rounded-lg transition-colors text-left ${
+                              localWatchlist.has(school.id)
+                                ? 'bg-warning/5 hover:bg-warning/10'
+                                : 'bg-surface-subtle hover:bg-surface-inset'
+                            }`}
                           >
                             <div className="flex items-center gap-3">
+                              <WatchlistStar
+                                schoolId={school.id}
+                                leagueId={leagueId}
+                                initialWatchlisted={localWatchlist.has(school.id)}
+                                size="md"
+                                onToggle={handleWatchlistToggle}
+                              />
+                              <button
+                                onClick={() => handleSelectAdd(school)}
+                                className="flex items-center gap-3 text-left"
+                              >
                               {school.logo_url ? (
                                 <img
                                   src={school.logo_url}
@@ -574,8 +686,12 @@ export default function TransactionsClient({
                                   )}
                                 </div>
                               </div>
+                              </button>
                             </div>
-                            <div className="text-right">
+                            <button
+                              onClick={() => handleSelectAdd(school)}
+                              className="text-right"
+                            >
                               <p className="text-text-primary text-sm font-medium">
                                 {schoolPointsMap[school.id] || 0} pts
                               </p>
@@ -584,12 +700,47 @@ export default function TransactionsClient({
                                   {selectionCount}/{maxSelectionsPerSchool} taken
                                 </p>
                               )}
-                            </div>
-                          </button>
+                            </button>
+                          </div>
                         )
                       })
                     )}
                   </div>
+
+                  {/* Unavailable (maxed-out) Schools */}
+                  {unavailableSchools.length > 0 && (
+                    <div className="mt-4">
+                      <p className="text-text-muted text-xs font-medium uppercase tracking-wide mb-2">Unavailable ({unavailableSchools.length})</p>
+                      <div className="space-y-2">
+                        {unavailableSchools.map((school) => (
+                          <div
+                            key={school.id}
+                            className="w-full flex items-center justify-between p-3 bg-surface-subtle rounded-lg opacity-60"
+                          >
+                            <div className="flex items-center gap-3">
+                              <WatchlistStar
+                                schoolId={school.id}
+                                leagueId={leagueId}
+                                initialWatchlisted={localWatchlist.has(school.id)}
+                                size="md"
+                                onToggle={handleWatchlistToggle}
+                              />
+                              {school.logo_url ? (
+                                <img src={school.logo_url} alt={school.name} className="w-8 h-8 object-contain grayscale" />
+                              ) : (
+                                <div className="w-8 h-8 rounded-full" style={{ backgroundColor: school.primary_color }} />
+                              )}
+                              <div>
+                                <p className="text-text-primary text-sm font-medium line-through">{school.name}</p>
+                                <p className="text-text-muted text-xs">{school.conference}</p>
+                              </div>
+                            </div>
+                            <p className="text-text-muted text-xs">{maxSelectionsPerSchool}/{maxSelectionsPerSchool} taken</p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
 

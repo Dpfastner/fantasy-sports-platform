@@ -204,6 +204,20 @@ export default async function TeamPage({ params }: PageProps) {
 
   const droppedRoster = droppedRosterData as unknown as RosterSchool[] | null
 
+  // Get user's watchlist for this league (with school details)
+  const { data: watchlistData } = await supabase
+    .from('watchlists')
+    .select(`
+      id,
+      school_id,
+      schools (
+        id, name, abbreviation, logo_url, conference, primary_color
+      )
+    `)
+    .eq('user_id', user.id)
+    .eq('league_id', leagueId)
+    .order('created_at', { ascending: false })
+
   // Get ALL roster periods to find replacements
   const { data: allRosterPeriodsData } = await supabase
     .from('roster_periods')
@@ -580,6 +594,50 @@ export default async function TeamPage({ params }: PageProps) {
             <p className="text-text-muted">No schools on roster yet. Complete the draft to build your team.</p>
           )}
         </div>
+
+        {/* Watchlist */}
+        {watchlistData && watchlistData.length > 0 && (
+          <div className="bg-surface rounded-lg p-6 mb-8">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-semibold text-text-primary flex items-center gap-2">
+                <svg className="w-5 h-5 text-warning" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+                </svg>
+                Watchlist
+              </h2>
+              <Link
+                href={`/leagues/${leagueId}/transactions`}
+                className="text-brand hover:text-brand/80 text-sm transition-colors"
+              >
+                Go to Add/Drop
+              </Link>
+            </div>
+            <div className="space-y-2">
+              {watchlistData.map((entry) => {
+                const school = entry.schools as unknown as { id: string; name: string; abbreviation: string | null; logo_url: string | null; conference: string; primary_color: string }
+                if (!school) return null
+                return (
+                  <div key={entry.id} className="flex items-center justify-between p-3 bg-surface-subtle rounded-lg">
+                    <div className="flex items-center gap-3">
+                      {school.logo_url ? (
+                        <img src={school.logo_url} alt={school.name} className="w-8 h-8 object-contain" />
+                      ) : (
+                        <div className="w-8 h-8 rounded-full" style={{ backgroundColor: school.primary_color }} />
+                      )}
+                      <div>
+                        <p className="text-text-primary font-medium text-sm">{school.name}</p>
+                        <p className="text-text-muted text-xs">{school.conference}</p>
+                      </div>
+                    </div>
+                    <svg className="w-5 h-5 text-warning" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+                    </svg>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        )}
 
         {/* Roster History (Dropped Schools) - styled like current roster */}
         {droppedRoster && droppedRoster.length > 0 && (

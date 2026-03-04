@@ -79,3 +79,8 @@ export const syncRankingsBackfillSchema = z.object({
   year: yearField,
   weeks: z.array(weekNumber).optional(),
 })
+
+export const watchlistToggleSchema = z.object({
+  schoolId: uuidField,
+  leagueId: uuidField,
+})
