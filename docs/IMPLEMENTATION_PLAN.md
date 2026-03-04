@@ -2,7 +2,7 @@
 
 > **Platform Name**: Rivyls (rivyls.com)
 > **Current Sport**: College Football (base for multi-sport expansion)
-> **Last Updated**: February 27, 2026
+> **Last Updated**: March 3, 2026
 > **Audit Date**: February 27, 2026 (full codebase audit of Phases 0-21)
 
 ---
@@ -30,13 +30,15 @@
     - [Phase 22: Audit Fixes & Quick Wins](#phase-22-audit-fixes--quick-wins)
     - [Phase 23: Legal & Compliance](#phase-23-legal--compliance) ✅
     - [Phase 24: Schema Additions](#phase-24-schema-additions)
-11. **PRE-LAUNCH — UX Polish**
-    - [Phase 25: UX Audit & User Journey](#phase-25-ux-audit--user-journey)
-    - [Phase 26: Mobile Responsiveness](#phase-26-mobile-responsiveness)
-12. **NEXT — Pre-Season Features (TBD ordering)**
-    - [Phase 27: Multi-Sport Architecture](#phase-27-multi-sport-architecture)
-    - [Phase 28: Free Feature Enhancements](#phase-28-free-feature-enhancements)
-    - [Future Phases 29-36](#future-phases)
+11. **SEASON 1 FEATURES — Build First**
+    - [Phase 25: Free Feature Enhancements](#phase-25-free-feature-enhancements)
+    - [Phase 26: Draft Enhancements](#phase-26-draft-enhancements)
+    - [Phase 27: Team-to-Team Trading](#phase-27-team-to-team-trading)
+12. **PRE-LAUNCH — UX Polish**
+    - [Phase 28: UX Audit & User Journey](#phase-28-ux-audit--user-journey)
+    - [Phase 29: Mobile Responsiveness](#phase-29-mobile-responsiveness)
+13. **POST-LAUNCH / YEAR 2**
+    - [Future Phases 30-36](#future-phases)
 
 ---
 
@@ -445,23 +447,31 @@ Phase 23: Legal & Compliance           ████████████  ✅
 Phase 24: Schema Additions             ████████████  ✅ COMPLETE
 ```
 
+### SEASON 1 FEATURES — Build First
+
+*Free features and draft improvements needed before August 2026 season.*
+
+```
+Phase 25: Free Feature Enhancements     ░░░░░░░░░░░░  Presets, watchlist, announcements, chat, notifications, history
+Phase 26: Draft Enhancements            ░░░░░░░░░░░░  Auto-pick, pause/resume
+Phase 27: Team-to-Team Trading          ░░░░░░░░░░░░  Trade proposals, review, veto (FREE tier)
+```
+
 ### PRE-LAUNCH — UX Polish
 
-*User journey optimization and mobile testing before real users.*
+*UX audit and mobile sweep after all Season 1 features are built.*
 
 ```
-Phase 25: UX Audit & User Journey      ░░░░░░░░░░░░  Navigation, layout, flow optimization
-Phase 26: Mobile Responsiveness         ░░░░░░░░░░░░  Systematic mobile testing at all breakpoints
+Phase 28: UX Audit & User Journey       ░░░░░░░░░░░░  Navigation, layout, flow optimization
+Phase 29: Mobile Responsiveness          ░░░░░░░░░░░░  Systematic mobile testing at all breakpoints
 ```
 
-### NEXT — Pre-Season Features (ordering TBD)
-
-*Decided per feature discussion. Some may be pulled into pre-Season 1 window.*
+### POST-LAUNCH / YEAR 2
 
 ```
-Phase 27: Multi-Sport Architecture      ░░░░░░░░░░░░  Year 2 expansion prep
-Phase 28: Free Feature Enhancements     ░░░░░░░░░░░░  Extras (presets, watchlists, chat, etc.)
-Future Phases 29-36                     ░░░░░░░░░░░░  Year 2+ features
+Phase 30: Email/Push Notifications       ░░░░░░░░░░░░  Blocked until Apr 21 DNS transfer
+Phase 31: Multi-Sport Architecture       ░░░░░░░░░░░░  Year 2 expansion prep
+Future Phases 32-36                      ░░░░░░░░░░░░  Year 2+ features
 ```
 
 ### Visual Build Order
@@ -501,16 +511,24 @@ Phase 23 (Legal/Compliance)  ████████████  ✅ COMPLETE
         ↓
 Phase 24 (Schema Additions)  ████████████  ✅ COMPLETE
 
+━━━ SEASON 1 FEATURES (Build First) ━━━━━━━━━━━━━━━━━━━━━━━━━
+        ↓
+Phase 25 (Free Features)     ░░░░░░░░░░░░
+        ↓
+Phase 26 (Draft Enhancements)░░░░░░░░░░░░
+        ↓
+Phase 27 (Trading — FREE)    ░░░░░░░░░░░░
+
 ━━━ PRE-LAUNCH (UX Polish) ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         ↓
-Phase 25 (UX Audit)          ░░░░░░░░░░░░
+Phase 28 (UX Audit)          ░░░░░░░░░░░░
         ↓
-Phase 26 (Mobile)            ░░░░░░░░░░░░
+Phase 29 (Mobile)            ░░░░░░░░░░░░
 
-━━━ NEXT (Pre-Season, ordering TBD) ━━━━━━━━━━━━━━━━━━━━━━━━
-Phase 27 (Multi-Sport)       ░░░░░░░░░░░░
-Phase 28 (Free Enhancements) ░░░░░░░░░░░░
-Future Phases 29-36          ░░░░░░░░░░░░
+━━━ POST-LAUNCH / YEAR 2 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Phase 30 (Notifications)     ░░░░░░░░░░░░
+Phase 31 (Multi-Sport Arch)  ░░░░░░░░░░░░
+Future Phases 32-36          ░░░░░░░░░░░░
 ```
 
 ### June Deadline Decision Framework
@@ -537,10 +555,19 @@ STOP POINT 3 (If still more time):  ★ REACHED ★
 STOP POINT 4 (Before real users):
   ✅ Phase 22 done      → Audit gaps fixed
   ✅ Phase 23 done      → Legal compliance (ToS, age gate, account deletion, CCPA)
-  ⬜ Phase 24 done      → Schema ready for Year 2 features
-  ⬜ Phase 25 done      → UX polished (navigation, layout, user journey)
-  ⬜ Phase 26 done      → Mobile-ready (tested at all breakpoints)
-  → Platform is legally, technically, and visually ready for public launch.
+  ✅ Phase 24 done      → Schema ready for future features
+  → Platform is legally and technically ready for public launch.
+
+STOP POINT 5 (Season 1 features):
+  ⬜ Phase 25 done      → Free features (presets, watchlist, announcements, chat, notifications, history)
+  ⬜ Phase 26 done      → Draft enhancements (auto-pick, pause/resume)
+  ⬜ Phase 27 done      → Team-to-team trading (FREE tier)
+  → All Season 1 features built.
+
+STOP POINT 6 (Launch polish):
+  ⬜ Phase 28 done      → UX polished (navigation, layout, user journey)
+  ⬜ Phase 29 done      → Mobile-ready (tested at all breakpoints)
+  → Platform is visually polished and ready for public launch.
 ```
 
 ---
@@ -1214,12 +1241,100 @@ These were never formally tested. Run during Phase 22 or note which can't be tes
 
 ---
 
-## Phase 25: UX Audit & User Journey
+## Phase 25: Free Feature Enhancements
+*Free features that enhance the experience beyond the core loop — all shipping before Season 1*
+
+**Status: NOT STARTED**
+
+**Depends on**: Phase 16 (brand styling), Phase 14 (schema for watchlists, scoring_preset, notification_preferences), Phase 24 (schema for announcements, draft_messages, league_seasons)
+
+### Background
+
+These are features designated as free (never gated behind premium) that improve the user experience. All ship before August 2026 Season 1. Schema for all features already exists — this phase is UI and logic only.
+
+### Tasks
+
+| Task | Description | Details | Schema Ready? |
+|------|-------------|---------|---------------|
+| 25.1 | **Scoring presets UI** | Add a preset dropdown to the league settings page ("Standard", "High Stakes", "Simple", "Chaos Mode"). When selected, auto-fills the existing scoring columns with predefined values. Commissioner can still tweak individual values after selecting a preset. This is a UX convenience for new commissioners — reduces the intimidation of 20+ scoring sliders. | Yes — `scoring_preset` column added in Phase 14.16 |
+| 25.2 | **Watchlist UI** | Add a "Watch" button to school cards in the available schools browser and draft board. Create a `/watchlist` page (or section on team page) showing all watched programs with their upcoming games and recent performance. Helps users track programs they want to draft or pick up via add/drop. | Yes — `watchlists` table created in Phase 14.14 |
+| 25.3 | **League announcements** | Add a commissioner announcement feature: text post that appears at the top of the league home page for all members. Simple CRUD — commissioner creates/edits/deletes announcements. Uses `league_announcements` table from Phase 24.4. | Yes — after Phase 24 |
+| 25.4 | **Draft chat** | Add a real-time chat panel to the draft room using Supabase Realtime. Messages appear alongside the draft board. Simple text messages only (no images/files). Uses `draft_messages` table from Phase 24.6 or Supabase Realtime broadcast channels. | Yes — after Phase 24 |
+| 25.5 | **Basic notifications** | Build notification delivery for key events: draft starting, your turn to pick, game results posted, transaction confirmed. Start with in-app notifications (a bell icon with unread count). Email notifications come later. Uses `notification_preferences` from Phase 14.12. | Partial — preferences schema ready, needs `notifications` table |
+| 25.6 | **League history / trophy room** | Display past season results: league champion, final standings, individual awards (most points in a week, biggest comeback, etc.). For Year 1 this is empty — becomes valuable starting Season 2 when there's history to show. Uses `league_seasons` table from Phase 24.5. | Yes — after Phase 24 |
+
+### Build Order
+
+1. **25.1 Scoring presets** — small effort, big UX win for new commissioners
+2. **25.2 Watchlists** — schema ready, moderate effort, adds engagement
+3. **25.5 Basic notifications** — users will ask for this first
+4. **25.3 League announcements** — commissioner tool, moderate effort
+5. **25.4 Draft chat** — fun but lower priority (users already use group chats)
+6. **25.6 League history** — only valuable after Season 1 ends
+
+---
+
+## Phase 26: Draft Enhancements
+*Auto-pick and pause/resume for the draft system — needed for August 2026 draft season*
+
+**Status: NOT STARTED**
+
+### Background
+
+The current draft system works end-to-end but lacks two features commissioners will need: auto-pick for absent drafters, and the ability to pause/resume a draft if technical issues arise.
+
+### Tasks
+
+| Task | Description | Details |
+|------|-------------|---------|
+| 26.1 | **Auto-pick logic** | When a user's timer expires without a pick, automatically select a program from their watchlist (if set) or the best available program by composite ranking. Should work for users who go AFK and for users who pre-set an auto-pick preference. |
+| 26.2 | **Draft pause/resume** | Allow commissioners to pause the draft timer (e.g., for connection issues, bathroom breaks). All users see a "Draft Paused" overlay. Commissioner can resume. Draft state preserved if page is reloaded. |
+
+### Verification
+- [ ] Auto-pick fires when timer expires with no manual selection
+- [ ] Auto-pick uses watchlist priority if available
+- [ ] Commissioner can pause and resume the draft
+- [ ] All users see pause/resume state in real-time
+- [ ] `npm run build` passes
+
+---
+
+## Phase 27: Team-to-Team Trading
+*Mid-season roster trades between users — FREE tier feature*
+
+**Status: NOT STARTED**
+
+**Depends on**: Phase 14.13 (`trades` and `trade_items` tables already exist)
+
+### Background
+
+Originally planned as a Pro/premium feature, trading has been moved to the **free tier** for Season 1. This allows all leagues to trade programs between teams during the season. The `trades` and `trade_items` schema was created in Phase 14.
+
+### Tasks
+
+| Task | Description | Details |
+|------|-------------|---------|
+| 27.1 | **Trade proposal UI** | Create a trade proposal flow: select a league member, choose programs to send and receive, add an optional message, submit proposal. Show trade preview with program stats/records before confirming. |
+| 27.2 | **Trade review/accept/reject** | Receiving user sees pending trade proposals in their dashboard and team page. Can accept or reject with optional message. Both sides notified of outcome. |
+| 27.3 | **Commissioner trade veto** | Commissioners can veto any trade within a configurable review window (e.g., 24 hours). Vetoed trades are reversed. League settings control whether commissioner review is required before trades execute. |
+| 27.4 | **Trade history log** | Display completed and vetoed trades on the league page. Shows what was traded, when, and between whom. Feeds into the activity log. |
+
+### Verification
+- [ ] User can propose a trade to another league member
+- [ ] Receiving user can accept or reject
+- [ ] Commissioner can veto trades
+- [ ] Completed trades update both rosters correctly
+- [ ] Trade history visible on league page
+- [ ] `npm run build` passes
+
+---
+
+## Phase 28: UX Audit & User Journey
 *Walk through every user-facing flow and optimize layout, navigation, and usability*
 
 **Status: NOT STARTED**
 
-**Context**: A UX exploration (Mar 1, 2026) audited all user-facing pages and found 10 significant issues including header overflow on mobile, wide tables with no card-based fallback, inconsistent navigation patterns, and fixed pixel widths in roster components. This phase addresses layout and flow problems before real users interact with the platform.
+**Context**: A UX exploration (Mar 1, 2026) audited all user-facing pages and found 10 significant issues including header overflow on mobile, wide tables with no card-based fallback, inconsistent navigation patterns, and fixed pixel widths in roster components. This phase addresses layout and flow problems. Runs after all Season 1 features are built so the audit covers everything in one pass.
 
 ### User Journey Steps to Audit
 
@@ -1238,17 +1353,17 @@ These were never formally tested. Run during Phase 22 or note which can't be tes
 
 | Task | Description |
 |------|-------------|
-| 27.1 | **Redesign Header for mobile** — Add hamburger menu or responsive collapse. Current: 4-5 items in single-row flex overflow on phones. |
-| 27.2 | **Standardize navigation** — Create consistent Quick Nav component used across all league pages with same link set and active-page highlighting. |
-| 27.3 | **Fix league home mobile layout** — Move "Your Team" summary above leaderboard on mobile (`order-first lg:order-none`). |
-| 27.4 | **Improve dashboard league cards** — Add hover feedback, "current week" badge, and "your rank" preview. |
-| 27.5 | **Add card-based mobile view for RosterList** — Stacked school cards on mobile: school name, logo, record, total points, expandable weekly breakdown. |
-| 27.6 | **Improve leaderboard mobile experience** — Simplified mobile view (rank, team, total points only) with expandable rows. Fix sticky backgrounds to use CSS variables. |
-| 27.7 | **Fix Add/Drop UX** — Replace `window.location.reload()` with state refresh. Add school schedule preview. Improve filter layout on mobile. |
-| 27.8 | **Add school color contrast check** — Ensure text readable on school color backgrounds in draft room and team settings (WCAG AA 4.5:1 ratio). |
-| 25.9 | **Reduce post-signup friction** — Auto-redirect to dashboard after email confirmation via auth callback. |
-| 25.10 | **Link full leaderboard** — Add navigation link to full leaderboard from league home Quick Nav. |
-| 25.11 | **Make Quick Nav sticky** — Pin league Quick Nav below header so users can navigate without scrolling to top. |
+| 28.1 | **Redesign Header for mobile** — Add hamburger menu or responsive collapse. Current: 4-5 items in single-row flex overflow on phones. |
+| 28.2 | **Standardize navigation** — Create consistent Quick Nav component used across all league pages with same link set and active-page highlighting. |
+| 28.3 | **Fix league home mobile layout** — Move "Your Team" summary above leaderboard on mobile (`order-first lg:order-none`). |
+| 28.4 | **Improve dashboard league cards** — Add hover feedback, "current week" badge, and "your rank" preview. |
+| 28.5 | **Add card-based mobile view for RosterList** — Stacked school cards on mobile: school name, logo, record, total points, expandable weekly breakdown. |
+| 28.6 | **Improve leaderboard mobile experience** — Simplified mobile view (rank, team, total points only) with expandable rows. Fix sticky backgrounds to use CSS variables. |
+| 28.7 | **Fix Add/Drop UX** — Replace `window.location.reload()` with state refresh. Add school schedule preview. Improve filter layout on mobile. |
+| 28.8 | **Add school color contrast check** — Ensure text readable on school color backgrounds in draft room and team settings (WCAG AA 4.5:1 ratio). |
+| 28.9 | **Reduce post-signup friction** — Auto-redirect to dashboard after email confirmation via auth callback. |
+| 28.10 | **Link full leaderboard** — Add navigation link to full leaderboard from league home Quick Nav. |
+| 28.11 | **Make Quick Nav sticky** — Pin league Quick Nav below header so users can navigate without scrolling to top. |
 
 ### Verification
 - [ ] Walk through complete user journey on desktop: signup → create league → invite → draft → view leaderboard → add/drop → view team
@@ -1261,12 +1376,12 @@ These were never formally tested. Run during Phase 22 or note which can't be tes
 
 ---
 
-## Phase 26: Mobile Responsiveness
+## Phase 29: Mobile Responsiveness
 *Systematic mobile testing and fixes across every page at common breakpoints*
 
 **Status: NOT STARTED**
 
-**Context**: Most fantasy sports activity happens on phones. Every page must be tested at standard mobile breakpoints (375px, 390px, 768px) and fixed where needed. Phase 25 addresses structural UX issues; this phase is the comprehensive mobile sweep.
+**Context**: Most fantasy sports activity happens on phones. Every page must be tested at standard mobile breakpoints (375px, 390px, 768px) and fixed where needed. Phase 28 addresses structural UX issues; this phase is the comprehensive mobile sweep.
 
 ### Test Matrix
 
@@ -1301,14 +1416,14 @@ These were never formally tested. Run during Phase 22 or note which can't be tes
 
 | Task | Description |
 |------|-------------|
-| 28.1 | **Fix all text truncation issues** — Audit every `truncate` and `max-w-[Xpx]` class. Ensure names readable (not cut to 2-3 chars). |
-| 28.2 | **Fix all table overflow** — Every `min-w-max` table must have `overflow-x-auto` container and scroll indicator. |
-| 28.3 | **Test and fix touch targets** — All buttons/links ≥ 44x44px per WCAG guidelines. |
-| 28.4 | **Fix font sizing** — No text smaller than 14px on mobile. Audit all `text-[10px]`, `text-xs` usage. |
-| 28.5 | **Test bracket visualization** — 12-team CFP bracket may not fit on phones. May need horizontal scroll or simplified mobile bracket. |
-| 28.6 | **Test draft room end-to-end on phone** — Verify 3-tab mobile nav, timer, pick confirmations, school search on real phone. |
-| 26.7 | **Fix z-index / overlay issues** — Modals, dropdowns, ReportIssue button must not overlap incorrectly on mobile. |
-| 26.8 | **Test landscape orientation** — Verify pages don't break when phone is sideways. |
+| 29.1 | **Fix all text truncation issues** — Audit every `truncate` and `max-w-[Xpx]` class. Ensure names readable (not cut to 2-3 chars). |
+| 29.2 | **Fix all table overflow** — Every `min-w-max` table must have `overflow-x-auto` container and scroll indicator. |
+| 29.3 | **Test and fix touch targets** — All buttons/links ≥ 44x44px per WCAG guidelines. |
+| 29.4 | **Fix font sizing** — No text smaller than 14px on mobile. Audit all `text-[10px]`, `text-xs` usage. |
+| 29.5 | **Test bracket visualization** — 12-team CFP bracket may not fit on phones. May need horizontal scroll or simplified mobile bracket. |
+| 29.6 | **Test draft room end-to-end on phone** — Verify 3-tab mobile nav, timer, pick confirmations, school search on real phone. |
+| 29.7 | **Fix z-index / overlay issues** — Modals, dropdowns, ReportIssue button must not overlap incorrectly on mobile. |
+| 29.8 | **Test landscape orientation** — Verify pages don't break when phone is sideways. |
 
 ### Verification
 - [ ] Every page passes visual inspection at 375px, 390px, and 768px
@@ -1321,108 +1436,18 @@ These were never formally tested. Run during Phase 22 or note which can't be tes
 
 ---
 
-## Phase 27: Multi-Sport Architecture
-*Refactor the architecture so college football patterns don't block other sports*
-
-**Status: NOT STARTED** (Year 2 expansion prep — pushed back, UX polish prioritized)
-
-### Background
-
-College football is sport #1. Future sports include hockey, baseball, basketball, and cricket. Some features are inherently sport-specific (Heisman is only for CFB, Stanley Cup is only for hockey), and that's expected. However, several core architectural patterns are currently hardcoded for football and would **break or require major rewrites** when porting to another sport.
-
-### Analysis: What's Shared vs. Sport-Specific
-
-| Concept | Shared (must generalize) | Sport-Specific (OK to keep) |
-|---------|-------------------------|---------------------------|
-| Season structure | Season start/end dates, week numbering | Specific week counts (CFB: 22 weeks, NHL: 26 weeks) |
-| Game model | Home/away, scores, status, date | Bowl games, overtime format |
-| Rankings | Concept of ranked opponents | AP Top 25 (CFB), power rankings (NHL/NBA) |
-| Scoring rules | Points for wins, bonuses | Specific bonus types per sport |
-| Playoffs | Playoff tracking, bracket display | Number of teams, format (single elim vs best-of-7) |
-| Special events | Event-based bonuses | Conference championships (CFB), award winners |
-| Individual awards | Award tracking system | Heisman (CFB), Hart Trophy (NHL), MVP (NBA/MLB) |
-| Team model | Schools/teams, conferences, logos | "Schools" naming (college only) |
-
-### Tasks — Generalize Shared Patterns
-
-| Task | Description | Details |
-|------|-------------|---------|
-| 27.1 | **Abstract week/season structure** | Move season config (start date, max weeks, playoff start week, week labels) into the `seasons` table or a new `season_config` JSONB column. Replace all hardcoded week numbers with lookups from this config. The `getCurrentWeek()` function should accept sport/season and calculate based on DB config, not hardcoded August 24. |
-| 27.2 | **Generalize ranking system** | Rename `ap_rankings_history` to `rankings_history`. Add `ranking_type` column (e.g., 'ap_poll', 'power_ranking', 'standings'). The scoring engine should look up the ranking type for the sport, not assume AP Top 25. Not all sports use rankings for bonus points — make ranking-based scoring optional per sport. |
-| 27.3 | **Generalize game types** | Currently `games` has `is_bowl_game`, `is_playoff_game`, `bowl_name`, `playoff_round` — all football-specific. Replace with: `game_type` ENUM ('regular_season', 'conference_championship', 'postseason', 'playoff', 'championship', 'exhibition'). Add `game_type_detail` TEXT for sport-specific detail (e.g., bowl name for CFB, "Stanley Cup Finals" for NHL). Move `is_conference_game` logic to derive from the game data rather than storing as a separate boolean. |
-| 27.4 | **Abstract scoring rules schema** | The `league_settings` table has 20+ football-specific point columns. Replace with a `scoring_rules` JSONB column or a normalized `scoring_rules` table: `{ rule_type: 'win', points: 1 }, { rule_type: 'conference_game', points: 1 }, { rule_type: 'ranked_opponent_top10', points: 2 }`. Each sport defines its available rule types. The scoring engine reads rules dynamically instead of accessing fixed columns. |
-| 27.5 | **Generalize individual awards** | Rename `heisman_winners` to `individual_awards`. Add `award_type` column ('heisman', 'hart_trophy', 'mvp', etc.) and `sport_id`. The scoring engine checks for awards associated with schools on rosters, regardless of which specific award it is. |
-| 27.6 | **Rename "schools" to "teams" (or keep with alias)** | College sports use "schools," pro sports use "teams." Options: (a) rename table to `teams` (breaking change), (b) keep `schools` for college sports and add `teams` for pro, (c) keep `schools` table name but use "teams" in the UI with a display alias per sport. Recommend option (c) for now — least disruptive. |
-| 27.7 | **Create sport configuration table** | Create `sport_configs` table with: `sport_id`, `season_week_count`, `playoff_format` ('single_elimination', 'best_of_7', etc.), `ranking_type`, `available_scoring_rules` (JSONB), `api_provider`, `api_base_url`. This is the single source of truth for how each sport works. |
-| 27.8 | **Create sport-specific API adapters** | Currently `src/lib/api/espn.ts` is football-specific. Create an adapter pattern: `src/lib/api/adapters/espn-cfb.ts`, `src/lib/api/adapters/nhl.ts`, etc. Each adapter implements a common interface: `fetchTeams()`, `fetchGames(week)`, `fetchRankings()`, `fetchScores()`. The sync routes call the adapter for the given sport. |
-| 27.9 | **Abstract scoring engine** | Refactor `src/lib/points/calculator.ts` to be sport-agnostic. The engine reads scoring rules from the sport config and league settings, then applies them generically. Sport-specific logic (e.g., "bowl games don't get ranked bonus") lives in sport-specific rule files, not in the main calculator. |
-
-### What NOT to Change
-
-These are intentionally sport-specific and don't need generalization:
-- **Heisman scraping logic** — only relevant for CFB; other sports will have their own award detection
-- **CFP bracket component** — other sports will have different bracket formats; build new components per sport
-- **Conference abbreviation mapping** — sport-specific display data
-- **ESPN API endpoints** — each sport has different endpoints; handled by the adapter pattern (27.8)
-
-### Migration Path
-
-This phase is the largest refactor. Recommended approach:
-1. Start with **additive changes** (new tables, new columns) — don't remove old schema yet
-2. Update the scoring engine to read from new config, with **fallback to old columns**
-3. Migrate CFB data to new format
-4. Once verified, remove old columns in a cleanup migration
-5. Build sport #2 (hockey?) using only the new patterns
-
----
-
-## Phase 28: Free Feature Enhancements
-*Post-launch free features that enhance the experience but aren't required for the core loop*
-
-**Status: NOT STARTED — DEFERRED** (ordering within pre-Season 1 window TBD)
-
-**Depends on**: Phase 16 (brand styling), Phase 14 (schema for watchlists, scoring_preset, notification_preferences), Phase 24 (schema for announcements, draft_messages, league_seasons), Phase 25-26 (UX and mobile polish)
-
-### Background
-
-These are features we've designated as free (never gated behind premium) but that are NOT needed for the core platform loop of create league → draft → play season → see who wins. All of these are "nice to have" enhancements that improve the user experience. Build them post-launch as time allows, in any order.
-
-### Tasks
-
-| Task | Description | Details | Schema Ready? |
-|------|-------------|---------|---------------|
-| 28.1 | **Scoring presets UI** | Add a preset dropdown to the league settings page ("Standard", "High Stakes", "Simple", "Chaos Mode"). When selected, auto-fills the existing scoring columns with predefined values. Commissioner can still tweak individual values after selecting a preset. This is a UX convenience for new commissioners — reduces the intimidation of 20+ scoring sliders. | Yes — `scoring_preset` column added in Phase 14.16 |
-| 28.2 | **Watchlist UI** | Add a "Watch" button to school cards in the available schools browser and draft board. Create a `/watchlist` page (or section on team page) showing all watched programs with their upcoming games and recent performance. Helps users track programs they want to draft or pick up via add/drop. | Yes — `watchlists` table created in Phase 14.14 |
-| 28.3 | **League announcements** | Add a commissioner announcement feature: text post that appears at the top of the league home page for all members. Simple CRUD — commissioner creates/edits/deletes announcements. Uses `league_announcements` table from Phase 24.4. | Yes — after Phase 24 |
-| 28.4 | **Draft chat** | Add a real-time chat panel to the draft room using Supabase Realtime. Messages appear alongside the draft board. Simple text messages only (no images/files). Uses `draft_messages` table from Phase 24.6 or Supabase Realtime broadcast channels. | Yes — after Phase 24 |
-| 28.5 | **Basic notifications** | Build notification delivery for key events: draft starting, your turn to pick, game results posted, transaction confirmed. Start with in-app notifications (a bell icon with unread count). Email notifications come later. Uses `notification_preferences` from Phase 14.12. | Partial — preferences schema ready, needs `notifications` table |
-| 28.6 | **League history / trophy room** | Display past season results: league champion, final standings, individual awards (most points in a week, biggest comeback, etc.). For Year 1 this is empty — becomes valuable starting Season 2 when there's history to show. Uses `league_seasons` table from Phase 24.5. | Yes — after Phase 24 |
-
-### Priority Within This Phase
-
-If building post-launch, suggested order:
-1. **28.1 Scoring presets** — small effort, big UX win for new commissioners
-2. **28.2 Watchlists** — schema ready, moderate effort, adds engagement
-3. **28.5 Basic notifications** — users will ask for this first
-4. **28.3 League announcements** — commissioner tool, moderate effort
-5. **28.4 Draft chat** — fun but lowest priority (users already use group chats)
-6. **28.6 League history** — only valuable after Season 1 ends
-
----
-
 ## Future Phases
 
-*Ordering within these phases is TBD — pending discussion about which features to pull into the pre-Season 1 window (before Aug 2026).*
+*Post-launch and Year 2 features.*
 
 | Phase | Features | Notes | Timeline |
 |-------|----------|-------|----------|
-| **Phase 29** | Auto-pick for draft, draft pause/resume | Enhancement to draft system. Useful for Aug 2026 draft season. | Pre-Season 1? |
-| **Phase 30** | Email/push notifications | Game updates, draft reminders, transaction confirmations. Uses `notification_preferences` schema from Phase 14.12. Extends Phase 28.5 in-app notifications with email delivery. **Blocked until Apr 21 DNS transfer.** | Apr-May 2026 |
-| **Phase 31** | Team-to-team trading | Mid-season roster trades between users. Uses `trades` schema from Phase 14.13. | Pre-Season 1? |
-| **Phase 32** | Historical season caching | Archive past seasons, returning user experience. Extends Phase 28.6 with full multi-season data. | Post-Season 1 |
-| **Phase 33** | Multi-sport launch (Hockey) | First sport after CFB using Phase 27 architecture | Year 2 |
-| **Phase 34** | Premium features launch (Year 2) | Activate feature flags, build premium UI, implement: pre-draft intelligence, live analytics, transaction intelligence, custom scoring templates, what-if simulator, power rankings, custom league themes, early draft access. Stripe integration for Pro subscriptions ($4.99/mo or $29.99/yr). | Year 2 |
-| **Phase 35** | Payment integration (Stripe) | Entry fees, prize payouts, charity pooling, Pro subscription billing. **Requires gaming attorney consultation if adding paid entry leagues (NAICS reclassification risk).** | Year 2 |
+| **Phase 30** | Email/push notifications | Game updates, draft reminders, transaction confirmations. Uses `notification_preferences` schema from Phase 14.12. Extends Phase 25.5 in-app notifications with email delivery. **Blocked until Apr 21 DNS transfer.** | Apr-May 2026 |
+| **Phase 31** | Multi-sport architecture | Refactor architecture so college football patterns don't block other sports. Abstract week/season, rankings, game types, scoring rules, awards. Create sport config table and API adapters. | Year 2 |
+| **Phase 32** | Historical season caching | Archive past seasons, returning user experience. Extends Phase 25.6 with full multi-season data. | Post-Season 1 |
+| **Phase 33** | Premium features launch | Activate feature flags, build premium UI: pre-draft intelligence, live analytics, transaction intelligence, custom scoring templates, what-if simulator, power rankings, custom league themes, early draft access. Pro subscriptions ($4.99/mo or $29.99/yr). | Year 2 |
+| **Phase 34** | Payment integration (Stripe) | Entry fees, prize payouts, charity pooling, Pro subscription billing. **Requires gaming attorney consultation if adding paid entry leagues (NAICS reclassification risk).** | Year 2 |
+| **Phase 35** | Multi-sport launch (Hockey) | First sport after CFB using Phase 31 architecture. | Year 2 |
 | **Phase 36** | Native mobile / PWA | Mobile-optimized experience | Year 2+ |
 
 ---
@@ -1513,4 +1538,4 @@ The platform is classified as recreation/entertainment, NOT gambling. This means
 
 ---
 
-*Last Updated: February 27, 2026 (audit + new phases 22-24 + business plan integration)*
+*Last Updated: March 3, 2026 (phase reorder: features first, then UX polish; trading moved to free tier)*
