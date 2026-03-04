@@ -1514,6 +1514,205 @@ export interface Database {
           recorded_at?: string
         }
       }
+
+      // ============================================
+      // PHASE 24: SCHEMA ADDITIONS
+      // ============================================
+
+      // ToS consent records (7-year retention)
+      tos_agreements: {
+        Row: {
+          id: string
+          user_id: string | null
+          tos_version: string
+          agreed_at: string
+          ip_address: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id?: string | null
+          tos_version: string
+          agreed_at?: string
+          ip_address?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string | null
+          tos_version?: string
+          agreed_at?: string
+          ip_address?: string | null
+          created_at?: string
+        }
+      }
+
+      // Pro Analytics: pre-computed school analytics per season
+      program_analytics: {
+        Row: {
+          id: string
+          school_id: string
+          season_year: number
+          power_score: number | null
+          sos_rank: number | null
+          returning_production_pct: number | null
+          recruiting_rank: number | null
+          preseason_rank: number | null
+          composite_score: number | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          school_id: string
+          season_year: number
+          power_score?: number | null
+          sos_rank?: number | null
+          returning_production_pct?: number | null
+          recruiting_rank?: number | null
+          preseason_rank?: number | null
+          composite_score?: number | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          school_id?: string
+          season_year?: number
+          power_score?: number | null
+          sos_rank?: number | null
+          returning_production_pct?: number | null
+          recruiting_rank?: number | null
+          preseason_rank?: number | null
+          composite_score?: number | null
+          created_at?: string
+          updated_at?: string
+        }
+      }
+
+      // Pro Draft Intelligence: weekly trend data per school
+      program_trends: {
+        Row: {
+          id: string
+          school_id: string
+          season_year: number
+          week: number
+          trend_score: number | null
+          recent_points_avg: number | null
+          upcoming_sos: number | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          school_id: string
+          season_year: number
+          week: number
+          trend_score?: number | null
+          recent_points_avg?: number | null
+          upcoming_sos?: number | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          school_id?: string
+          season_year?: number
+          week?: number
+          trend_score?: number | null
+          recent_points_avg?: number | null
+          upcoming_sos?: number | null
+          created_at?: string
+        }
+      }
+
+      // Commissioner announcements on league home page
+      league_announcements: {
+        Row: {
+          id: string
+          league_id: string
+          commissioner_id: string
+          title: string
+          body: string
+          pinned: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          league_id: string
+          commissioner_id: string
+          title: string
+          body: string
+          pinned?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          league_id?: string
+          commissioner_id?: string
+          title?: string
+          body?: string
+          pinned?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+      }
+
+      // Archived season results per league (trophy room)
+      league_seasons: {
+        Row: {
+          id: string
+          league_id: string
+          season_year: number
+          final_standings: Json | null
+          champion_user_id: string | null
+          archived_at: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          league_id: string
+          season_year: number
+          final_standings?: Json | null
+          champion_user_id?: string | null
+          archived_at?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          league_id?: string
+          season_year?: number
+          final_standings?: Json | null
+          champion_user_id?: string | null
+          archived_at?: string | null
+          created_at?: string
+        }
+      }
+
+      // Real-time chat messages during drafts
+      draft_messages: {
+        Row: {
+          id: string
+          draft_id: string
+          user_id: string
+          message: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          draft_id: string
+          user_id: string
+          message: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          draft_id?: string
+          user_id?: string
+          message?: string
+          created_at?: string
+        }
+      }
     }
     Views: {
       [_ in never]: never
@@ -1574,6 +1773,12 @@ export type WaitlistEntry = Tables<'waitlist'>
 export type BadgeDefinition = Tables<'badge_definitions'>
 export type UserBadge = Tables<'user_badges'>
 export type SeasonChampion = Tables<'season_champions'>
+export type TosAgreement = Tables<'tos_agreements'>
+export type ProgramAnalytics = Tables<'program_analytics'>
+export type ProgramTrend = Tables<'program_trends'>
+export type LeagueAnnouncement = Tables<'league_announcements'>
+export type LeagueSeason = Tables<'league_seasons'>
+export type DraftMessage = Tables<'draft_messages'>
 
 // Composite type for badge display (badge instance + joined definition)
 export interface UserBadgeWithDefinition {
