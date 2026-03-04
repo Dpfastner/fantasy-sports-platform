@@ -6,6 +6,7 @@ import { Header } from '@/components/Header'
 import DraftStatusSection from '@/components/DraftStatusSection'
 import LeaderboardClient from '@/components/LeaderboardClient'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
+import { ReportContentButton } from '@/components/ReportContentButton'
 import { SandboxWeekSelector } from '@/components/SandboxWeekSelector'
 import { ShareButton } from '@/components/ShareButton'
 import { getCurrentWeek } from '@/lib/week'
@@ -194,6 +195,26 @@ export default async function LeaguePage({ params }: PageProps) {
     weeklyPoints = (weeklyPointsData || []) as WeeklyPoints[]
   }
 
+  // Get announcements for league activity section
+  const { data: announcementsData } = await supabase
+    .from('league_announcements')
+    .select('id, title, body, pinned, created_at, commissioner_id')
+    .eq('league_id', id)
+    .order('pinned', { ascending: false })
+    .order('created_at', { ascending: false })
+    .limit(10)
+
+  // Build commissioner name map from teams data
+  const commissionerNames = new Map<string, string>()
+  if (teams) {
+    for (const team of teams) {
+      const profile = team.profiles as { display_name: string | null; email: string } | null
+      commissionerNames.set(team.user_id, profile?.display_name || profile?.email?.split('@')[0] || 'Commissioner')
+    }
+  }
+
+  const announcements = announcementsData || []
+
   // Get double picks count for user's team
   let doublePicksUsed = 0
   if (userTeam && settings?.double_points_enabled) {
@@ -349,6 +370,58 @@ export default async function LeaguePage({ params }: PageProps) {
                   />
                 </ErrorBoundary>
               </div>
+            )}
+
+            {/* League Activity — Announcements */}
+            {announcements.length > 0 && (
+              <ErrorBoundary sectionName="announcements">
+                <div className="bg-surface rounded-lg p-4 md:p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-lg font-semibold text-text-primary">League Activity</h2>
+                    {isCommissioner && (
+                      <Link
+                        href={`/leagues/${id}/settings?tab=misc`}
+                        className="text-brand-text hover:text-brand-text/80 text-xs transition-colors"
+                      >
+                        Manage Announcements
+                      </Link>
+                    )}
+                  </div>
+                  <div className="space-y-3">
+                    {announcements.map(a => {
+                      const commName = commissionerNames.get(a.commissioner_id) || 'Commissioner'
+                      const daysAgo = Math.floor((Date.now() - new Date(a.created_at).getTime()) / (1000 * 60 * 60 * 24))
+                      const timeAgo = daysAgo === 0 ? 'Today' : daysAgo === 1 ? 'Yesterday' : `${daysAgo}d ago`
+
+                      return (
+                        <div key={a.id} className="p-3 bg-surface-inset rounded-lg border border-border">
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 mb-1">
+                                {a.pinned && (
+                                  <svg className="w-3.5 h-3.5 text-warning shrink-0" fill="currentColor" viewBox="0 0 24 24">
+                                    <path d="M16 12V4h1V2H7v2h1v8l-2 2v2h5.2v6h1.6v-6H18v-2l-2-2z"/>
+                                  </svg>
+                                )}
+                                <h3 className="text-sm font-semibold text-text-primary truncate">{a.title}</h3>
+                              </div>
+                              <p className="text-text-secondary text-sm whitespace-pre-wrap">{a.body}</p>
+                              <p className="text-text-muted text-xs mt-2">
+                                — {commName}, {timeAgo}
+                              </p>
+                            </div>
+                            <ReportContentButton
+                              contentType="announcement"
+                              contentId={a.id}
+                              contentPreview={`${a.title}: ${a.body}`}
+                            />
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+              </ErrorBoundary>
             )}
           </div>
 

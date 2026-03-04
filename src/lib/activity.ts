@@ -36,6 +36,10 @@ export type ActivityAction =
   // Admin / Badges
   | 'badge.granted'
   | 'badge.revoked'
+  // Announcements
+  | 'announcement.created'
+  | 'announcement.updated'
+  | 'announcement.deleted'
   // Other
   | 'invite_code.looked_up'
   | 'issue_report.submitted'

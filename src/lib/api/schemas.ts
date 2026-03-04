@@ -84,3 +84,15 @@ export const watchlistToggleSchema = z.object({
   schoolId: uuidField,
   leagueId: uuidField,
 })
+
+export const announcementCreateSchema = z.object({
+  title: z.string().min(1, 'Title is required').max(200),
+  body: z.string().min(1, 'Body is required').max(2000),
+  pinned: z.boolean().optional().default(false),
+})
+
+export const announcementUpdateSchema = z.object({
+  title: z.string().min(1).max(200).optional(),
+  body: z.string().min(1).max(2000).optional(),
+  pinned: z.boolean().optional(),
+})
