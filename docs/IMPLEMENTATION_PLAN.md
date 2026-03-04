@@ -442,7 +442,7 @@ Phase 21: Share & Social Features       ████████████  CO
 ```
 Phase 22: Audit Fixes & Quick Wins     ████████████  ✅ COMPLETE
 Phase 23: Legal & Compliance           ████████████  ✅ COMPLETE (ToS, privacy, age gate, account deletion, CCPA)
-Phase 24: Schema Additions             ░░░░░░░░░░░░  "Schema Now" tables from business plan
+Phase 24: Schema Additions             ████████████  ✅ COMPLETE
 ```
 
 ### PRE-LAUNCH — UX Polish
@@ -499,7 +499,7 @@ Phase 22 (Audit Fixes)       ████████████  ✅ COMPLETE
         ↓
 Phase 23 (Legal/Compliance)  ████████████  ✅ COMPLETE
         ↓
-Phase 24 (Schema Additions)  ░░░░░░░░░░░░
+Phase 24 (Schema Additions)  ████████████  ✅ COMPLETE
 
 ━━━ PRE-LAUNCH (UX Polish) ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         ↓
@@ -1190,27 +1190,27 @@ These were never formally tested. Run during Phase 22 or note which can't be tes
 ## Phase 24: Schema Additions
 *"Schema Now, Build Later" — tables from the business plan that don't exist yet. No UI — just migrations and type sync.*
 
-**Status: NOT STARTED**
+**Status: COMPLETE** ✅
 
-**Context**: The business plan specifies several database tables following the "Schema Now, Build Later" principle. Most were created in Phase 14 (feature_flags, user_feature_flags, trades, trade_items, watchlists, activity_log, notification_preferences, waitlist, league_invites). Six tables are still missing.
+**Context**: The business plan specifies several database tables following the "Schema Now, Build Later" principle. Most were created in Phase 14. Six remaining tables created here.
 
 ### Tasks
 
-| Task | Description | Details |
-|------|-------------|---------|
-| 24.1 | **Create `tos_agreements` table** | See Phase 23.3 — may be created there instead. Include here for completeness. |
-| 24.2 | **Create `program_analytics` table** | `school_id` (FK), `season_year` (int), `power_score` (numeric), `sos_rank` (int), `returning_production_pct` (numeric), `recruiting_rank` (int), `preseason_rank` (int), `composite_score` (numeric). Used by future Pro Analytics feature. |
-| 24.3 | **Create `program_trends` table** | `school_id` (FK), `week` (int), `trend_score` (numeric), `recent_points_avg` (numeric), `upcoming_sos` (numeric). Used by future Pro Draft Intelligence. |
-| 24.4 | **Create `league_announcements` table** | `id` (UUID), `league_id` (FK), `commissioner_id` (FK→profiles), `title` (text), `body` (text), `created_at` (timestamptz), `pinned` (boolean, default false). Used by Phase 26 free feature (commissioner announcements). |
-| 24.5 | **Create `league_seasons` table** | `id` (UUID), `league_id` (FK), `season_year` (int), `final_standings` (JSONB), `champion_user_id` (FK→profiles), `archived_at` (timestamptz). Used by league history / trophy room feature. |
-| 24.6 | **Create `draft_messages` table** | `id` (UUID), `draft_id` (FK), `user_id` (FK→profiles), `message` (text), `created_at` (timestamptz). Used by Phase 26 draft chat feature. |
-| 24.7 | **Re-sync TypeScript types** | Update `src/types/database.ts` with all new tables from 24.1-24.6. |
+| Task | Description | Status |
+|------|-------------|--------|
+| 24.1 | **`tos_agreements`** — Created in Phase 23.3, TypeScript types added | ✅ Done |
+| 24.2 | **`program_analytics`** — Per-school per-season analytics for Pro feature. Migration `024`. | ✅ Done |
+| 24.3 | **`program_trends`** — Weekly trend data per school for Pro Draft Intelligence. Migration `025`. | ✅ Done |
+| 24.4 | **`league_announcements`** — Commissioner posts on league home. Migration `026`. | ✅ Done |
+| 24.5 | **`league_seasons`** — Archived season results / trophy room. Migration `027`. | ✅ Done |
+| 24.6 | **`draft_messages`** — Real-time chat during drafts, Realtime enabled. Migration `028`. | ✅ Done |
+| 24.7 | **TypeScript types** — Row/Insert/Update for all 6 tables + convenience aliases in `database.ts` | ✅ Done |
 
 ### Verification
-- [ ] All migrations run without errors in Supabase SQL Editor
-- [ ] TypeScript compilation passes (`npx tsc --noEmit`)
-- [ ] New tables visible in Supabase dashboard with correct columns and constraints
-- [ ] RLS policies applied (users can only read their own tos_agreements, league members can read their league's announcements, etc.)
+- [x] All migrations run without errors in Supabase SQL Editor
+- [x] TypeScript compilation passes (`npm run build`)
+- [x] New tables visible in Supabase dashboard with correct columns and constraints
+- [x] RLS policies use `league_members` role check for commissioner access
 
 ---
 
