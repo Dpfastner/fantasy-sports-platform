@@ -28,7 +28,7 @@
    - [Phase 21: Share & Social Features](#phase-21-share--social-features) ✅
 10. **CURRENT — Pre-Launch Hardening**
     - [Phase 22: Audit Fixes & Quick Wins](#phase-22-audit-fixes--quick-wins)
-    - [Phase 23: Legal & Compliance](#phase-23-legal--compliance) ⚠️ LAUNCH BLOCKER
+    - [Phase 23: Legal & Compliance](#phase-23-legal--compliance) ✅
     - [Phase 24: Schema Additions](#phase-24-schema-additions)
 11. **PRE-LAUNCH — UX Polish**
     - [Phase 25: UX Audit & User Journey](#phase-25-ux-audit--user-journey)
@@ -440,8 +440,8 @@ Phase 21: Share & Social Features       ████████████  CO
 *Audit gaps, legal compliance, and schema additions before real users sign up.*
 
 ```
-Phase 22: Audit Fixes & Quick Wins     ░░░░░░░░░░░░  Auth gaps, dead routes, middleware redirect
-Phase 23: Legal & Compliance           ░░░░░░░░░░░░  ⚠️ LAUNCH BLOCKER (ToS, age gate, account deletion)
+Phase 22: Audit Fixes & Quick Wins     ████████████  ✅ COMPLETE
+Phase 23: Legal & Compliance           ████████████  ✅ COMPLETE (ToS, privacy, age gate, account deletion, CCPA)
 Phase 24: Schema Additions             ░░░░░░░░░░░░  "Schema Now" tables from business plan
 ```
 
@@ -495,9 +495,9 @@ Phase 21 (Share & Social)    ████████████  COMPLETE ✅
 
 ━━━ CURRENT (Pre-Launch Hardening) ━━━━━━━━━━━━━━━━━━━━━━━━━
         ↓
-Phase 22 (Audit Fixes)       ░░░░░░░░░░░░  ← YOU ARE HERE
+Phase 22 (Audit Fixes)       ████████████  ✅ COMPLETE
         ↓
-Phase 23 (Legal/Compliance)  ░░░░░░░░░░░░  ⚠️ LAUNCH BLOCKER
+Phase 23 (Legal/Compliance)  ████████████  ✅ COMPLETE
         ↓
 Phase 24 (Schema Additions)  ░░░░░░░░░░░░
 
@@ -535,8 +535,8 @@ STOP POINT 3 (If still more time):  ★ REACHED ★
   → Full pre-launch experience.
 
 STOP POINT 4 (Before real users):
-  ⬜ Phase 22 done      → Audit gaps fixed
-  ⬜ Phase 23 done      → Legal compliance (ToS, age gate, account deletion)
+  ✅ Phase 22 done      → Audit gaps fixed
+  ✅ Phase 23 done      → Legal compliance (ToS, age gate, account deletion, CCPA)
   ⬜ Phase 24 done      → Schema ready for Year 2 features
   ⬜ Phase 25 done      → UX polished (navigation, layout, user journey)
   ⬜ Phase 26 done      → Mobile-ready (tested at all breakpoints)
@@ -1102,7 +1102,7 @@ The marketing plan relies on organic sharing as a key growth channel. Users shou
 ## Phase 22: Audit Fixes & Quick Wins
 *Fix gaps found in the Feb 27 full-codebase audit. All small, targeted changes.*
 
-**Status: NOT STARTED**
+**Status: COMPLETE** ✅
 
 **Audit context**: Full audit of Phases 0-21 cross-referenced the implementation plan against the actual codebase. Found 3 security/routing gaps, 4 minor issues, and 19 unchecked verification items from earlier phases.
 
@@ -1147,36 +1147,43 @@ These were never formally tested. Run during Phase 22 or note which can't be tes
 ## Phase 23: Legal & Compliance
 *Business plan requires all of these before any user creates an account. None exist in the codebase.*
 
-**Status: NOT STARTED** ⚠️ **LAUNCH BLOCKER**
+**Status: COMPLETE** ✅
 
-**Context**: The Rivyls business plan (maintained separately) lists legal requirements for launch by July 2026. A full audit on Feb 27 confirmed that none of these features exist in the codebase. The ToS and Privacy Policy content has not been drafted yet.
+**Context**: The Rivyls business plan lists legal requirements for launch by July 2026. Full ToS (20 sections) and Privacy Policy (17 sections) were drafted and converted to styled Next.js pages. All compliance features implemented.
 
 ### Tasks
 
-| Task | Description | Details |
-|------|-------------|---------|
-| 23.1 | **Create Terms of Service page** | Static page at `/terms`. Content TBD (needs drafting — include financial disclaimer per NAICS 713990 classification). |
-| 23.2 | **Create Privacy Policy page** | Static page at `/privacy`. Content TBD (needs drafting — cover data collection, Supabase storage, analytics, cookies). |
-| 23.3 | **Create `tos_agreements` migration** | Table: `id` (UUID), `user_id` (FK→profiles), `tos_version` (text), `agreed_at` (timestamptz), `ip_address` (text). RLS: users can only read their own rows. |
-| 23.4 | **Add age gate to signup** | Checkbox: "I confirm I am 18 years of age or older." Store confirmation timestamp. Block signup if unchecked. File: `src/app/(auth)/signup/page.tsx` |
-| 23.5 | **Add ToS/Privacy consent to signup** | Checkbox with links: "I agree to the [Terms of Service](/terms) and [Privacy Policy](/privacy)". Log to `tos_agreements` table on successful signup with version string, timestamp, and IP. File: `src/app/(auth)/signup/page.tsx` |
-| 23.6 | **ToS version update prompt** | When `tos_version` changes, show consent modal on next login for existing users. Block access until re-accepted. Implement in middleware or layout wrapper. |
-| 23.7 | **Account deletion** | "Delete My Account" button in Settings with two-step confirmation dialog. API route that anonymizes/deletes: profile data, league memberships (reassign commissioner if needed), activity log entries, badges, tos_agreements, roster data. Must comply with GDPR/CCPA. Files: `src/app/settings/page.tsx` + new `src/app/api/account/delete/route.ts` |
-| 23.8 | **Email unsubscribe route** | Tokenized `/unsubscribe?token=...` route for CAN-SPAM compliance in email footers. Note: `notification_preferences` table already exists — this adds the one-click external link. **Blocked until DNS transfer (Apr 21) enables Resend email sending.** |
-| 23.9 | **Financial disclaimer in ToS** | Include in ToS content: "Rivyls does not currently collect entry fees, pool money, process payments, or distribute prizes. Any financial arrangements between league members are conducted entirely outside the Rivyls platform and are the sole responsibility of the individuals involved." Required by NAICS 713990 (recreation, not gambling) classification. |
+| Task | Description | Status |
+|------|-------------|--------|
+| 23.1 | **Terms of Service page** (`/terms`) — Full 20-section ToS including arbitration, NAICS 713990 classification, financial disclaimer | ✅ Done |
+| 23.2 | **Privacy Policy page** (`/privacy`) — Full 17-section policy including CCPA, VCDPA, CPA, CTDPA, data breach notification | ✅ Done |
+| 23.3 | **`tos_agreements` migration** — Table with user_id, tos_version, agreed_at, ip_address. RLS for user read. FK changed to ON DELETE SET NULL for 7-year retention. | ✅ Done |
+| 23.4 | **Age gate on signup** — "I confirm I am at least 18 years of age" checkbox, blocks signup if unchecked | ✅ Done |
+| 23.5 | **ToS/Privacy consent on signup** — Checkbox with links, logs to `tos_agreements` via `/api/tos/accept` | ✅ Done |
+| 23.6 | **ToS version update prompt** — `TosGate` component in `Providers.tsx`, shows blocking modal when `CURRENT_TOS_VERSION` changes, excluded on public pages | ✅ Done |
+| 23.7 | **Account deletion** — Two-step confirmation in Settings, API handles commissioner reassignment, data cleanup, profile anonymization, auth user deletion. Consent records preserved (7-year retention). | ✅ Done |
+| 23.8 | **Email unsubscribe route** — `/unsubscribe?token=...` page + `/api/unsubscribe` API scaffolded. **Blocked until DNS transfer (Apr 21).** | ✅ Scaffolded |
+| 23.9 | **Financial disclaimer** — In ToS Section 4.3 (free platform, no entry fees, no cash prizes) | ✅ Done |
+
+### Post-audit additions (Mar 3, 2026)
+| Item | Description | Status |
+|------|-------------|--------|
+| **CCPA "Do Not Sell" page** | `/do-not-sell` — Confirms Rivyls doesn't sell data, GPC signal acknowledged | ✅ Done |
+| **Global footer** | Shared `Footer` component in root layout — Terms, Privacy, Do Not Sell links on every page | ✅ Done |
+| **Consent record retention** | Migration `023` changed FK to ON DELETE SET NULL; removed tos_agreements from account deletion cleanup | ✅ Done |
+| **Back button on legal pages** | `BackButton` component using `router.back()` instead of hardcoded `/welcome` | ✅ Done |
+| **Login redirect fix** | Removed `router.refresh()` racing with `router.push('/dashboard')` | ✅ Done |
 
 ### Verification
-- [ ] Signup requires both checkboxes (age 18+ and ToS consent) — can't submit without them
-- [ ] `/terms` and `/privacy` pages load and display legal content
-- [ ] `tos_agreements` row created on signup with version, timestamp, IP address
-- [ ] Existing users prompted to re-accept when ToS version changes
-- [ ] Settings page shows "Delete My Account" with confirmation dialog
-- [ ] Account deletion removes/anonymizes all personal data
-- [ ] `npm run build` passes
-
-### Notes
-- Task 23.8 (email unsubscribe) is blocked until DNS transfer from Wix to Cloudflare (ICANN 60-day lock expires **Apr 21, 2026**), which then unblocks Resend custom SMTP
-- ToS and Privacy Policy text needs to be drafted first (in the business plan conversation, not this codebase conversation)
+- [x] Signup requires both checkboxes (age 18+ and ToS consent)
+- [x] `/terms` and `/privacy` pages load with full legal content
+- [x] `tos_agreements` row created on signup with version, timestamp, IP address
+- [x] Existing users prompted to re-accept when ToS version changes
+- [x] Settings page shows "Delete My Account" with confirmation dialog
+- [x] Account deletion removes/anonymizes data, preserves consent records
+- [x] `/do-not-sell` page accessible, CCPA compliant
+- [x] Global footer with legal links on all pages
+- [x] `npm run build` passes
 
 ---
 
