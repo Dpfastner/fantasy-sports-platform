@@ -161,18 +161,13 @@ export default function DraftRoomPage() {
     })
   }, [])
 
-  // Filter schools into available and maxed-out categories, watchlisted first
+  // Filter schools into available and maxed-out categories
   const availableSchools = schools.filter(school => {
     if (!schoolMatchesFilters(school)) return false
     if (isSchoolMaxedOut(school)) return false
     if (isSchoolOnMyTeam(school)) return false
     return true
-  }).sort((a, b) => {
-    const aWatched = watchlistedSchoolIds.has(a.id) ? 0 : 1
-    const bWatched = watchlistedSchoolIds.has(b.id) ? 0 : 1
-    if (aWatched !== bWatched) return aWatched - bWatched
-    return a.name.localeCompare(b.name)
-  })
+  }).sort((a, b) => a.name.localeCompare(b.name))
 
   // Schools that are maxed out globally (show at bottom with strikethrough)
   const maxedOutSchools = schools.filter(school => {
@@ -1432,37 +1427,47 @@ export default function DraftRoomPage() {
                   </svg>
                 </button>
                 {draftWatchlistExpanded && (
-                  <div className="flex flex-wrap gap-1 p-1.5 max-h-28 overflow-y-auto">
+                  <div className="space-y-1 p-1.5 max-h-40 overflow-y-auto">
                     {watchlistedSchools.map(school => {
                       const globalPickCount = schoolPickCounts[school.id] || 0
                       const isMaxed = !isUnlimitedTotal && globalPickCount >= maxSelectionsTotal
                       const isOnMyTeam = isSchoolOnMyTeam(school)
                       const canPick = isMyPick && draft?.status === 'in_progress' && !isMaxed && !isOnMyTeam
                       return (
-                        <button
+                        <div
                           key={school.id}
                           onClick={() => canPick && handleSelectSchool(school)}
-                          disabled={!canPick}
-                          className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[11px] ${
-                            isMaxed || isOnMyTeam ? 'opacity-40' : canPick ? 'cursor-pointer hover:ring-1 hover:ring-brand' : ''
+                          className={`flex items-center justify-between p-1.5 rounded-lg transition-colors ${
+                            isMaxed || isOnMyTeam ? 'opacity-40' : canPick ? 'cursor-pointer hover:bg-warning/10' : ''
                           }`}
-                          style={{ backgroundColor: school.primary_color, color: school.secondary_color }}
                         >
-                          <WatchlistStar
-                            schoolId={school.id}
-                            leagueId={leagueId as string}
-                            initialWatchlisted={watchlistedSchoolIds.has(school.id)}
-                            size="sm"
-                            onToggle={handleWatchlistToggle}
-                          />
-                          {school.logo_url ? (
-                            <img src={school.logo_url} alt="" className="w-4 h-4 rounded-full bg-text-primary p-0.5" />
-                          ) : null}
-                          <span className="font-medium">{school.abbreviation || school.name}</span>
-                          <span className="opacity-60">·</span>
-                          <span className="opacity-60">{getConferenceAbbr(school.conference)}</span>
-                          <span className="opacity-50 text-[9px]">{globalPickCount}/{maxSelectionsTotal}</span>
-                        </button>
+                          <div className="flex items-center gap-2">
+                            <WatchlistStar
+                              schoolId={school.id}
+                              leagueId={leagueId as string}
+                              initialWatchlisted={watchlistedSchoolIds.has(school.id)}
+                              size="sm"
+                              onToggle={handleWatchlistToggle}
+                            />
+                            {school.logo_url ? (
+                              <img src={school.logo_url} alt="" className="w-6 h-6 rounded-full bg-text-primary p-0.5" />
+                            ) : (
+                              <div
+                                className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold"
+                                style={{ backgroundColor: school.primary_color, color: school.secondary_color }}
+                              >
+                                {school.abbreviation?.slice(0, 2) || school.name.slice(0, 2)}
+                              </div>
+                            )}
+                            <div>
+                              <span className="text-text-primary text-xs font-medium">{school.name}</span>
+                              <div className="text-[10px] text-text-muted">{school.conference}</div>
+                            </div>
+                          </div>
+                          <div className="text-xs px-1.5 py-0.5 rounded bg-surface-subtle text-text-secondary">
+                            {globalPickCount}/{maxSelectionsTotal}
+                          </div>
+                        </div>
                       )
                     })}
                   </div>
@@ -1478,8 +1483,6 @@ export default function DraftRoomPage() {
                   <div
                     key={school.id}
                     className={`w-full p-2 rounded text-left transition-colors ${
-                      watchlistedSchoolIds.has(school.id) ? 'ring-2 ring-warning/60' : ''
-                    } ${
                       isMyPick && draft?.status === 'in_progress'
                         ? 'hover:ring-2 hover:ring-brand cursor-pointer'
                         : 'cursor-not-allowed opacity-60'

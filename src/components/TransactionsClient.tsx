@@ -680,6 +680,11 @@ export default function TransactionsClient({
                                       <span className={record.wins > record.losses ? 'text-success-text' : record.wins < record.losses ? 'text-danger-text' : 'text-text-secondary'}>
                                         {record.wins}-{record.losses}
                                       </span>
+                                      {(record.confWins > 0 || record.confLosses > 0) && (
+                                        <span className="text-text-muted">
+                                          ({record.confWins}-{record.confLosses})
+                                        </span>
+                                      )}
                                     </div>
                                   </div>
                                 </div>

@@ -621,15 +621,10 @@ export default async function TeamPage({ params }: PageProps) {
                 </svg>
                 Watchlist ({watchlistData.length})
               </h2>
-              <Link
-                href={`/leagues/${leagueId}/transactions`}
-                className="text-brand hover:text-brand/80 text-sm transition-colors"
-                onClick={(e) => e.stopPropagation()}
-              >
-                Go to Add/Drop
-              </Link>
+              <span className="text-text-muted text-sm">Click to collapse</span>
             </summary>
-            <div className="px-6 pb-4 space-y-2">
+            <div className="px-6 pb-4">
+              <div className="space-y-2">
               {watchlistData.map((entry) => {
                 const school = entry.schools as unknown as { id: string; name: string; abbreviation: string | null; logo_url: string | null; conference: string; primary_color: string }
                 if (!school) return null
@@ -680,6 +675,15 @@ export default async function TeamPage({ params }: PageProps) {
                   </Link>
                 )
               })}
+              </div>
+              <div className="mt-3 pt-3 border-t border-border flex justify-end">
+                <Link
+                  href={`/leagues/${leagueId}/transactions`}
+                  className="text-brand hover:text-brand/80 text-sm transition-colors"
+                >
+                  Go to Add/Drop →
+                </Link>
+              </div>
             </div>
           </details>
         )}
