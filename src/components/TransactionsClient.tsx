@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useMemo, useCallback } from 'react'
+import { useState, useMemo, useCallback, useEffect } from 'react'
+import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { useToast } from './Toast'
 import { Header } from './Header'
@@ -143,6 +144,7 @@ export default function TransactionsClient({
   watchlistedSchoolIds: watchlistedSchoolIdsProp = [],
 }: TransactionsClientProps) {
   const { addToast } = useToast()
+  const searchParams = useSearchParams()
   const [step, setStep] = useState<TransactionStep>('select-drop')
   const [selectedDrop, setSelectedDrop] = useState<RosterSchool | null>(null)
   const [selectedAdd, setSelectedAdd] = useState<School | null>(null)
@@ -171,6 +173,25 @@ export default function TransactionsClient({
       return next
     })
   }, [])
+
+  // Pre-fill add school from query param (e.g. from team page watchlist click)
+  const prefilledAddSchool = useMemo(() => {
+    const addSchoolId = searchParams.get('addSchool')
+    if (!addSchoolId) return null
+    return allSchools.find(s => s.id === addSchoolId) || null
+  }, [searchParams, allSchools])
+
+  // Auto-advance: after selecting a drop, if we have a pre-filled add, skip to confirm
+  const handleSelectDropWithPrefill = useCallback((rosterEntry: RosterSchool) => {
+    setSelectedDrop(rosterEntry)
+    setError(null)
+    if (prefilledAddSchool) {
+      setSelectedAdd(prefilledAddSchool)
+      setStep('confirm')
+    } else {
+      setStep('select-add')
+    }
+  }, [prefilledAddSchool])
 
   // Get unique conferences
   const conferences = useMemo(() => {
@@ -466,13 +487,31 @@ export default function TransactionsClient({
               {step === 'select-drop' && (
                 <div className="bg-surface rounded-lg p-4 md:p-6">
                   <h2 className="text-lg md:text-xl font-semibold text-text-primary mb-3 md:mb-4">Select a school to drop</h2>
+                  {prefilledAddSchool && (
+                    <div className="bg-success/10 border border-success/50 rounded-lg p-3 mb-4 flex items-center gap-3">
+                      <p className="text-success-text text-sm">Adding:</p>
+                      {prefilledAddSchool.logo_url && (
+                        <img src={prefilledAddSchool.logo_url} alt="" className="w-6 h-6 object-contain" />
+                      )}
+                      <p className="text-text-primary font-medium text-sm">{prefilledAddSchool.name}</p>
+                      <button
+                        onClick={() => {
+                          // Clear the prefill by navigating without query param
+                          window.history.replaceState({}, '', window.location.pathname)
+                        }}
+                        className="ml-auto text-text-muted hover:text-text-primary text-xs"
+                      >
+                        Clear
+                      </button>
+                    </div>
+                  )}
                   <div className="space-y-2 md:space-y-3">
                     {roster.map((entry) => {
                       const record = schoolRecordsMap[entry.school_id] || { wins: 0, losses: 0, confWins: 0, confLosses: 0 }
                       return (
                         <button
                           key={entry.id}
-                          onClick={() => handleSelectDrop(entry)}
+                          onClick={() => prefilledAddSchool ? handleSelectDropWithPrefill(entry) : handleSelectDrop(entry)}
                           className="w-full flex items-center justify-between p-3 md:p-4 bg-surface-inset hover:bg-surface rounded-lg transition-colors text-left"
                         >
                           <div className="flex items-center gap-3 md:gap-4">
@@ -644,9 +683,15 @@ export default function TransactionsClient({
                                     </div>
                                   </div>
                                 </div>
-                                <div className="text-right">
+                                <div className="text-right flex items-center gap-2">
                                   <p className="text-text-primary text-xs font-medium">{schoolPointsMap[school.id] || 0} pts</p>
-                                  {isMaxed && <p className="text-text-muted text-[10px]">Unavailable</p>}
+                                  <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${
+                                    isMaxed
+                                      ? 'bg-danger/20 text-danger-text'
+                                      : 'bg-success/20 text-success-text'
+                                  }`}>
+                                    {isMaxed ? 'Taken' : 'Open'}
+                                  </span>
                                 </div>
                               </button>
                             )

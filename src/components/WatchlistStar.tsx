@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 
 interface WatchlistStarProps {
   schoolId: string
@@ -19,6 +19,11 @@ export function WatchlistStar({
 }: WatchlistStarProps) {
   const [watchlisted, setWatchlisted] = useState(initialWatchlisted)
   const [isToggling, setIsToggling] = useState(false)
+
+  // Sync with parent state changes (e.g. star toggled in another instance)
+  useEffect(() => {
+    setWatchlisted(initialWatchlisted)
+  }, [initialWatchlisted])
 
   const handleToggle = async (e: React.MouseEvent) => {
     e.stopPropagation()

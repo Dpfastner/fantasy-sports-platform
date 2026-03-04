@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
@@ -91,6 +91,7 @@ export default function DraftRoomPage() {
   const [mobileTab, setMobileTab] = useState<'schools' | 'history' | 'teams'>('schools')
   const [watchlistedSchoolIds, setWatchlistedSchoolIds] = useState<Set<string>>(new Set())
   const [draftWatchlistExpanded, setDraftWatchlistExpanded] = useState(true)
+  const panelSchoolIdsRef = useRef<Set<string>>(new Set()) // Schools shown in panel (doesn't shrink on unstar)
 
   // Track if timer has expired (for showing warning)
   const [timerExpired, setTimerExpired] = useState(false)
@@ -151,8 +152,10 @@ export default function DraftRoomPage() {
       const next = new Set(prev)
       if (watchlisted) {
         next.add(schoolId)
+        panelSchoolIdsRef.current.add(schoolId) // New stars show in panel too
       } else {
         next.delete(schoolId)
+        // Don't remove from panelSchoolIdsRef — keep visible in panel
       }
       return next
     })
@@ -177,8 +180,8 @@ export default function DraftRoomPage() {
     return isSchoolMaxedOut(school)
   }).sort((a, b) => a.name.localeCompare(b.name))
 
-  // Watchlisted schools for summary panel
-  const watchlistedSchools = schools.filter(s => watchlistedSchoolIds.has(s.id))
+  // Watchlisted schools for summary panel (uses panel ref so schools don't disappear on unstar)
+  const watchlistedSchools = schools.filter(s => panelSchoolIdsRef.current.has(s.id))
 
   // Get current team on the clock - derive from draftOrder for consistency with ticker
   const currentPickFromOrder = draftOrder.find(o => o.pick_number === draft?.current_pick)
@@ -282,7 +285,9 @@ export default function DraftRoomPage() {
           .eq('league_id', leagueId)
 
         if (watchlistData) {
-          setWatchlistedSchoolIds(new Set(watchlistData.map(w => w.school_id)))
+          const ids = new Set(watchlistData.map(w => w.school_id))
+          setWatchlistedSchoolIds(ids)
+          panelSchoolIdsRef.current = new Set(ids)
         }
 
         // Get draft order
@@ -1427,41 +1432,37 @@ export default function DraftRoomPage() {
                   </svg>
                 </button>
                 {draftWatchlistExpanded && (
-                  <div className="space-y-0.5 p-1 max-h-32 overflow-y-auto">
+                  <div className="flex flex-wrap gap-1 p-1.5 max-h-28 overflow-y-auto">
                     {watchlistedSchools.map(school => {
                       const globalPickCount = schoolPickCounts[school.id] || 0
                       const isMaxed = !isUnlimitedTotal && globalPickCount >= maxSelectionsTotal
                       const isOnMyTeam = isSchoolOnMyTeam(school)
                       const canPick = isMyPick && draft?.status === 'in_progress' && !isMaxed && !isOnMyTeam
                       return (
-                        <div
+                        <button
                           key={school.id}
-                          className={`flex items-center gap-1.5 px-1.5 py-1 rounded text-xs ${isMaxed || isOnMyTeam ? 'opacity-50' : ''}`}
+                          onClick={() => canPick && handleSelectSchool(school)}
+                          disabled={!canPick}
+                          className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[11px] ${
+                            isMaxed || isOnMyTeam ? 'opacity-40' : canPick ? 'cursor-pointer hover:ring-1 hover:ring-brand' : ''
+                          }`}
                           style={{ backgroundColor: school.primary_color, color: school.secondary_color }}
                         >
                           <WatchlistStar
                             schoolId={school.id}
                             leagueId={leagueId as string}
-                            initialWatchlisted={true}
+                            initialWatchlisted={watchlistedSchoolIds.has(school.id)}
                             size="sm"
                             onToggle={handleWatchlistToggle}
                           />
-                          <button
-                            onClick={() => canPick && handleSelectSchool(school)}
-                            disabled={!canPick}
-                            className={`flex items-center gap-1.5 flex-1 min-w-0 text-left ${canPick ? 'cursor-pointer' : 'cursor-not-allowed'}`}
-                          >
-                            {school.logo_url ? (
-                              <img src={school.logo_url} alt="" className="w-5 h-5 rounded-full bg-text-primary p-0.5" />
-                            ) : (
-                              <span className="w-5 h-5 rounded-full inline-flex items-center justify-center text-[8px] font-bold" style={{ backgroundColor: school.secondary_color, color: school.primary_color }}>
-                                {school.abbreviation?.slice(0, 2) || school.name.slice(0, 2)}
-                              </span>
-                            )}
-                            <span className="truncate font-medium">{school.abbreviation || school.name}</span>
-                            <span className="ml-auto text-[10px] opacity-75">{globalPickCount}/{maxSelectionsTotal}</span>
-                          </button>
-                        </div>
+                          {school.logo_url ? (
+                            <img src={school.logo_url} alt="" className="w-4 h-4 rounded-full bg-text-primary p-0.5" />
+                          ) : null}
+                          <span className="font-medium">{school.abbreviation || school.name}</span>
+                          <span className="opacity-60">·</span>
+                          <span className="opacity-60">{getConferenceAbbr(school.conference)}</span>
+                          <span className="opacity-50 text-[9px]">{globalPickCount}/{maxSelectionsTotal}</span>
+                        </button>
                       )
                     })}
                   </div>

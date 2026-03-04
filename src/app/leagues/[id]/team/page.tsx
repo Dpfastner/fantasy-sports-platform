@@ -127,6 +127,7 @@ export default async function TeamPage({ params }: PageProps) {
     .select(`
       max_add_drops_per_season,
       add_drop_deadline,
+      max_school_selections_total,
       double_points_enabled,
       max_double_picks_per_season,
       points_win, points_conference_game, points_over_50, points_shutout, points_ranked_25, points_ranked_10,
@@ -217,6 +218,21 @@ export default async function TeamPage({ params }: PageProps) {
     .eq('user_id', user.id)
     .eq('league_id', leagueId)
     .order('created_at', { ascending: false })
+
+  // Get school selection counts (how many teams have each school) for watchlist availability
+  const { data: takenSchoolsData } = await supabase
+    .from('roster_periods')
+    .select('school_id, fantasy_teams!inner (league_id)')
+    .eq('fantasy_teams.league_id', leagueId)
+    .lte('start_week', currentWeek)
+    .or(`end_week.is.null,end_week.gt.${currentWeek}`)
+
+  const schoolSelectionCounts = new Map<string, number>()
+  for (const ts of takenSchoolsData || []) {
+    const count = schoolSelectionCounts.get(ts.school_id) || 0
+    schoolSelectionCounts.set(ts.school_id, count + 1)
+  }
+  const maxSelectionsPerSchool = settings?.max_school_selections_total || 3
 
   // Get ALL roster periods to find replacements
   const { data: allRosterPeriodsData } = await supabase
@@ -597,32 +613,43 @@ export default async function TeamPage({ params }: PageProps) {
 
         {/* Watchlist */}
         {watchlistData && watchlistData.length > 0 && (
-          <div className="bg-surface rounded-lg p-6 mb-8">
-            <div className="flex items-center justify-between mb-4">
+          <details open className="bg-surface rounded-lg mb-8 border border-warning/30 overflow-hidden">
+            <summary className="flex items-center justify-between px-6 py-4 cursor-pointer select-none bg-warning/5 hover:bg-warning/10 transition-colors">
               <h2 className="text-xl font-semibold text-text-primary flex items-center gap-2">
                 <svg className="w-5 h-5 text-warning" fill="currentColor" viewBox="0 0 24 24">
                   <path d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
                 </svg>
-                Watchlist
+                Watchlist ({watchlistData.length})
               </h2>
               <Link
                 href={`/leagues/${leagueId}/transactions`}
                 className="text-brand hover:text-brand/80 text-sm transition-colors"
+                onClick={(e) => e.stopPropagation()}
               >
                 Go to Add/Drop
               </Link>
-            </div>
-            <div className="space-y-2">
+            </summary>
+            <div className="px-6 pb-4 space-y-2">
               {watchlistData.map((entry) => {
                 const school = entry.schools as unknown as { id: string; name: string; abbreviation: string | null; logo_url: string | null; conference: string; primary_color: string }
                 if (!school) return null
+                const selCount = schoolSelectionCounts.get(school.id) || 0
+                const isAvailable = selCount < maxSelectionsPerSchool
+                const record = schoolRecordsMap.get(school.id)
                 return (
                   <Link
                     key={entry.id}
-                    href={`/leagues/${leagueId}/transactions`}
-                    className="flex items-center justify-between p-3 bg-surface-subtle hover:bg-surface-inset rounded-lg transition-colors"
+                    href={`/leagues/${leagueId}/transactions?addSchool=${school.id}`}
+                    className={`flex items-center justify-between p-3 rounded-lg transition-colors ${
+                      isAvailable
+                        ? 'bg-surface-subtle hover:bg-surface-inset'
+                        : 'bg-surface-subtle/50 opacity-60'
+                    }`}
                   >
                     <div className="flex items-center gap-3">
+                      <svg className="w-4 h-4 text-warning flex-shrink-0" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+                      </svg>
                       {school.logo_url ? (
                         <img src={school.logo_url} alt={school.name} className="w-8 h-8 object-contain" />
                       ) : (
@@ -630,17 +657,31 @@ export default async function TeamPage({ params }: PageProps) {
                       )}
                       <div>
                         <p className="text-text-primary font-medium text-sm">{school.name}</p>
-                        <p className="text-text-muted text-xs">{school.conference}</p>
+                        <div className="flex items-center gap-2 text-xs">
+                          <span className="text-text-muted">{school.conference}</span>
+                          {record && (
+                            <span className={record.wins > record.losses ? 'text-success-text' : record.wins < record.losses ? 'text-danger-text' : 'text-text-secondary'}>
+                              {record.wins}-{record.losses}
+                            </span>
+                          )}
+                        </div>
                       </div>
                     </div>
-                    <svg className="w-5 h-5 text-warning" fill="currentColor" viewBox="0 0 24 24">
-                      <path d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
-                    </svg>
+                    <div className="flex items-center gap-3">
+                      <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                        isAvailable
+                          ? 'bg-success/20 text-success-text'
+                          : 'bg-danger/20 text-danger-text'
+                      }`}>
+                        {isAvailable ? 'Available' : 'Unavailable'}
+                      </span>
+                      <span className="text-text-muted text-xs">{selCount}/{maxSelectionsPerSchool}</span>
+                    </div>
                   </Link>
                 )
               })}
             </div>
-          </div>
+          </details>
         )}
 
         {/* Roster History (Dropped Schools) - styled like current roster */}
