@@ -152,10 +152,10 @@ export default function DraftRoomPage() {
       const next = new Set(prev)
       if (watchlisted) {
         next.add(schoolId)
-        panelSchoolIdsRef.current.add(schoolId) // New stars show in panel too
+        panelSchoolIdsRef.current.add(schoolId)
       } else {
         next.delete(schoolId)
-        // Don't remove from panelSchoolIdsRef — keep visible in panel
+        panelSchoolIdsRef.current.delete(schoolId)
       }
       return next
     })
@@ -175,8 +175,8 @@ export default function DraftRoomPage() {
     return isSchoolMaxedOut(school)
   }).sort((a, b) => a.name.localeCompare(b.name))
 
-  // Watchlisted schools for summary panel (uses panel ref so schools don't disappear on unstar)
-  const watchlistedSchools = schools.filter(s => panelSchoolIdsRef.current.has(s.id))
+  // Watchlisted schools for summary panel
+  const watchlistedSchools = schools.filter(s => watchlistedSchoolIds.has(s.id))
 
   // Get current team on the clock - derive from draftOrder for consistency with ticker
   const currentPickFromOrder = draftOrder.find(o => o.pick_number === draft?.current_pick)
@@ -1464,8 +1464,15 @@ export default function DraftRoomPage() {
                               <div className="text-[10px] text-text-muted">{school.conference}</div>
                             </div>
                           </div>
-                          <div className="text-xs px-1.5 py-0.5 rounded bg-surface-subtle text-text-secondary">
-                            {globalPickCount}/{maxSelectionsTotal}
+                          <div className="flex items-center gap-1.5">
+                            {isMaxed && (
+                              <span className="text-[10px] px-1.5 py-0.5 rounded-full font-medium bg-danger/20 text-danger-text">
+                                Unavailable
+                              </span>
+                            )}
+                            <span className="text-xs px-1.5 py-0.5 rounded bg-surface-subtle text-text-secondary">
+                              {globalPickCount}/{maxSelectionsTotal}
+                            </span>
                           </div>
                         </div>
                       )
