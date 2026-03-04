@@ -452,7 +452,7 @@ Phase 24: Schema Additions             ████████████  ✅
 *Free features and draft improvements needed before August 2026 season.*
 
 ```
-Phase 25: Free Feature Enhancements     ░░░░░░░░░░░░  Presets, watchlist, announcements, chat, notifications, history
+Phase 25: Free Feature Enhancements     ██░░░░░░░░░░  Presets ✅, watchlist, announcements, chat, notifications, history, message board
 Phase 26: Draft Enhancements            ░░░░░░░░░░░░  Auto-pick, pause/resume
 Phase 27: Team-to-Team Trading          ░░░░░░░░░░░░  Trade proposals, review, veto (FREE tier)
 ```
@@ -513,7 +513,7 @@ Phase 24 (Schema Additions)  ████████████  ✅ COMPLETE
 
 ━━━ SEASON 1 FEATURES (Build First) ━━━━━━━━━━━━━━━━━━━━━━━━━
         ↓
-Phase 25 (Free Features)     ░░░░░░░░░░░░
+Phase 25 (Free Features)     ██░░░░░░░░░░  25.1 ✅
         ↓
 Phase 26 (Draft Enhancements)░░░░░░░░░░░░
         ↓
@@ -1244,33 +1244,35 @@ These were never formally tested. Run during Phase 22 or note which can't be tes
 ## Phase 25: Free Feature Enhancements
 *Free features that enhance the experience beyond the core loop — all shipping before Season 1*
 
-**Status: NOT STARTED**
+**Status: IN PROGRESS** (25.1 complete)
 
-**Depends on**: Phase 16 (brand styling), Phase 14 (schema for watchlists, scoring_preset, notification_preferences), Phase 24 (schema for announcements, draft_messages, league_seasons)
+**Depends on**: Phase 14 (schema for watchlists, scoring_preset, notification_preferences), Phase 24 (schema for announcements, draft_messages, league_seasons)
 
 ### Background
 
-These are features designated as free (never gated behind premium) that improve the user experience. All ship before August 2026 Season 1. Schema for all features already exists — this phase is UI and logic only.
+These are features designated as free (never gated behind premium) that improve the user experience. All ship before August 2026 Season 1. Schema for most features already exists — this phase is primarily UI and logic.
 
 ### Tasks
 
-| Task | Description | Details | Schema Ready? |
-|------|-------------|---------|---------------|
-| 25.1 | **Scoring presets UI** | Add a preset dropdown to the league settings page ("Standard", "High Stakes", "Simple", "Chaos Mode"). When selected, auto-fills the existing scoring columns with predefined values. Commissioner can still tweak individual values after selecting a preset. This is a UX convenience for new commissioners — reduces the intimidation of 20+ scoring sliders. | Yes — `scoring_preset` column added in Phase 14.16 |
-| 25.2 | **Watchlist UI** | Add a "Watch" button to school cards in the available schools browser and draft board. Create a `/watchlist` page (or section on team page) showing all watched programs with their upcoming games and recent performance. Helps users track programs they want to draft or pick up via add/drop. | Yes — `watchlists` table created in Phase 14.14 |
-| 25.3 | **League announcements** | Add a commissioner announcement feature: text post that appears at the top of the league home page for all members. Simple CRUD — commissioner creates/edits/deletes announcements. Uses `league_announcements` table from Phase 24.4. | Yes — after Phase 24 |
-| 25.4 | **Draft chat** | Add a real-time chat panel to the draft room using Supabase Realtime. Messages appear alongside the draft board. Simple text messages only (no images/files). Uses `draft_messages` table from Phase 24.6 or Supabase Realtime broadcast channels. | Yes — after Phase 24 |
-| 25.5 | **Basic notifications** | Build notification delivery for key events: draft starting, your turn to pick, game results posted, transaction confirmed. Start with in-app notifications (a bell icon with unread count). Email notifications come later. Uses `notification_preferences` from Phase 14.12. | Partial — preferences schema ready, needs `notifications` table |
-| 25.6 | **League history / trophy room** | Display past season results: league champion, final standings, individual awards (most points in a week, biggest comeback, etc.). For Year 1 this is empty — becomes valuable starting Season 2 when there's history to show. Uses `league_seasons` table from Phase 24.5. | Yes — after Phase 24 |
+| Task | Description | Status |
+|------|-------------|--------|
+| 25.1 | **Scoring presets UI** — Preset dropdown (Standard, Conservative, Aggressive, Chaos Mode) in league settings. Auto-fills all 21 scoring fields. Auto-detects "Custom" on manual edit. `src/lib/scoring-presets.ts` + settings page. | ✅ Done |
+| 25.2 | **Watchlist UI** — Star/bookmark on school cards in draft + add/drop. Watchlist section on team page. Filter to show unavailable schools for watchlisting. Notification when watched school becomes available. | |
+| 25.3 | **League announcements** — Commissioner CRUD for announcements on league home page. Pinned + chronological display. `league_announcements` table from Phase 24. | |
+| 25.4 | **Draft chat** — Real-time chat panel in draft room using Supabase Realtime + `draft_messages` table from Phase 24. | |
+| 25.5 | **Basic in-app notifications** — Bell icon in header with unread count. 12 notification types including draft pick throttle (max 3 when absent, resets on return). Needs `notifications` table migration. | |
+| 25.6 | **League history / trophy room** — Past season results at `/leagues/[id]/history`. Commissioner archives seasons. Uses `league_seasons` table from Phase 24. | |
+| 25.7 | **League message board** — Persistent chat on league home page via Supabase Realtime. Needs `league_messages` table migration. Users can opt out of chat notifications. | |
 
 ### Build Order
 
-1. **25.1 Scoring presets** — small effort, big UX win for new commissioners
+1. ~~**25.1 Scoring presets**~~ ✅ Done
 2. **25.2 Watchlists** — schema ready, moderate effort, adds engagement
-3. **25.5 Basic notifications** — users will ask for this first
+3. **25.7 League message board** — build before notifications so notifications can reference it
 4. **25.3 League announcements** — commissioner tool, moderate effort
-5. **25.4 Draft chat** — fun but lower priority (users already use group chats)
-6. **25.6 League history** — only valuable after Season 1 ends
+5. **25.4 Draft chat** — uses same Realtime pattern as message board
+6. **25.5 Basic notifications** — build after features it notifies about
+7. **25.6 League history** — test with imported Season 1 data
 
 ---
 

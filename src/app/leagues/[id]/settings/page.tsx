@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { trackActivity } from '@/app/actions/activity'
+import { SCORING_PRESETS, SCORING_FIELD_KEYS, detectPreset, getPresetValues, type ScoringPresetKey } from '@/lib/scoring-presets'
 import { UserBadges } from '@/components/UserBadges'
 import type { UserTier, UserBadgeWithDefinition } from '@/types/database'
 
@@ -61,6 +62,8 @@ interface LeagueSettings {
   // Double points settings
   double_points_enabled: boolean
   max_double_picks_per_season: number
+  // Scoring preset
+  scoring_preset: string | null
   // Status
   settings_locked: boolean
 }
@@ -111,6 +114,7 @@ export default function CommissionerToolsPage() {
 
   const [league, setLeague] = useState<League | null>(null)
   const [settings, setSettings] = useState<LeagueSettings | null>(null)
+  const [selectedPreset, setSelectedPreset] = useState<ScoringPresetKey>('custom')
   const [members, setMembers] = useState<LeagueMember[]>([])
   const [memberBadges, setMemberBadges] = useState<Map<string, UserBadgeWithDefinition[]>>(new Map())
 
@@ -171,6 +175,7 @@ export default function CommissionerToolsPage() {
 
         if (settingsData) {
           setSettings(settingsData as LeagueSettings)
+          setSelectedPreset(detectPreset(settingsData))
         }
 
         // Get members first
@@ -237,6 +242,15 @@ export default function CommissionerToolsPage() {
 
     loadData()
   }, [leagueId, router, supabase])
+
+  const updateScoringField = (field: string, value: number) => {
+    if (!settings) return
+    const updated = { ...settings, [field]: value }
+    const detected = detectPreset(updated)
+    updated.scoring_preset = detected === 'custom' ? 'custom' : detected
+    setSettings(updated as LeagueSettings)
+    setSelectedPreset(detected)
+  }
 
   const handleSaveSettings = async () => {
     if (!settings) return
@@ -839,6 +853,35 @@ export default function CommissionerToolsPage() {
                 <section className="bg-surface rounded-lg p-6">
                   <h2 className="text-xl font-semibold text-text-primary mb-6">Scoring Settings</h2>
 
+                  {/* Scoring Preset Selector */}
+                  <div className="mb-8 p-4 bg-background rounded-lg border border-border">
+                    <label className="block text-text-secondary mb-2 text-sm font-medium">Scoring Preset</label>
+                    <select
+                      value={selectedPreset}
+                      onChange={(e) => {
+                        const key = e.target.value as ScoringPresetKey
+                        setSelectedPreset(key)
+                        if (key !== 'custom') {
+                          const values = getPresetValues(key)
+                          if (values) {
+                            setSettings({ ...settings, ...values, scoring_preset: key } as LeagueSettings)
+                          }
+                        }
+                      }}
+                      className="w-full px-4 py-3 bg-surface border border-border rounded-lg text-text-primary mb-2"
+                    >
+                      {SCORING_PRESETS.map((preset) => (
+                        <option key={preset.key} value={preset.key}>{preset.label}</option>
+                      ))}
+                      <option value="custom">Custom</option>
+                    </select>
+                    <p className="text-text-muted text-xs">
+                      {selectedPreset === 'custom'
+                        ? 'You have custom scoring values. Select a preset to reset all fields, or adjust individual values below.'
+                        : SCORING_PRESETS.find((p) => p.key === selectedPreset)?.description}
+                    </p>
+                  </div>
+
                   {/* Regular Game Scoring */}
                   <div className="mb-8">
                     <h3 className="text-lg font-medium text-brand-text mb-4">Regular Game Points</h3>
@@ -851,7 +894,7 @@ export default function CommissionerToolsPage() {
                             type="number"
                             step="0.5"
                             value={settings.points_win}
-                            onChange={(e) => setSettings({ ...settings, points_win: parseFloat(e.target.value) || 0 })}
+                            onChange={(e) => updateScoringField('points_win', parseFloat(e.target.value) || 0)}
                             className="w-full px-3 py-2 bg-surface border border-border rounded text-text-primary text-sm"
                           />
                         </div>
@@ -861,7 +904,7 @@ export default function CommissionerToolsPage() {
                             type="number"
                             step="0.5"
                             value={settings.points_conference_game}
-                            onChange={(e) => setSettings({ ...settings, points_conference_game: parseFloat(e.target.value) || 0 })}
+                            onChange={(e) => updateScoringField('points_conference_game', parseFloat(e.target.value) || 0)}
                             className="w-full px-3 py-2 bg-surface border border-border rounded text-text-primary text-sm"
                           />
                         </div>
@@ -871,7 +914,7 @@ export default function CommissionerToolsPage() {
                             type="number"
                             step="0.5"
                             value={settings.points_over_50}
-                            onChange={(e) => setSettings({ ...settings, points_over_50: parseFloat(e.target.value) || 0 })}
+                            onChange={(e) => updateScoringField('points_over_50', parseFloat(e.target.value) || 0)}
                             className="w-full px-3 py-2 bg-surface border border-border rounded text-text-primary text-sm"
                           />
                         </div>
@@ -881,7 +924,7 @@ export default function CommissionerToolsPage() {
                             type="number"
                             step="0.5"
                             value={settings.points_shutout}
-                            onChange={(e) => setSettings({ ...settings, points_shutout: parseFloat(e.target.value) || 0 })}
+                            onChange={(e) => updateScoringField('points_shutout', parseFloat(e.target.value) || 0)}
                             className="w-full px-3 py-2 bg-surface border border-border rounded text-text-primary text-sm"
                           />
                         </div>
@@ -891,7 +934,7 @@ export default function CommissionerToolsPage() {
                             type="number"
                             step="0.5"
                             value={settings.points_ranked_25}
-                            onChange={(e) => setSettings({ ...settings, points_ranked_25: parseFloat(e.target.value) || 0 })}
+                            onChange={(e) => updateScoringField('points_ranked_25', parseFloat(e.target.value) || 0)}
                             className="w-full px-3 py-2 bg-surface border border-border rounded text-text-primary text-sm"
                           />
                         </div>
@@ -901,7 +944,7 @@ export default function CommissionerToolsPage() {
                             type="number"
                             step="0.5"
                             value={settings.points_ranked_10}
-                            onChange={(e) => setSettings({ ...settings, points_ranked_10: parseFloat(e.target.value) || 0 })}
+                            onChange={(e) => updateScoringField('points_ranked_10', parseFloat(e.target.value) || 0)}
                             className="w-full px-3 py-2 bg-surface border border-border rounded text-text-primary text-sm"
                           />
                         </div>
@@ -915,7 +958,7 @@ export default function CommissionerToolsPage() {
                             type="number"
                             step="0.5"
                             value={settings.points_loss}
-                            onChange={(e) => setSettings({ ...settings, points_loss: parseFloat(e.target.value) || 0 })}
+                            onChange={(e) => updateScoringField('points_loss', parseFloat(e.target.value) || 0)}
                             className="w-full px-3 py-2 bg-surface border border-border rounded text-text-primary text-sm"
                           />
                         </div>
@@ -925,7 +968,7 @@ export default function CommissionerToolsPage() {
                             type="number"
                             step="0.5"
                             value={settings.points_conference_game_loss}
-                            onChange={(e) => setSettings({ ...settings, points_conference_game_loss: parseFloat(e.target.value) || 0 })}
+                            onChange={(e) => updateScoringField('points_conference_game_loss', parseFloat(e.target.value) || 0)}
                             className="w-full px-3 py-2 bg-surface border border-border rounded text-text-primary text-sm"
                           />
                         </div>
@@ -935,7 +978,7 @@ export default function CommissionerToolsPage() {
                             type="number"
                             step="0.5"
                             value={settings.points_over_50_loss}
-                            onChange={(e) => setSettings({ ...settings, points_over_50_loss: parseFloat(e.target.value) || 0 })}
+                            onChange={(e) => updateScoringField('points_over_50_loss', parseFloat(e.target.value) || 0)}
                             className="w-full px-3 py-2 bg-surface border border-border rounded text-text-primary text-sm"
                           />
                         </div>
@@ -945,7 +988,7 @@ export default function CommissionerToolsPage() {
                             type="number"
                             step="0.5"
                             value={settings.points_shutout_loss}
-                            onChange={(e) => setSettings({ ...settings, points_shutout_loss: parseFloat(e.target.value) || 0 })}
+                            onChange={(e) => updateScoringField('points_shutout_loss', parseFloat(e.target.value) || 0)}
                             className="w-full px-3 py-2 bg-surface border border-border rounded text-text-primary text-sm"
                           />
                         </div>
@@ -955,7 +998,7 @@ export default function CommissionerToolsPage() {
                             type="number"
                             step="0.5"
                             value={settings.points_ranked_25_loss}
-                            onChange={(e) => setSettings({ ...settings, points_ranked_25_loss: parseFloat(e.target.value) || 0 })}
+                            onChange={(e) => updateScoringField('points_ranked_25_loss', parseFloat(e.target.value) || 0)}
                             className="w-full px-3 py-2 bg-surface border border-border rounded text-text-primary text-sm"
                           />
                         </div>
@@ -965,7 +1008,7 @@ export default function CommissionerToolsPage() {
                             type="number"
                             step="0.5"
                             value={settings.points_ranked_10_loss}
-                            onChange={(e) => setSettings({ ...settings, points_ranked_10_loss: parseFloat(e.target.value) || 0 })}
+                            onChange={(e) => updateScoringField('points_ranked_10_loss', parseFloat(e.target.value) || 0)}
                             className="w-full px-3 py-2 bg-surface border border-border rounded text-text-primary text-sm"
                           />
                         </div>
@@ -983,7 +1026,7 @@ export default function CommissionerToolsPage() {
                           type="number"
                           step="0.5"
                           value={settings.points_conference_championship_win}
-                          onChange={(e) => setSettings({ ...settings, points_conference_championship_win: parseFloat(e.target.value) || 0 })}
+                          onChange={(e) => updateScoringField('points_conference_championship_win', parseFloat(e.target.value) || 0)}
                           className="w-full px-3 py-2 bg-surface border border-border rounded text-text-primary text-sm"
                         />
                       </div>
@@ -993,7 +1036,7 @@ export default function CommissionerToolsPage() {
                           type="number"
                           step="0.5"
                           value={settings.points_conference_championship_loss}
-                          onChange={(e) => setSettings({ ...settings, points_conference_championship_loss: parseFloat(e.target.value) || 0 })}
+                          onChange={(e) => updateScoringField('points_conference_championship_loss', parseFloat(e.target.value) || 0)}
                           className="w-full px-3 py-2 bg-surface border border-border rounded text-text-primary text-sm"
                         />
                       </div>
@@ -1003,7 +1046,7 @@ export default function CommissionerToolsPage() {
                           type="number"
                           step="0.5"
                           value={settings.points_heisman_winner}
-                          onChange={(e) => setSettings({ ...settings, points_heisman_winner: parseFloat(e.target.value) || 0 })}
+                          onChange={(e) => updateScoringField('points_heisman_winner', parseFloat(e.target.value) || 0)}
                           className="w-full px-3 py-2 bg-surface border border-border rounded text-text-primary text-sm"
                         />
                       </div>
@@ -1013,7 +1056,7 @@ export default function CommissionerToolsPage() {
                           type="number"
                           step="0.5"
                           value={settings.points_bowl_appearance}
-                          onChange={(e) => setSettings({ ...settings, points_bowl_appearance: parseFloat(e.target.value) || 0 })}
+                          onChange={(e) => updateScoringField('points_bowl_appearance', parseFloat(e.target.value) || 0)}
                           className="w-full px-3 py-2 bg-surface border border-border rounded text-text-primary text-sm"
                         />
                       </div>
@@ -1027,7 +1070,7 @@ export default function CommissionerToolsPage() {
                           type="number"
                           step="0.5"
                           value={settings.points_playoff_first_round}
-                          onChange={(e) => setSettings({ ...settings, points_playoff_first_round: parseFloat(e.target.value) || 0 })}
+                          onChange={(e) => updateScoringField('points_playoff_first_round', parseFloat(e.target.value) || 0)}
                           className="w-full px-3 py-2 bg-surface border border-border rounded text-text-primary text-sm"
                         />
                       </div>
@@ -1037,7 +1080,7 @@ export default function CommissionerToolsPage() {
                           type="number"
                           step="0.5"
                           value={settings.points_playoff_quarterfinal}
-                          onChange={(e) => setSettings({ ...settings, points_playoff_quarterfinal: parseFloat(e.target.value) || 0 })}
+                          onChange={(e) => updateScoringField('points_playoff_quarterfinal', parseFloat(e.target.value) || 0)}
                           className="w-full px-3 py-2 bg-surface border border-border rounded text-text-primary text-sm"
                         />
                       </div>
@@ -1047,7 +1090,7 @@ export default function CommissionerToolsPage() {
                           type="number"
                           step="0.5"
                           value={settings.points_playoff_semifinal}
-                          onChange={(e) => setSettings({ ...settings, points_playoff_semifinal: parseFloat(e.target.value) || 0 })}
+                          onChange={(e) => updateScoringField('points_playoff_semifinal', parseFloat(e.target.value) || 0)}
                           className="w-full px-3 py-2 bg-surface border border-border rounded text-text-primary text-sm"
                         />
                       </div>
@@ -1061,7 +1104,7 @@ export default function CommissionerToolsPage() {
                           type="number"
                           step="0.5"
                           value={settings.points_championship_win}
-                          onChange={(e) => setSettings({ ...settings, points_championship_win: parseFloat(e.target.value) || 0 })}
+                          onChange={(e) => updateScoringField('points_championship_win', parseFloat(e.target.value) || 0)}
                           className="w-full px-3 py-2 bg-surface border border-border rounded text-text-primary text-sm"
                         />
                       </div>
@@ -1071,7 +1114,7 @@ export default function CommissionerToolsPage() {
                           type="number"
                           step="0.5"
                           value={settings.points_championship_loss}
-                          onChange={(e) => setSettings({ ...settings, points_championship_loss: parseFloat(e.target.value) || 0 })}
+                          onChange={(e) => updateScoringField('points_championship_loss', parseFloat(e.target.value) || 0)}
                           className="w-full px-3 py-2 bg-surface border border-border rounded text-text-primary text-sm"
                         />
                       </div>
