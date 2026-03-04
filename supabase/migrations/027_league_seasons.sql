@@ -32,7 +32,7 @@ CREATE POLICY "Commissioners can create league seasons"
   TO authenticated
   WITH CHECK (
     league_id IN (
-      SELECT id FROM leagues WHERE commissioner_id = auth.uid() OR co_commissioner_id = auth.uid()
+      SELECT league_id FROM league_members WHERE user_id = auth.uid() AND role IN ('commissioner', 'co_commissioner')
     )
   );
 
@@ -41,7 +41,7 @@ CREATE POLICY "Commissioners can update league seasons"
   TO authenticated
   USING (
     league_id IN (
-      SELECT id FROM leagues WHERE commissioner_id = auth.uid() OR co_commissioner_id = auth.uid()
+      SELECT league_id FROM league_members WHERE user_id = auth.uid() AND role IN ('commissioner', 'co_commissioner')
     )
   );
 
