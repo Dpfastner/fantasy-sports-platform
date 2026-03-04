@@ -372,23 +372,23 @@ export default async function LeaguePage({ params }: PageProps) {
               </div>
             )}
 
-            {/* League Activity — Announcements */}
-            {announcements.length > 0 && (
-              <ErrorBoundary sectionName="announcements">
-                <div className="bg-surface rounded-lg p-4 md:p-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <h2 className="text-lg font-semibold text-text-primary">League Activity</h2>
-                    {isCommissioner && (
-                      <Link
-                        href={`/leagues/${id}/settings?tab=misc`}
-                        className="text-brand-text hover:text-brand-text/80 text-xs transition-colors"
-                      >
-                        Manage Announcements
-                      </Link>
-                    )}
-                  </div>
-                  <div className="space-y-3">
-                    {announcements.map(a => {
+            {/* League Activity — Announcements (always visible) */}
+            <ErrorBoundary sectionName="announcements">
+              <div className="bg-surface rounded-lg p-4 md:p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-lg font-semibold text-text-primary">League Activity</h2>
+                  {isCommissioner && (
+                    <Link
+                      href={`/leagues/${id}/settings?tab=misc`}
+                      className="text-brand-text hover:text-brand-text/80 text-xs transition-colors"
+                    >
+                      Manage Announcements
+                    </Link>
+                  )}
+                </div>
+                <div className="space-y-3">
+                  {announcements.length > 0 ? (
+                    announcements.map(a => {
                       const commName = commissionerNames.get(a.commissioner_id) || 'Commissioner'
                       const daysAgo = Math.floor((Date.now() - new Date(a.created_at).getTime()) / (1000 * 60 * 60 * 24))
                       const timeAgo = daysAgo === 0 ? 'Today' : daysAgo === 1 ? 'Yesterday' : `${daysAgo}d ago`
@@ -418,11 +418,25 @@ export default async function LeaguePage({ params }: PageProps) {
                           </div>
                         </div>
                       )
-                    })}
-                  </div>
+                    })
+                  ) : (
+                    <div className="p-3 bg-surface-inset rounded-lg border border-border">
+                      <div className="flex items-center gap-2 mb-1">
+                        <svg className="w-4 h-4 text-brand shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z" />
+                        </svg>
+                        <h3 className="text-sm font-semibold text-text-primary">Welcome to {league.name}!</h3>
+                      </div>
+                      <p className="text-text-secondary text-sm">
+                        {isCommissioner
+                          ? 'Post announcements here to keep your league members informed. Head to Commissioner Tools \u2192 Miscellaneous to create your first announcement.'
+                          : 'League announcements from your commissioner will appear here. Stay tuned!'}
+                      </p>
+                    </div>
+                  )}
                 </div>
-              </ErrorBoundary>
-            )}
+              </div>
+            </ErrorBoundary>
           </div>
 
           {/* Sidebar - 1 column */}
