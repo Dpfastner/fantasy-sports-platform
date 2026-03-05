@@ -50,7 +50,6 @@ function getNotificationHref(notification: Notification): string | null {
     case 'draft_your_turn':
       return `/leagues/${leagueId}/draft`
     case 'draft_completed':
-      return `/leagues/${leagueId}/stats`
     case 'league_joined':
     case 'announcement_posted':
       return `/leagues/${leagueId}`
