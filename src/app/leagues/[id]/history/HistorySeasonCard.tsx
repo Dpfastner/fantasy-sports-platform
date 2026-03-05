@@ -338,6 +338,60 @@ export function HistorySeasonCard({
             </div>
           )}
 
+          {/* School MVP */}
+          {v2 && (() => {
+            // Aggregate points per school across all teams
+            const schoolPoints = new Map<string, { points: number; conference: string; record: string; teams: string[] }>()
+            for (const team of finalStandings.standings) {
+              for (const school of team.roster) {
+                if (!school.points) continue
+                const existing = schoolPoints.get(school.school)
+                if (existing) {
+                  existing.points += school.points
+                  existing.teams.push(team.teamName)
+                } else {
+                  schoolPoints.set(school.school, {
+                    points: school.points,
+                    conference: school.conference,
+                    record: school.record,
+                    teams: [team.teamName],
+                  })
+                }
+              }
+            }
+            const topSchools = [...schoolPoints.entries()]
+              .sort(([, a], [, b]) => b.points - a.points)
+              .slice(0, 5)
+
+            if (topSchools.length === 0) return null
+
+            return (
+              <div className="px-4 md:px-6 py-3 border-t border-border">
+                <h3 className="text-xs font-semibold text-text-secondary uppercase mb-2">Season School MVP</h3>
+                <div className="space-y-1.5">
+                  {topSchools.map(([name, data], i) => (
+                    <div key={name} className="flex items-center justify-between text-xs">
+                      <div className="flex items-center gap-2">
+                        <span className={`font-medium ${i === 0 ? 'text-warning-text' : 'text-text-muted'}`}>
+                          {i === 0 ? '⭐' : `${i + 1}.`}
+                        </span>
+                        <span className="text-text-primary font-medium">{name}</span>
+                        <span className="text-text-muted">{data.conference}</span>
+                        {data.record && <span className="text-text-secondary">({data.record})</span>}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-text-muted text-[10px]">
+                          {data.teams.length > 1 ? `${data.teams.length} teams` : data.teams[0]}
+                        </span>
+                        <span className="font-mono font-medium text-text-primary">{data.points} pts</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )
+          })()}
+
           {/* Footer */}
           <div className="px-4 md:px-6 py-3 border-t border-border bg-surface-subtle">
             <p className="text-text-muted text-xs">
