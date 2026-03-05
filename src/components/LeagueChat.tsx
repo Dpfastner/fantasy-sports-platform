@@ -4,6 +4,8 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { ReportContentButton } from '@/components/ReportContentButton'
 
+const EMOJI_SET = ['👍', '👎', '😂', '🔥', '❤️', '😮', '🏈', '🏆', '🎉']
+
 interface ChatMessage {
   id: string
   message: string
@@ -12,10 +14,17 @@ interface ChatMessage {
   display_name: string
 }
 
+interface ReactionData {
+  emoji: string
+  count: number
+  reacted: boolean
+}
+
 interface LeagueChatProps {
   leagueId: string
   currentUserId: string
   initialMessages: ChatMessage[]
+  initialReactions: Record<string, ReactionData[]>
 }
 
 function formatTimeAgo(dateStr: string): string {
@@ -31,11 +40,13 @@ function formatTimeAgo(dateStr: string): string {
   return new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
 }
 
-export function LeagueChat({ leagueId, currentUserId, initialMessages }: LeagueChatProps) {
+export function LeagueChat({ leagueId, currentUserId, initialMessages, initialReactions }: LeagueChatProps) {
   const [messages, setMessages] = useState<ChatMessage[]>(initialMessages)
   const [input, setInput] = useState('')
   const [sending, setSending] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [reactions, setReactions] = useState<Record<string, ReactionData[]>>(initialReactions)
+  const [pickerOpenFor, setPickerOpenFor] = useState<string | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const nameCache = useRef<Record<string, string>>({})
@@ -55,7 +66,7 @@ export function LeagueChat({ leagueId, currentUserId, initialMessages }: LeagueC
     scrollToBottom()
   }, [messages, scrollToBottom])
 
-  // Supabase Realtime subscription
+  // Supabase Realtime subscription for messages + reactions
   useEffect(() => {
     const supabase = createClient()
 
@@ -69,7 +80,6 @@ export function LeagueChat({ leagueId, currentUserId, initialMessages }: LeagueC
       }, async (payload) => {
         const newMsg = payload.new as { id: string; message: string; created_at: string; user_id: string }
 
-        // Get display name from cache or fetch it
         let displayName = nameCache.current[newMsg.user_id]
         if (!displayName) {
           const { data } = await supabase
@@ -82,9 +92,53 @@ export function LeagueChat({ leagueId, currentUserId, initialMessages }: LeagueC
         }
 
         setMessages(prev => {
-          // Avoid duplicates (e.g. if we already added it optimistically)
           if (prev.some(m => m.id === newMsg.id)) return prev
           return [...prev, { ...newMsg, display_name: displayName }]
+        })
+      })
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'league_message_reactions',
+      }, (payload) => {
+        const r = payload.new as { message_id: string; user_id: string; emoji: string }
+        setReactions(prev => {
+          const msgReactions = [...(prev[r.message_id] || [])]
+          const idx = msgReactions.findIndex(x => x.emoji === r.emoji)
+          if (idx >= 0) {
+            msgReactions[idx] = {
+              ...msgReactions[idx],
+              count: msgReactions[idx].count + 1,
+              reacted: msgReactions[idx].reacted || r.user_id === currentUserId,
+            }
+          } else {
+            msgReactions.push({ emoji: r.emoji, count: 1, reacted: r.user_id === currentUserId })
+          }
+          return { ...prev, [r.message_id]: msgReactions }
+        })
+      })
+      .on('postgres_changes', {
+        event: 'DELETE',
+        schema: 'public',
+        table: 'league_message_reactions',
+      }, (payload) => {
+        const r = payload.old as { message_id: string; user_id: string; emoji: string }
+        setReactions(prev => {
+          const msgReactions = [...(prev[r.message_id] || [])]
+          const idx = msgReactions.findIndex(x => x.emoji === r.emoji)
+          if (idx >= 0) {
+            const newCount = msgReactions[idx].count - 1
+            if (newCount <= 0) {
+              msgReactions.splice(idx, 1)
+            } else {
+              msgReactions[idx] = {
+                ...msgReactions[idx],
+                count: newCount,
+                reacted: r.user_id === currentUserId ? false : msgReactions[idx].reacted,
+              }
+            }
+          }
+          return { ...prev, [r.message_id]: msgReactions }
         })
       })
       .subscribe()
@@ -92,7 +146,62 @@ export function LeagueChat({ leagueId, currentUserId, initialMessages }: LeagueC
     return () => {
       supabase.removeChannel(channel)
     }
-  }, [leagueId])
+  }, [leagueId, currentUserId])
+
+  const handleToggleReaction = async (messageId: string, emoji: string) => {
+    // Optimistic update
+    setReactions(prev => {
+      const msgReactions = [...(prev[messageId] || [])]
+      const idx = msgReactions.findIndex(x => x.emoji === emoji)
+      if (idx >= 0 && msgReactions[idx].reacted) {
+        // Remove own reaction
+        const newCount = msgReactions[idx].count - 1
+        if (newCount <= 0) {
+          msgReactions.splice(idx, 1)
+        } else {
+          msgReactions[idx] = { ...msgReactions[idx], count: newCount, reacted: false }
+        }
+      } else if (idx >= 0) {
+        // Add to existing emoji
+        msgReactions[idx] = { ...msgReactions[idx], count: msgReactions[idx].count + 1, reacted: true }
+      } else {
+        // New emoji
+        msgReactions.push({ emoji, count: 1, reacted: true })
+      }
+      return { ...prev, [messageId]: msgReactions }
+    })
+    setPickerOpenFor(null)
+
+    try {
+      const res = await fetch(`/api/leagues/${leagueId}/messages/reactions`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ messageId, emoji }),
+      })
+      if (!res.ok) {
+        throw new Error('Failed to toggle reaction')
+      }
+    } catch {
+      // Revert on error — re-fetch from server would be ideal but simple revert works
+      setReactions(prev => {
+        const msgReactions = [...(prev[messageId] || [])]
+        const idx = msgReactions.findIndex(x => x.emoji === emoji)
+        if (idx >= 0 && msgReactions[idx].reacted) {
+          const newCount = msgReactions[idx].count - 1
+          if (newCount <= 0) {
+            msgReactions.splice(idx, 1)
+          } else {
+            msgReactions[idx] = { ...msgReactions[idx], count: newCount, reacted: false }
+          }
+        } else if (idx >= 0) {
+          msgReactions[idx] = { ...msgReactions[idx], count: msgReactions[idx].count + 1, reacted: true }
+        } else {
+          msgReactions.push({ emoji, count: 1, reacted: true })
+        }
+        return { ...prev, [messageId]: msgReactions }
+      })
+    }
+  }
 
   const handleSend = async () => {
     const trimmed = input.trim()
@@ -138,26 +247,75 @@ export function LeagueChat({ leagueId, currentUserId, initialMessages }: LeagueC
         ) : (
           messages.map(msg => {
             const isOwn = msg.user_id === currentUserId
+            const msgReactions = reactions[msg.id] || []
             return (
-              <div key={msg.id} className="group flex items-start gap-2 px-1">
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-baseline gap-2">
-                    <span className={`text-xs font-semibold ${isOwn ? 'text-brand-text' : 'text-text-primary'}`}>
-                      {msg.display_name}
-                    </span>
-                    <span className="text-text-muted text-[10px]">
-                      {formatTimeAgo(msg.created_at)}
-                    </span>
+              <div key={msg.id} className="group px-1">
+                <div className="flex items-start gap-2">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-baseline gap-2">
+                      <span className={`text-xs font-semibold ${isOwn ? 'text-brand-text' : 'text-text-primary'}`}>
+                        {msg.display_name}
+                      </span>
+                      <span className="text-text-muted text-[10px]">
+                        {formatTimeAgo(msg.created_at)}
+                      </span>
+                    </div>
+                    <p className="text-text-secondary text-sm break-words">{msg.message}</p>
                   </div>
-                  <p className="text-text-secondary text-sm break-words">{msg.message}</p>
+                  <div className="opacity-0 group-hover:opacity-100 transition-opacity shrink-0 mt-1 flex items-center gap-1">
+                    {/* Add reaction button */}
+                    <button
+                      onClick={() => setPickerOpenFor(pickerOpenFor === msg.id ? null : msg.id)}
+                      className="p-1 text-text-muted hover:text-text-secondary rounded transition-colors"
+                      title="Add reaction"
+                    >
+                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                    </button>
+                    {!isOwn && (
+                      <ReportContentButton
+                        contentType="chat_message"
+                        contentId={msg.id}
+                        contentPreview={msg.message}
+                      />
+                    )}
+                  </div>
                 </div>
-                {!isOwn && (
-                  <div className="opacity-0 group-hover:opacity-100 transition-opacity shrink-0 mt-1">
-                    <ReportContentButton
-                      contentType="chat_message"
-                      contentId={msg.id}
-                      contentPreview={msg.message}
-                    />
+
+                {/* Emoji picker strip */}
+                {pickerOpenFor === msg.id && (
+                  <div className="flex gap-1 mt-1 ml-0 p-1.5 bg-surface-inset rounded-lg border border-border w-fit">
+                    {EMOJI_SET.map(emoji => (
+                      <button
+                        key={emoji}
+                        onClick={() => handleToggleReaction(msg.id, emoji)}
+                        className="hover:bg-surface-subtle rounded p-1 text-sm transition-colors"
+                        title={emoji}
+                      >
+                        {emoji}
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                {/* Reaction pills */}
+                {msgReactions.length > 0 && (
+                  <div className="flex flex-wrap gap-1 mt-1">
+                    {msgReactions.map(r => (
+                      <button
+                        key={r.emoji}
+                        onClick={() => handleToggleReaction(msg.id, r.emoji)}
+                        className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-xs transition-colors ${
+                          r.reacted
+                            ? 'bg-brand/20 border border-brand text-text-primary'
+                            : 'bg-surface-inset border border-border text-text-secondary hover:border-text-muted'
+                        }`}
+                      >
+                        <span>{r.emoji}</span>
+                        <span>{r.count}</span>
+                      </button>
+                    ))}
                   </div>
                 )}
               </div>

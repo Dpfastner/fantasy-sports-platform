@@ -102,3 +102,8 @@ export const announcementUpdateSchema = z.object({
 export const chatMessageSchema = z.object({
   message: z.string().min(1, 'Message is required').max(500, 'Message too long'),
 })
+
+export const reactionToggleSchema = z.object({
+  messageId: uuidField,
+  emoji: z.string().min(1).max(10),
+})

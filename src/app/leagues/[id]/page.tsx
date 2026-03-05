@@ -278,6 +278,34 @@ export default async function LeaguePage({ params }: PageProps) {
     }
   }
 
+  // Get reactions for chat messages
+  let chatReactions: Record<string, { emoji: string; count: number; reacted: boolean }[]> = {}
+  if (chatMessages.length > 0) {
+    const messageIds = chatMessages.map(m => m.id)
+    const { data: reactionsData } = await supabase
+      .from('league_message_reactions')
+      .select('message_id, user_id, emoji')
+      .in('message_id', messageIds)
+
+    if (reactionsData && reactionsData.length > 0) {
+      // Group by message_id + emoji, track if current user reacted
+      const grouped: Record<string, Record<string, { count: number; reacted: boolean }>> = {}
+      for (const r of reactionsData) {
+        if (!grouped[r.message_id]) grouped[r.message_id] = {}
+        if (!grouped[r.message_id][r.emoji]) grouped[r.message_id][r.emoji] = { count: 0, reacted: false }
+        grouped[r.message_id][r.emoji].count++
+        if (r.user_id === user.id) grouped[r.message_id][r.emoji].reacted = true
+      }
+      for (const [msgId, emojis] of Object.entries(grouped)) {
+        chatReactions[msgId] = Object.entries(emojis).map(([emoji, data]) => ({
+          emoji,
+          count: data.count,
+          reacted: data.reacted,
+        }))
+      }
+    }
+  }
+
   // Get double picks count for user's team
   let doublePicksUsed = 0
   if (userTeam && settings?.double_points_enabled) {
@@ -488,6 +516,7 @@ export default async function LeaguePage({ params }: PageProps) {
                     leagueId={id}
                     currentUserId={user.id}
                     initialMessages={chatMessages}
+                    initialReactions={chatReactions}
                   />
                 </div>
               </ErrorBoundary>
