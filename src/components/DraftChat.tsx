@@ -176,20 +176,22 @@ export function DraftChat({ draftId, leagueId, currentUserId }: DraftChatProps) 
           messages.map(msg => {
             const isOwn = msg.user_id === currentUserId
             return (
-              <div key={msg.id} className="group px-1">
-                <div className="flex items-baseline gap-1.5">
-                  <span className={`text-[11px] font-semibold ${isOwn ? 'text-brand-text' : 'text-text-primary'}`}>
-                    {msg.display_name}
-                  </span>
-                  <span className="text-text-muted text-[9px]">
-                    {formatTimeAgo(msg.created_at)}
-                  </span>
+              <div key={msg.id} className="group px-1 flex items-start gap-1">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-baseline gap-1.5">
+                    <span className={`text-[11px] font-semibold ${isOwn ? 'text-brand-text' : 'text-text-primary'}`}>
+                      {msg.display_name}
+                    </span>
+                    <span className="text-text-muted text-[9px]">
+                      {formatTimeAgo(msg.created_at)}
+                    </span>
+                  </div>
+                  <p className="text-text-secondary text-xs break-words">
+                    {msg.message}
+                  </p>
                 </div>
-                <p className="text-text-secondary text-xs break-words inline">
-                  {msg.message}
-                </p>
                 {!isOwn && (
-                  <span className="opacity-0 group-hover:opacity-100 transition-opacity inline-flex items-center ml-1 align-middle">
+                  <span className="opacity-0 group-hover:opacity-100 transition-opacity shrink-0 mt-0.5">
                     <ReportContentButton
                       contentType="chat_message"
                       contentId={msg.id}
