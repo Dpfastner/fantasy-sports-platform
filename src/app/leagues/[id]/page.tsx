@@ -342,17 +342,23 @@ export default async function LeaguePage({ params }: PageProps) {
   const leagueSeasons = (leagueSeasonsData || []).map(s => {
     // Try profile lookup first, then fall back to final_standings data
     let championName: string | null = s.champion_user_id ? championNames[s.champion_user_id] || null : null
-    if (!championName && s.final_standings) {
+    let championUserName: string | null = null
+    let championPoints: number | null = null
+    if (s.final_standings) {
       const fs = s.final_standings as Record<string, unknown>
       if (fs.version === 2) {
-        const standings = fs.standings as { rank: number; teamName: string }[]
-        championName = standings?.[0]?.teamName || null
+        const standings = fs.standings as { teamName: string; userName: string; totalPoints: number }[]
+        if (!championName) championName = standings?.[0]?.teamName || null
+        championUserName = standings?.[0]?.userName || null
+        championPoints = standings?.[0]?.totalPoints ?? null
       } else if (Array.isArray(s.final_standings)) {
-        const arr = s.final_standings as { rank: number; teamName: string }[]
-        championName = arr?.[0]?.teamName || null
+        const arr = s.final_standings as { teamName: string; userName: string; totalPoints: number }[]
+        if (!championName) championName = arr?.[0]?.teamName || null
+        championUserName = arr?.[0]?.userName || null
+        championPoints = arr?.[0]?.totalPoints ?? null
       }
     }
-    return { ...s, championName }
+    return { ...s, championName, championUserName, championPoints }
   })
 
   return (
@@ -748,30 +754,35 @@ export default async function LeaguePage({ params }: PageProps) {
                 <p className="text-text-muted text-xs">No past seasons yet</p>
               ) : (
                 <div className="space-y-3">
-                  {leagueSeasons.map(season => {
-                    const fs = season.final_standings as Record<string, unknown> | null
-                    const championPoints = fs?.version === 2
-                      ? (fs.standings as { totalPoints: number }[])?.[0]?.totalPoints
-                      : Array.isArray(fs) ? (fs as { totalPoints: number }[])?.[0]?.totalPoints : null
-                    return (
-                      <div key={season.id}>
-                        <div className="flex items-center gap-2 text-xs">
-                          <span className="shrink-0">🏆</span>
-                          <span className="text-text-primary font-medium">
-                            {season.season_year - 1}-{season.season_year}
-                          </span>
-                        </div>
-                        {season.championName && (
-                          <div className="ml-6 text-xs text-text-secondary">
-                            {season.championName}
-                            {championPoints != null && (
-                              <span className="text-text-muted"> — {championPoints} pts</span>
-                            )}
-                          </div>
-                        )}
+                  {leagueSeasons.map(season => (
+                    <Link
+                      key={season.id}
+                      href={`/leagues/${id}/history?season=${season.season_year}`}
+                      className="block hover:bg-surface-subtle rounded -mx-2 px-2 py-1 transition-colors"
+                    >
+                      <div className="flex items-center gap-2 text-xs">
+                        <span className="shrink-0">🏆</span>
+                        <span className="text-text-primary font-medium">
+                          {season.season_year - 1}-{season.season_year}
+                        </span>
                       </div>
-                    )
-                  })}
+                      {(season.championUserName || season.championName) && (
+                        <div className="ml-6 text-xs text-text-secondary">
+                          {season.championUserName && season.championName && season.championUserName !== season.championName ? (
+                            <>
+                              <span className="font-medium">{season.championUserName}</span>
+                              <span className="text-text-muted"> — {season.championName}</span>
+                            </>
+                          ) : (
+                            <span>{season.championName}</span>
+                          )}
+                          {season.championPoints != null && (
+                            <span className="text-text-muted"> — {season.championPoints} pts</span>
+                          )}
+                        </div>
+                      )}
+                    </Link>
+                  ))}
                 </div>
               )}
             </div>

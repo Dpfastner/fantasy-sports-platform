@@ -13,10 +13,12 @@ export const dynamic = 'force-dynamic'
 
 interface PageProps {
   params: Promise<{ id: string }>
+  searchParams: Promise<{ season?: string }>
 }
 
-export default async function HistoryPage({ params }: PageProps) {
+export default async function HistoryPage({ params, searchParams }: PageProps) {
   const { id: leagueId } = await params
+  const { season: expandSeason } = await searchParams
   const supabase = await createClient()
 
   const { data: { user } } = await supabase.auth.getUser()
@@ -85,16 +87,19 @@ export default async function HistoryPage({ params }: PageProps) {
     let championName: string | null = s.champion_user_id
       ? championProfiles[s.champion_user_id] || null
       : null
+    let championUserName: string | null = null
 
     // Fallback: read from final_standings if no profile match
-    if (!championName && s.final_standings) {
+    if (s.final_standings) {
       const fs = s.final_standings as Record<string, unknown>
       if (fs.version === 2) {
-        const standings = fs.standings as { rank: number; teamName: string }[]
-        championName = standings?.[0]?.teamName || null
+        const standings = fs.standings as { teamName: string; userName: string }[]
+        if (!championName) championName = standings?.[0]?.teamName || null
+        championUserName = standings?.[0]?.userName || null
       } else if (Array.isArray(s.final_standings)) {
-        const arr = s.final_standings as { rank: number; teamName: string }[]
-        championName = arr?.[0]?.teamName || null
+        const arr = s.final_standings as { teamName: string; userName: string }[]
+        if (!championName) championName = arr?.[0]?.teamName || null
+        championUserName = arr?.[0]?.userName || null
       }
     }
 
@@ -104,10 +109,14 @@ export default async function HistoryPage({ params }: PageProps) {
       final_standings: s.final_standings,
       archived_at: s.archived_at || '',
       championName,
+      championUserName,
     }
   })
 
   const currentSeasonArchived = seasons.some(s => s.season_year === year)
+
+  // If only one season, default expand it. Otherwise expand from ?season= param
+  const shouldExpandAll = seasons.length === 1
 
   return (
     <div className="min-h-screen bg-background">
@@ -142,14 +151,16 @@ export default async function HistoryPage({ params }: PageProps) {
             </p>
           </div>
         ) : (
-          <div className="space-y-6">
+          <div className="space-y-4">
             {seasons.map(season => (
               <HistorySeasonCard
                 key={season.id}
                 seasonYear={season.season_year}
                 finalStandings={season.final_standings}
                 championName={season.championName}
+                championUserName={season.championUserName}
                 archivedAt={season.archived_at}
+                defaultExpanded={shouldExpandAll || expandSeason === String(season.season_year)}
               />
             ))}
           </div>
