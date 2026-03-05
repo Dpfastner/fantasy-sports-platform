@@ -1260,7 +1260,7 @@ These are features designated as free (never gated behind premium) that improve 
 | 25.2 | **Watchlist UI** — Star/bookmark on school cards in draft + add/drop. Watchlist section on team page. Filter to show unavailable schools for watchlisting. Collapsible watchlist summary panel on add/drop page. | ✅ Done |
 | 25.3 | **League announcements** — Commissioner CRUD for announcements on league home page. Pinned + chronological display. `league_announcements` table from Phase 24. Inline editing for commissioners, word filter + report button moderation, activity feed from `activity_log`, section visibility toggles in settings. | ✅ Done |
 | 25.4 | **Draft chat** — Real-time chat panel in draft room using Supabase Realtime + `draft_messages` table from Phase 24. Desktop: resizable lower section of right panel with drag handle. Mobile: dedicated Chat tab. Report button, word filter, rate limiting. Viewport-locked panels with independent scroll. | ✅ Done |
-| 25.5 | **Basic in-app notifications** — Bell icon in header with unread count. 12 notification types including draft pick throttle (max 3 when absent, resets on return). Needs `notifications` table migration. | |
+| 25.5 | **Basic in-app notifications** — Bell icon in header with unread count. 12 notification types including draft pick throttle (max 3 when absent, resets on return). Needs `notifications` table migration. | ✅ Done |
 | 25.6 | **League history / trophy room** — Past season results at `/leagues/[id]/history`. Commissioner archives seasons. Uses `league_seasons` table from Phase 24. | |
 | 25.7 | **League message board** — Real-time chat on league home page via Supabase Realtime. `league_messages` table with RLS, word filter, report button, emoji reactions (👍👎😂🔥❤️😮🏈🏆🎉) with `league_message_reactions` table. Commissioner toggle in settings. Announcements height cap (280px scroll). | ✅ Done |
 
@@ -1271,7 +1271,7 @@ These are features designated as free (never gated behind premium) that improve 
 3. ~~**25.3 League announcements**~~ ✅ Done — includes word filter, report button, inline commissioner editing, activity feed, section visibility toggles, season-based data cleanup
 4. ~~**25.7 League message board**~~ ✅ Done — real-time chat with Supabase Realtime, emoji reactions, word filter, report button, announcements height cap, commissioner toggle
 5. ~~**25.4 Draft chat**~~ ✅ Done — resizable panel in draft room, Realtime messaging, drag handle, report button, word filter, viewport-locked layout
-6. **25.5 Basic notifications** — build after features it notifies about
+6. ~~**25.5 Basic notifications**~~ ✅ Done — bell icon with unread badge, Realtime subscription, notifications for announcements/joins/transactions/draft events, throttled draft picks
 7. **25.6 League history** — test with imported Season 1 data
 
 ---
