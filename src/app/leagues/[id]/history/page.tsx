@@ -7,29 +7,12 @@ import { getCurrentWeek } from '@/lib/week'
 import { getEnvironment } from '@/lib/env'
 import { getLeagueYear } from '@/lib/league-helpers'
 import { ArchiveSeasonButton } from './ArchiveSeasonButton'
+import { HistorySeasonCard } from './HistorySeasonCard'
 
 export const dynamic = 'force-dynamic'
 
 interface PageProps {
   params: Promise<{ id: string }>
-}
-
-interface Standing {
-  rank: number
-  teamName: string
-  userName: string
-  totalPoints: number
-  teamId: string
-  userId: string
-}
-
-interface ArchivedSeason {
-  id: string
-  season_year: number
-  final_standings: Standing[]
-  champion_user_id: string | null
-  archived_at: string
-  championName: string | null
 }
 
 export default async function HistoryPage({ params }: PageProps) {
@@ -73,14 +56,14 @@ export default async function HistoryPage({ params }: PageProps) {
   const currentWeek = await getCurrentWeek(year)
   const environment = getEnvironment()
 
-  // Fetch archived seasons via the API helper logic (direct query for server component)
+  // Fetch archived seasons
   const { data: seasonsData } = await supabase
     .from('league_seasons')
     .select('id, season_year, final_standings, champion_user_id, archived_at')
     .eq('league_id', leagueId)
     .order('season_year', { ascending: false })
 
-  // Get champion names
+  // Get champion names from profiles (for seasons with champion_user_id)
   const championIds = (seasonsData || [])
     .map(s => s.champion_user_id)
     .filter((id): id is string => !!id)
@@ -97,14 +80,32 @@ export default async function HistoryPage({ params }: PageProps) {
     )
   }
 
-  const seasons: ArchivedSeason[] = (seasonsData || []).map(s => ({
-    id: s.id,
-    season_year: s.season_year,
-    final_standings: (s.final_standings || []) as Standing[],
-    champion_user_id: s.champion_user_id,
-    archived_at: s.archived_at || '',
-    championName: s.champion_user_id ? championProfiles[s.champion_user_id] || 'Unknown' : null,
-  }))
+  // Build season data with champion name fallback
+  const seasons = (seasonsData || []).map(s => {
+    let championName: string | null = s.champion_user_id
+      ? championProfiles[s.champion_user_id] || null
+      : null
+
+    // Fallback: read from final_standings if no profile match
+    if (!championName && s.final_standings) {
+      const fs = s.final_standings as Record<string, unknown>
+      if (fs.version === 2) {
+        const standings = fs.standings as { rank: number; teamName: string }[]
+        championName = standings?.[0]?.teamName || null
+      } else if (Array.isArray(s.final_standings)) {
+        const arr = s.final_standings as { rank: number; teamName: string }[]
+        championName = arr?.[0]?.teamName || null
+      }
+    }
+
+    return {
+      id: s.id,
+      season_year: s.season_year,
+      final_standings: s.final_standings,
+      archived_at: s.archived_at || '',
+      championName,
+    }
+  })
 
   const currentSeasonArchived = seasons.some(s => s.season_year === year)
 
@@ -143,70 +144,13 @@ export default async function HistoryPage({ params }: PageProps) {
         ) : (
           <div className="space-y-6">
             {seasons.map(season => (
-              <div key={season.id} className="bg-surface rounded-lg overflow-hidden">
-                {/* Season Header */}
-                <div className="px-4 md:px-6 py-4 border-b border-border">
-                  <div className="flex items-center justify-between">
-                    <h2 className="text-lg font-semibold text-text-primary">
-                      {season.season_year - 1}-{season.season_year} Season
-                    </h2>
-                    {season.championName && (
-                      <div className="flex items-center gap-2 bg-warning/10 px-3 py-1.5 rounded-full">
-                        <span className="text-base">🏆</span>
-                        <span className="text-sm font-semibold text-warning-text">
-                          {season.championName}
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Standings Table */}
-                <div className="px-4 md:px-6 py-3">
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="text-text-secondary text-xs uppercase">
-                        <th className="text-left py-2 w-12">#</th>
-                        <th className="text-left py-2">Team</th>
-                        <th className="text-left py-2">Owner</th>
-                        <th className="text-right py-2">Points</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {season.final_standings.map((team, idx) => (
-                        <tr
-                          key={team.teamId || idx}
-                          className={`border-t border-border/50 ${idx === 0 ? 'bg-warning/5' : ''}`}
-                        >
-                          <td className="py-2.5 text-text-secondary">
-                            {idx === 0 ? '🏆' : team.rank}
-                          </td>
-                          <td className="py-2.5 text-text-primary font-medium">
-                            {team.teamName}
-                          </td>
-                          <td className="py-2.5 text-text-secondary">
-                            {team.userName}
-                          </td>
-                          <td className="py-2.5 text-text-primary text-right font-mono">
-                            {team.totalPoints.toFixed(1)}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-
-                {/* Footer */}
-                <div className="px-4 md:px-6 py-3 border-t border-border bg-surface-subtle">
-                  <p className="text-text-muted text-xs">
-                    Archived on {new Date(season.archived_at).toLocaleDateString('en-US', {
-                      month: 'long',
-                      day: 'numeric',
-                      year: 'numeric',
-                    })}
-                  </p>
-                </div>
-              </div>
+              <HistorySeasonCard
+                key={season.id}
+                seasonYear={season.season_year}
+                finalStandings={season.final_standings}
+                championName={season.championName}
+                archivedAt={season.archived_at}
+              />
             ))}
           </div>
         )}

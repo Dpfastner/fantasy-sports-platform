@@ -339,10 +339,21 @@ export default async function LeaguePage({ params }: PageProps) {
     }
   }
 
-  const leagueSeasons = (leagueSeasonsData || []).map(s => ({
-    ...s,
-    championName: s.champion_user_id ? championNames[s.champion_user_id] || 'Unknown' : null,
-  }))
+  const leagueSeasons = (leagueSeasonsData || []).map(s => {
+    // Try profile lookup first, then fall back to final_standings data
+    let championName: string | null = s.champion_user_id ? championNames[s.champion_user_id] || null : null
+    if (!championName && s.final_standings) {
+      const fs = s.final_standings as Record<string, unknown>
+      if (fs.version === 2) {
+        const standings = fs.standings as { rank: number; teamName: string }[]
+        championName = standings?.[0]?.teamName || null
+      } else if (Array.isArray(s.final_standings)) {
+        const arr = s.final_standings as { rank: number; teamName: string }[]
+        championName = arr?.[0]?.teamName || null
+      }
+    }
+    return { ...s, championName }
+  })
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gradient-from to-gradient-to">
@@ -736,18 +747,31 @@ export default async function LeaguePage({ params }: PageProps) {
               {leagueSeasons.length === 0 ? (
                 <p className="text-text-muted text-xs">No past seasons yet</p>
               ) : (
-                <div className="space-y-2">
-                  {leagueSeasons.map(season => (
-                    <div key={season.id} className="flex items-center gap-2 text-xs">
-                      <span className="shrink-0">🏆</span>
-                      <span className="text-text-primary font-medium">
-                        {season.season_year - 1}-{season.season_year}
-                      </span>
-                      {season.championName && (
-                        <span className="text-text-secondary truncate">{season.championName}</span>
-                      )}
-                    </div>
-                  ))}
+                <div className="space-y-3">
+                  {leagueSeasons.map(season => {
+                    const fs = season.final_standings as Record<string, unknown> | null
+                    const championPoints = fs?.version === 2
+                      ? (fs.standings as { totalPoints: number }[])?.[0]?.totalPoints
+                      : Array.isArray(fs) ? (fs as { totalPoints: number }[])?.[0]?.totalPoints : null
+                    return (
+                      <div key={season.id}>
+                        <div className="flex items-center gap-2 text-xs">
+                          <span className="shrink-0">🏆</span>
+                          <span className="text-text-primary font-medium">
+                            {season.season_year - 1}-{season.season_year}
+                          </span>
+                        </div>
+                        {season.championName && (
+                          <div className="ml-6 text-xs text-text-secondary">
+                            {season.championName}
+                            {championPoints != null && (
+                              <span className="text-text-muted"> — {championPoints} pts</span>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })}
                 </div>
               )}
             </div>
