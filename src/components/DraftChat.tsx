@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { ReportContentButton } from '@/components/ReportContentButton'
 
 interface ChatMessage {
   id: string
@@ -175,7 +176,7 @@ export function DraftChat({ draftId, leagueId, currentUserId }: DraftChatProps) 
           messages.map(msg => {
             const isOwn = msg.user_id === currentUserId
             return (
-              <div key={msg.id} className="px-1">
+              <div key={msg.id} className="group px-1">
                 <div className="flex items-baseline gap-1.5">
                   <span className={`text-[11px] font-semibold ${isOwn ? 'text-brand-text' : 'text-text-primary'}`}>
                     {msg.display_name}
@@ -184,9 +185,18 @@ export function DraftChat({ draftId, leagueId, currentUserId }: DraftChatProps) 
                     {formatTimeAgo(msg.created_at)}
                   </span>
                 </div>
-                <p className="text-text-secondary text-xs break-words">
+                <p className="text-text-secondary text-xs break-words inline">
                   {msg.message}
                 </p>
+                {!isOwn && (
+                  <span className="opacity-0 group-hover:opacity-100 transition-opacity inline-flex items-center ml-1 align-middle">
+                    <ReportContentButton
+                      contentType="chat_message"
+                      contentId={msg.id}
+                      contentPreview={msg.message}
+                    />
+                  </span>
+                )}
               </div>
             )
           })
