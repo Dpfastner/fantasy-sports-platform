@@ -8,6 +8,7 @@ import LeaderboardClient from '@/components/LeaderboardClient'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { AnnouncementsManager } from '@/components/AnnouncementsManager'
 import { LeagueActivityFeed } from '@/components/LeagueActivityFeed'
+import { LeagueChat } from '@/components/LeagueChat'
 import { SandboxWeekSelector } from '@/components/SandboxWeekSelector'
 import { ShareButton } from '@/components/ShareButton'
 import { getCurrentWeek } from '@/lib/week'
@@ -248,6 +249,35 @@ export default async function LeaguePage({ params }: PageProps) {
     display_name: e.user_id ? activityProfiles[e.user_id] || null : null,
   }))
 
+  // Get chat messages for league (last 50)
+  let chatMessages: { id: string; message: string; created_at: string; user_id: string; display_name: string }[] = []
+  if (settings?.show_chat !== false) {
+    const { data: messagesData } = await supabase
+      .from('league_messages')
+      .select('id, message, created_at, user_id')
+      .eq('league_id', id)
+      .order('created_at', { ascending: false })
+      .limit(50)
+
+    if (messagesData && messagesData.length > 0) {
+      const chatUserIds = [...new Set(messagesData.map(m => m.user_id))]
+      let chatProfiles: Record<string, string> = {}
+      const { data: chatProfilesData } = await supabase
+        .from('profiles')
+        .select('id, display_name, email')
+        .in('id', chatUserIds)
+      if (chatProfilesData) {
+        chatProfiles = Object.fromEntries(
+          chatProfilesData.map(p => [p.id, p.display_name || p.email?.split('@')[0] || 'Unknown'])
+        )
+      }
+      chatMessages = messagesData.reverse().map(m => ({
+        ...m,
+        display_name: chatProfiles[m.user_id] || 'Unknown',
+      }))
+    }
+  }
+
   // Get double picks count for user's team
   let doublePicksUsed = 0
   if (userTeam && settings?.double_points_enabled) {
@@ -433,6 +463,20 @@ export default async function LeaguePage({ params }: PageProps) {
                   />
                 </ErrorBoundary>
               </div>
+            )}
+
+            {/* League Chat (between leaderboard and activity feed) */}
+            {(settings?.show_chat !== false) && (
+              <ErrorBoundary sectionName="league-chat">
+                <div className="bg-surface rounded-lg p-4 md:p-6">
+                  <h2 className="text-lg font-semibold text-text-primary mb-4">League Chat</h2>
+                  <LeagueChat
+                    leagueId={id}
+                    currentUserId={user.id}
+                    initialMessages={chatMessages}
+                  />
+                </div>
+              </ErrorBoundary>
             )}
 
             {/* League Activity Feed (bottom) */}

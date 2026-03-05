@@ -136,7 +136,8 @@ export function AnnouncementsManager({
         </div>
       )}
 
-      {/* Announcements list */}
+      {/* Announcements list (capped height, scrollable if >2 announcements) */}
+      <div className="max-h-[280px] overflow-y-auto">
       {announcements.length > 0 ? (
         announcements.map(a => {
           const commName = commissionerNames[a.commissioner_id] || 'Commissioner'
@@ -267,6 +268,7 @@ export function AnnouncementsManager({
           </p>
         </div>
       )}
+      </div>
 
       {/* Commissioner: "Post an announcement..." trigger / inline form */}
       {isCommissioner && !editingId && (

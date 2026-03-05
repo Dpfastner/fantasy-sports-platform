@@ -1559,20 +1559,23 @@ export default function CommissionerToolsPage() {
                     </button>
                   </div>
 
-                  {/* Show Chat (Coming Soon) */}
-                  <div className="flex items-center justify-between p-4 bg-surface-inset rounded-lg opacity-60">
+                  {/* Show Chat */}
+                  <div className="flex items-center justify-between p-4 bg-surface-inset rounded-lg">
                     <div>
-                      <label className="text-text-primary font-medium">
-                        League Chat
-                        <span className="ml-2 text-[10px] px-1.5 py-0.5 rounded-full font-medium bg-info/20 text-info-text">Coming Soon</span>
-                      </label>
+                      <label className="text-text-primary font-medium">League Chat</label>
                       <p className="text-text-secondary text-sm mt-1">Real-time chat with your league members</p>
                     </div>
                     <button
-                      disabled
-                      className="relative inline-flex h-6 w-11 items-center rounded-full bg-surface-subtle cursor-not-allowed"
+                      onClick={() => handleToggleSectionVisibility('show_chat')}
+                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                        settings.show_chat ? 'bg-brand' : 'bg-surface-subtle'
+                      }`}
                     >
-                      <span className="inline-block h-4 w-4 transform rounded-full bg-text-primary translate-x-1" />
+                      <span
+                        className={`inline-block h-4 w-4 transform rounded-full bg-text-primary transition-transform ${
+                          settings.show_chat ? 'translate-x-6' : 'translate-x-1'
+                        }`}
+                      />
                     </button>
                   </div>
 

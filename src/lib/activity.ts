@@ -40,6 +40,8 @@ export type ActivityAction =
   | 'announcement.created'
   | 'announcement.updated'
   | 'announcement.deleted'
+  // Chat
+  | 'chat.message_sent'
   // Other
   | 'invite_code.looked_up'
   | 'issue_report.submitted'

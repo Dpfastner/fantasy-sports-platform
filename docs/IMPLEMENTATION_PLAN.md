@@ -2,7 +2,7 @@
 
 > **Platform Name**: Rivyls (rivyls.com)
 > **Current Sport**: College Football (base for multi-sport expansion)
-> **Last Updated**: March 3, 2026
+> **Last Updated**: March 4, 2026
 > **Audit Date**: February 27, 2026 (full codebase audit of Phases 0-21)
 
 ---
@@ -452,7 +452,7 @@ Phase 24: Schema Additions             ████████████  ✅
 *Free features and draft improvements needed before August 2026 season.*
 
 ```
-Phase 25: Free Feature Enhancements     ████░░░░░░░░  Presets ✅, Watchlist ✅, announcements, chat, notifications, history, message board
+Phase 25: Free Feature Enhancements     ██████░░░░░░  Presets ✅, Watchlist ✅, Announcements ✅, chat, notifications, history, message board
 Phase 26: Draft Enhancements            ░░░░░░░░░░░░  Auto-pick, pause/resume
 Phase 27: Team-to-Team Trading          ░░░░░░░░░░░░  Trade proposals, review, veto (FREE tier)
 ```
@@ -513,7 +513,7 @@ Phase 24 (Schema Additions)  ████████████  ✅ COMPLETE
 
 ━━━ SEASON 1 FEATURES (Build First) ━━━━━━━━━━━━━━━━━━━━━━━━━
         ↓
-Phase 25 (Free Features)     ████░░░░░░░░  25.1 ✅ 25.2 ✅
+Phase 25 (Free Features)     ██████░░░░░░  25.1 ✅ 25.2 ✅ 25.3 ✅
         ↓
 Phase 26 (Draft Enhancements)░░░░░░░░░░░░
         ↓
@@ -1244,7 +1244,7 @@ These were never formally tested. Run during Phase 22 or note which can't be tes
 ## Phase 25: Free Feature Enhancements
 *Free features that enhance the experience beyond the core loop — all shipping before Season 1*
 
-**Status: IN PROGRESS** (25.1 complete)
+**Status: IN PROGRESS** (25.1, 25.2, 25.3 complete)
 
 **Depends on**: Phase 14 (schema for watchlists, scoring_preset, notification_preferences), Phase 24 (schema for announcements, draft_messages, league_seasons)
 
@@ -1258,7 +1258,7 @@ These are features designated as free (never gated behind premium) that improve 
 |------|-------------|--------|
 | 25.1 | **Scoring presets UI** — Preset dropdown (Standard, Conservative, Aggressive, Chaos Mode) in league settings. Auto-fills all 21 scoring fields. Auto-detects "Custom" on manual edit. `src/lib/scoring-presets.ts` + settings page. | ✅ Done |
 | 25.2 | **Watchlist UI** — Star/bookmark on school cards in draft + add/drop. Watchlist section on team page. Filter to show unavailable schools for watchlisting. Collapsible watchlist summary panel on add/drop page. | ✅ Done |
-| 25.3 | **League announcements** — Commissioner CRUD for announcements on league home page. Pinned + chronological display. `league_announcements` table from Phase 24. | |
+| 25.3 | **League announcements** — Commissioner CRUD for announcements on league home page. Pinned + chronological display. `league_announcements` table from Phase 24. Inline editing for commissioners, word filter + report button moderation, activity feed from `activity_log`, section visibility toggles in settings. | ✅ Done |
 | 25.4 | **Draft chat** — Real-time chat panel in draft room using Supabase Realtime + `draft_messages` table from Phase 24. | |
 | 25.5 | **Basic in-app notifications** — Bell icon in header with unread count. 12 notification types including draft pick throttle (max 3 when absent, resets on return). Needs `notifications` table migration. | |
 | 25.6 | **League history / trophy room** — Past season results at `/leagues/[id]/history`. Commissioner archives seasons. Uses `league_seasons` table from Phase 24. | |
@@ -1268,8 +1268,8 @@ These are features designated as free (never gated behind premium) that improve 
 
 1. ~~**25.1 Scoring presets**~~ ✅ Done
 2. ~~**25.2 Watchlists**~~ ✅ Done
-3. **25.7 League message board** — build before notifications so notifications can reference it
-4. **25.3 League announcements** — commissioner tool, moderate effort
+3. ~~**25.3 League announcements**~~ ✅ Done — includes word filter, report button, inline commissioner editing, activity feed, section visibility toggles, season-based data cleanup
+4. **25.7 League message board** — build before notifications so notifications can reference it (placeholder slot already on league home page)
 5. **25.4 Draft chat** — uses same Realtime pattern as message board
 6. **25.5 Basic notifications** — build after features it notifies about
 7. **25.6 League history** — test with imported Season 1 data

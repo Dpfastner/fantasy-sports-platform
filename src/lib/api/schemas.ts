@@ -96,3 +96,9 @@ export const announcementUpdateSchema = z.object({
   body: z.string().min(1).max(2000).optional(),
   pinned: z.boolean().optional(),
 })
+
+// ── League Chat ─────────────────────────────────────────────
+
+export const chatMessageSchema = z.object({
+  message: z.string().min(1, 'Message is required').max(500, 'Message too long'),
+})
