@@ -25,7 +25,7 @@ if (!leagueId) {
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
 
-const SEASON_YEAR = 2025
+const SEASON_YEAR = 2026
 
 // Week labels for the scoring periods
 const WEEK_LABELS = [
@@ -183,7 +183,7 @@ const SEASON_NOTES = {
 }
 
 async function main() {
-  console.log(`Seeding 2024-2025 season history (v2) for league ${leagueId}...`)
+  console.log(`Seeding ${SEASON_YEAR - 1}-${SEASON_YEAR} season history (v2) for league ${leagueId}...`)
 
   // Try to match team names to actual platform users
   const { data: teams } = await supabase
@@ -233,6 +233,19 @@ async function main() {
 
   if (!championUserId) {
     console.log('\nNote: champion_user_id will be null (historical data, no platform user match)')
+  }
+
+  // Clean up old incorrect season_year=2025 row if it exists
+  const { data: oldRow } = await supabase
+    .from('league_seasons')
+    .select('id')
+    .eq('league_id', leagueId)
+    .eq('season_year', 2025)
+    .single()
+
+  if (oldRow) {
+    console.log(`Deleting old season_year=2025 row (id: ${oldRow.id})...`)
+    await supabase.from('league_seasons').delete().eq('id', oldRow.id)
   }
 
   // Check if season already exists

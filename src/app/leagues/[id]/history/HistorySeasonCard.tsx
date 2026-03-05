@@ -301,38 +301,77 @@ export function HistorySeasonCard({
                     <ChevronIcon open={showHighPoints} />
                   </button>
 
-                  {showHighPoints && (
-                    <div className="px-4 md:px-6 pb-4 overflow-x-auto">
-                      <table className="w-full text-xs">
-                        <thead>
-                          <tr className="text-text-muted">
-                            <th className="text-left py-1.5 font-medium">Week</th>
-                            <th className="text-right py-1.5 font-medium">High</th>
-                            <th className="text-left py-1.5 pl-4 font-medium">Winner(s)</th>
-                            <th className="text-right py-1.5 font-medium">Prize</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {highPointsWinners.map(hp => {
-                            const prizePerWinner = 5 / hp.winners.length
-                            return (
-                              <tr key={hp.week} className="border-t border-border/30">
-                                <td className="py-1.5 text-text-secondary whitespace-nowrap">{hp.label}</td>
-                                <td className="py-1.5 text-right font-mono text-warning-text font-medium">{hp.highPoints}</td>
-                                <td className="py-1.5 pl-4 text-text-primary font-medium">{hp.winners.join(', ')}</td>
-                                <td className="py-1.5 text-right font-mono text-success-text">
-                                  ${prizePerWinner.toFixed(2)}
-                                  {hp.winners.length > 1 && (
-                                    <span className="text-text-muted ml-1">ea</span>
-                                  )}
-                                </td>
-                              </tr>
-                            )
-                          })}
-                        </tbody>
-                      </table>
-                    </div>
-                  )}
+                  {showHighPoints && (() => {
+                    // Build prize lookup: for each week, map teamName → prize amount
+                    const prizeLookup = new Map<number, Map<string, number>>()
+                    for (const hp of highPointsWinners) {
+                      const prizePerWinner = 5 / hp.winners.length
+                      const weekMap = new Map<string, number>()
+                      for (const winner of hp.winners) {
+                        weekMap.set(winner, prizePerWinner)
+                      }
+                      prizeLookup.set(hp.week, weekMap)
+                    }
+
+                    // Compute total prizes per team
+                    const teamTotals = new Map<string, number>()
+                    for (const team of finalStandings.standings) {
+                      let total = 0
+                      for (const [, weekMap] of prizeLookup) {
+                        total += weekMap.get(team.teamName) || 0
+                      }
+                      teamTotals.set(team.teamName, total)
+                    }
+
+                    return (
+                      <div className="px-4 md:px-6 pb-4 overflow-x-auto">
+                        <table className="w-full text-xs min-w-[600px]">
+                          <thead>
+                            <tr className="text-text-muted">
+                              <th className="text-left py-1.5 sticky left-0 bg-surface font-medium">Team</th>
+                              {highPointsWinners.map(hp => (
+                                <th key={hp.week} className="text-center py-1.5 px-1 font-normal whitespace-nowrap">
+                                  {shortenLabel(hp.label)}
+                                </th>
+                              ))}
+                              <th className="text-right py-1.5 font-medium">Total</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {finalStandings.standings.map((team, teamIdx) => {
+                              const totalPrize = teamTotals.get(team.teamName) || 0
+                              return (
+                                <tr key={teamIdx} className={`border-t border-border/30 ${teamIdx === 0 ? 'bg-warning/5' : ''}`}>
+                                  <td className="py-1.5 pr-2 text-text-primary font-medium sticky left-0 bg-surface whitespace-nowrap">
+                                    {team.teamName}
+                                  </td>
+                                  {highPointsWinners.map((hp) => {
+                                    const prize = prizeLookup.get(hp.week)?.get(team.teamName)
+                                    return (
+                                      <td
+                                        key={hp.week}
+                                        className={`text-center py-1.5 px-1 font-mono ${
+                                          prize ? 'text-success-text font-bold' : 'text-text-muted'
+                                        }`}
+                                      >
+                                        {prize ? `$${prize.toFixed(2)}` : '—'}
+                                      </td>
+                                    )
+                                  })}
+                                  <td className="py-1.5 text-right font-mono font-medium text-success-text">
+                                    {totalPrize > 0 ? `$${totalPrize.toFixed(2)}` : '—'}
+                                  </td>
+                                </tr>
+                              )
+                            })}
+                          </tbody>
+                        </table>
+                        <p className="text-[10px] text-text-muted mt-2">
+                          $5.00 per week, split among tied winners
+                        </p>
+                      </div>
+                    )
+                  })()}
                 </>
               )}
             </div>
@@ -340,14 +379,14 @@ export function HistorySeasonCard({
 
           {/* School MVP */}
           {v2 && (() => {
-            // Aggregate points per school across all teams
+            // Show each school's actual points (not aggregated across teams)
             const schoolPoints = new Map<string, { points: number; conference: string; record: string; teams: string[] }>()
             for (const team of finalStandings.standings) {
               for (const school of team.roster) {
                 if (!school.points) continue
                 const existing = schoolPoints.get(school.school)
                 if (existing) {
-                  existing.points += school.points
+                  // Same school on multiple rosters — keep the points as-is (same real-world performance)
                   existing.teams.push(team.teamName)
                 } else {
                   schoolPoints.set(school.school, {

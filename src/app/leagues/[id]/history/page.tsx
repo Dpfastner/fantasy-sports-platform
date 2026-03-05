@@ -8,6 +8,7 @@ import { getEnvironment } from '@/lib/env'
 import { getLeagueYear } from '@/lib/league-helpers'
 import { ArchiveSeasonButton } from './ArchiveSeasonButton'
 import { HistorySeasonCard } from './HistorySeasonCard'
+import { CollapsibleSection } from './CollapsibleSection'
 
 export const dynamic = 'force-dynamic'
 
@@ -307,18 +308,15 @@ export default async function HistoryPage({ params, searchParams }: PageProps) {
           <div className="space-y-4">
             {/* Seasons at a Glance */}
             {seasonSummaries.length > 0 && (
-              <div className="bg-surface rounded-lg overflow-hidden">
-                <div className="px-4 md:px-6 py-3 border-b border-border">
-                  <h2 className="text-sm font-semibold text-text-secondary uppercase tracking-wide">Seasons at a Glance</h2>
-                </div>
-                <div className="px-4 md:px-6 py-3">
+              <CollapsibleSection title="Seasons at a Glance">
+                <div className="px-4 md:px-6 py-3 overflow-x-auto">
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="text-text-muted text-xs uppercase">
                         <th className="text-left py-1.5">Season</th>
                         <th className="text-left py-1.5">Champion</th>
-                        <th className="text-right py-1.5 hidden sm:table-cell">Pts</th>
-                        <th className="text-left py-1.5 hidden md:table-cell">Runner-Up</th>
+                        <th className="text-right py-1.5 pr-4 hidden sm:table-cell">Pts</th>
+                        <th className="text-left py-1.5 pl-4 hidden md:table-cell">Runner-Up</th>
                         <th className="text-right py-1.5 hidden md:table-cell">Pts</th>
                         <th className="text-right py-1.5">Margin</th>
                       </tr>
@@ -326,13 +324,13 @@ export default async function HistoryPage({ params, searchParams }: PageProps) {
                     <tbody>
                       {seasonSummaries.map(s => (
                         <tr key={s.year} className="border-t border-border/30">
-                          <td className="py-2 text-text-primary font-medium">{s.year - 1}-{s.year}</td>
+                          <td className="py-2 text-text-primary font-medium whitespace-nowrap">{s.year - 1}-{s.year}</td>
                           <td className="py-2">
                             <span className="text-warning-text font-medium">{s.championUser}</span>
                             <span className="text-text-muted text-xs ml-1 hidden sm:inline">({s.champion})</span>
                           </td>
-                          <td className="py-2 text-right font-mono text-text-primary hidden sm:table-cell">{s.championPoints}</td>
-                          <td className="py-2 text-text-secondary hidden md:table-cell">
+                          <td className="py-2 text-right font-mono text-text-primary pr-4 hidden sm:table-cell">{s.championPoints}</td>
+                          <td className="py-2 text-text-secondary pl-4 hidden md:table-cell">
                             {s.runnerUpUser}
                             <span className="text-text-muted text-xs ml-1">({s.runnerUp})</span>
                           </td>
@@ -343,70 +341,67 @@ export default async function HistoryPage({ params, searchParams }: PageProps) {
                     </tbody>
                   </table>
                 </div>
-              </div>
+              </CollapsibleSection>
             )}
 
-            {/* Dynasty Tracker + League Records */}
-            {(dynastyEntries.length > 0 || backToBackChamps.length > 0 || allRecords.length > 0) && (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* Dynasty Tracker */}
-                {(dynastyEntries.length > 0 || backToBackChamps.length > 0) && (
-                  <div className="bg-surface rounded-lg p-4">
-                    <h2 className="text-sm font-semibold text-text-secondary uppercase tracking-wide mb-3">Dynasty Tracker</h2>
-                    <div className="space-y-2">
-                      {dynastyEntries.map(([name, count]) => (
-                        <div key={name} className="flex items-center gap-2 text-sm">
-                          <span className="text-warning-text">👑</span>
-                          <span className="text-text-primary font-medium">{name}</span>
-                          <span className="text-brand-text font-semibold">{count}x Champion</span>
-                        </div>
-                      ))}
-                      {backToBackChamps.map(name => (
-                        <div key={`b2b-${name}`} className="flex items-center gap-2 text-sm">
-                          <span className="text-warning-text">🔥</span>
-                          <span className="text-text-primary font-medium">{name}</span>
-                          <span className="text-text-secondary">Back-to-Back</span>
-                        </div>
-                      ))}
-                      {dynastyEntries.length === 0 && backToBackChamps.length === 0 && (
-                        <p className="text-text-muted text-xs">No dynasties yet — keep playing!</p>
-                      )}
+            {/* Dynasty Tracker */}
+            {(dynastyEntries.length > 0 || backToBackChamps.length > 0) && (
+              <CollapsibleSection title="Dynasty Tracker">
+                <div className="px-4 md:px-6 pb-4 space-y-2">
+                  {dynastyEntries.map(([name, count]) => (
+                    <div key={name} className="flex items-center gap-2 text-sm">
+                      <span className="text-warning-text">👑</span>
+                      <span className="text-text-primary font-medium">{name}</span>
+                      <span className="text-brand-text font-semibold">{count}x Champion</span>
                     </div>
-                  </div>
-                )}
-
-                {/* League Records */}
-                {allRecords.length > 0 && (
-                  <div className="bg-surface rounded-lg p-4">
-                    <h2 className="text-sm font-semibold text-text-secondary uppercase tracking-wide mb-3">League Records</h2>
-                    <div className="space-y-3">
-                      {allRecords.map((record) => (
-                        <div key={record.label}>
-                          <div className="flex items-baseline justify-between">
-                            <span className="text-text-secondary text-xs">{record.label}</span>
-                            <span className="text-text-primary font-mono font-semibold text-sm">{record.value}</span>
-                          </div>
-                          <p className="text-text-muted text-xs mt-0.5">{record.detail}</p>
-                        </div>
-                      ))}
+                  ))}
+                  {backToBackChamps.map(name => (
+                    <div key={`b2b-${name}`} className="flex items-center gap-2 text-sm">
+                      <span className="text-warning-text">🔥</span>
+                      <span className="text-text-primary font-medium">{name}</span>
+                      <span className="text-text-secondary">Back-to-Back</span>
                     </div>
-                  </div>
-                )}
-              </div>
+                  ))}
+                  {dynastyEntries.length === 0 && backToBackChamps.length === 0 && (
+                    <p className="text-text-muted text-xs">No dynasties yet — keep playing!</p>
+                  )}
+                </div>
+              </CollapsibleSection>
             )}
 
-            {/* Season Cards */}
-            {seasons.map(season => (
-              <HistorySeasonCard
-                key={season.id}
-                seasonYear={season.season_year}
-                finalStandings={season.final_standings}
-                championName={season.championName}
-                championUserName={season.championUserName}
-                archivedAt={season.archived_at}
-                defaultExpanded={shouldExpandAll || expandSeason === String(season.season_year)}
-              />
-            ))}
+            {/* League Records */}
+            {allRecords.length > 0 && (
+              <CollapsibleSection title="League Records">
+                <div className="px-4 md:px-6 pb-4 space-y-3">
+                  {allRecords.map((record) => (
+                    <div key={record.label}>
+                      <div className="flex items-baseline justify-between">
+                        <span className="text-text-secondary text-xs">{record.label}</span>
+                        <span className="text-text-primary font-mono font-semibold text-sm">{record.value}</span>
+                      </div>
+                      <p className="text-text-muted text-xs mt-0.5">{record.detail}</p>
+                    </div>
+                  ))}
+                </div>
+              </CollapsibleSection>
+            )}
+
+            {/* Archived Seasons */}
+            <CollapsibleSection title={`Archived Seasons (${seasons.length})`}>
+              <div className="px-4 md:px-6 pb-4 space-y-4">
+                {seasons.map(season => (
+                  <HistorySeasonCard
+                    key={season.id}
+                    seasonYear={season.season_year}
+                    finalStandings={season.final_standings}
+                    championName={season.championName}
+                    championUserName={season.championUserName}
+                    archivedAt={season.archived_at}
+                    defaultExpanded={shouldExpandAll || expandSeason === String(season.season_year)}
+                  />
+                ))}
+              </div>
+            </CollapsibleSection>
           </div>
         )}
       </main>
