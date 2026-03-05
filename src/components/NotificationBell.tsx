@@ -183,11 +183,12 @@ export function NotificationBell({ userId }: NotificationBellProps) {
       setUnreadCount(prev => Math.max(0, prev - 1))
     }
 
-    // Navigate
+    // Navigate and scroll to top
     const href = getNotificationHref(notification)
     if (href) {
       setIsOpen(false)
       router.push(href)
+      window.scrollTo(0, 0)
     }
   }
 
