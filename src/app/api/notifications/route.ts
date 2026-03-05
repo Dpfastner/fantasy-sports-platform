@@ -52,7 +52,7 @@ export async function PATCH(request: NextRequest) {
     const { user } = authResult
 
     const body = await request.json()
-    const { ids, all } = body as { ids?: string[]; all?: boolean }
+    const { ids, all, markUnread } = body as { ids?: string[]; all?: boolean; markUnread?: boolean }
 
     const supabase = createAdminClient()
     const now = new Date().toISOString()
@@ -71,15 +71,18 @@ export async function PATCH(request: NextRequest) {
         )
       }
     } else if (ids && ids.length > 0) {
-      const { error } = await supabase
+      const updateValue = markUnread ? null : now
+      const query = supabase
         .from('notifications')
-        .update({ read_at: now })
+        .update({ read_at: updateValue })
         .eq('user_id', user.id)
         .in('id', ids)
 
+      const { error } = await query
+
       if (error) {
         return NextResponse.json(
-          { error: 'Failed to mark as read', details: error.message },
+          { error: `Failed to mark as ${markUnread ? 'unread' : 'read'}`, details: error.message },
           { status: 500 }
         )
       }

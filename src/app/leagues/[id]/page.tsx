@@ -412,7 +412,7 @@ export default async function LeaguePage({ params }: PageProps) {
             {/* League Announcements (top, above leaderboard) */}
             {(settings?.show_announcements !== false) && (
               <ErrorBoundary sectionName="announcements">
-                <div className="bg-surface rounded-lg p-4 md:p-6">
+                <div id="announcements" className="bg-surface rounded-lg p-4 md:p-6">
                   <div className="flex items-center justify-between mb-4">
                     <h2 className="text-lg font-semibold text-text-primary">League Announcements</h2>
                     {isCommissioner && (

@@ -51,8 +51,9 @@ function getNotificationHref(notification: Notification): string | null {
       return `/leagues/${leagueId}/draft`
     case 'draft_completed':
     case 'league_joined':
-    case 'announcement_posted':
       return `/leagues/${leagueId}`
+    case 'announcement_posted':
+      return `/leagues/${leagueId}#announcements`
     case 'transaction_completed':
       return `/leagues/${leagueId}/transactions`
     default:
@@ -190,6 +191,23 @@ export function NotificationBell({ userId }: NotificationBellProps) {
     }
   }
 
+  const handleToggleRead = async (e: React.MouseEvent, notification: Notification) => {
+    e.stopPropagation()
+    const isRead = !!notification.read_at
+    fetch('/api/notifications', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ids: [notification.id], markUnread: isRead }),
+    })
+    setNotifications(prev =>
+      prev.map(n => n.id === notification.id
+        ? { ...n, read_at: isRead ? null : new Date().toISOString() }
+        : n
+      )
+    )
+    setUnreadCount(prev => isRead ? prev + 1 : Math.max(0, prev - 1))
+  }
+
   return (
     <div ref={dropdownRef} className="relative">
       {/* Bell button */}
@@ -253,9 +271,17 @@ export function NotificationBell({ userId }: NotificationBellProps) {
                           <span className={`text-sm truncate ${isUnread ? 'font-semibold text-text-primary' : 'text-text-secondary'}`}>
                             {notification.title}
                           </span>
-                          {isUnread && (
-                            <span className="w-2 h-2 rounded-full bg-brand shrink-0" />
-                          )}
+                          <button
+                            onClick={(e) => handleToggleRead(e, notification)}
+                            className="shrink-0 mt-0.5 group/dot"
+                            title={isUnread ? 'Mark as read' : 'Mark as unread'}
+                          >
+                            <span className={`block w-2.5 h-2.5 rounded-full border transition-colors ${
+                              isUnread
+                                ? 'bg-brand border-brand group-hover/dot:bg-brand/50'
+                                : 'border-text-muted/40 group-hover/dot:border-brand group-hover/dot:bg-brand/20'
+                            }`} />
+                          </button>
                         </div>
                         <p className="text-xs text-text-muted mt-0.5 line-clamp-2">
                           {notification.body}
