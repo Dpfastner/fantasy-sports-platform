@@ -64,6 +64,10 @@ interface LeagueSettings {
   max_double_picks_per_season: number
   // Scoring preset
   scoring_preset: string | null
+  // Section visibility toggles
+  show_announcements: boolean
+  show_chat: boolean
+  show_activity_feed: boolean
   // Status
   settings_locked: boolean
 }
@@ -93,16 +97,6 @@ interface LeagueMember {
     name: string
     second_owner_id: string | null
   }[] | null
-}
-
-interface Announcement {
-  id: string
-  title: string
-  body: string
-  pinned: boolean
-  created_at: string
-  updated_at: string
-  commissioner_id: string
 }
 
 type TabType = 'league' | 'draft' | 'members' | 'misc'
@@ -139,14 +133,6 @@ export default function CommissionerToolsPage() {
   // Second owner state
   const [editingSecondOwner, setEditingSecondOwner] = useState<string | null>(null)
   const [secondOwnerEmail, setSecondOwnerEmail] = useState('')
-
-  // Announcements state
-  const [announcements, setAnnouncements] = useState<Announcement[]>([])
-  const [announcementsLoaded, setAnnouncementsLoaded] = useState(false)
-  const [announcementsLoading, setAnnouncementsLoading] = useState(false)
-  const [announcementForm, setAnnouncementForm] = useState({ title: '', body: '', pinned: false })
-  const [editingAnnouncement, setEditingAnnouncement] = useState<string | null>(null)
-  const [announcementSaving, setAnnouncementSaving] = useState(false)
 
   useEffect(() => {
     async function loadData() {
@@ -264,15 +250,6 @@ export default function CommissionerToolsPage() {
 
     loadData()
   }, [leagueId, router, supabase])
-
-  // Auto-fetch announcements when misc tab is selected
-  useEffect(() => {
-    if (activeTab === 'misc' && !announcementsLoaded && isCommissioner) {
-      setAnnouncementsLoaded(true)
-      fetchAnnouncements()
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeTab, announcementsLoaded, isCommissioner])
 
   const updateScoringField = (field: string, value: number) => {
     if (!settings) return
@@ -514,105 +491,22 @@ export default function CommissionerToolsPage() {
     }
   }
 
-  const fetchAnnouncements = async () => {
-    setAnnouncementsLoading(true)
+  const handleToggleSectionVisibility = async (field: 'show_announcements' | 'show_chat' | 'show_activity_feed') => {
+    if (!settings) return
+    const updated = { ...settings, [field]: !settings[field] }
+    setSettings(updated as LeagueSettings)
     try {
-      const res = await fetch(`/api/leagues/${leagueId}/announcements`)
-      if (res.ok) {
-        const data = await res.json()
-        setAnnouncements(data.announcements || [])
-      }
+      const { error: updateError } = await supabase
+        .from('league_settings')
+        .update({ [field]: updated[field] })
+        .eq('league_id', leagueId)
+      if (updateError) throw updateError
     } catch (err) {
-      console.error('Error fetching announcements:', err)
-    } finally {
-      setAnnouncementsLoading(false)
+      console.error('Error toggling section visibility:', err)
+      // Revert on error
+      setSettings(settings)
+      setError('Failed to update setting')
     }
-  }
-
-  const handleCreateAnnouncement = async () => {
-    if (!announcementForm.title.trim() || !announcementForm.body.trim()) return
-    setAnnouncementSaving(true)
-    setError(null)
-    try {
-      const res = await fetch(`/api/leagues/${leagueId}/announcements`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(announcementForm),
-      })
-      const data = await res.json()
-      if (!res.ok) throw new Error(data.error || 'Failed to create announcement')
-      setAnnouncements(prev => [data.announcement, ...prev])
-      setAnnouncementForm({ title: '', body: '', pinned: false })
-      setSuccess('Announcement created!')
-      setTimeout(() => setSuccess(null), 3000)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to create announcement')
-    } finally {
-      setAnnouncementSaving(false)
-    }
-  }
-
-  const handleUpdateAnnouncement = async (id: string) => {
-    setAnnouncementSaving(true)
-    setError(null)
-    try {
-      const res = await fetch(`/api/leagues/${leagueId}/announcements/${id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(announcementForm),
-      })
-      const data = await res.json()
-      if (!res.ok) throw new Error(data.error || 'Failed to update announcement')
-      setAnnouncements(prev => prev.map(a => a.id === id ? data.announcement : a))
-      setEditingAnnouncement(null)
-      setAnnouncementForm({ title: '', body: '', pinned: false })
-      setSuccess('Announcement updated!')
-      setTimeout(() => setSuccess(null), 3000)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to update announcement')
-    } finally {
-      setAnnouncementSaving(false)
-    }
-  }
-
-  const handleDeleteAnnouncement = async (id: string) => {
-    if (!confirm('Delete this announcement?')) return
-    try {
-      const res = await fetch(`/api/leagues/${leagueId}/announcements/${id}`, {
-        method: 'DELETE',
-      })
-      if (!res.ok) throw new Error('Failed to delete announcement')
-      setAnnouncements(prev => prev.filter(a => a.id !== id))
-      setSuccess('Announcement deleted')
-      setTimeout(() => setSuccess(null), 3000)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to delete announcement')
-    }
-  }
-
-  const handleTogglePin = async (id: string, currentPinned: boolean) => {
-    try {
-      const res = await fetch(`/api/leagues/${leagueId}/announcements/${id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ pinned: !currentPinned }),
-      })
-      const data = await res.json()
-      if (!res.ok) throw new Error(data.error || 'Failed to update pin')
-      setAnnouncements(prev => prev.map(a => a.id === id ? data.announcement : a))
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to update pin')
-    }
-  }
-
-  const startEditAnnouncement = (a: Announcement) => {
-    setEditingAnnouncement(a.id)
-    setAnnouncementForm({ title: a.title, body: a.body, pinned: a.pinned })
-  }
-
-  const cancelEditAnnouncement = () => {
-    setEditingAnnouncement(null)
-    setAnnouncementForm({ title: '', body: '', pinned: false })
   }
 
   const handleResetDraft = async () => {
@@ -1637,127 +1531,71 @@ export default function CommissionerToolsPage() {
           )}
 
           {/* Miscellaneous Tab */}
-          {activeTab === 'misc' && (
+          {activeTab === 'misc' && settings && (
             <div className="space-y-6">
-              {/* Announcements Manager */}
+              {/* League Home Page Sections */}
               <section className="bg-surface rounded-lg p-6">
-                <h2 className="text-xl font-semibold text-text-primary mb-6">League Announcements</h2>
+                <h2 className="text-xl font-semibold text-text-primary mb-2">League Home Page Sections</h2>
+                <p className="text-text-secondary text-sm mb-6">Choose which sections appear on your league home page.</p>
 
-                {/* Create / Edit Form */}
-                <div className="mb-6 p-4 bg-surface-inset rounded-lg border border-border">
-                  <h3 className="text-text-primary font-medium mb-3">
-                    {editingAnnouncement ? 'Edit Announcement' : 'New Announcement'}
-                  </h3>
-                  <div className="space-y-3">
-                    <input
-                      type="text"
-                      placeholder="Title"
-                      value={announcementForm.title}
-                      onChange={(e) => setAnnouncementForm(prev => ({ ...prev, title: e.target.value }))}
-                      maxLength={200}
-                      className="w-full px-4 py-2 bg-surface border border-border rounded-lg text-text-primary placeholder:text-text-muted"
-                    />
-                    <textarea
-                      placeholder="Write your announcement..."
-                      value={announcementForm.body}
-                      onChange={(e) => setAnnouncementForm(prev => ({ ...prev, body: e.target.value }))}
-                      maxLength={2000}
-                      rows={3}
-                      className="w-full px-4 py-2 bg-surface border border-border rounded-lg text-text-primary placeholder:text-text-muted resize-none"
-                    />
-                    <div className="flex items-center justify-between">
-                      <label className="flex items-center gap-2 text-sm text-text-secondary cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={announcementForm.pinned}
-                          onChange={(e) => setAnnouncementForm(prev => ({ ...prev, pinned: e.target.checked }))}
-                          className="w-4 h-4 rounded border-border bg-surface"
-                        />
-                        Pin to top
-                      </label>
-                      <div className="flex gap-2">
-                        {editingAnnouncement && (
-                          <button
-                            onClick={cancelEditAnnouncement}
-                            className="px-4 py-2 bg-surface-subtle hover:bg-surface-subtle/80 text-text-secondary text-sm rounded-lg transition-colors"
-                          >
-                            Cancel
-                          </button>
-                        )}
-                        <button
-                          onClick={() => editingAnnouncement
-                            ? handleUpdateAnnouncement(editingAnnouncement)
-                            : handleCreateAnnouncement()
-                          }
-                          disabled={announcementSaving || !announcementForm.title.trim() || !announcementForm.body.trim()}
-                          className="px-4 py-2 bg-brand hover:bg-brand-hover disabled:bg-brand/50 text-text-primary text-sm font-medium rounded-lg transition-colors"
-                        >
-                          {announcementSaving ? 'Saving...' : editingAnnouncement ? 'Update' : 'Post Announcement'}
-                        </button>
-                      </div>
+                <div className="space-y-4">
+                  {/* Show Announcements */}
+                  <div className="flex items-center justify-between p-4 bg-surface-inset rounded-lg">
+                    <div>
+                      <label className="text-text-primary font-medium">League Announcements</label>
+                      <p className="text-text-secondary text-sm mt-1">Post updates and news for your league members</p>
                     </div>
+                    <button
+                      onClick={() => handleToggleSectionVisibility('show_announcements')}
+                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                        settings.show_announcements ? 'bg-brand' : 'bg-surface-subtle'
+                      }`}
+                    >
+                      <span
+                        className={`inline-block h-4 w-4 transform rounded-full bg-text-primary transition-transform ${
+                          settings.show_announcements ? 'translate-x-6' : 'translate-x-1'
+                        }`}
+                      />
+                    </button>
+                  </div>
+
+                  {/* Show Chat (Coming Soon) */}
+                  <div className="flex items-center justify-between p-4 bg-surface-inset rounded-lg opacity-60">
+                    <div>
+                      <label className="text-text-primary font-medium">
+                        League Chat
+                        <span className="ml-2 text-[10px] px-1.5 py-0.5 rounded-full font-medium bg-info/20 text-info-text">Coming Soon</span>
+                      </label>
+                      <p className="text-text-secondary text-sm mt-1">Real-time chat with your league members</p>
+                    </div>
+                    <button
+                      disabled
+                      className="relative inline-flex h-6 w-11 items-center rounded-full bg-surface-subtle cursor-not-allowed"
+                    >
+                      <span className="inline-block h-4 w-4 transform rounded-full bg-text-primary translate-x-1" />
+                    </button>
+                  </div>
+
+                  {/* Show Activity Feed */}
+                  <div className="flex items-center justify-between p-4 bg-surface-inset rounded-lg">
+                    <div>
+                      <label className="text-text-primary font-medium">League Activity Feed</label>
+                      <p className="text-text-secondary text-sm mt-1">Auto-generated feed of draft picks, transactions, and more</p>
+                    </div>
+                    <button
+                      onClick={() => handleToggleSectionVisibility('show_activity_feed')}
+                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                        settings.show_activity_feed ? 'bg-brand' : 'bg-surface-subtle'
+                      }`}
+                    >
+                      <span
+                        className={`inline-block h-4 w-4 transform rounded-full bg-text-primary transition-transform ${
+                          settings.show_activity_feed ? 'translate-x-6' : 'translate-x-1'
+                        }`}
+                      />
+                    </button>
                   </div>
                 </div>
-
-                {/* Announcements List */}
-                {announcementsLoading ? (
-                  <p className="text-text-secondary text-sm">Loading announcements...</p>
-                ) : announcements.length > 0 ? (
-                  <div className="space-y-3">
-                    {announcements.map(a => (
-                      <div key={a.id} className="p-4 bg-surface-inset rounded-lg border border-border">
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2 mb-1">
-                              <h4 className="text-text-primary font-medium truncate">{a.title}</h4>
-                              {a.pinned && (
-                                <span className="text-[10px] px-1.5 py-0.5 rounded-full font-medium bg-warning/20 text-warning-text shrink-0">
-                                  Pinned
-                                </span>
-                              )}
-                            </div>
-                            <p className="text-text-secondary text-sm whitespace-pre-wrap">{a.body}</p>
-                            <p className="text-text-muted text-xs mt-2">
-                              {new Date(a.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                              {a.updated_at !== a.created_at && ' (edited)'}
-                            </p>
-                          </div>
-                          <div className="flex items-center gap-1 shrink-0">
-                            <button
-                              onClick={() => handleTogglePin(a.id, a.pinned)}
-                              className={`p-1.5 rounded transition-colors ${a.pinned ? 'text-warning hover:text-warning/70' : 'text-text-muted hover:text-text-secondary'}`}
-                              title={a.pinned ? 'Unpin' : 'Pin'}
-                            >
-                              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                                <path d="M16 12V4h1V2H7v2h1v8l-2 2v2h5.2v6h1.6v-6H18v-2l-2-2z"/>
-                              </svg>
-                            </button>
-                            <button
-                              onClick={() => startEditAnnouncement(a)}
-                              className="p-1.5 text-text-muted hover:text-text-secondary rounded transition-colors"
-                              title="Edit"
-                            >
-                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                              </svg>
-                            </button>
-                            <button
-                              onClick={() => handleDeleteAnnouncement(a.id)}
-                              className="p-1.5 text-text-muted hover:text-danger rounded transition-colors"
-                              title="Delete"
-                            >
-                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                              </svg>
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-text-muted text-sm">No announcements yet. Create one above to communicate with your league members.</p>
-                )}
               </section>
 
               {/* Other Coming Soon Tools */}

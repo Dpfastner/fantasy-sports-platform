@@ -6,7 +6,8 @@ import { Header } from '@/components/Header'
 import DraftStatusSection from '@/components/DraftStatusSection'
 import LeaderboardClient from '@/components/LeaderboardClient'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
-import { ReportContentButton } from '@/components/ReportContentButton'
+import { AnnouncementsManager } from '@/components/AnnouncementsManager'
+import { LeagueActivityFeed } from '@/components/LeagueActivityFeed'
 import { SandboxWeekSelector } from '@/components/SandboxWeekSelector'
 import { ShareButton } from '@/components/ShareButton'
 import { getCurrentWeek } from '@/lib/week'
@@ -68,6 +69,9 @@ interface LeagueData {
     high_points_weekly_amount: number
     double_points_enabled: boolean
     max_double_picks_per_season: number
+    show_announcements: boolean
+    show_chat: boolean
+    show_activity_feed: boolean
   } | null
   drafts: {
     status: string
@@ -215,6 +219,35 @@ export default async function LeaguePage({ params }: PageProps) {
 
   const announcements = announcementsData || []
 
+  // Get activity feed events for the league
+  const { data: activityData } = await supabase
+    .from('activity_log')
+    .select('id, action, details, created_at, user_id')
+    .eq('league_id', id)
+    .order('created_at', { ascending: false })
+    .limit(20)
+
+  // Enrich activity events with display names
+  const activityUserIds = [...new Set((activityData || []).map(e => e.user_id).filter(Boolean))] as string[]
+  let activityProfiles: Record<string, string> = {}
+  if (activityUserIds.length > 0) {
+    const { data: profilesData } = await supabase
+      .from('profiles')
+      .select('id, display_name, email')
+      .in('id', activityUserIds)
+    if (profilesData) {
+      activityProfiles = Object.fromEntries(
+        profilesData.map(p => [p.id, p.display_name || p.email?.split('@')[0] || 'Unknown'])
+      )
+    }
+  }
+
+  const activityEvents = (activityData || []).map(e => ({
+    ...e,
+    details: (e.details || {}) as Record<string, unknown>,
+    display_name: e.user_id ? activityProfiles[e.user_id] || null : null,
+  }))
+
   // Get double picks count for user's team
   let doublePicksUsed = 0
   if (userTeam && settings?.double_points_enabled) {
@@ -318,6 +351,22 @@ export default async function LeaguePage({ params }: PageProps) {
         <div className="grid lg:grid-cols-4 gap-6">
           {/* Main Content - 3 columns */}
           <div className="lg:col-span-3 space-y-6">
+            {/* League Announcements (top, above leaderboard) */}
+            {(settings?.show_announcements !== false) && (
+              <ErrorBoundary sectionName="announcements">
+                <div className="bg-surface rounded-lg p-4 md:p-6">
+                  <h2 className="text-lg font-semibold text-text-primary mb-4">League Announcements</h2>
+                  <AnnouncementsManager
+                    leagueId={id}
+                    leagueName={league.name}
+                    announcements={announcements}
+                    commissionerNames={Object.fromEntries(commissionerNames)}
+                    isCommissioner={isCommissioner}
+                  />
+                </div>
+              </ErrorBoundary>
+            )}
+
             {/* Draft Status (only when NOT completed) */}
             {!isDraftComplete && (
               <DraftStatusSection
@@ -372,71 +421,15 @@ export default async function LeaguePage({ params }: PageProps) {
               </div>
             )}
 
-            {/* League Activity — Announcements (always visible) */}
-            <ErrorBoundary sectionName="announcements">
-              <div className="bg-surface rounded-lg p-4 md:p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-lg font-semibold text-text-primary">League Activity</h2>
-                  {isCommissioner && (
-                    <Link
-                      href={`/leagues/${id}/settings?tab=misc`}
-                      className="text-brand-text hover:text-brand-text/80 text-xs transition-colors"
-                    >
-                      Manage Announcements
-                    </Link>
-                  )}
+            {/* League Activity Feed (bottom) */}
+            {(settings?.show_activity_feed !== false) && (
+              <ErrorBoundary sectionName="activity-feed">
+                <div className="bg-surface rounded-lg p-4 md:p-6">
+                  <h2 className="text-lg font-semibold text-text-primary mb-4">League Activity</h2>
+                  <LeagueActivityFeed events={activityEvents} />
                 </div>
-                <div className="space-y-3">
-                  {announcements.length > 0 ? (
-                    announcements.map(a => {
-                      const commName = commissionerNames.get(a.commissioner_id) || 'Commissioner'
-                      const daysAgo = Math.floor((Date.now() - new Date(a.created_at).getTime()) / (1000 * 60 * 60 * 24))
-                      const timeAgo = daysAgo === 0 ? 'Today' : daysAgo === 1 ? 'Yesterday' : `${daysAgo}d ago`
-
-                      return (
-                        <div key={a.id} className="p-3 bg-surface-inset rounded-lg border border-border">
-                          <div className="flex items-start justify-between gap-2">
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2 mb-1">
-                                {a.pinned && (
-                                  <svg className="w-3.5 h-3.5 text-warning shrink-0" fill="currentColor" viewBox="0 0 24 24">
-                                    <path d="M16 12V4h1V2H7v2h1v8l-2 2v2h5.2v6h1.6v-6H18v-2l-2-2z"/>
-                                  </svg>
-                                )}
-                                <h3 className="text-sm font-semibold text-text-primary truncate">{a.title}</h3>
-                              </div>
-                              <p className="text-text-secondary text-sm whitespace-pre-wrap">{a.body}</p>
-                              <p className="text-text-muted text-xs mt-2">
-                                — {commName}, {timeAgo}
-                              </p>
-                            </div>
-                            <ReportContentButton
-                              contentType="announcement"
-                              contentId={a.id}
-                              contentPreview={`${a.title}: ${a.body}`}
-                            />
-                          </div>
-                        </div>
-                      )
-                    })
-                  ) : (
-                    <div className="p-3 bg-surface-inset rounded-lg border border-border">
-                      <div className="flex items-center gap-2 mb-1">
-                        <svg className="w-4 h-4 text-brand shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z" />
-                        </svg>
-                        <h3 className="text-sm font-semibold text-text-primary">Welcome to {league.name}!</h3>
-                      </div>
-                      <p className="text-text-secondary text-sm">
-                        {isCommissioner
-                          ? 'Post announcements here to keep your league members informed. Head to Commissioner Tools \u2192 Miscellaneous to create your first announcement.'
-                          : 'League announcements from your commissioner will appear here. Stay tuned!'}
-                      </p>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </ErrorBoundary>
+              </ErrorBoundary>
+            )}
           </div>
 
           {/* Sidebar - 1 column */}
