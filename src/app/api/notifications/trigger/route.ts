@@ -4,7 +4,6 @@ import { createRateLimiter, getClientIp } from '@/lib/api/rate-limit'
 import {
   createNotification,
   notifyLeagueMembers,
-  notifyDraftPickThrottled,
 } from '@/lib/notifications'
 import type { NotificationType } from '@/lib/notifications'
 
@@ -13,7 +12,6 @@ const limiter = createRateLimiter({ windowMs: 60_000, max: 60 })
 const ALLOWED_TYPES: NotificationType[] = [
   'draft_started',
   'draft_your_turn',
-  'draft_pick_made',
   'draft_completed',
 ]
 
@@ -79,18 +77,6 @@ export async function POST(request: NextRequest) {
         }
         break
 
-      case 'draft_pick_made':
-        // Throttled notification to all members
-        if (draftId) {
-          notifyDraftPickThrottled({
-            leagueId,
-            draftId,
-            excludeUserId: user.id,
-            title,
-            body: notifBody,
-          })
-        }
-        break
     }
 
     return NextResponse.json({ success: true })

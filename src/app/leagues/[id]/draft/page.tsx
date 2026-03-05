@@ -878,15 +878,6 @@ export default function DraftRoomPage() {
 
       trackActivity('draft.pick_made', leagueId, { schoolId, round: draft.current_round, pick: draft.current_pick })
 
-      const pickedSchool = schools.find(s => s.id === schoolId)
-      triggerNotification({
-        type: 'draft_pick_made',
-        leagueId,
-        draftId: draft.id,
-        title: 'Draft Pick Made',
-        body: `${myTeam.name} drafted ${pickedSchool?.name || 'a school'}`,
-      })
-
       // Immediately update local picks state so the school is filtered out
       const selectedSchool = schools.find(s => s.id === schoolId)
       if (selectedSchool) {

@@ -32,7 +32,6 @@ function getNotificationIcon(type: string): string {
   switch (type) {
     case 'draft_started': return '🏈'
     case 'draft_your_turn': return '⏰'
-    case 'draft_pick_made': return '📋'
     case 'draft_completed': return '🏆'
     case 'announcement_posted': return '📢'
     case 'league_joined': return '👋'
@@ -49,9 +48,9 @@ function getNotificationHref(notification: Notification): string | null {
   switch (notification.type) {
     case 'draft_started':
     case 'draft_your_turn':
-    case 'draft_pick_made':
       return `/leagues/${leagueId}/draft`
     case 'draft_completed':
+      return `/leagues/${leagueId}/stats`
     case 'league_joined':
     case 'announcement_posted':
       return `/leagues/${leagueId}`
