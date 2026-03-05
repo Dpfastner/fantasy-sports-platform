@@ -4,7 +4,8 @@ import { createAdminClient } from '@/lib/supabase/server'
 import { fetchScoreboard, fetchRankings, getTeamLogoUrl } from '@/lib/api/espn'
 import { calculateAllPoints } from '@/lib/points/calculator'
 import { areCronsEnabled, getEnvironment } from '@/lib/env'
-import { calculateCurrentWeek } from '@/lib/constants/season'
+import { calculateCurrentWeek, getSeasonStartDate, WEEK_CHAMPIONSHIP } from '@/lib/constants/season'
+import { archiveLeagueSeason } from '@/lib/archive-season'
 
 // Verify the request is from Vercel Cron
 function verifyCronRequest(request: Request): boolean {
@@ -42,6 +43,7 @@ export async function GET(request: Request) {
       rankings: { success: false, error: null as string | null },
       currentWeekGames: { success: false, synced: 0, error: null as string | null },
       failsafe: { checked: false, weeksRecalculated: [] as number[], error: null as string | null },
+      autoArchive: { checked: false, archived: [] as string[], error: null as string | null },
     }
 
     // Get current season
@@ -229,6 +231,48 @@ export async function GET(request: Request) {
     let pointsResult = null
     if (results.currentWeekGames.success && results.currentWeekGames.synced > 0) {
       pointsResult = await calculateAllPoints(season.id, currentWeek, supabase)
+    }
+
+    // AUTO-ARCHIVE: 3 days after the National Championship (week 21),
+    // automatically archive all leagues that haven't been archived yet
+    try {
+      const seasonStart = getSeasonStartDate(year)
+      // Week 21 (Championship) starts at seasonStart + 21 weeks, ends +1 week later
+      const championshipWeekEnd = new Date(seasonStart.getTime() + (WEEK_CHAMPIONSHIP + 1) * 7 * 24 * 60 * 60 * 1000)
+      const autoArchiveDate = new Date(championshipWeekEnd.getTime() + 3 * 24 * 60 * 60 * 1000)
+
+      if (now >= autoArchiveDate) {
+        // Find all leagues in this season that haven't been archived yet
+        const { data: leagues } = await supabase
+          .from('leagues')
+          .select('id, season_id')
+          .eq('season_id', season.id)
+
+        for (const league of leagues || []) {
+          // Check if already archived
+          const { data: existing } = await supabase
+            .from('league_seasons')
+            .select('id')
+            .eq('league_id', league.id)
+            .eq('season_year', year)
+            .single()
+
+          if (!existing) {
+            try {
+              await archiveLeagueSeason(supabase, league.id)
+              results.autoArchive.archived.push(league.id)
+            } catch (archiveErr) {
+              const msg = archiveErr instanceof Error ? archiveErr.message : String(archiveErr)
+              if (msg !== 'ALREADY_ARCHIVED') {
+                console.error(`Auto-archive failed for league ${league.id}:`, msg)
+              }
+            }
+          }
+        }
+        results.autoArchive.checked = true
+      }
+    } catch (error) {
+      results.autoArchive.error = String(error)
     }
 
     return NextResponse.json({

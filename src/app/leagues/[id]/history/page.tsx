@@ -6,7 +6,6 @@ import { SandboxWeekSelector } from '@/components/SandboxWeekSelector'
 import { getCurrentWeek } from '@/lib/week'
 import { getEnvironment } from '@/lib/env'
 import { getLeagueYear } from '@/lib/league-helpers'
-import { ArchiveSeasonButton } from './ArchiveSeasonButton'
 import { HistorySeasonCard } from './HistorySeasonCard'
 import { CollapsibleSection } from './CollapsibleSection'
 
@@ -54,7 +53,6 @@ export default async function HistoryPage({ params, searchParams }: PageProps) {
     redirect('/dashboard')
   }
 
-  const isCommissioner = membership.role === 'commissioner' || membership.role === 'co-commissioner'
   const year = getLeagueYear(league.seasons)
   const currentWeek = await getCurrentWeek(year)
   const environment = getEnvironment()
@@ -113,8 +111,6 @@ export default async function HistoryPage({ params, searchParams }: PageProps) {
       championUserName,
     }
   })
-
-  const currentSeasonArchived = seasons.some(s => s.season_year === year)
 
   // If only one season, default expand it. Otherwise expand from ?season= param
   const shouldExpandAll = seasons.length === 1
@@ -288,20 +284,15 @@ export default async function HistoryPage({ params, searchParams }: PageProps) {
       </Header>
 
       <main className="max-w-4xl mx-auto px-4 py-6">
-        <div className="flex items-center justify-between mb-6">
+        <div className="mb-6">
           <h1 className="text-2xl font-bold text-text-primary">League History</h1>
-          {isCommissioner && !currentSeasonArchived && (
-            <ArchiveSeasonButton leagueId={leagueId} seasonYear={year} />
-          )}
         </div>
 
         {seasons.length === 0 ? (
           <div className="bg-surface rounded-lg p-8 text-center">
             <p className="text-text-muted text-lg mb-2">No past seasons yet</p>
             <p className="text-text-secondary text-sm">
-              {isCommissioner
-                ? 'Archive the current season when it\'s complete to start building your league\'s history.'
-                : 'Past season results will appear here once the commissioner archives a season.'}
+              Seasons are automatically archived 3 days after the National Championship game.
             </p>
           </div>
         ) : (
