@@ -157,7 +157,7 @@ export function DraftChat({ draftId, leagueId, currentUserId }: DraftChatProps) 
   }
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full w-full">
       {/* Header */}
       <div className="px-3 py-2 border-b border-border">
         <h2 className="text-sm font-semibold text-text-primary">Draft Chat</h2>

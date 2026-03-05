@@ -1147,7 +1147,7 @@ export default function DraftRoomPage() {
   }
 
   return (
-    <div className="min-h-screen bg-page flex flex-col">
+    <div className="h-screen bg-page flex flex-col overflow-hidden">
       {/* Header with Timer and On the Clock */}
       <header className="bg-surface border-b border-border px-3 md:px-4 py-2">
         {/* Mobile: Stack layout */}
@@ -1792,7 +1792,7 @@ export default function DraftRoomPage() {
 
           {/* Draft Chat - lower 1/3 of right panel */}
           {draft?.id && user && (
-            <div className="hidden md:flex flex-1 border-t border-border">
+            <div className="hidden md:flex flex-1 min-h-0 border-t border-border w-full">
               <DraftChat draftId={draft.id} leagueId={leagueId} currentUserId={user.id} />
             </div>
           )}
