@@ -2,7 +2,7 @@
 
 > **Platform Name**: Rivyls (rivyls.com)
 > **Current Sport**: College Football (base for multi-sport expansion)
-> **Last Updated**: March 4, 2026
+> **Last Updated**: March 5, 2026
 > **Audit Date**: February 27, 2026 (full codebase audit of Phases 0-21)
 
 ---
@@ -452,7 +452,7 @@ Phase 24: Schema Additions             ████████████  ✅
 *Free features and draft improvements needed before August 2026 season.*
 
 ```
-Phase 25: Free Feature Enhancements     ██████░░░░░░  Presets ✅, Watchlist ✅, Announcements ✅, chat, notifications, history, message board
+Phase 25: Free Feature Enhancements     ████████░░░░  Presets ✅, Watchlist ✅, Announcements ✅, Chat ✅, notifications, history
 Phase 26: Draft Enhancements            ░░░░░░░░░░░░  Auto-pick, pause/resume
 Phase 27: Team-to-Team Trading          ░░░░░░░░░░░░  Trade proposals, review, veto (FREE tier)
 ```
@@ -513,7 +513,7 @@ Phase 24 (Schema Additions)  ████████████  ✅ COMPLETE
 
 ━━━ SEASON 1 FEATURES (Build First) ━━━━━━━━━━━━━━━━━━━━━━━━━
         ↓
-Phase 25 (Free Features)     ██████░░░░░░  25.1 ✅ 25.2 ✅ 25.3 ✅
+Phase 25 (Free Features)     ████████░░░░  25.1 ✅ 25.2 ✅ 25.3 ✅ 25.7 ✅
         ↓
 Phase 26 (Draft Enhancements)░░░░░░░░░░░░
         ↓
@@ -1244,7 +1244,7 @@ These were never formally tested. Run during Phase 22 or note which can't be tes
 ## Phase 25: Free Feature Enhancements
 *Free features that enhance the experience beyond the core loop — all shipping before Season 1*
 
-**Status: IN PROGRESS** (25.1, 25.2, 25.3 complete)
+**Status: IN PROGRESS** (25.1, 25.2, 25.3, 25.7 complete)
 
 **Depends on**: Phase 14 (schema for watchlists, scoring_preset, notification_preferences), Phase 24 (schema for announcements, draft_messages, league_seasons)
 
@@ -1262,14 +1262,14 @@ These are features designated as free (never gated behind premium) that improve 
 | 25.4 | **Draft chat** — Real-time chat panel in draft room using Supabase Realtime + `draft_messages` table from Phase 24. | |
 | 25.5 | **Basic in-app notifications** — Bell icon in header with unread count. 12 notification types including draft pick throttle (max 3 when absent, resets on return). Needs `notifications` table migration. | |
 | 25.6 | **League history / trophy room** — Past season results at `/leagues/[id]/history`. Commissioner archives seasons. Uses `league_seasons` table from Phase 24. | |
-| 25.7 | **League message board** — Persistent chat on league home page via Supabase Realtime. Needs `league_messages` table migration. Users can opt out of chat notifications. | |
+| 25.7 | **League message board** — Real-time chat on league home page via Supabase Realtime. `league_messages` table with RLS, word filter, report button, emoji reactions (👍👎😂🔥❤️😮🏈🏆🎉) with `league_message_reactions` table. Commissioner toggle in settings. Announcements height cap (280px scroll). | ✅ Done |
 
 ### Build Order
 
 1. ~~**25.1 Scoring presets**~~ ✅ Done
 2. ~~**25.2 Watchlists**~~ ✅ Done
 3. ~~**25.3 League announcements**~~ ✅ Done — includes word filter, report button, inline commissioner editing, activity feed, section visibility toggles, season-based data cleanup
-4. **25.7 League message board** — build before notifications so notifications can reference it (placeholder slot already on league home page)
+4. ~~**25.7 League message board**~~ ✅ Done — real-time chat with Supabase Realtime, emoji reactions, word filter, report button, announcements height cap, commissioner toggle
 5. **25.4 Draft chat** — uses same Realtime pattern as message board
 6. **25.5 Basic notifications** — build after features it notifies about
 7. **25.6 League history** — test with imported Season 1 data
