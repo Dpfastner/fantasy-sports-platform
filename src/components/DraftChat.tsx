@@ -35,10 +35,13 @@ export function DraftChat({ draftId, leagueId, currentUserId }: DraftChatProps) 
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const messagesContainerRef = useRef<HTMLDivElement>(null)
   const nameCache = useRef<Record<string, string>>({})
 
   const scrollToBottom = useCallback(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+    if (messagesContainerRef.current) {
+      messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight
+    }
   }, [])
 
   useEffect(() => {
@@ -165,7 +168,7 @@ export function DraftChat({ draftId, leagueId, currentUserId }: DraftChatProps) 
       </div>
 
       {/* Messages area */}
-      <div className="flex-1 overflow-y-auto space-y-1.5 p-2">
+      <div ref={messagesContainerRef} className="flex-1 overflow-y-auto space-y-1.5 p-2">
         {loading ? (
           <p className="text-text-muted text-xs text-center py-4">Loading...</p>
         ) : messages.length === 0 ? (

@@ -59,7 +59,9 @@ export function LeagueChat({ leagueId, currentUserId, initialMessages, initialRe
   }, [initialMessages])
 
   const scrollToBottom = useCallback(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+    if (containerRef.current) {
+      containerRef.current.scrollTop = containerRef.current.scrollHeight
+    }
   }, [])
 
   useEffect(() => {
