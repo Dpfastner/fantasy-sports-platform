@@ -2,15 +2,17 @@
 
 import Link from 'next/link'
 import { LogoutButton } from './LogoutButton'
+import { NotificationBell } from './NotificationBell'
 
 interface HeaderProps {
   userName?: string | null
   userEmail?: string | null
+  userId?: string | null
   showUserMenu?: boolean
   children?: React.ReactNode
 }
 
-export function Header({ userName, userEmail, showUserMenu = true, children }: HeaderProps) {
+export function Header({ userName, userEmail, userId, showUserMenu = true, children }: HeaderProps) {
   const displayName = userName || userEmail || 'User'
 
   return (
@@ -23,6 +25,7 @@ export function Header({ userName, userEmail, showUserMenu = true, children }: H
           {children}
           {showUserMenu && (
             <>
+              {userId && <NotificationBell userId={userId} />}
               <Link
                 href="/profile"
                 className="text-text-secondary hover:text-text-primary transition-colors"

@@ -96,6 +96,7 @@ interface Props {
   statsData: StatsData | null
   userName?: string | null
   userEmail?: string | null
+  userId?: string | null
 }
 
 export default function StatsClient({
@@ -113,6 +114,7 @@ export default function StatsClient({
   statsData,
   userName,
   userEmail,
+  userId,
 }: Props) {
   const router = useRouter()
   const [activeSection, setActiveSection] = useState<'standings' | 'stats'>('standings')
@@ -134,7 +136,7 @@ export default function StatsClient({
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gradient-from to-gradient-to">
-      <Header userName={userName} userEmail={userEmail}>
+      <Header userName={userName} userEmail={userEmail} userId={userId}>
         <Link
           href={`/leagues/${leagueId}/team`}
           className="text-text-secondary hover:text-text-primary transition-colors"

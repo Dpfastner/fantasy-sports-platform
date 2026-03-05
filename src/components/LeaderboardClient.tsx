@@ -529,7 +529,7 @@ export default function LeaderboardClient({
   // --- Full variant ---
   return (
     <div className="min-h-screen bg-gradient-to-b from-gradient-from to-gradient-to">
-      <Header userName={userName} userEmail={userEmail}>
+      <Header userName={userName} userEmail={userEmail} userId={currentUserId}>
         <Link
           href={`/leagues/${leagueId}`}
           className="text-text-secondary hover:text-text-primary transition-colors text-sm md:text-base truncate max-w-[120px] md:max-w-none"

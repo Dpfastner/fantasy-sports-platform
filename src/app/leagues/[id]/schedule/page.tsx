@@ -141,6 +141,7 @@ export default async function SchedulePage({ params, searchParams }: PageProps) 
         weeksWithGames={weeksWithGames}
         userName={profile?.display_name}
         userEmail={user.email}
+        userId={user.id}
       />
       <SandboxWeekSelector currentWeek={currentWeek} environment={environment} />
     </>

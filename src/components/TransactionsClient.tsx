@@ -108,6 +108,7 @@ interface TransactionsClientProps {
   canMakeTransactions: boolean
   userName?: string | null
   userEmail?: string | null
+  userId?: string | null
   specialEventSettings?: SpecialEventSettings
   eventBonuses?: EventBonus[]
   watchlistedSchoolIds?: string[]
@@ -139,6 +140,7 @@ export default function TransactionsClient({
   canMakeTransactions,
   userName,
   userEmail,
+  userId,
   specialEventSettings,
   eventBonuses = [],
   watchlistedSchoolIds: watchlistedSchoolIdsProp = [],
@@ -371,7 +373,7 @@ export default function TransactionsClient({
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gradient-from to-gradient-to">
-      <Header userName={userName} userEmail={userEmail}>
+      <Header userName={userName} userEmail={userEmail} userId={userId}>
         <Link
           href={`/leagues/${leagueId}/team`}
           className="text-text-secondary hover:text-text-primary transition-colors text-sm md:text-base"

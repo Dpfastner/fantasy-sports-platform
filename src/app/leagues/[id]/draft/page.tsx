@@ -97,6 +97,22 @@ export default function DraftRoomPage() {
   // Track if timer has expired (for showing warning)
   const [timerExpired, setTimerExpired] = useState(false)
 
+  // Fire-and-forget notification trigger for draft events
+  const triggerNotification = useCallback((payload: {
+    type: string
+    leagueId: string
+    draftId?: string
+    title: string
+    body: string
+    targetUserId?: string
+  }) => {
+    fetch('/api/notifications/trigger', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    }).catch(() => {})
+  }, [])
+
   // Resizable draft chat panel (percentage of right panel height for chat)
   const [chatHeightPct, setChatHeightPct] = useState(33)
   const rightPanelRef = useRef<HTMLDivElement>(null)
@@ -706,6 +722,13 @@ export default function DraftRoomPage() {
 
       console.log('Draft started successfully!', updateData[0])
       trackActivity('draft.started', leagueId, { draftId: draft.id, teamsCount: teams.length })
+      triggerNotification({
+        type: 'draft_started',
+        leagueId,
+        draftId: draft.id,
+        title: 'Draft Started',
+        body: `The draft for ${leagueName} has begun!`,
+      })
       // Force local state update
       setDraft(updateData[0] as DraftState)
 
@@ -855,6 +878,15 @@ export default function DraftRoomPage() {
 
       trackActivity('draft.pick_made', leagueId, { schoolId, round: draft.current_round, pick: draft.current_pick })
 
+      const pickedSchool = schools.find(s => s.id === schoolId)
+      triggerNotification({
+        type: 'draft_pick_made',
+        leagueId,
+        draftId: draft.id,
+        title: 'Draft Pick Made',
+        body: `${myTeam.name} drafted ${pickedSchool?.name || 'a school'}`,
+      })
+
       // Immediately update local picks state so the school is filtered out
       const selectedSchool = schools.find(s => s.id === schoolId)
       if (selectedSchool) {
@@ -937,6 +969,13 @@ export default function DraftRoomPage() {
       } else {
         trackActivity('draft.completed', leagueId, { draftId: draft.id, totalPicks: picks.length + 1 })
         track('draft_completed')
+        triggerNotification({
+          type: 'draft_completed',
+          leagueId,
+          draftId: draft.id,
+          title: 'Draft Completed',
+          body: `The draft for ${leagueName} is complete!`,
+        })
         // Force local state update
         setDraft(prev => prev ? { ...prev, status: 'completed', current_team_id: null, pick_deadline: null } : null)
       }
@@ -971,6 +1010,18 @@ export default function DraftRoomPage() {
       setActionError('Failed to advance pick - permission denied. Please refresh.')
     } else {
       console.log('advanceToNextPick: DB update successful, pick now', nextPickNumber)
+      // Notify the next user it's their turn
+      const nextTeam = teams.find(t => t.id === nextOrder.fantasy_team_id)
+      if (nextTeam && nextTeam.user_id !== user?.id) {
+        triggerNotification({
+          type: 'draft_your_turn',
+          leagueId,
+          draftId: draft.id,
+          title: 'Your Turn to Pick',
+          body: `It's your turn in the ${leagueName} draft!`,
+          targetUserId: nextTeam.user_id,
+        })
+      }
       // Force local state update
       setDraft(prev => prev ? {
         ...prev,

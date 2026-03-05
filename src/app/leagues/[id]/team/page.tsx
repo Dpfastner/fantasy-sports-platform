@@ -467,7 +467,7 @@ export default async function TeamPage({ params }: PageProps) {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gradient-from to-gradient-to">
-      <Header userName={profile?.display_name} userEmail={user.email}>
+      <Header userName={profile?.display_name} userEmail={user.email} userId={user.id}>
         <Link
           href={`/leagues/${leagueId}`}
           className="text-text-secondary hover:text-text-primary transition-colors"

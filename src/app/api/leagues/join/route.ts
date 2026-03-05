@@ -4,6 +4,7 @@ import { validateBody } from '@/lib/api/validation'
 import { leagueJoinSchema } from '@/lib/api/schemas'
 import { createRateLimiter, getClientIp } from '@/lib/api/rate-limit'
 import { logActivity } from '@/lib/activity'
+import { createNotification } from '@/lib/notifications'
 
 const limiter = createRateLimiter({ windowMs: 60_000, max: 10 })
 
@@ -125,6 +126,24 @@ export async function POST(request: Request) {
       action: 'league.joined',
       details: { teamName: teamName.trim(), inviteCode },
     })
+
+    // Notify commissioner(s) that someone joined
+    const { data: commissioners } = await admin
+      .from('league_members')
+      .select('user_id')
+      .eq('league_id', league.id)
+      .in('role', ['commissioner', 'co-commissioner'])
+
+    for (const comm of commissioners || []) {
+      createNotification({
+        userId: comm.user_id,
+        leagueId: league.id,
+        type: 'league_joined',
+        title: 'New Member Joined',
+        body: `${teamName.trim()} joined ${league.name}`,
+        data: { leagueId: league.id },
+      })
+    }
 
     return NextResponse.json({
       success: true,

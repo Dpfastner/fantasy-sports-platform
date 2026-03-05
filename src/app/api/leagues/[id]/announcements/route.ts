@@ -5,6 +5,7 @@ import { validateBody } from '@/lib/api/validation'
 import { announcementCreateSchema } from '@/lib/api/schemas'
 import { createRateLimiter, getClientIp } from '@/lib/api/rate-limit'
 import { logActivity } from '@/lib/activity'
+import { notifyLeagueMembers } from '@/lib/notifications'
 import { checkContent } from '@/lib/moderation/word-filter'
 
 const limiter = createRateLimiter({ windowMs: 60_000, max: 10 })
@@ -121,6 +122,15 @@ export async function POST(
       leagueId,
       action: 'announcement.created',
       details: { announcementId: announcement.id, title },
+    })
+
+    notifyLeagueMembers({
+      leagueId,
+      excludeUserId: user.id,
+      type: 'announcement_posted',
+      title: 'New Announcement',
+      body: title,
+      data: { leagueId, announcementId: announcement.id },
     })
 
     return NextResponse.json({ success: true, announcement })

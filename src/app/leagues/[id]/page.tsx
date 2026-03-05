@@ -318,7 +318,7 @@ export default async function LeaguePage({ params }: PageProps) {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gradient-from to-gradient-to">
-      <Header userName={profile?.display_name} userEmail={user.email}>
+      <Header userName={profile?.display_name} userEmail={user.email} userId={user.id}>
         {isDraftComplete && userTeam && (
           <Link
             href={`/leagues/${id}/team`}

@@ -409,6 +409,7 @@ export default async function TransactionsPage({ params }: PageProps) {
         canMakeTransactions={hasRemainingTransactions && !isDeadlinePassed}
         userName={profile?.display_name}
         userEmail={user.email}
+        userId={user.id}
         specialEventSettings={{
           bowlAppearance: settings?.points_bowl_appearance || 0,
           playoffFirstRound: settings?.points_playoff_first_round || 0,

@@ -20,6 +20,7 @@ export default function SettingsPage() {
   const [saving, setSaving] = useState(false)
   const [profile, setProfile] = useState<Profile | null>(null)
   const [userEmail, setUserEmail] = useState<string>('')
+  const [userId, setUserId] = useState<string>('')
 
   // Form states
   const [displayName, setDisplayName] = useState('')
@@ -57,6 +58,7 @@ export default function SettingsPage() {
       }
 
       setUserEmail(user.email || '')
+      setUserId(user.id)
       setNewEmail(user.email || '')
 
       const { data: profileData } = await supabase
@@ -258,7 +260,7 @@ export default function SettingsPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gradient-from to-gradient-to">
-      <Header userName={profile?.display_name} userEmail={userEmail} />
+      <Header userName={profile?.display_name} userEmail={userEmail} userId={userId} />
 
       <main className="container mx-auto px-4 py-8 max-w-2xl">
         <div className="mb-6">

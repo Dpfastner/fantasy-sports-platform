@@ -6,6 +6,7 @@ import { validateBody } from '@/lib/api/validation'
 import { transactionSchema } from '@/lib/api/schemas'
 import { createRateLimiter, getClientIp } from '@/lib/api/rate-limit'
 import { logActivity } from '@/lib/activity'
+import { notifyLeagueMembers } from '@/lib/notifications'
 
 const limiter = createRateLimiter({ windowMs: 60_000, max: 10 })
 
@@ -247,6 +248,26 @@ export async function POST(request: NextRequest) {
       leagueId,
       action: 'transaction.completed',
       details: { teamId, droppedSchoolId, addedSchoolId, weekNumber, slotNumber },
+    })
+
+    // Fetch school names for the notification
+    const [droppedSchool, addedSchool, teamInfo] = await Promise.all([
+      supabase.from('schools').select('name').eq('id', droppedSchoolId).single(),
+      supabase.from('schools').select('name').eq('id', addedSchoolId).single(),
+      supabase.from('fantasy_teams').select('name').eq('id', teamId).single(),
+    ])
+
+    const teamLabel = teamInfo.data?.name || 'A team'
+    const droppedLabel = droppedSchool.data?.name || 'a school'
+    const addedLabel = addedSchool.data?.name || 'a school'
+
+    notifyLeagueMembers({
+      leagueId,
+      excludeUserId: user.id,
+      type: 'transaction_completed',
+      title: 'Transaction Completed',
+      body: `${teamLabel} dropped ${droppedLabel} and added ${addedLabel}`,
+      data: { leagueId },
     })
 
     return NextResponse.json({

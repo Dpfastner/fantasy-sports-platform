@@ -343,6 +343,7 @@ export default async function StatsPage({ params, searchParams }: PageProps) {
         statsData={statsData}
         userName={profile?.display_name}
         userEmail={user.email}
+        userId={user.id}
       />
       <SandboxWeekSelector currentWeek={currentWeek} environment={environment} />
     </>

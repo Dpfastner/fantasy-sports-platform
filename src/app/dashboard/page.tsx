@@ -58,7 +58,7 @@ export default async function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gradient-from to-gradient-to">
-      <Header userName={profile?.display_name} userEmail={user.email} />
+      <Header userName={profile?.display_name} userEmail={user.email} userId={user.id} />
 
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8">
