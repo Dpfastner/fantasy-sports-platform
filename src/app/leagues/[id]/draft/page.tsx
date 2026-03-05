@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { useToast } from '@/components/Toast'
 import { WatchlistStar } from '@/components/WatchlistStar'
+import { DraftChat } from '@/components/DraftChat'
 import { trackActivity } from '@/app/actions/activity'
 import { track } from '@vercel/analytics'
 
@@ -88,7 +89,7 @@ export default function DraftRoomPage() {
   const [isSubmittingPick, setIsSubmittingPick] = useState(false)
   const [isResettingDraft, setIsResettingDraft] = useState(false)
   const [showResetConfirm, setShowResetConfirm] = useState(false)
-  const [mobileTab, setMobileTab] = useState<'schools' | 'history' | 'teams'>('schools')
+  const [mobileTab, setMobileTab] = useState<'schools' | 'history' | 'teams' | 'chat'>('schools')
   const [watchlistedSchoolIds, setWatchlistedSchoolIds] = useState<Set<string>>(new Set())
   const [draftWatchlistExpanded, setDraftWatchlistExpanded] = useState(true)
   const panelSchoolIdsRef = useRef<Set<string>>(new Set()) // Schools shown in panel (doesn't shrink on unstar)
@@ -1380,6 +1381,16 @@ export default function DraftRoomPage() {
         >
           Teams
         </button>
+        <button
+          onClick={() => setMobileTab('chat')}
+          className={`flex-1 py-3 text-sm font-medium transition-colors ${
+            mobileTab === 'chat'
+              ? 'text-text-primary border-b-2 border-brand bg-surface'
+              : 'text-text-secondary hover:text-text-primary'
+          }`}
+        >
+          Chat
+        </button>
       </div>
 
       <div className="flex flex-1 overflow-hidden">
@@ -1705,7 +1716,7 @@ export default function DraftRoomPage() {
           </div>
         </div>
 
-        {/* Right Panel - My Team / View Teams */}
+        {/* Right Panel - My Team / View Teams + Draft Chat */}
         <div className={`${mobileTab === 'teams' ? 'flex' : 'hidden'} md:flex w-full md:w-1/4 flex-col`}>
           <div className="p-3 border-b border-border">
             <div className="flex items-center justify-between mb-2">
@@ -1733,7 +1744,7 @@ export default function DraftRoomPage() {
             )}
           </div>
 
-          <div className="flex-1 overflow-y-auto p-3">
+          <div className="flex-[2] overflow-y-auto p-3">
             {viewingTeam ? (
               <div className="space-y-1">
                 {viewingTeamPicks.length === 0 ? (
@@ -1778,7 +1789,21 @@ export default function DraftRoomPage() {
               <p className="text-text-muted text-sm">No team selected</p>
             )}
           </div>
+
+          {/* Draft Chat - lower 1/3 of right panel */}
+          {draft?.id && user && (
+            <div className="hidden md:flex flex-1 border-t border-border">
+              <DraftChat draftId={draft.id} leagueId={leagueId} currentUserId={user.id} />
+            </div>
+          )}
         </div>
+
+        {/* Mobile Chat Panel */}
+        {mobileTab === 'chat' && draft?.id && user && (
+          <div className="flex md:hidden w-full h-full">
+            <DraftChat draftId={draft.id} leagueId={leagueId} currentUserId={user.id} />
+          </div>
+        )}
       </div>
 
       {/* Pick Confirmation Modal */}

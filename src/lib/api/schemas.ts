@@ -107,3 +107,10 @@ export const reactionToggleSchema = z.object({
   messageId: uuidField,
   emoji: z.string().min(1).max(10),
 })
+
+// ── Draft Chat ──────────────────────────────────────────────
+
+export const draftChatMessageSchema = z.object({
+  message: z.string().min(1, 'Message is required').max(500, 'Message too long'),
+  draftId: uuidField,
+})
