@@ -121,12 +121,23 @@ export function AnnouncementsManager({
     setForm({ title: '', body: '', pinned: false })
   }
 
-  const formatTimeAgo = (dateStr: string) => {
-    const daysAgo = Math.floor((Date.now() - new Date(dateStr).getTime()) / (1000 * 60 * 60 * 24))
-    if (daysAgo === 0) return 'Today'
-    if (daysAgo === 1) return 'Yesterday'
-    return `${daysAgo}d ago`
+  const formatDate = (dateStr: string) => {
+    const date = new Date(dateStr)
+    return date.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+    }) + ' at ' + date.toLocaleTimeString('en-US', {
+      hour: 'numeric',
+      minute: '2-digit',
+    })
   }
+
+  // Sort announcements: pinned first, then by created_at desc
+  const sortedAnnouncements = [...announcements].sort((a, b) => {
+    if (a.pinned !== b.pinned) return a.pinned ? -1 : 1
+    return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+  })
 
   return (
     <div className="space-y-3">
@@ -138,8 +149,8 @@ export function AnnouncementsManager({
 
       {/* Announcements list (capped height, scrollable if >2 announcements) */}
       <div className="max-h-[280px] overflow-y-auto">
-      {announcements.length > 0 ? (
-        announcements.map(a => {
+      {sortedAnnouncements.length > 0 ? (
+        sortedAnnouncements.map(a => {
           const commName = commissionerNames[a.commissioner_id] || 'Commissioner'
           const isEditing = editingId === a.id
 
@@ -208,7 +219,7 @@ export function AnnouncementsManager({
                   </div>
                   <p className="text-text-secondary text-sm whitespace-pre-wrap">{a.body}</p>
                   <p className="text-text-muted text-xs mt-2">
-                    — {commName}, {formatTimeAgo(a.created_at)}
+                    — {commName}, {formatDate(a.created_at)}
                   </p>
                 </div>
                 <div className="flex items-center gap-1 shrink-0">

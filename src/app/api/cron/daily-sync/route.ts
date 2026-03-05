@@ -4,7 +4,7 @@ import { createAdminClient } from '@/lib/supabase/server'
 import { fetchScoreboard, fetchRankings, getTeamLogoUrl } from '@/lib/api/espn'
 import { calculateAllPoints } from '@/lib/points/calculator'
 import { areCronsEnabled, getEnvironment } from '@/lib/env'
-import { calculateCurrentWeek, getSeasonStartDate, WEEK_CHAMPIONSHIP } from '@/lib/constants/season'
+import { calculateCurrentWeek, WEEK_CHAMPIONSHIP } from '@/lib/constants/season'
 import { archiveLeagueSeason } from '@/lib/archive-season'
 
 // Verify the request is from Vercel Cron
@@ -233,43 +233,60 @@ export async function GET(request: Request) {
       pointsResult = await calculateAllPoints(season.id, currentWeek, supabase)
     }
 
-    // AUTO-ARCHIVE: 3 days after the National Championship (week 21),
-    // automatically archive all leagues that haven't been archived yet
+    // AUTO-ARCHIVE: 3 days after all National Championship games complete,
+    // automatically archive all leagues that haven't been archived yet.
+    // We check the actual games table instead of computing dates from week numbers,
+    // because week numbers are scoring periods that don't map 1:1 to calendar weeks
+    // (e.g. Heisman is week 22 but happens in December, before the January championship).
     try {
-      const seasonStart = getSeasonStartDate(year)
-      // Week 21 (Championship) starts at seasonStart + 21 weeks, ends +1 week later
-      const championshipWeekEnd = new Date(seasonStart.getTime() + (WEEK_CHAMPIONSHIP + 1) * 7 * 24 * 60 * 60 * 1000)
-      const autoArchiveDate = new Date(championshipWeekEnd.getTime() + 3 * 24 * 60 * 60 * 1000)
+      // Check if all Championship week games are completed
+      const { data: champGames } = await supabase
+        .from('games')
+        .select('status, game_date')
+        .eq('season_id', season.id)
+        .eq('week_number', WEEK_CHAMPIONSHIP)
 
-      if (now >= autoArchiveDate) {
-        // Find all leagues in this season that haven't been archived yet
-        const { data: leagues } = await supabase
-          .from('leagues')
-          .select('id, season_id')
-          .eq('season_id', season.id)
+      const hasChampGames = champGames && champGames.length > 0
+      const allCompleted = hasChampGames && champGames.every(g => g.status === 'completed')
 
-        for (const league of leagues || []) {
-          // Check if already archived
-          const { data: existing } = await supabase
-            .from('league_seasons')
-            .select('id')
-            .eq('league_id', league.id)
-            .eq('season_year', year)
-            .single()
+      if (allCompleted) {
+        // Find the latest game date and add 3 days
+        const latestGameDate = champGames.reduce((latest, g) => {
+          const d = new Date(g.game_date)
+          return d > latest ? d : latest
+        }, new Date(0))
+        const autoArchiveDate = new Date(latestGameDate.getTime() + 3 * 24 * 60 * 60 * 1000)
 
-          if (!existing) {
-            try {
-              await archiveLeagueSeason(supabase, league.id)
-              results.autoArchive.archived.push(league.id)
-            } catch (archiveErr) {
-              const msg = archiveErr instanceof Error ? archiveErr.message : String(archiveErr)
-              if (msg !== 'ALREADY_ARCHIVED') {
-                console.error(`Auto-archive failed for league ${league.id}:`, msg)
+        if (now >= autoArchiveDate) {
+          // Find all leagues in this season that haven't been archived yet
+          const { data: leagues } = await supabase
+            .from('leagues')
+            .select('id, season_id')
+            .eq('season_id', season.id)
+
+          for (const league of leagues || []) {
+            // Check if already archived
+            const { data: existing } = await supabase
+              .from('league_seasons')
+              .select('id')
+              .eq('league_id', league.id)
+              .eq('season_year', year)
+              .single()
+
+            if (!existing) {
+              try {
+                await archiveLeagueSeason(supabase, league.id)
+                results.autoArchive.archived.push(league.id)
+              } catch (archiveErr) {
+                const msg = archiveErr instanceof Error ? archiveErr.message : String(archiveErr)
+                if (msg !== 'ALREADY_ARCHIVED') {
+                  console.error(`Auto-archive failed for league ${league.id}:`, msg)
+                }
               }
             }
           }
+          results.autoArchive.checked = true
         }
-        results.autoArchive.checked = true
       }
     } catch (error) {
       results.autoArchive.error = String(error)
