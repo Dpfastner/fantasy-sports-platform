@@ -316,6 +316,34 @@ export default async function LeaguePage({ params }: PageProps) {
     doublePicksUsed = count || 0
   }
 
+  // Get archived seasons for League History widget
+  const { data: leagueSeasonsData } = await supabase
+    .from('league_seasons')
+    .select('id, season_year, champion_user_id, final_standings, archived_at')
+    .eq('league_id', id)
+    .order('season_year', { ascending: false })
+    .limit(3)
+
+  // Get champion display names
+  const championIds = [...new Set((leagueSeasonsData || []).map(s => s.champion_user_id).filter(Boolean))] as string[]
+  let championNames: Record<string, string> = {}
+  if (championIds.length > 0) {
+    const { data: championProfiles } = await supabase
+      .from('profiles')
+      .select('id, display_name, email')
+      .in('id', championIds)
+    if (championProfiles) {
+      championNames = Object.fromEntries(
+        championProfiles.map(p => [p.id, p.display_name || p.email?.split('@')[0] || 'Unknown'])
+      )
+    }
+  }
+
+  const leagueSeasons = (leagueSeasonsData || []).map(s => ({
+    ...s,
+    championName: s.champion_user_id ? championNames[s.champion_user_id] || 'Unknown' : null,
+  }))
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-gradient-from to-gradient-to">
       <Header userName={profile?.display_name} userEmail={user.email} userId={user.id}>
@@ -380,6 +408,12 @@ export default async function LeaguePage({ params }: PageProps) {
               className="bg-surface hover:bg-surface-subtle text-text-primary text-sm py-2 px-4 rounded-lg transition-colors"
             >
               League Stats
+            </Link>
+            <Link
+              href={`/leagues/${id}/history`}
+              className="bg-surface hover:bg-surface-subtle text-text-primary text-sm py-2 px-4 rounded-lg transition-colors"
+            >
+              History
             </Link>
           </div>
         )}
@@ -686,6 +720,36 @@ export default async function LeaguePage({ params }: PageProps) {
                   </div>
                 </div>
               </div>
+            </div>
+
+            {/* League History */}
+            <div className="bg-surface rounded-lg p-4">
+              <div className="flex items-center justify-between mb-3">
+                <h2 className="text-sm font-semibold text-text-secondary uppercase tracking-wide">League History</h2>
+                <Link
+                  href={`/leagues/${id}/history`}
+                  className="text-xs text-brand-text hover:text-brand-text/80 transition-colors"
+                >
+                  View All &rarr;
+                </Link>
+              </div>
+              {leagueSeasons.length === 0 ? (
+                <p className="text-text-muted text-xs">No past seasons yet</p>
+              ) : (
+                <div className="space-y-2">
+                  {leagueSeasons.map(season => (
+                    <div key={season.id} className="flex items-center gap-2 text-xs">
+                      <span className="shrink-0">🏆</span>
+                      <span className="text-text-primary font-medium">
+                        {season.season_year - 1}-{season.season_year}
+                      </span>
+                      {season.championName && (
+                        <span className="text-text-secondary truncate">{season.championName}</span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         </div>
