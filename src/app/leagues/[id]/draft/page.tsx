@@ -97,6 +97,33 @@ export default function DraftRoomPage() {
   // Track if timer has expired (for showing warning)
   const [timerExpired, setTimerExpired] = useState(false)
 
+  // Resizable draft chat panel (percentage of right panel height for chat)
+  const [chatHeightPct, setChatHeightPct] = useState(33)
+  const rightPanelRef = useRef<HTMLDivElement>(null)
+  const isDraggingRef = useRef(false)
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!isDraggingRef.current || !rightPanelRef.current) return
+      const rect = rightPanelRef.current.getBoundingClientRect()
+      const pct = ((rect.bottom - e.clientY) / rect.height) * 100
+      setChatHeightPct(Math.min(80, Math.max(15, pct)))
+    }
+    const handleMouseUp = () => {
+      if (isDraggingRef.current) {
+        isDraggingRef.current = false
+        document.body.style.cursor = ''
+        document.body.style.userSelect = ''
+      }
+    }
+    window.addEventListener('mousemove', handleMouseMove)
+    window.addEventListener('mouseup', handleMouseUp)
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove)
+      window.removeEventListener('mouseup', handleMouseUp)
+    }
+  }, [])
+
   // Get unique conferences from schools
   const conferences = [...new Set(schools.map(s => s.conference))].sort()
 
@@ -1717,83 +1744,101 @@ export default function DraftRoomPage() {
         </div>
 
         {/* Right Panel - My Team / View Teams + Draft Chat */}
-        <div className={`${mobileTab === 'teams' ? 'flex' : 'hidden'} md:flex w-full md:w-1/4 flex-col`}>
-          <div className="p-3 border-b border-border">
-            <div className="flex items-center justify-between mb-2">
-              <h2 className="text-sm font-semibold text-text-primary">Team Roster</h2>
-              <select
-                value={viewingTeamId || myTeam?.id || ''}
-                onChange={(e) => setViewingTeamId(e.target.value || null)}
-                className="px-2 py-1 bg-surface border border-border rounded text-xs text-text-primary"
-              >
-                {myTeam && (
-                  <option value={myTeam.id}>My Team: {myTeam.name}</option>
-                )}
-                {teams
-                  .filter(t => t.id !== myTeam?.id)
-                  .sort((a, b) => (a.draft_position || 999) - (b.draft_position || 999))
-                  .map(team => (
-                    <option key={team.id} value={team.id}>{team.name}</option>
-                  ))}
-              </select>
+        <div
+          ref={rightPanelRef}
+          className={`${mobileTab === 'teams' ? 'flex' : 'hidden'} md:flex w-full md:w-1/4 flex-col`}
+        >
+          {/* Roster section */}
+          <div className="flex flex-col min-h-0" style={{ height: draft?.id && user ? `${100 - chatHeightPct}%` : '100%' }}>
+            <div className="p-3 border-b border-border shrink-0">
+              <div className="flex items-center justify-between mb-2">
+                <h2 className="text-sm font-semibold text-text-primary">Team Roster</h2>
+                <select
+                  value={viewingTeamId || myTeam?.id || ''}
+                  onChange={(e) => setViewingTeamId(e.target.value || null)}
+                  className="px-2 py-1 bg-surface border border-border rounded text-xs text-text-primary"
+                >
+                  {myTeam && (
+                    <option value={myTeam.id}>My Team: {myTeam.name}</option>
+                  )}
+                  {teams
+                    .filter(t => t.id !== myTeam?.id)
+                    .sort((a, b) => (a.draft_position || 999) - (b.draft_position || 999))
+                    .map(team => (
+                      <option key={team.id} value={team.id}>{team.name}</option>
+                    ))}
+                </select>
+              </div>
+              {viewingTeam && (
+                <div className="text-text-secondary text-xs">
+                  {viewingTeamPicks.length}/{settings?.schools_per_team || 12} schools drafted
+                </div>
+              )}
             </div>
-            {viewingTeam && (
-              <div className="text-text-secondary text-xs">
-                {viewingTeamPicks.length}/{settings?.schools_per_team || 12} schools drafted
-              </div>
-            )}
-          </div>
 
-          <div className="flex-[2] overflow-y-auto p-3">
-            {viewingTeam ? (
-              <div className="space-y-1">
-                {viewingTeamPicks.length === 0 ? (
-                  <p className="text-text-muted text-sm">No picks yet</p>
-                ) : (
-                  viewingTeamPicks.map((pick, idx) => (
-                    <div
-                      key={pick.id}
-                      className="flex items-center gap-2 p-2 rounded text-sm"
-                      style={{
-                        backgroundColor: pick.schools.primary_color,
-                        color: pick.schools.secondary_color
-                      }}
-                    >
-                      <span className="w-5 text-xs opacity-75">{idx + 1}.</span>
-                      {pick.schools.logo_url ? (
-                        <img
-                          src={pick.schools.logo_url}
-                          alt={pick.schools.name}
-                          className="w-6 h-6 rounded-full bg-text-primary p-0.5"
-                        />
-                      ) : (
-                        <div
-                          className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold"
-                          style={{ backgroundColor: pick.schools.secondary_color, color: pick.schools.primary_color }}
-                        >
-                          {pick.schools.abbreviation?.slice(0, 2) || pick.schools.name.slice(0, 2)}
+            <div className="flex-1 overflow-y-auto p-3">
+              {viewingTeam ? (
+                <div className="space-y-1">
+                  {viewingTeamPicks.length === 0 ? (
+                    <p className="text-text-muted text-sm">No picks yet</p>
+                  ) : (
+                    viewingTeamPicks.map((pick, idx) => (
+                      <div
+                        key={pick.id}
+                        className="flex items-center gap-2 p-2 rounded text-sm"
+                        style={{
+                          backgroundColor: pick.schools.primary_color,
+                          color: pick.schools.secondary_color
+                        }}
+                      >
+                        <span className="w-5 text-xs opacity-75">{idx + 1}.</span>
+                        {pick.schools.logo_url ? (
+                          <img
+                            src={pick.schools.logo_url}
+                            alt={pick.schools.name}
+                            className="w-6 h-6 rounded-full bg-text-primary p-0.5"
+                          />
+                        ) : (
+                          <div
+                            className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold"
+                            style={{ backgroundColor: pick.schools.secondary_color, color: pick.schools.primary_color }}
+                          >
+                            {pick.schools.abbreviation?.slice(0, 2) || pick.schools.name.slice(0, 2)}
+                          </div>
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <div className="font-bold truncate">{pick.schools.name}</div>
+                          <div className="text-[10px] opacity-75">R{pick.round}</div>
                         </div>
-                      )}
-                      <div className="flex-1 min-w-0">
-                        <div className="font-bold truncate">{pick.schools.name}</div>
-                        <div className="text-[10px] opacity-75">R{pick.round}</div>
+                        <div className="text-xs opacity-75">
+                          {getConferenceAbbr(pick.schools.conference)}
+                        </div>
                       </div>
-                      <div className="text-xs opacity-75">
-                        {getConferenceAbbr(pick.schools.conference)}
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
-            ) : (
-              <p className="text-text-muted text-sm">No team selected</p>
-            )}
+                    ))
+                  )}
+                </div>
+              ) : (
+                <p className="text-text-muted text-sm">No team selected</p>
+              )}
+            </div>
           </div>
 
-          {/* Draft Chat - lower 1/3 of right panel */}
+          {/* Drag handle + Draft Chat */}
           {draft?.id && user && (
-            <div className="hidden md:flex flex-1 min-h-0 border-t border-border w-full">
-              <DraftChat draftId={draft.id} leagueId={leagueId} currentUserId={user.id} />
+            <div className="hidden md:flex flex-col min-h-0 w-full" style={{ height: `${chatHeightPct}%` }}>
+              {/* Drag handle */}
+              <div
+                onMouseDown={() => {
+                  isDraggingRef.current = true
+                  document.body.style.cursor = 'row-resize'
+                  document.body.style.userSelect = 'none'
+                }}
+                className="h-1.5 bg-border hover:bg-brand cursor-row-resize shrink-0 transition-colors"
+                title="Drag to resize"
+              />
+              <div className="flex-1 min-h-0">
+                <DraftChat draftId={draft.id} leagueId={leagueId} currentUserId={user.id} />
+              </div>
             </div>
           )}
         </div>
