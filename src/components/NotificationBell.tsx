@@ -53,7 +53,7 @@ function getNotificationHref(notification: Notification): string | null {
     case 'league_joined':
       return `/leagues/${leagueId}`
     case 'announcement_posted':
-      return `/leagues/${leagueId}`
+      return `/leagues/${leagueId}#announcements`
     case 'transaction_completed':
       return `/leagues/${leagueId}/transactions`
     default:
@@ -183,12 +183,11 @@ export function NotificationBell({ userId }: NotificationBellProps) {
       setUnreadCount(prev => Math.max(0, prev - 1))
     }
 
-    // Navigate and scroll to top
+    // Navigate
     const href = getNotificationHref(notification)
     if (href) {
       setIsOpen(false)
       router.push(href)
-      window.scrollTo(0, 0)
     }
   }
 
