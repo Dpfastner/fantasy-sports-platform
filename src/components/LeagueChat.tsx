@@ -250,38 +250,35 @@ export function LeagueChat({ leagueId, currentUserId, initialMessages, initialRe
             const msgReactions = reactions[msg.id] || []
             return (
               <div key={msg.id} className="group px-1">
-                <div className="flex items-start gap-2">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-baseline gap-2">
-                      <span className={`text-xs font-semibold ${isOwn ? 'text-brand-text' : 'text-text-primary'}`}>
-                        {msg.display_name}
-                      </span>
-                      <span className="text-text-muted text-[10px]">
-                        {formatTimeAgo(msg.created_at)}
-                      </span>
-                    </div>
-                    <p className="text-text-secondary text-sm break-words">{msg.message}</p>
-                  </div>
-                  <div className="opacity-0 group-hover:opacity-100 transition-opacity shrink-0 mt-1 flex items-center gap-1">
-                    {/* Add reaction button */}
-                    <button
-                      onClick={() => setPickerOpenFor(pickerOpenFor === msg.id ? null : msg.id)}
-                      className="p-1 text-text-muted hover:text-text-secondary rounded transition-colors"
-                      title="Add reaction"
-                    >
-                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                    </button>
-                    {!isOwn && (
-                      <ReportContentButton
-                        contentType="chat_message"
-                        contentId={msg.id}
-                        contentPreview={msg.message}
-                      />
-                    )}
-                  </div>
+                <div className="flex items-baseline gap-2">
+                  <span className={`text-xs font-semibold ${isOwn ? 'text-brand-text' : 'text-text-primary'}`}>
+                    {msg.display_name}
+                  </span>
+                  <span className="text-text-muted text-[10px]">
+                    {formatTimeAgo(msg.created_at)}
+                  </span>
                 </div>
+                <p className="text-text-secondary text-sm break-words inline">
+                  {msg.message}
+                </p>
+                <span className="opacity-0 group-hover:opacity-100 transition-opacity inline-flex items-center gap-1 ml-1 align-middle">
+                  <button
+                    onClick={() => setPickerOpenFor(pickerOpenFor === msg.id ? null : msg.id)}
+                    className="p-0.5 text-text-muted hover:text-text-secondary rounded transition-colors"
+                    title="Add reaction"
+                  >
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </button>
+                  {!isOwn && (
+                    <ReportContentButton
+                      contentType="chat_message"
+                      contentId={msg.id}
+                      contentPreview={msg.message}
+                    />
+                  )}
+                </span>
 
                 {/* Emoji picker strip */}
                 {pickerOpenFor === msg.id && (
