@@ -53,7 +53,7 @@ function getNotificationHref(notification: Notification): string | null {
     case 'league_joined':
       return `/leagues/${leagueId}`
     case 'announcement_posted':
-      return `/leagues/${leagueId}#announcements`
+      return `/leagues/${leagueId}`
     case 'transaction_completed':
       return `/leagues/${leagueId}/transactions`
     default:
@@ -273,13 +273,13 @@ export function NotificationBell({ userId }: NotificationBellProps) {
                           </span>
                           <button
                             onClick={(e) => handleToggleRead(e, notification)}
-                            className="shrink-0 mt-0.5 group/dot"
+                            className="shrink-0 p-1 -mr-1 group/dot"
                             title={isUnread ? 'Mark as read' : 'Mark as unread'}
                           >
-                            <span className={`block w-2.5 h-2.5 rounded-full border transition-colors ${
+                            <span className={`block w-3 h-3 rounded-full border-2 transition-colors ${
                               isUnread
-                                ? 'bg-brand border-brand group-hover/dot:bg-brand/50'
-                                : 'border-text-muted/40 group-hover/dot:border-brand group-hover/dot:bg-brand/20'
+                                ? 'bg-brand border-brand group-hover/dot:bg-brand/60'
+                                : 'border-text-muted/50 group-hover/dot:border-brand group-hover/dot:bg-brand/30'
                             }`} />
                           </button>
                         </div>
