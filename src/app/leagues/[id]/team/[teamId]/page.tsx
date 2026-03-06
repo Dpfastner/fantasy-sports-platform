@@ -76,18 +76,19 @@ export default async function TeamViewPage({ params }: PageProps) {
     .single()
 
   // Get league info (admin to bypass RLS)
-  const { data: league } = await adminDb
+  const { data: league, error: leagueError } = await adminDb
     .from('leagues')
     .select('id, name, season_id, seasons(year)')
     .eq('id', leagueId)
     .single()
 
   if (!league) {
+    console.error('[TeamView] League not found:', leagueId, leagueError?.message)
     notFound()
   }
 
   // Get target team (admin to read other users' teams)
-  const { data: team } = await adminDb
+  const { data: team, error: teamError } = await adminDb
     .from('fantasy_teams')
     .select('*, profiles(display_name, email)')
     .eq('id', teamId)
@@ -95,6 +96,7 @@ export default async function TeamViewPage({ params }: PageProps) {
     .single()
 
   if (!team) {
+    console.error('[TeamView] Team not found:', teamId, 'in league:', leagueId, teamError?.message)
     notFound()
   }
 
