@@ -132,16 +132,34 @@ export async function POST(
         }
       }
 
-      // Check for uneven trade — receiver needs to drop schools
+      // Check for uneven trade — receiver may need to drop schools if roster would exceed max
       const receiverGiving = items.filter(i => i.team_id === receiverTeam.id && i.direction === 'giving').length
       const receiverReceiving = items.filter(i => i.team_id === proposerTeam.id && i.direction === 'giving').length
       const receiverNetGain = receiverReceiving - receiverGiving
 
-      if (receiverNetGain > 0) {
-        if (!dropSchoolIds || dropSchoolIds.length !== receiverNetGain) {
+      // Get receiver's current roster count and max roster size
+      const { data: receiverRoster } = await supabase
+        .from('roster_periods')
+        .select('id')
+        .eq('fantasy_team_id', receiverTeam.id)
+        .is('end_week', null)
+
+      const { data: leagueSettings } = await supabase
+        .from('league_settings')
+        .select('schools_per_team')
+        .eq('league_id', leagueId)
+        .single()
+
+      const maxRosterSize = leagueSettings?.schools_per_team || 12
+      const currentRosterCount = receiverRoster?.length || 0
+      const rosterAfterTrade = currentRosterCount + receiverNetGain
+      const dropsRequired = rosterAfterTrade > maxRosterSize ? rosterAfterTrade - maxRosterSize : 0
+
+      if (dropsRequired > 0) {
+        if (!dropSchoolIds || dropSchoolIds.length !== dropsRequired) {
           return NextResponse.json({
-            error: `You are receiving ${receiverNetGain} more school(s) than you are giving. Select ${receiverNetGain} school(s) to drop.`,
-            requireDrops: receiverNetGain,
+            error: `Your roster would exceed the maximum of ${maxRosterSize}. Select ${dropsRequired} school(s) to drop.`,
+            requireDrops: dropsRequired,
           }, { status: 400 })
         }
         // Validate drop schools

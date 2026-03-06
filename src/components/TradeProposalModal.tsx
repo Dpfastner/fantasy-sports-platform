@@ -23,6 +23,7 @@ interface TradeItemDisplay {
 
 interface CounterTradeInfo {
   tradeId: string
+  proposerTeamId: string
   proposerTeamName: string
   items: TradeItemDisplay[]
   message?: string | null
@@ -199,19 +200,16 @@ export default function TradeProposalModal({
               <span className="font-semibold">Original offer from {counterToTrade.proposerTeamName}:</span>
             </p>
             <div className="flex flex-wrap gap-2 text-xs">
-              {counterToTrade.items.map(item => (
-                <span
-                  key={item.schoolId}
-                  className={`px-2 py-1 rounded ${
-                    item.direction === 'giving'
-                      ? 'bg-danger/20 text-danger-text'
-                      : 'bg-success/20 text-success-text'
-                  }`}
-                >
-                  {item.direction === 'giving' ? 'Offered: ' : 'Wanted: '}
-                  {item.schoolName}
+              {counterToTrade.items.filter(i => i.teamId === counterToTrade.proposerTeamId && i.direction === 'giving').length > 0 && (
+                <span className="px-2 py-1 rounded bg-danger/20 text-danger-text">
+                  Offered: {counterToTrade.items.filter(i => i.teamId === counterToTrade.proposerTeamId && i.direction === 'giving').map(i => i.schoolName).join(', ')}
                 </span>
-              ))}
+              )}
+              {counterToTrade.items.filter(i => i.teamId !== counterToTrade.proposerTeamId && i.direction === 'giving').length > 0 && (
+                <span className="px-2 py-1 rounded bg-success/20 text-success-text">
+                  Wanted: {counterToTrade.items.filter(i => i.teamId !== counterToTrade.proposerTeamId && i.direction === 'giving').map(i => i.schoolName).join(', ')}
+                </span>
+              )}
             </div>
             {counterToTrade.message && (
               <p className="text-xs text-text-muted mt-2 italic">"{counterToTrade.message}"</p>

@@ -187,7 +187,7 @@ const FEED_ACTIONS = new Set([
   'announcement.updated',
   'announcement.deleted',
   'team.edited',
-  'trade.accepted',
+  'trade.executed',
   'trade.vetoed',
 ])
 

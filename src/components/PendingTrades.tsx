@@ -45,6 +45,7 @@ interface PendingTradesProps {
   leagueId: string
   myRoster: RosterSchool[]
   tradesEnabled?: boolean
+  maxRosterSize?: number
 }
 
 // ── Component ──────────────────────────────────────────────
@@ -56,6 +57,7 @@ export default function PendingTrades({
   leagueId,
   myRoster,
   tradesEnabled = true,
+  maxRosterSize = 12,
 }: PendingTradesProps) {
   const { addToast } = useToast()
   const [actionLoading, setActionLoading] = useState<string | null>(null)
@@ -205,10 +207,12 @@ export default function PendingTrades({
     const myGiving = getMyGiving(trade)
     const myReceiving = getMyReceiving(trade)
 
-    // Check if this is an uneven trade where I receive more
+    // Check if this is an uneven trade where I receive more than roster can hold
     const netGain = myReceiving.length - myGiving.length
-    const needsDrops = netGain > 0 && isIncoming
-    const dropsNeeded = needsDrops ? netGain : 0
+    const currentRosterCount = myRoster.length
+    const rosterAfterTrade = currentRosterCount + netGain
+    const dropsNeeded = isIncoming && rosterAfterTrade > maxRosterSize ? rosterAfterTrade - maxRosterSize : 0
+    const needsDrops = dropsNeeded > 0
     const showingDropPicker = dropPickerTradeId === trade.id
 
     // Schools available for dropping
@@ -393,6 +397,7 @@ export default function PendingTrades({
           schoolRecordsMap={{}}
           counterToTrade={{
             tradeId: counterTrade.id,
+            proposerTeamId: counterTrade.proposerTeamId,
             proposerTeamName: counterTrade.proposerTeamName,
             items: counterTrade.items.map(i => ({
               schoolId: i.schoolId,

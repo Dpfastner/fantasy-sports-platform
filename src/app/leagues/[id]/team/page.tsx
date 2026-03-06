@@ -672,6 +672,7 @@ export default async function TeamPage({ params }: PageProps) {
           leagueId={leagueId}
           myRoster={myRosterForTrades}
           tradesEnabled={settings?.trades_enabled !== false}
+          maxRosterSize={settings?.schools_per_team || 12}
         />
 
         {/* Roster Section */}
