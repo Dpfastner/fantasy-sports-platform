@@ -75,11 +75,12 @@ export default function PendingTrades({
     const diff = new Date(expiresAt).getTime() - Date.now()
     if (diff <= 0) return 'Expired'
     const hours = Math.floor(diff / (1000 * 60 * 60))
+    const deadline = new Date(expiresAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })
     if (hours >= 24) {
       const days = Math.floor(hours / 24)
-      return `${days}d ${hours % 24}h remaining`
+      return `${days}d ${hours % 24}h remaining (${deadline})`
     }
-    return `${hours}h remaining`
+    return `${hours}h remaining (${deadline})`
   }
 
   const handleAction = async (tradeId: string, action: 'accept' | 'reject' | 'cancel', drops?: string[]) => {
@@ -147,12 +148,30 @@ export default function PendingTrades({
     })
   }
 
-  const renderTradeCard = (trade: TradeData) => {
+  const statusBadge = (status: string) => {
+    const styles: Record<string, string> = {
+      accepted: 'bg-success/20 text-success-text',
+      rejected: 'bg-danger/20 text-danger-text',
+      cancelled: 'bg-surface-subtle text-text-muted',
+      vetoed: 'bg-warning/20 text-warning-text',
+      expired: 'bg-surface-subtle text-text-muted',
+      countered: 'bg-info/20 text-info',
+    }
+    return (
+      <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-medium ${styles[status] || 'bg-surface-subtle text-text-muted'}`}>
+        {status.charAt(0).toUpperCase() + status.slice(1)}
+      </span>
+    )
+  }
+
+  const renderSchoolNames = (items: TradeItem[]) =>
+    items.map(i => i.schoolName).join(', ') || 'None'
+
+  const renderTradeRow = (trade: TradeData) => {
     const direction = getTradeDirection(trade)
     const isIncoming = direction === 'incoming'
     const isPending = trade.status === 'proposed'
     const partnerName = isIncoming ? trade.proposerTeamName : trade.receiverTeamName
-    const partnerTeamId = isIncoming ? trade.proposerTeamId : trade.receiverTeamId
 
     const myGiving = getMyGiving(trade)
     const myReceiving = getMyReceiving(trade)
@@ -170,184 +189,112 @@ export default function PendingTrades({
     ])
     const droppableSchools = myRoster.filter(s => !tradeSchoolIds.has(s.schoolId))
 
-    const statusBadge = (status: string) => {
-      const styles: Record<string, string> = {
-        accepted: 'bg-success/20 text-success-text',
-        rejected: 'bg-danger/20 text-danger-text',
-        cancelled: 'bg-surface-subtle text-text-muted',
-        vetoed: 'bg-warning/20 text-warning-text',
-        expired: 'bg-surface-subtle text-text-muted',
-        countered: 'bg-info/20 text-info',
-      }
-      return (
-        <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${styles[status] || 'bg-surface-subtle text-text-muted'}`}>
-          {status.charAt(0).toUpperCase() + status.slice(1)}
-        </span>
-      )
-    }
-
     return (
-      <div key={trade.id} className="bg-surface-subtle rounded-lg p-4">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2">
-            <span className={`text-xs font-semibold uppercase tracking-wide ${isIncoming ? 'text-info' : 'text-text-muted'}`}>
-              {isIncoming ? 'Incoming' : 'Outgoing'}
-            </span>
-            <span className="text-sm text-text-secondary">
-              {isIncoming ? `from ${partnerName}` : `to ${partnerName}`}
-            </span>
-            {!isPending && statusBadge(trade.status)}
-          </div>
+      <div key={trade.id}>
+        {/* Compact single-line trade */}
+        <div className="flex items-center gap-2 py-2 flex-wrap">
+          <span className={`text-[10px] font-bold uppercase tracking-wide w-[52px] flex-shrink-0 ${isIncoming ? 'text-info' : 'text-text-muted'}`}>
+            {isIncoming ? 'Incoming' : 'Outgoing'}
+          </span>
+          <span className="text-xs text-text-secondary flex-shrink-0">
+            {isIncoming ? `from ${partnerName}:` : `to ${partnerName}:`}
+          </span>
+          <span className="text-xs">
+            <span className="text-danger-text">{renderSchoolNames(myGiving)}</span>
+            <span className="text-text-muted mx-1">for</span>
+            <span className="text-success-text">{renderSchoolNames(myReceiving)}</span>
+          </span>
+          {!isPending && statusBadge(trade.status)}
           {isPending && trade.expiresAt && (
-            <span className="text-xs text-text-muted">
+            <span className="text-[10px] text-text-muted ml-auto flex-shrink-0">
               {getTimeRemaining(trade.expiresAt)}
             </span>
           )}
+          {trade.message && (
+            <span className="text-[10px] text-text-muted italic truncate max-w-[150px]" title={trade.message}>
+              &quot;{trade.message}&quot;
+            </span>
+          )}
+          {/* Inline actions */}
+          {isPending && (
+            <div className="flex gap-1.5 ml-auto flex-shrink-0">
+              {isIncoming ? (
+                <>
+                  <button
+                    onClick={() => {
+                      if (needsDrops) {
+                        if (!showingDropPicker) {
+                          setDropPickerTradeId(trade.id)
+                          setDropIds(new Set())
+                          return
+                        }
+                        if (dropIds.size !== dropsNeeded) {
+                          addToast(`Select ${dropsNeeded} school(s) to drop`, 'error')
+                          return
+                        }
+                        handleAction(trade.id, 'accept', Array.from(dropIds))
+                      } else {
+                        handleAction(trade.id, 'accept')
+                      }
+                    }}
+                    disabled={actionLoading === trade.id || (needsDrops && showingDropPicker && dropIds.size !== dropsNeeded)}
+                    className="px-2 py-1 bg-success hover:bg-success/80 text-white rounded text-xs font-medium disabled:opacity-50 transition-colors"
+                  >
+                    {actionLoading === trade.id ? '...' : 'Accept'}
+                  </button>
+                  <button
+                    onClick={() => handleAction(trade.id, 'reject')}
+                    disabled={actionLoading === trade.id}
+                    className="px-2 py-1 bg-danger hover:bg-danger/80 text-white rounded text-xs font-medium disabled:opacity-50 transition-colors"
+                  >
+                    Reject
+                  </button>
+                  <button
+                    onClick={() => setCounterTrade(trade)}
+                    disabled={actionLoading === trade.id}
+                    className="px-2 py-1 bg-surface hover:bg-surface-subtle text-text-primary border border-border rounded text-xs font-medium disabled:opacity-50 transition-colors"
+                  >
+                    Counter
+                  </button>
+                </>
+              ) : (
+                <button
+                  onClick={() => handleAction(trade.id, 'cancel')}
+                  disabled={actionLoading === trade.id}
+                  className="px-2 py-1 bg-surface hover:bg-surface-subtle text-text-primary border border-border rounded text-xs font-medium disabled:opacity-50 transition-colors"
+                >
+                  {actionLoading === trade.id ? '...' : 'Cancel'}
+                </button>
+              )}
+            </div>
+          )}
         </div>
 
-        {/* Trade items */}
-        <div className="grid grid-cols-2 gap-3 mb-3">
-          <div>
-            <p className="text-xs text-danger-text uppercase font-semibold mb-1">
-              {isIncoming ? 'You Give' : 'You Offered'}
+        {/* Drop picker for uneven incoming trades (expands below) */}
+        {isPending && needsDrops && isIncoming && showingDropPicker && (
+          <div className="bg-warning/10 border border-warning/30 rounded-lg p-3 mb-2">
+            <p className="text-xs font-semibold text-warning-text mb-2">
+              Select {dropsNeeded} school(s) to drop ({dropIds.size}/{dropsNeeded})
             </p>
-            {myGiving.map(item => (
-              <div key={item.schoolId} className="flex items-center gap-2 py-1">
-                {item.logoUrl && <img src={item.logoUrl} alt="" className="w-5 h-5 object-contain" />}
-                <span className="text-sm text-text-primary">{item.schoolName}</span>
-              </div>
-            ))}
-            {myGiving.length === 0 && <p className="text-sm text-text-muted italic">None</p>}
-          </div>
-          <div>
-            <p className="text-xs text-success-text uppercase font-semibold mb-1">
-              {isIncoming ? 'You Receive' : 'You Requested'}
-            </p>
-            {myReceiving.map(item => (
-              <div key={item.schoolId} className="flex items-center gap-2 py-1">
-                {item.logoUrl && <img src={item.logoUrl} alt="" className="w-5 h-5 object-contain" />}
-                <span className="text-sm text-text-primary">{item.schoolName}</span>
-              </div>
-            ))}
-            {myReceiving.length === 0 && <p className="text-sm text-text-muted italic">None</p>}
-          </div>
-        </div>
-
-        {/* Message */}
-        {trade.message && (
-          <p className="text-xs text-text-muted italic mb-3">&quot;{trade.message}&quot;</p>
-        )}
-
-        {/* Drop picker for uneven incoming trades */}
-        {isPending && needsDrops && isIncoming && (
-          <div className="mb-3">
-            {!showingDropPicker ? (
-              <button
-                onClick={() => { setDropPickerTradeId(trade.id); setDropIds(new Set()) }}
-                className="w-full bg-warning/10 border border-warning/30 text-warning-text rounded-lg p-2 text-xs"
-              >
-                You receive {netGain} more school(s) than you give. Select {dropsNeeded} to drop before accepting.
-              </button>
-            ) : (
-              <div className="bg-warning/10 border border-warning/30 rounded-lg p-3">
-                <p className="text-xs font-semibold text-warning-text mb-2">
-                  Select {dropsNeeded} school(s) to drop ({dropIds.size}/{dropsNeeded})
-                </p>
-                <div className="space-y-1">
-                  {droppableSchools.map(school => {
-                    const selected = dropIds.has(school.schoolId)
-                    return (
-                      <button
-                        key={school.schoolId}
-                        onClick={() => toggleDrop(school.schoolId, dropsNeeded)}
-                        className={`w-full flex items-center gap-2 px-2 py-1.5 rounded text-left text-sm transition-colors ${
-                          selected
-                            ? 'bg-warning/20 border border-warning/50'
-                            : 'bg-surface hover:bg-surface-subtle border border-transparent'
-                        }`}
-                      >
-                        <div className={`w-4 h-4 rounded border flex items-center justify-center flex-shrink-0 ${
-                          selected ? 'bg-warning border-warning text-white' : 'border-border'
-                        }`}>
-                          {selected && <span className="text-[10px]">✓</span>}
-                        </div>
-                        <span className="text-text-primary">{school.schoolName}</span>
-                        <span className="text-[10px] text-text-muted ml-auto">{school.conference}</span>
-                      </button>
-                    )
-                  })}
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Actions */}
-        {isPending && (
-          <div className="flex gap-2 flex-wrap">
-            {isIncoming ? (
-              <>
-                <button
-                  onClick={() => {
-                    if (needsDrops) {
-                      if (!showingDropPicker) {
-                        setDropPickerTradeId(trade.id)
-                        setDropIds(new Set())
-                        return
-                      }
-                      if (dropIds.size !== dropsNeeded) {
-                        addToast(`Select ${dropsNeeded} school(s) to drop`, 'error')
-                        return
-                      }
-                      handleAction(trade.id, 'accept', Array.from(dropIds))
-                    } else {
-                      handleAction(trade.id, 'accept')
-                    }
-                  }}
-                  disabled={actionLoading === trade.id || (needsDrops && showingDropPicker && dropIds.size !== dropsNeeded)}
-                  className="px-3 py-1.5 bg-success hover:bg-success/80 text-white rounded-lg text-sm font-medium disabled:opacity-50 transition-colors"
-                >
-                  {actionLoading === trade.id ? 'Processing...' : 'Accept'}
-                </button>
-                <button
-                  onClick={() => handleAction(trade.id, 'reject')}
-                  disabled={actionLoading === trade.id}
-                  className="px-3 py-1.5 bg-danger hover:bg-danger/80 text-white rounded-lg text-sm font-medium disabled:opacity-50 transition-colors"
-                >
-                  Reject
-                </button>
-                <button
-                  onClick={() => {
-                    // Build partner roster from trade items for counter modal
-                    const partnerRoster = trade.items
-                      .filter(i => i.teamId === (isIncoming ? trade.proposerTeamId : trade.receiverTeamId))
-                      .map(i => ({
-                        schoolId: i.schoolId,
-                        schoolName: i.schoolName,
-                        abbreviation: null,
-                        logoUrl: i.logoUrl,
-                        conference: '',
-                        slotNumber: 0,
-                      }))
-                    // We don't have the full partner roster here, so open counter modal
-                    setCounterTrade(trade)
-                  }}
-                  disabled={actionLoading === trade.id}
-                  className="px-3 py-1.5 bg-surface hover:bg-surface-subtle text-text-primary border border-border rounded-lg text-sm font-medium disabled:opacity-50 transition-colors"
-                >
-                  Counter
-                </button>
-              </>
-            ) : (
-              <button
-                onClick={() => handleAction(trade.id, 'cancel')}
-                disabled={actionLoading === trade.id}
-                className="px-3 py-1.5 bg-surface hover:bg-surface-subtle text-text-primary border border-border rounded-lg text-sm font-medium disabled:opacity-50 transition-colors"
-              >
-                {actionLoading === trade.id ? 'Cancelling...' : 'Cancel Trade'}
-              </button>
-            )}
+            <div className="flex flex-wrap gap-1">
+              {droppableSchools.map(school => {
+                const selected = dropIds.has(school.schoolId)
+                return (
+                  <button
+                    key={school.schoolId}
+                    onClick={() => toggleDrop(school.schoolId, dropsNeeded)}
+                    className={`flex items-center gap-1.5 px-2 py-1 rounded text-xs transition-colors ${
+                      selected
+                        ? 'bg-warning/20 border border-warning/50 text-warning-text'
+                        : 'bg-surface hover:bg-surface-subtle border border-transparent text-text-primary'
+                    }`}
+                  >
+                    {selected && <span className="text-[10px]">✓</span>}
+                    {school.schoolName}
+                  </button>
+                )
+              })}
+            </div>
           </div>
         )}
       </div>
@@ -357,30 +304,31 @@ export default function PendingTrades({
   return (
     <>
       <details open={pendingTrades.length > 0} className="bg-surface rounded-lg mb-8 border border-info/30 overflow-hidden">
-        <summary className="flex items-center justify-between px-6 py-4 cursor-pointer select-none bg-info/5 hover:bg-info/10 transition-colors">
-          <h2 className="text-xl font-semibold text-text-primary flex items-center gap-2">
+        <summary className="flex items-center justify-between px-4 py-3 cursor-pointer select-none bg-info/5 hover:bg-info/10 transition-colors">
+          <h2 className="text-sm font-semibold text-text-primary flex items-center gap-2">
             Trade Offers
             {pendingTrades.length > 0 && (
-              <span className="bg-info text-white text-xs px-2 py-0.5 rounded-full">{pendingTrades.length}</span>
+              <span className="bg-info text-white text-[10px] px-1.5 py-0.5 rounded-full">{pendingTrades.length}</span>
             )}
           </h2>
-          <span className="text-text-muted text-sm">Click to {pendingTrades.length > 0 ? 'collapse' : 'expand'}</span>
         </summary>
-        <div className="px-6 pb-4 space-y-3">
+        <div className="px-4 pb-3">
           {pendingTrades.length > 0 ? (
-            pendingTrades.map(renderTradeCard)
+            <div className="divide-y divide-border">
+              {pendingTrades.map(renderTradeRow)}
+            </div>
           ) : (
-            <p className="text-text-muted text-sm py-2">No pending trade offers.</p>
+            <p className="text-text-muted text-xs py-2">No pending trade offers.</p>
           )}
 
           {/* Recent trade activity */}
           {recentTrades.length > 0 && (
-            <details className="mt-4">
-              <summary className="text-sm text-text-muted cursor-pointer hover:text-text-secondary">
+            <details className="mt-2 pt-2 border-t border-border">
+              <summary className="text-xs text-text-muted cursor-pointer hover:text-text-secondary">
                 Recent Trade Activity ({recentTrades.length})
               </summary>
-              <div className="space-y-3 mt-3">
-                {recentTrades.slice(0, 5).map(renderTradeCard)}
+              <div className="divide-y divide-border">
+                {recentTrades.slice(0, 5).map(renderTradeRow)}
               </div>
             </details>
           )}
