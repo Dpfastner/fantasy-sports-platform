@@ -221,7 +221,7 @@ export default async function TeamPage({ params }: PageProps) {
     `)
     .eq('user_id', user.id)
     .eq('league_id', leagueId)
-    .order('proposed_at', { ascending: false })
+    .order('created_at', { ascending: false })
 
   // Get school selection counts (how many teams have each school) for watchlist availability
   const { data: takenSchoolsData } = await supabase
