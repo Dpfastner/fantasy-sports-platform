@@ -90,7 +90,7 @@ export default async function TeamViewPage({ params }: PageProps) {
   // Get target team (admin to read other users' teams)
   const { data: team, error: teamError } = await adminDb
     .from('fantasy_teams')
-    .select('*, profiles(display_name, email)')
+    .select('*, profiles!fantasy_teams_user_id_fkey(display_name, email)')
     .eq('id', teamId)
     .eq('league_id', leagueId)
     .single()
