@@ -281,6 +281,10 @@ export interface Database {
           max_double_picks_per_season: number
           // Scoring preset
           scoring_preset: string | null
+          // Trade settings
+          trades_enabled: boolean
+          trade_deadline: string | null
+          max_trades_per_season: number
           // Locks
           settings_locked: boolean
           created_at: string
@@ -333,6 +337,9 @@ export interface Database {
           double_points_enabled?: boolean
           max_double_picks_per_season?: number
           scoring_preset?: string | null
+          trades_enabled?: boolean
+          trade_deadline?: string | null
+          max_trades_per_season?: number
           settings_locked?: boolean
           created_at?: string
           updated_at?: string
@@ -384,6 +391,9 @@ export interface Database {
           double_points_enabled?: boolean
           max_double_picks_per_season?: number
           scoring_preset?: string | null
+          trades_enabled?: boolean
+          trade_deadline?: string | null
+          max_trades_per_season?: number
           settings_locked?: boolean
           created_at?: string
           updated_at?: string
@@ -439,6 +449,7 @@ export interface Database {
           total_points: number
           high_points_winnings: number
           add_drops_used: number
+          trades_used: number
           second_owner_id: string | null
           created_at: string
           updated_at: string
@@ -455,6 +466,7 @@ export interface Database {
           total_points?: number
           high_points_winnings?: number
           add_drops_used?: number
+          trades_used?: number
           second_owner_id?: string | null
           created_at?: string
           updated_at?: string
@@ -471,6 +483,7 @@ export interface Database {
           total_points?: number
           high_points_winnings?: number
           add_drops_used?: number
+          trades_used?: number
           second_owner_id?: string | null
           created_at?: string
           updated_at?: string
@@ -1260,6 +1273,11 @@ export interface Database {
           resolved_at: string | null
           commissioner_override: boolean
           override_reason: string | null
+          message: string | null
+          expires_at: string | null
+          counter_to_trade_id: string | null
+          dropped_schools: Record<string, unknown>[] | null
+          reminder_sent: boolean
         }
         Insert: {
           id?: string
@@ -1271,6 +1289,11 @@ export interface Database {
           resolved_at?: string | null
           commissioner_override?: boolean
           override_reason?: string | null
+          message?: string | null
+          expires_at?: string | null
+          counter_to_trade_id?: string | null
+          dropped_schools?: Record<string, unknown>[] | null
+          reminder_sent?: boolean
         }
         Update: {
           id?: string
@@ -1282,6 +1305,11 @@ export interface Database {
           resolved_at?: string | null
           commissioner_override?: boolean
           override_reason?: string | null
+          message?: string | null
+          expires_at?: string | null
+          counter_to_trade_id?: string | null
+          dropped_schools?: Record<string, unknown>[] | null
+          reminder_sent?: boolean
         }
       }
 

@@ -2,6 +2,7 @@ import { redirect, notFound } from 'next/navigation'
 import Link from 'next/link'
 import { createClient, createAdminClient } from '@/lib/supabase/server'
 import { Header } from '@/components/Header'
+import ProposeTradeButton from '@/components/ProposeTradeButton'
 import { getLeagueYear } from '@/lib/league-helpers'
 import { getCurrentWeek } from '@/lib/week'
 import { calculateSchoolGamePoints, DEFAULT_SCORING } from '@/lib/points/calculator'
@@ -102,6 +103,14 @@ export default async function TeamViewPage({ params }: PageProps) {
     redirect(`/leagues/${leagueId}/team`)
   }
 
+  // Get user's own team in this league (for trade button)
+  const { data: myTeam } = await adminDb
+    .from('fantasy_teams')
+    .select('id, name, trades_used')
+    .eq('league_id', leagueId)
+    .eq('user_id', user.id)
+    .single()
+
   const year = getLeagueYear(league.seasons)
   const currentWeek = await getCurrentWeek(year)
 
@@ -119,10 +128,29 @@ export default async function TeamViewPage({ params }: PageProps) {
       points_championship_loss,
       points_conference_championship_win,
       points_conference_championship_loss,
-      points_heisman_winner
+      points_heisman_winner,
+      trades_enabled,
+      trade_deadline,
+      max_trades_per_season
     `)
     .eq('league_id', leagueId)
     .single()
+
+  // Get user's own roster for trade modal
+  let myRoster: RosterSchool[] | null = null
+  if (myTeam) {
+    const { data: myRosterRaw } = await adminDb
+      .from('roster_periods')
+      .select(`
+        id, school_id, slot_number, start_week, end_week,
+        schools (id, name, abbreviation, logo_url, conference, primary_color, secondary_color)
+      `)
+      .eq('fantasy_team_id', myTeam.id)
+      .lte('start_week', currentWeek)
+      .or(`end_week.is.null,end_week.gt.${currentWeek}`)
+      .order('slot_number', { ascending: true })
+    myRoster = myRosterRaw as unknown as RosterSchool[] | null
+  }
 
   // Get current roster
   const { data: rosterData } = await adminDb
@@ -138,15 +166,17 @@ export default async function TeamViewPage({ params }: PageProps) {
 
   const roster = rosterData as unknown as RosterSchool[] | null
   const schoolIds = roster?.map(r => r.school_id) || []
+  const mySchoolIds = myRoster?.map(r => r.school_id) || []
+  const allSchoolIds = [...new Set([...schoolIds, ...mySchoolIds])]
 
-  // Get all games for roster schools
+  // Get all games for roster schools (both teams for trade modal)
   let gamesData: Game[] = []
-  if (schoolIds.length > 0) {
+  if (allSchoolIds.length > 0) {
     const { data } = await adminDb
       .from('games')
       .select('id, week_number, game_date, status, home_school_id, away_school_id, home_score, away_score, home_rank, away_rank, is_bowl_game, is_playoff_game, playoff_round')
       .eq('season_id', league.season_id)
-      .or(`home_school_id.in.(${schoolIds.join(',')}),away_school_id.in.(${schoolIds.join(',')})`)
+      .or(`home_school_id.in.(${allSchoolIds.join(',')}),away_school_id.in.(${allSchoolIds.join(',')})`)
     gamesData = (data || []) as Game[]
   }
 
@@ -211,7 +241,7 @@ export default async function TeamViewPage({ params }: PageProps) {
       playoff_round: game.playoff_round || null,
     }
 
-    if (game.home_school_id && schoolIds.includes(game.home_school_id)) {
+    if (game.home_school_id && allSchoolIds.includes(game.home_school_id)) {
       const opponentRank = game.away_rank != null && game.away_rank < 99 ? game.away_rank : null
       const pts = calculateSchoolGamePoints(calcGame, game.home_school_id, opponentRank, leagueScoring, isBowlGame)
       computedPoints.push({
@@ -221,7 +251,7 @@ export default async function TeamViewPage({ params }: PageProps) {
       })
     }
 
-    if (game.away_school_id && schoolIds.includes(game.away_school_id)) {
+    if (game.away_school_id && allSchoolIds.includes(game.away_school_id)) {
       const opponentRank = game.home_rank != null && game.home_rank < 99 ? game.home_rank : null
       const pts = calculateSchoolGamePoints(calcGame, game.away_school_id, opponentRank, leagueScoring, isBowlGame)
       computedPoints.push({
@@ -232,21 +262,83 @@ export default async function TeamViewPage({ params }: PageProps) {
     }
   }
 
-  // W-L records
-  const schoolRecordsMap = new Map<string, { wins: number; losses: number }>()
+  // W-L records (both teams' schools for trade modal)
+  const schoolRecordsMap = new Map<string, { wins: number; losses: number; confWins: number; confLosses: number }>()
   for (const game of gamesData) {
     if (game.status !== 'completed' || game.home_score === null || game.away_score === null) continue
     const homeWon = game.home_score > game.away_score
-    if (game.home_school_id && schoolIds.includes(game.home_school_id)) {
-      const r = schoolRecordsMap.get(game.home_school_id) || { wins: 0, losses: 0 }
-      if (homeWon) r.wins++; else r.losses++
+    const hConf = game.home_school_id ? conferenceMap.get(game.home_school_id) : null
+    const aConf = game.away_school_id ? conferenceMap.get(game.away_school_id) : null
+    const isConf = !!(hConf && aConf && hConf === aConf)
+    if (game.home_school_id && allSchoolIds.includes(game.home_school_id)) {
+      const r = schoolRecordsMap.get(game.home_school_id) || { wins: 0, losses: 0, confWins: 0, confLosses: 0 }
+      if (homeWon) { r.wins++; if (isConf) r.confWins++ } else { r.losses++; if (isConf) r.confLosses++ }
       schoolRecordsMap.set(game.home_school_id, r)
     }
-    if (game.away_school_id && schoolIds.includes(game.away_school_id)) {
-      const r = schoolRecordsMap.get(game.away_school_id) || { wins: 0, losses: 0 }
-      if (!homeWon) r.wins++; else r.losses++
+    if (game.away_school_id && allSchoolIds.includes(game.away_school_id)) {
+      const r = schoolRecordsMap.get(game.away_school_id) || { wins: 0, losses: 0, confWins: 0, confLosses: 0 }
+      if (!homeWon) { r.wins++; if (isConf) r.confWins++ } else { r.losses++; if (isConf) r.confLosses++ }
       schoolRecordsMap.set(game.away_school_id, r)
     }
+  }
+
+  // Get current AP rankings for trade modal
+  let { data: rankingsData } = await adminDb
+    .from('ap_rankings_history')
+    .select('school_id, rank')
+    .eq('season_id', league.season_id)
+    .eq('week_number', currentWeek)
+
+  if (!rankingsData || rankingsData.length === 0) {
+    const { data: latestRankings } = await adminDb
+      .from('ap_rankings_history')
+      .select('school_id, rank, week_number')
+      .eq('season_id', league.season_id)
+      .lte('week_number', currentWeek)
+      .order('week_number', { ascending: false })
+      .limit(25)
+    rankingsData = latestRankings
+  }
+
+  const rankingsMap: Record<string, number> = {}
+  for (const r of rankingsData || []) {
+    rankingsMap[r.school_id] = r.rank
+  }
+
+  // Build school points totals for trade modal
+  const schoolPointsMap: Record<string, number> = {}
+  for (const p of computedPoints) {
+    schoolPointsMap[p.school_id] = (schoolPointsMap[p.school_id] || 0) + p.total_points
+  }
+
+  // Prepare trade data
+  const tradesEnabled = settings?.trades_enabled !== false
+  const tradePastDeadline = settings?.trade_deadline
+    ? new Date(settings.trade_deadline + 'T23:59:59') < new Date()
+    : false
+  const canTrade = !!(myTeam && myRoster && myRoster.length > 0 && tradesEnabled && !tradePastDeadline)
+
+  const myRosterForModal = myRoster?.map(r => ({
+    schoolId: r.school_id,
+    schoolName: r.schools.name,
+    abbreviation: r.schools.abbreviation,
+    logoUrl: r.schools.logo_url,
+    conference: r.schools.conference,
+    slotNumber: r.slot_number,
+  })) || []
+
+  const partnerRosterForModal = roster?.map(r => ({
+    schoolId: r.school_id,
+    schoolName: r.schools.name,
+    abbreviation: r.schools.abbreviation,
+    logoUrl: r.schools.logo_url,
+    conference: r.schools.conference,
+    slotNumber: r.slot_number,
+  })) || []
+
+  const schoolRecordsForModal: Record<string, { wins: number; losses: number; confWins: number; confLosses: number }> = {}
+  for (const [id, rec] of schoolRecordsMap) {
+    schoolRecordsForModal[id] = rec
   }
 
   // Get team standing
@@ -297,45 +389,63 @@ export default async function TeamViewPage({ params }: PageProps) {
             borderLeft: `4px solid ${team.secondary_color || '#ffffff'}`
           }}
         >
-          <div className="flex items-center gap-4">
-            {team.image_url ? (
-              <img
-                src={team.image_url}
-                alt={team.name}
-                className="w-16 h-16 object-contain rounded-lg bg-white/10 p-1"
-              />
-            ) : (
-              <div
-                className="w-16 h-16 rounded-lg flex items-center justify-center text-2xl font-bold"
-                style={{
-                  backgroundColor: team.secondary_color || '#ffffff',
-                  color: team.primary_color || '#1a1a1a'
-                }}
-              >
-                {team.name.substring(0, 2).toUpperCase()}
-              </div>
-            )}
-            <div>
-              <h1
-                className="text-3xl font-bold mb-1"
-                style={{ color: team.secondary_color || '#ffffff' }}
-              >
-                {team.name}
-              </h1>
-              <p style={{ color: `${team.secondary_color || '#ffffff'}99` }} className="text-sm mb-2">
-                Owned by{' '}
-                <Link href={`/profile/${team.user_id}`} className="underline hover:opacity-80">
-                  {ownerName}
-                </Link>
-              </p>
-              <div
-                className="flex items-center gap-6 flex-wrap"
-                style={{ color: `${team.secondary_color || '#ffffff'}cc` }}
-              >
-                <span>Standing: <span className="font-semibold" style={{ color: team.secondary_color || '#ffffff' }}>{standing} of {totalTeams}</span></span>
-                <span>Total Points: <span className="font-semibold" style={{ color: team.secondary_color || '#ffffff' }}>{team.total_points}</span></span>
+          <div className="flex justify-between items-start flex-wrap gap-4">
+            <div className="flex items-center gap-4">
+              {team.image_url ? (
+                <img
+                  src={team.image_url}
+                  alt={team.name}
+                  className="w-16 h-16 object-contain rounded-lg bg-white/10 p-1"
+                />
+              ) : (
+                <div
+                  className="w-16 h-16 rounded-lg flex items-center justify-center text-2xl font-bold"
+                  style={{
+                    backgroundColor: team.secondary_color || '#ffffff',
+                    color: team.primary_color || '#1a1a1a'
+                  }}
+                >
+                  {team.name.substring(0, 2).toUpperCase()}
+                </div>
+              )}
+              <div>
+                <h1
+                  className="text-3xl font-bold mb-1"
+                  style={{ color: team.secondary_color || '#ffffff' }}
+                >
+                  {team.name}
+                </h1>
+                <p style={{ color: `${team.secondary_color || '#ffffff'}99` }} className="text-sm mb-2">
+                  Owned by{' '}
+                  <Link href={`/profile/${team.user_id}`} className="underline hover:opacity-80">
+                    {ownerName}
+                  </Link>
+                </p>
+                <div
+                  className="flex items-center gap-6 flex-wrap"
+                  style={{ color: `${team.secondary_color || '#ffffff'}cc` }}
+                >
+                  <span>Standing: <span className="font-semibold" style={{ color: team.secondary_color || '#ffffff' }}>{standing} of {totalTeams}</span></span>
+                  <span>Total Points: <span className="font-semibold" style={{ color: team.secondary_color || '#ffffff' }}>{team.total_points}</span></span>
+                </div>
               </div>
             </div>
+            {canTrade && (
+              <ProposeTradeButton
+                leagueId={leagueId}
+                myTeam={{ id: myTeam!.id, name: myTeam!.name }}
+                partnerTeam={{ id: team.id, name: team.name }}
+                myRoster={myRosterForModal}
+                partnerRoster={partnerRosterForModal}
+                schoolPointsMap={schoolPointsMap}
+                rankingsMap={rankingsMap}
+                schoolRecordsMap={schoolRecordsForModal}
+                buttonStyle={{
+                  backgroundColor: team.secondary_color || '#ffffff',
+                  color: team.primary_color || '#1a1a1a',
+                }}
+              />
+            )}
           </div>
         </div>
 

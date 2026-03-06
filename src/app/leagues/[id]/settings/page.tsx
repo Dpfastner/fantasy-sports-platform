@@ -62,6 +62,10 @@ interface LeagueSettings {
   // Double points settings
   double_points_enabled: boolean
   max_double_picks_per_season: number
+  // Trade settings
+  trades_enabled: boolean
+  trade_deadline: string | null
+  max_trades_per_season: number
   // Scoring preset
   scoring_preset: string | null
   // Section visibility toggles
@@ -100,7 +104,7 @@ interface LeagueMember {
 }
 
 type TabType = 'league' | 'draft' | 'members' | 'misc'
-type LeagueSubTab = 'basic' | 'roster' | 'scoring' | 'transactions' | 'double_points'
+type LeagueSubTab = 'basic' | 'roster' | 'scoring' | 'transactions' | 'trades' | 'double_points'
 
 export default function CommissionerToolsPage() {
   const params = useParams()
@@ -622,6 +626,7 @@ export default function CommissionerToolsPage() {
                   { id: 'roster' as LeagueSubTab, label: 'Roster Settings' },
                   { id: 'scoring' as LeagueSubTab, label: 'Scoring' },
                   { id: 'transactions' as LeagueSubTab, label: 'Transactions' },
+                  { id: 'trades' as LeagueSubTab, label: 'Trades' },
                   { id: 'double_points' as LeagueSubTab, label: 'Double Points' }
                 ].map(tab => (
                   <button
@@ -1197,6 +1202,69 @@ export default function CommissionerToolsPage() {
                 </section>
               )}
 
+              {/* Trades Settings */}
+              {leagueSubTab === 'trades' && (
+                <section className="bg-surface rounded-lg p-6">
+                  <h2 className="text-xl font-semibold text-text-primary mb-6">Trade Settings</h2>
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between p-4 bg-surface-inset rounded-lg">
+                      <div>
+                        <label className="text-text-primary font-medium">Enable Trades</label>
+                        <p className="text-text-secondary text-sm mt-1">Allow teams to propose and accept trades with each other</p>
+                      </div>
+                      <button
+                        onClick={() => setSettings({ ...settings, trades_enabled: !settings.trades_enabled })}
+                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                          settings.trades_enabled ? 'bg-brand' : 'bg-surface-subtle'
+                        }`}
+                      >
+                        <span
+                          className={`inline-block h-4 w-4 transform rounded-full bg-text-primary transition-transform ${
+                            settings.trades_enabled ? 'translate-x-6' : 'translate-x-1'
+                          }`}
+                        />
+                      </button>
+                    </div>
+
+                    {settings.trades_enabled && (
+                      <>
+                        <div>
+                          <label className="block text-text-secondary mb-2">Trade Deadline</label>
+                          <input
+                            type="date"
+                            value={settings.trade_deadline || ''}
+                            onChange={(e) => setSettings({ ...settings, trade_deadline: e.target.value || null })}
+                            className="w-full px-4 py-3 bg-surface border border-border rounded-lg text-text-primary"
+                          />
+                          <p className="text-text-muted text-sm mt-1">Last date teams can propose new trades. Leave blank for no deadline.</p>
+                        </div>
+
+                        <div>
+                          <label className="block text-text-secondary mb-2">Max Trades per Season</label>
+                          <input
+                            type="number"
+                            min="1"
+                            max="100"
+                            value={settings.max_trades_per_season}
+                            onChange={(e) => setSettings({ ...settings, max_trades_per_season: parseInt(e.target.value) || 10 })}
+                            className="w-full px-4 py-3 bg-surface border border-border rounded-lg text-text-primary"
+                          />
+                          <p className="text-text-muted text-sm mt-1">Maximum number of completed trades allowed per team per season (10 recommended)</p>
+                        </div>
+                      </>
+                    )}
+
+                    <button
+                      onClick={handleSaveSettings}
+                      disabled={saving}
+                      className="w-full bg-brand hover:bg-brand-hover disabled:bg-brand/50 text-text-primary font-semibold py-3 px-4 rounded-lg transition-colors mt-4"
+                    >
+                      {saving ? 'Saving...' : 'Save Trade Settings'}
+                    </button>
+                  </div>
+                </section>
+              )}
+
               {/* Double Points Settings */}
               {leagueSubTab === 'double_points' && (
                 <section className="bg-surface rounded-lg p-6">
@@ -1609,7 +1677,6 @@ export default function CommissionerToolsPage() {
                   <ul className="text-text-secondary text-sm space-y-1">
                     <li>• Export league data</li>
                     <li>• Manual score adjustments</li>
-                    <li>• Trade management</li>
                   </ul>
                 </div>
               </section>

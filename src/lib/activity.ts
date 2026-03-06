@@ -21,6 +21,15 @@ export type ActivityAction =
   | 'draft.resumed'
   // Roster
   | 'transaction.completed'
+  // Trades
+  | 'trade.proposed'
+  | 'trade.accepted'
+  | 'trade.rejected'
+  | 'trade.cancelled'
+  | 'trade.vetoed'
+  | 'trade.executed'
+  | 'trade.expired'
+  | 'trade.countered'
   | 'double_points.pick_made'
   | 'double_points.pick_removed'
   | 'team.edited'

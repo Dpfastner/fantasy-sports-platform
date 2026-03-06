@@ -15,6 +15,11 @@ export type NotificationType =
   | 'game_results'
   | 'trade_proposed'
   | 'trade_accepted'
+  | 'trade_rejected'
+  | 'trade_cancelled'
+  | 'trade_vetoed'
+  | 'trade_expired'
+  | 'trade_expiring'
   | 'system'
 
 interface CreateNotificationParams {

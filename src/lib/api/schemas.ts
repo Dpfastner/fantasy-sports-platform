@@ -129,3 +129,25 @@ export const watchlistReorderSchema = z.object({
     priority: z.number().int().min(1),
   })),
 })
+
+// ── Trades ─────────────────────────────────────────────────
+
+export const tradeProposalSchema = z.object({
+  receiverTeamId: uuidField,
+  giving: z.array(uuidField).min(1, 'Must offer at least one school'),
+  receiving: z.array(uuidField).min(1, 'Must request at least one school'),
+  message: z.string().max(500).optional(),
+  counterToTradeId: uuidField.optional(),
+  dropSchoolIds: z.array(uuidField).optional(),
+})
+
+export const tradeActionSchema = z.object({
+  tradeId: uuidField,
+  action: z.enum(['accept', 'reject', 'cancel']),
+  dropSchoolIds: z.array(uuidField).optional(),
+})
+
+export const tradeVetoSchema = z.object({
+  tradeId: uuidField,
+  reason: z.string().min(1, 'Veto reason is required').max(500),
+})

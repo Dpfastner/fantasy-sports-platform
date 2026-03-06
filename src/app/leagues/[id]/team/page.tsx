@@ -1,7 +1,8 @@
 import { redirect, notFound } from 'next/navigation'
 import Link from 'next/link'
-import { createClient } from '@/lib/supabase/server'
+import { createClient, createAdminClient } from '@/lib/supabase/server'
 import { Header } from '@/components/Header'
+import PendingTrades from '@/components/PendingTrades'
 import { RosterList } from '@/components/RosterList'
 import { SandboxWeekSelector } from '@/components/SandboxWeekSelector'
 import { getCurrentWeek, getSimulatedDate } from '@/lib/week'
@@ -130,6 +131,9 @@ export default async function TeamPage({ params }: PageProps) {
       max_school_selections_total,
       double_points_enabled,
       max_double_picks_per_season,
+      trades_enabled,
+      trade_deadline,
+      max_trades_per_season,
       points_win, points_conference_game, points_over_50, points_shutout, points_ranked_25, points_ranked_10,
       points_loss, points_conference_game_loss, points_over_50_loss, points_shutout_loss, points_ranked_25_loss, points_ranked_10_loss,
       points_bowl_appearance,
@@ -465,6 +469,75 @@ export default async function TeamPage({ params }: PageProps) {
   const standing = (allTeams?.findIndex(t => t.id === team.id) || 0) + 1
   const totalTeams = allTeams?.length || 0
 
+  // ── Trade data ───────────────────────────────────────────
+  const adminDb = createAdminClient()
+
+  // Fetch trades involving this team
+  const { data: tradesRaw } = await adminDb
+    .from('trades')
+    .select(`
+      id, proposer_team_id, receiver_team_id, status, message, expires_at, created_at,
+      trade_items (id, team_id, school_id, direction, schools (id, name, logo_url))
+    `)
+    .eq('league_id', leagueId)
+    .or(`proposer_team_id.eq.${team.id},receiver_team_id.eq.${team.id}`)
+    .order('created_at', { ascending: false })
+    .limit(20)
+
+  // Get team names for trade display
+  const tradeTeamIds = new Set<string>()
+  for (const t of tradesRaw || []) {
+    tradeTeamIds.add(t.proposer_team_id)
+    tradeTeamIds.add(t.receiver_team_id)
+  }
+  const teamNameMap: Record<string, string> = {}
+  if (tradeTeamIds.size > 0) {
+    const { data: tradeTeams } = await adminDb
+      .from('fantasy_teams')
+      .select('id, name')
+      .in('id', Array.from(tradeTeamIds))
+    for (const t of tradeTeams || []) {
+      teamNameMap[t.id] = t.name
+    }
+  }
+
+  interface TradeItemRaw {
+    id: string
+    team_id: string
+    school_id: string
+    direction: string
+    schools: { id: string; name: string; logo_url: string | null } | null
+  }
+
+  const tradesForComponent = (tradesRaw || []).map(t => ({
+    id: t.id,
+    proposerTeamId: t.proposer_team_id,
+    proposerTeamName: teamNameMap[t.proposer_team_id] || 'Unknown',
+    receiverTeamId: t.receiver_team_id,
+    receiverTeamName: teamNameMap[t.receiver_team_id] || 'Unknown',
+    status: t.status,
+    message: t.message as string | null,
+    expiresAt: t.expires_at as string | null,
+    createdAt: t.created_at,
+    items: ((t.trade_items || []) as unknown as TradeItemRaw[]).map(item => ({
+      schoolId: item.school_id,
+      schoolName: (item.schools as { id: string; name: string; logo_url: string | null } | null)?.name || 'Unknown',
+      logoUrl: (item.schools as { id: string; name: string; logo_url: string | null } | null)?.logo_url || null,
+      direction: item.direction as 'giving' | 'receiving',
+      teamId: item.team_id,
+    })),
+  }))
+
+  // Build myRoster in the format PendingTrades expects (for drop picker)
+  const myRosterForTrades = roster?.map(r => ({
+    schoolId: r.school_id,
+    schoolName: r.schools.name,
+    abbreviation: r.schools.abbreviation,
+    logoUrl: r.schools.logo_url,
+    conference: r.schools.conference,
+    slotNumber: r.slot_number,
+  })) || []
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-gradient-from to-gradient-to">
       <Header userName={profile?.display_name} userEmail={user.email} userId={user.id}>
@@ -549,6 +622,9 @@ export default async function TeamPage({ params }: PageProps) {
                   <span>Standing: <span className="font-semibold" style={{ color: team.secondary_color || '#ffffff' }}>{standing} of {totalTeams}</span></span>
                   <span>Total Points: <span className="font-semibold" style={{ color: team.secondary_color || '#ffffff' }}>{team.total_points}</span></span>
                   <span>Add/Drops: <span className="font-semibold" style={{ color: team.secondary_color || '#ffffff' }}>{team.add_drops_used} / {settings?.max_add_drops_per_season || 50}</span></span>
+                  {settings?.trades_enabled !== false && (
+                    <span>Trades: <span className="font-semibold" style={{ color: team.secondary_color || '#ffffff' }}>{team.trades_used || 0} / {settings?.max_trades_per_season || 10}</span></span>
+                  )}
                 </div>
               </div>
             </div>
@@ -564,6 +640,17 @@ export default async function TeamPage({ params }: PageProps) {
             </Link>
           </div>
         </div>
+
+        {/* Pending Trades */}
+        {tradesForComponent.length > 0 && (
+          <PendingTrades
+            trades={tradesForComponent}
+            myTeamId={team.id}
+            myTeamName={team.name}
+            leagueId={leagueId}
+            myRoster={myRosterForTrades}
+          />
+        )}
 
         {/* Roster Section */}
         <div className="bg-surface rounded-lg p-6 mb-8">
