@@ -61,6 +61,12 @@ function getEventIcon(action: string): { path: string; color: string } {
       color: 'text-text-muted',
     }
   }
+  if (action.startsWith('trade.')) {
+    return {
+      path: 'M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4',
+      color: 'text-brand',
+    }
+  }
   if (action === 'double_points.pick_made') {
     return {
       path: 'M13 10V3L4 14h7v7l9-11h-7z',
@@ -129,6 +135,29 @@ function getEventDescription(event: ActivityEvent): string {
     case 'team.edited':
       return `${name} updated their team`
 
+    case 'trade.proposed': {
+      const proposer = (details.proposerTeam as string) || name
+      const receiver = (details.receiverTeam as string) || 'another team'
+      return `${proposer} proposed a trade to ${receiver}`
+    }
+    case 'trade.accepted': {
+      const proposer = (details.proposerTeam as string) || 'A team'
+      const receiver = (details.receiverTeam as string) || 'another team'
+      return `Trade accepted between ${proposer} and ${receiver}`
+    }
+    case 'trade.executed':
+      return 'A trade was executed'
+    case 'trade.rejected':
+      return `${name} rejected a trade offer`
+    case 'trade.cancelled':
+      return `${name} cancelled a trade offer`
+    case 'trade.vetoed':
+      return 'A trade was vetoed by the commissioner'
+    case 'trade.expired':
+      return 'A trade offer expired'
+    case 'trade.countered':
+      return `${name} countered a trade offer`
+
     default:
       return `${event.action.replace(/[._]/g, ' ')}`
   }
@@ -158,6 +187,14 @@ const FEED_ACTIONS = new Set([
   'announcement.updated',
   'announcement.deleted',
   'team.edited',
+  'trade.proposed',
+  'trade.accepted',
+  'trade.executed',
+  'trade.rejected',
+  'trade.cancelled',
+  'trade.vetoed',
+  'trade.expired',
+  'trade.countered',
 ])
 
 export function LeagueActivityFeed({ events }: LeagueActivityFeedProps) {

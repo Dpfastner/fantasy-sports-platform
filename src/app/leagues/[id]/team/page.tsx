@@ -221,7 +221,7 @@ export default async function TeamPage({ params }: PageProps) {
     `)
     .eq('user_id', user.id)
     .eq('league_id', leagueId)
-    .order('created_at', { ascending: false })
+    .order('proposed_at', { ascending: false })
 
   // Get school selection counts (how many teams have each school) for watchlist availability
   const { data: takenSchoolsData } = await supabase
@@ -476,12 +476,12 @@ export default async function TeamPage({ params }: PageProps) {
   const { data: tradesRaw } = await adminDb
     .from('trades')
     .select(`
-      id, proposer_team_id, receiver_team_id, status, message, expires_at, created_at,
+      id, proposer_team_id, receiver_team_id, status, message, expires_at, proposed_at,
       trade_items (id, team_id, school_id, direction, schools (id, name, logo_url))
     `)
     .eq('league_id', leagueId)
     .or(`proposer_team_id.eq.${team.id},receiver_team_id.eq.${team.id}`)
-    .order('created_at', { ascending: false })
+    .order('proposed_at', { ascending: false })
     .limit(20)
 
   // Get team names for trade display
@@ -518,7 +518,7 @@ export default async function TeamPage({ params }: PageProps) {
     status: t.status,
     message: t.message as string | null,
     expiresAt: t.expires_at as string | null,
-    createdAt: t.created_at,
+    createdAt: t.proposed_at,
     items: ((t.trade_items || []) as unknown as TradeItemRaw[]).map(item => ({
       schoolId: item.school_id,
       schoolName: (item.schools as { id: string; name: string; logo_url: string | null } | null)?.name || 'Unknown',
