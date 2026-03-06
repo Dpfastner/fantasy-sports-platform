@@ -1725,9 +1725,6 @@ export default function DraftRoomPage() {
           {draft?.status === 'paused' && (
             <div className="p-6 text-center">
               <div className="text-warning text-xl">Draft is paused</div>
-              {isCommissioner && (
-                <p className="text-text-secondary mt-2">Click &quot;Resume&quot; to continue</p>
-              )}
             </div>
           )}
 
@@ -1986,6 +1983,33 @@ export default function DraftRoomPage() {
                 {isResettingDraft ? 'Resetting...' : 'Reset Draft'}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Draft Paused Overlay */}
+      {draft?.status === 'paused' && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
+          <div className="bg-surface rounded-lg p-8 max-w-sm w-full mx-4 shadow-xl text-center">
+            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-warning/20 flex items-center justify-center">
+              <svg className="w-8 h-8 text-warning" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z"/>
+              </svg>
+            </div>
+            <h3 className="text-xl font-bold text-text-primary mb-2">Draft Paused</h3>
+            <p className="text-text-secondary mb-6">
+              {isCommissioner
+                ? 'You have paused the draft. Click below to resume.'
+                : 'The commissioner has paused the draft. Please wait for it to resume.'}
+            </p>
+            {isCommissioner && (
+              <button
+                onClick={handleTogglePause}
+                className="w-full px-4 py-3 bg-success hover:bg-success-hover text-text-primary rounded-lg font-semibold transition-colors"
+              >
+                Resume Draft
+              </button>
+            )}
           </div>
         </div>
       )}
