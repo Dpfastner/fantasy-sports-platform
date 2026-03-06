@@ -41,6 +41,7 @@ interface PendingTradesProps {
   myTeamName: string
   leagueId: string
   myRoster: RosterSchool[]
+  tradesEnabled?: boolean
 }
 
 // ── Component ──────────────────────────────────────────────
@@ -51,6 +52,7 @@ export default function PendingTrades({
   myTeamName,
   leagueId,
   myRoster,
+  tradesEnabled = true,
 }: PendingTradesProps) {
   const { addToast } = useToast()
   const [actionLoading, setActionLoading] = useState<string | null>(null)
@@ -58,17 +60,10 @@ export default function PendingTrades({
   const [dropPickerTradeId, setDropPickerTradeId] = useState<string | null>(null)
   const [dropIds, setDropIds] = useState<Set<string>>(new Set())
 
+  if (!tradesEnabled) return null
+
   const pendingTrades = trades.filter(t => t.status === 'proposed')
   const recentTrades = trades.filter(t => t.status !== 'proposed')
-
-  if (pendingTrades.length === 0 && recentTrades.length === 0) {
-    return (
-      <div className="bg-surface rounded-lg p-4">
-        <h2 className="text-sm font-semibold text-text-secondary uppercase tracking-wide">Trade Offers</h2>
-        <p className="text-text-secondary text-sm mt-2">No pending trades. Visit another team&apos;s roster to propose a trade.</p>
-      </div>
-    )
-  }
 
   const getTimeRemaining = (expiresAt: string | null) => {
     if (!expiresAt) return null
@@ -303,7 +298,7 @@ export default function PendingTrades({
 
   return (
     <>
-      <details open={pendingTrades.length > 0} className="bg-surface rounded-lg mb-8 border border-info/30 overflow-hidden">
+      <details className="bg-surface rounded-lg mb-8 border border-info/30 overflow-hidden">
         <summary className="flex items-center justify-between px-4 py-3 cursor-pointer select-none bg-info/5 hover:bg-info/10 transition-colors">
           <h2 className="text-sm font-semibold text-text-primary flex items-center gap-2">
             Trade Offers

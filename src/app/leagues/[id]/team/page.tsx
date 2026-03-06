@@ -648,6 +648,7 @@ export default async function TeamPage({ params }: PageProps) {
           myTeamName={team.name}
           leagueId={leagueId}
           myRoster={myRosterForTrades}
+          tradesEnabled={settings?.trades_enabled !== false}
         />
 
         {/* Roster Section */}
