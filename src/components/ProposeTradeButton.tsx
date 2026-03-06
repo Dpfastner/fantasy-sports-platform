@@ -22,6 +22,7 @@ interface Props {
   rankingsMap: Record<string, number>
   schoolRecordsMap: Record<string, { wins: number; losses: number; confWins: number; confLosses: number }>
   buttonStyle?: { backgroundColor?: string; color?: string }
+  maxRosterSize?: number
 }
 
 export default function ProposeTradeButton({
@@ -34,6 +35,7 @@ export default function ProposeTradeButton({
   rankingsMap,
   schoolRecordsMap,
   buttonStyle,
+  maxRosterSize,
 }: Props) {
   const [showModal, setShowModal] = useState(false)
 
@@ -58,6 +60,7 @@ export default function ProposeTradeButton({
         schoolPointsMap={schoolPointsMap}
         rankingsMap={rankingsMap}
         schoolRecordsMap={schoolRecordsMap}
+        maxRosterSize={maxRosterSize}
         onTradeProposed={() => {
           window.location.reload()
         }}

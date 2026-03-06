@@ -169,13 +169,32 @@ export async function POST(
       }
     }
 
-    // If proposer receives more than they give, require dropSchoolIds
+    // If proposer receives more than they give, check if drops are needed based on roster capacity
     const proposerNetGain = receiving.length - giving.length
-    if (proposerNetGain > 0) {
-      if (!dropSchoolIds || dropSchoolIds.length !== proposerNetGain) {
+
+    // Get proposer's current roster count and max roster size
+    const { data: proposerRoster } = await supabase
+      .from('roster_periods')
+      .select('id')
+      .eq('fantasy_team_id', myTeam.id)
+      .is('end_week', null)
+
+    const { data: tradeSettings } = await supabase
+      .from('league_settings')
+      .select('schools_per_team')
+      .eq('league_id', leagueId)
+      .single()
+
+    const maxRoster = tradeSettings?.schools_per_team || 12
+    const proposerRosterCount = proposerRoster?.length || 0
+    const proposerRosterAfter = proposerRosterCount + proposerNetGain
+    const proposerDropsRequired = proposerRosterAfter > maxRoster ? proposerRosterAfter - maxRoster : 0
+
+    if (proposerDropsRequired > 0) {
+      if (!dropSchoolIds || dropSchoolIds.length !== proposerDropsRequired) {
         return NextResponse.json({
-          error: `You are receiving ${proposerNetGain} more school(s) than you are giving. Select ${proposerNetGain} school(s) to drop.`,
-          requireDrops: proposerNetGain,
+          error: `Your roster would exceed the maximum of ${maxRoster}. Select ${proposerDropsRequired} school(s) to drop.`,
+          requireDrops: proposerDropsRequired,
         }, { status: 400 })
       }
       // Validate drop schools are on proposer's roster and not in the trade

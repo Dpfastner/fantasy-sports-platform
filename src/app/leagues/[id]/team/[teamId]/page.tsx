@@ -149,7 +149,8 @@ export default async function TeamViewPage({ params }: PageProps) {
       max_double_picks_per_season,
       trades_enabled,
       trade_deadline,
-      max_trades_per_season
+      max_trades_per_season,
+      schools_per_team
     `)
     .eq('league_id', leagueId)
     .single()
@@ -548,6 +549,7 @@ export default async function TeamViewPage({ params }: PageProps) {
                   backgroundColor: team.secondary_color || '#ffffff',
                   color: team.primary_color || '#1a1a1a',
                 }}
+                maxRosterSize={settings?.schools_per_team || 12}
               />
             )}
           </div>

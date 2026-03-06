@@ -57,7 +57,7 @@ function getNotificationHref(notification: Notification): string | null {
     case 'transaction_completed':
       return `/leagues/${leagueId}/transactions`
     case 'trade_accepted':
-      return `/leagues/${leagueId}#activity`
+      return `/leagues/${leagueId}/team`
     case 'trade_proposed':
     case 'trade_rejected':
     case 'trade_cancelled':

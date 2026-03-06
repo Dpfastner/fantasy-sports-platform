@@ -42,6 +42,7 @@ interface TradeProposalModalProps {
   schoolRecordsMap: Record<string, { wins: number; losses: number; confWins: number; confLosses: number }>
   counterToTrade?: CounterTradeInfo
   onTradeProposed?: () => void
+  maxRosterSize?: number
 }
 
 // ── Component ──────────────────────────────────────────────
@@ -59,6 +60,7 @@ export default function TradeProposalModal({
   schoolRecordsMap,
   counterToTrade,
   onTradeProposed,
+  maxRosterSize = 12,
 }: TradeProposalModalProps) {
   const { addToast } = useToast()
   const [givingIds, setGivingIds] = useState<Set<string>>(new Set())
@@ -73,8 +75,9 @@ export default function TradeProposalModal({
   const givingCount = givingIds.size
   const receivingCount = receivingIds.size
   const netGain = receivingCount - givingCount
-  const needsDrops = netGain > 0
-  const dropsNeeded = needsDrops ? netGain : 0
+  const rosterAfterTrade = myRoster.length + netGain
+  const dropsNeeded = rosterAfterTrade > maxRosterSize ? rosterAfterTrade - maxRosterSize : 0
+  const needsDrops = dropsNeeded > 0
   const dropsSelected = dropIds.size
 
   // Schools available for dropping (on my roster, not being traded)
@@ -83,6 +86,11 @@ export default function TradeProposalModal({
   )
 
   const toggleGiving = (schoolId: string) => {
+    // Don't allow giving a school that's already on partner's roster
+    if (!givingIds.has(schoolId) && partnerRosterSchoolIds.has(schoolId)) {
+      addToast('This school is already on their roster', 'error')
+      return
+    }
     setGivingIds(prev => {
       const next = new Set(prev)
       if (next.has(schoolId)) next.delete(schoolId)
@@ -94,8 +102,9 @@ export default function TradeProposalModal({
     setShowDropPicker(false)
   }
 
-  // Set of school IDs on my roster (for blocking duplicate selections)
+  // Set of school IDs on each roster (for blocking duplicate selections)
   const myRosterSchoolIds = new Set(myRoster.map(s => s.schoolId))
+  const partnerRosterSchoolIds = new Set(partnerRoster.map(s => s.schoolId))
 
   const toggleReceiving = (schoolId: string) => {
     // Don't allow selecting a school that's already on my roster
@@ -222,16 +231,20 @@ export default function TradeProposalModal({
             <div className="space-y-1">
               {myRoster.map(school => {
                 const selected = givingIds.has(school.schoolId)
+                const alreadyOnPartnerRoster = partnerRosterSchoolIds.has(school.schoolId)
                 const rank = getRank(school.schoolId)
                 const points = schoolPointsMap[school.schoolId] || 0
                 return (
                   <button
                     key={school.schoolId}
                     onClick={() => toggleGiving(school.schoolId)}
+                    disabled={alreadyOnPartnerRoster}
                     className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-colors ${
-                      selected
-                        ? 'bg-danger/20 border border-danger/50'
-                        : 'bg-surface hover:bg-surface-subtle border border-transparent'
+                      alreadyOnPartnerRoster
+                        ? 'bg-surface/50 opacity-40 cursor-not-allowed border border-transparent'
+                        : selected
+                          ? 'bg-danger/20 border border-danger/50'
+                          : 'bg-surface hover:bg-surface-subtle border border-transparent'
                     }`}
                   >
                     <div className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 ${
@@ -252,7 +265,10 @@ export default function TradeProposalModal({
                         <span className="text-sm font-medium text-text-primary truncate">{school.schoolName}</span>
                       </div>
                       <div className="text-[11px] text-text-muted">
-                        {school.conference} · {getRecord(school.schoolId)} · {points} pts
+                        {alreadyOnPartnerRoster
+                          ? 'Already on their roster'
+                          : `${school.conference} · ${getRecord(school.schoolId)} · ${points} pts`
+                        }
                       </div>
                     </div>
                   </button>

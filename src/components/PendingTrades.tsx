@@ -408,6 +408,7 @@ export default function PendingTrades({
             message: counterTrade.message,
           }}
           onTradeProposed={() => window.location.reload()}
+          maxRosterSize={maxRosterSize}
         />
       )}
     </>
