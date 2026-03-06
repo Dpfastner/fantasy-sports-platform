@@ -580,7 +580,7 @@ export default async function LeaguePage({ params }: PageProps) {
             {/* League Activity Feed (bottom) */}
             {(settings?.show_activity_feed !== false) && (
               <ErrorBoundary sectionName="activity-feed">
-                <div className="bg-surface rounded-lg p-4 md:p-6">
+                <div id="activity" className="bg-surface rounded-lg p-4 md:p-6">
                   <div className="flex items-center justify-between mb-4">
                     <h2 className="text-lg font-semibold text-text-primary">League Activity</h2>
                     {isCommissioner && (
