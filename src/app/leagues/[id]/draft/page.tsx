@@ -539,6 +539,11 @@ export default function DraftRoomPage() {
 
         if (freshTeams) {
           setTeams(freshTeams as unknown as Team[])
+          // Sync local toggle state from server (e.g. when auto-pick was enabled by timer expiry)
+          const myFreshTeam = (freshTeams as unknown as Team[]).find(t => t.user_id === user?.id)
+          if (myFreshTeam) {
+            setAutoPickEnabled(!!myFreshTeam.auto_pick_enabled)
+          }
         }
       }
 
@@ -793,6 +798,16 @@ export default function DraftRoomPage() {
         setActionError('Could not determine first team')
         return
       }
+
+      // Reset auto-pick for all teams before starting
+      await supabase
+        .from('fantasy_teams')
+        .update({ auto_pick_enabled: false })
+        .eq('league_id', leagueId)
+
+      // Update local teams state
+      setTeams(prev => prev.map(t => ({ ...t, auto_pick_enabled: false })))
+      setAutoPickEnabled(false)
 
       // Update draft state
       const deadline = new Date(Date.now() + (settings.draft_timer_seconds || 60) * 1000)
@@ -1227,6 +1242,16 @@ export default function DraftRoomPage() {
       setDraftOrder([])
       setShowResetConfirm(false)
       setTimerExpired(false)
+      setAutoPickEnabled(false)
+      setAutoPickTriggered(false)
+
+      // Reset auto-pick for all teams
+      await supabase
+        .from('fantasy_teams')
+        .update({ auto_pick_enabled: false })
+        .eq('league_id', leagueId)
+
+      setTeams(prev => prev.map(t => ({ ...t, auto_pick_enabled: false })))
 
     } catch (err) {
       console.error('Error resetting draft:', err)
@@ -1327,11 +1352,22 @@ export default function DraftRoomPage() {
     persistQueueOrder(renumbered)
   }
 
-  const handleAddToQueue = (schoolId: string) => {
+  const handleAddToQueue = async (schoolId: string) => {
     if (draftQueue.some(q => q.schoolId === schoolId)) return
+
+    // Ensure the school exists in watchlists table (insert if not already there)
+    if (!watchlistedSchoolIds.has(schoolId)) {
+      await fetch('/api/watchlists/toggle', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ schoolId, leagueId }),
+      })
+      setWatchlistedSchoolIds(prev => new Set(prev).add(schoolId))
+    }
+
     const newQueue = [...draftQueue, { schoolId, priority: draftQueue.length + 1 }]
     setDraftQueue(newQueue)
-    persistQueueOrder(newQueue)
+    await persistQueueOrder(newQueue)
   }
 
   const handleRemoveFromQueue = (schoolId: string) => {
