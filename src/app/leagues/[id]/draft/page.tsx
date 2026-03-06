@@ -25,6 +25,7 @@ interface Team {
   name: string
   user_id: string
   draft_position: number | null
+  auto_pick_enabled?: boolean
   profiles: { display_name: string | null; email: string } | null
 }
 
@@ -104,6 +105,9 @@ export default function DraftRoomPage() {
 
   // Draft queue (ordered watchlist with priorities)
   const [draftQueue, setDraftQueue] = useState<{ schoolId: string; priority: number }[]>([])
+
+  // Auto-pick toggle (user can enable to auto-pick when it's their turn)
+  const [autoPickEnabled, setAutoPickEnabled] = useState(false)
 
   // Fire-and-forget notification trigger for draft events
   const triggerNotification = useCallback((payload: {
@@ -304,7 +308,7 @@ export default function DraftRoomPage() {
         // Get teams
         const { data: teamsData } = await supabase
           .from('fantasy_teams')
-          .select('id, name, user_id, draft_position, profiles!fantasy_teams_user_id_fkey (display_name, email)')
+          .select('id, name, user_id, draft_position, auto_pick_enabled, profiles!fantasy_teams_user_id_fkey (display_name, email)')
           .eq('league_id', leagueId)
           .order('draft_position')
 
@@ -384,6 +388,20 @@ export default function DraftRoomPage() {
 
     loadData()
   }, [leagueId, router, supabase])
+
+  // Auto-disable auto-pick when user returns to the draft page
+  useEffect(() => {
+    if (!myTeam) return
+
+    // Disable auto-pick in DB when user opens the draft page
+    supabase
+      .from('fantasy_teams')
+      .update({ auto_pick_enabled: false })
+      .eq('id', myTeam.id)
+      .then(() => {
+        setAutoPickEnabled(false)
+      })
+  }, [myTeam?.id, supabase])
 
   // Subscribe to real-time updates
   useEffect(() => {
@@ -529,6 +547,19 @@ export default function DraftRoomPage() {
         setPicks(picksData as unknown as DraftPick[])
       }
 
+      // Refresh teams to pick up auto_pick_enabled changes
+      if (draftData?.status === 'in_progress') {
+        const { data: freshTeams } = await supabase
+          .from('fantasy_teams')
+          .select('id, name, user_id, draft_position, auto_pick_enabled, profiles!fantasy_teams_user_id_fkey (display_name, email)')
+          .eq('league_id', leagueId)
+          .order('draft_position')
+
+        if (freshTeams) {
+          setTeams(freshTeams as unknown as Team[])
+        }
+      }
+
       // Also refresh draft order if needed (for when commissioner starts draft)
       if (draftOrder.length === 0 && draftData?.status === 'in_progress') {
         const { data: orderData } = await supabase
@@ -612,6 +643,35 @@ export default function DraftRoomPage() {
       }
     }
   }, [timerExpired, draft?.id, draft?.current_pick, draft?.status, autoPickTriggered, leagueId, addToast])
+
+  // Immediate auto-pick when toggle is ON and it's my turn (no timer wait)
+  useEffect(() => {
+    if (!autoPickEnabled || !draft || draft.status !== 'in_progress') return
+    if (!isMyPick || autoPickTriggered) return
+
+    // Fire immediately — the server will skip timer check because auto_pick_enabled is true
+    const timeout = setTimeout(async () => {
+      setAutoPickTriggered(true)
+      try {
+        const res = await fetch(`/api/leagues/${leagueId}/draft/auto-pick`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            draftId: draft.id,
+            expectedPick: draft.current_pick,
+          }),
+        })
+        const data = await res.json()
+        if (data.success && data.pick) {
+          addToast(`Auto-pick: ${data.pick.schoolName} selected for ${data.pick.teamName}`, 'info')
+        }
+      } catch {
+        // Silent failure — polling will catch up
+      }
+    }, 1000) // 1-second delay to allow UI to render the turn change
+
+    return () => clearTimeout(timeout)
+  }, [autoPickEnabled, isMyPick, draft?.id, draft?.current_pick, draft?.status, autoPickTriggered, leagueId, addToast])
 
   // Close confirmation modal if it's no longer my turn (someone else picked)
   useEffect(() => {
@@ -1294,6 +1354,24 @@ export default function DraftRoomPage() {
     persistQueueOrder(renumbered)
   }
 
+  // Toggle auto-pick mode
+  const handleToggleAutoPick = async () => {
+    if (!myTeam) return
+    const newValue = !autoPickEnabled
+    setAutoPickEnabled(newValue)
+
+    await supabase
+      .from('fantasy_teams')
+      .update({ auto_pick_enabled: newValue })
+      .eq('id', myTeam.id)
+
+    if (newValue) {
+      addToast('Auto-pick enabled — picks will be made automatically when it\'s your turn', 'info')
+    } else {
+      addToast('Auto-pick disabled', 'info')
+    }
+  }
+
   // Get conference abbreviation
   const getConferenceAbbr = (conference: string) => {
     const abbrs: Record<string, string> = {
@@ -1351,6 +1429,12 @@ export default function DraftRoomPage() {
                   <span className={`text-sm md:text-lg font-bold truncate ${isMyPick ? 'text-success-text' : 'text-text-primary'}`}>
                     {currentTeam.name}
                   </span>
+                  {currentTeam.auto_pick_enabled && (
+                    <span className="flex items-center gap-0.5 text-[9px] px-1.5 py-0.5 rounded bg-brand/20 text-brand-text animate-pulse whitespace-nowrap">
+                      <span className="inline-block w-1.5 h-1.5 rounded-full bg-brand" />
+                      AUTO
+                    </span>
+                  )}
                   <span className="text-text-muted text-xs md:text-sm whitespace-nowrap">
                     R{draft.current_round} P{draft.current_pick}
                   </span>
@@ -1488,7 +1572,12 @@ export default function DraftRoomPage() {
                       : 'bg-surface text-text-secondary'
                   }`}
                 >
-                  <div className="font-medium">{slot.team.name}</div>
+                  <div className="font-medium flex items-center gap-1">
+                    {slot.team.name}
+                    {slot.team.auto_pick_enabled && (
+                      <span className="inline-block w-1.5 h-1.5 rounded-full bg-brand animate-pulse" title="Auto-pick on" />
+                    )}
+                  </div>
                   <div className="text-[10px] opacity-75">R{slot.round} P{slot.pickNumber}</div>
                 </div>
               )
@@ -1589,6 +1678,37 @@ export default function DraftRoomPage() {
           </div>
 
           <div className="flex-1 overflow-y-auto p-2">
+            {/* Auto-Pick Toggle */}
+            {draft?.status === 'in_progress' && myTeam && (
+              <div className="mb-2 border border-brand/30 rounded-lg overflow-hidden">
+                <div className="flex items-center justify-between px-3 py-2 bg-brand/10">
+                  <div className="flex items-center gap-2">
+                    <svg className="w-4 h-4 text-brand" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                    </svg>
+                    <span className="text-text-primary text-xs font-medium">Auto-Pick</span>
+                  </div>
+                  <button
+                    onClick={handleToggleAutoPick}
+                    className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
+                      autoPickEnabled ? 'bg-success' : 'bg-surface-subtle'
+                    }`}
+                  >
+                    <span
+                      className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${
+                        autoPickEnabled ? 'translate-x-[18px]' : 'translate-x-[3px]'
+                      }`}
+                    />
+                  </button>
+                </div>
+                {autoPickEnabled && (
+                  <div className="px-3 py-1.5 text-[10px] text-text-muted bg-brand/5">
+                    Picks will be made automatically from your queue or best available when it&apos;s your turn.
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* Draft Queue Panel - Ordered auto-pick list */}
             {draftQueue.length > 0 && (
               <div className="mb-2 border border-brand/30 rounded-lg overflow-hidden">
@@ -1997,7 +2117,7 @@ export default function DraftRoomPage() {
                     .filter(t => t.id !== myTeam?.id)
                     .sort((a, b) => (a.draft_position || 999) - (b.draft_position || 999))
                     .map(team => (
-                      <option key={team.id} value={team.id}>{team.name}</option>
+                      <option key={team.id} value={team.id}>{team.name}{team.auto_pick_enabled ? ' (Auto)' : ''}</option>
                     ))}
                 </select>
               </div>

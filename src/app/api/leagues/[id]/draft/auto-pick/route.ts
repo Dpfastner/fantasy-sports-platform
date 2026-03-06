@@ -55,17 +55,27 @@ export async function POST(
       return NextResponse.json({ skipped: true, reason: 'pick_already_advanced' })
     }
 
-    // Timer validation: only auto-pick if timer has actually expired
-    if (!draft.pick_deadline) {
-      return NextResponse.json({ skipped: true, reason: 'no_deadline' })
-    }
-
-    if (new Date(draft.pick_deadline) > new Date()) {
-      return NextResponse.json({ skipped: true, reason: 'timer_not_expired' })
-    }
-
     if (!draft.current_team_id) {
       return NextResponse.json({ skipped: true, reason: 'no_current_team' })
+    }
+
+    // Check if the current team has auto_pick_enabled (skip timer check if so)
+    const { data: currentTeamRow } = await supabase
+      .from('fantasy_teams')
+      .select('auto_pick_enabled')
+      .eq('id', draft.current_team_id)
+      .single()
+
+    const autoPickEnabled = currentTeamRow?.auto_pick_enabled === true
+
+    // Timer validation: only auto-pick if timer expired OR auto_pick_enabled
+    if (!autoPickEnabled) {
+      if (!draft.pick_deadline) {
+        return NextResponse.json({ skipped: true, reason: 'no_deadline' })
+      }
+      if (new Date(draft.pick_deadline) > new Date()) {
+        return NextResponse.json({ skipped: true, reason: 'timer_not_expired' })
+      }
     }
 
     // Fetch prerequisite data
@@ -123,6 +133,12 @@ export async function POST(
 
     if (!result) {
       // No school available — skip the pick (advance without inserting)
+      if (!autoPickEnabled) {
+        await supabase
+          .from('fantasy_teams')
+          .update({ auto_pick_enabled: true })
+          .eq('id', currentTeam.id)
+      }
       await advanceDraft(supabase, draft, draftOrder, settings.draft_timer_seconds)
       return NextResponse.json({
         success: true,
@@ -150,6 +166,15 @@ export async function POST(
         return NextResponse.json({ skipped: true, reason: 'pick_already_made' })
       }
       return NextResponse.json({ error: 'Failed to insert pick' }, { status: 500 })
+    }
+
+    // If this auto-pick was triggered by timer expiry (not by user toggle),
+    // enable auto_pick for this team so future picks are immediate
+    if (!autoPickEnabled) {
+      await supabase
+        .from('fantasy_teams')
+        .update({ auto_pick_enabled: true })
+        .eq('id', currentTeam.id)
     }
 
     // Add to roster
