@@ -642,15 +642,13 @@ export default async function TeamPage({ params }: PageProps) {
         </div>
 
         {/* Pending Trades */}
-        {tradesForComponent.length > 0 && (
-          <PendingTrades
-            trades={tradesForComponent}
-            myTeamId={team.id}
-            myTeamName={team.name}
-            leagueId={leagueId}
-            myRoster={myRosterForTrades}
-          />
-        )}
+        <PendingTrades
+          trades={tradesForComponent}
+          myTeamId={team.id}
+          myTeamName={team.name}
+          leagueId={leagueId}
+          myRoster={myRosterForTrades}
+        />
 
         {/* Roster Section */}
         <div className="bg-surface rounded-lg p-6 mb-8">

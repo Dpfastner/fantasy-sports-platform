@@ -73,6 +73,9 @@ interface LeagueData {
     show_announcements: boolean
     show_chat: boolean
     show_activity_feed: boolean
+    trades_enabled: boolean
+    trade_deadline: string | null
+    max_trades_per_season: number
   } | null
   drafts: {
     status: string
@@ -86,6 +89,7 @@ interface TeamData {
   total_points: number
   high_points_winnings: number
   add_drops_used: number
+  trades_used: number
   primary_color: string
   secondary_color: string
   image_url: string | null
@@ -162,7 +166,7 @@ export default async function LeaguePage({ params }: PageProps) {
   const { data: teamsData, error: teamsError } = await supabase
     .from('fantasy_teams')
     .select(`
-      id, name, user_id, total_points, high_points_winnings, add_drops_used,
+      id, name, user_id, total_points, high_points_winnings, add_drops_used, trades_used,
       primary_color, secondary_color, image_url,
       profiles!fantasy_teams_user_id_fkey(display_name, email)
     `)
@@ -644,6 +648,12 @@ export default async function LeaguePage({ params }: PageProps) {
                     <p className="text-lg font-bold text-text-primary">{userTeam.add_drops_used}/{settings?.max_add_drops_per_season || 50}</p>
                     <p className="text-text-secondary text-[10px] uppercase">Add/Drops</p>
                   </div>
+                  {settings?.trades_enabled && (
+                    <div className="bg-surface-inset rounded p-2">
+                      <p className="text-lg font-bold text-text-primary">{userTeam.trades_used || 0}/{settings.max_trades_per_season || 10}</p>
+                      <p className="text-text-secondary text-[10px] uppercase">Trades</p>
+                    </div>
+                  )}
                   {settings?.double_points_enabled && (
                     <div className="bg-surface-inset rounded p-2">
                       <p className="text-lg font-bold text-info-text">
@@ -706,6 +716,22 @@ export default async function LeaguePage({ params }: PageProps) {
                   <div className="flex justify-between">
                     <span className="text-text-secondary">Double Points</span>
                     <span className="text-info-text">Enabled</span>
+                  </div>
+                )}
+                <div className="flex justify-between">
+                  <span className="text-text-secondary">Add/Drops</span>
+                  <span className="text-text-primary">{settings?.max_add_drops_per_season || 50} per season</span>
+                </div>
+                {settings?.trades_enabled && (
+                  <div className="flex justify-between">
+                    <span className="text-text-secondary">Trades</span>
+                    <span className="text-text-primary">{settings.max_trades_per_season || 10} per season</span>
+                  </div>
+                )}
+                {settings?.trade_deadline && (
+                  <div className="flex justify-between">
+                    <span className="text-text-secondary">Trade Deadline</span>
+                    <span className="text-text-primary">{new Date(settings.trade_deadline + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
                   </div>
                 )}
               </div>

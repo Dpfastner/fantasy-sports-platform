@@ -61,7 +61,14 @@ export default function PendingTrades({
   const pendingTrades = trades.filter(t => t.status === 'proposed')
   const recentTrades = trades.filter(t => t.status !== 'proposed')
 
-  if (pendingTrades.length === 0 && recentTrades.length === 0) return null
+  if (pendingTrades.length === 0 && recentTrades.length === 0) {
+    return (
+      <div className="bg-surface rounded-lg p-4">
+        <h2 className="text-sm font-semibold text-text-secondary uppercase tracking-wide">Trade Offers</h2>
+        <p className="text-text-secondary text-sm mt-2">No pending trades. Visit another team&apos;s roster to propose a trade.</p>
+      </div>
+    )
+  }
 
   const getTimeRemaining = (expiresAt: string | null) => {
     if (!expiresAt) return null
