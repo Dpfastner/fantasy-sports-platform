@@ -147,8 +147,8 @@ export function AnnouncementsManager({
         </div>
       )}
 
-      {/* Announcements list (capped height, scrollable if >2 announcements) */}
-      <div className="max-h-[280px] overflow-y-auto">
+      {/* Announcements list (capped to ~2 visible, scrollable for more) */}
+      <div className="max-h-[200px] overflow-y-auto">
       {sortedAnnouncements.length > 0 ? (
         sortedAnnouncements.map(a => {
           const commName = commissionerNames[a.commissioner_id] || 'Commissioner'
