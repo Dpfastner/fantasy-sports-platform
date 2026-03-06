@@ -193,27 +193,13 @@ export default function TradeProposalModal({
           </button>
         </div>
 
-        {/* Counter-offer banner */}
-        {counterToTrade && (
-          <div className="mx-6 mt-4 bg-info/10 border border-info/30 rounded-lg p-4">
-            <p className="text-sm text-text-secondary mb-2">
-              <span className="font-semibold">Original offer from {counterToTrade.proposerTeamName}:</span>
+        {/* Counter-offer message */}
+        {counterToTrade?.message && (
+          <div className="mx-6 mt-4 bg-info/10 border border-info/30 rounded-lg px-4 py-3">
+            <p className="text-xs text-text-secondary">
+              <span className="font-semibold">Message from {counterToTrade.proposerTeamName}:</span>{' '}
+              <span className="italic">"{counterToTrade.message}"</span>
             </p>
-            <div className="flex flex-wrap gap-2 text-xs">
-              {counterToTrade.items.filter(i => i.teamId === counterToTrade.proposerTeamId && i.direction === 'giving').length > 0 && (
-                <span className="px-2 py-1 rounded bg-danger/20 text-danger-text">
-                  Offered: {counterToTrade.items.filter(i => i.teamId === counterToTrade.proposerTeamId && i.direction === 'giving').map(i => i.schoolName).join(', ')}
-                </span>
-              )}
-              {counterToTrade.items.filter(i => i.teamId !== counterToTrade.proposerTeamId && i.direction === 'giving').length > 0 && (
-                <span className="px-2 py-1 rounded bg-success/20 text-success-text">
-                  Wanted: {counterToTrade.items.filter(i => i.teamId !== counterToTrade.proposerTeamId && i.direction === 'giving').map(i => i.schoolName).join(', ')}
-                </span>
-              )}
-            </div>
-            {counterToTrade.message && (
-              <p className="text-xs text-text-muted mt-2 italic">"{counterToTrade.message}"</p>
-            )}
           </div>
         )}
 
@@ -221,6 +207,15 @@ export default function TradeProposalModal({
         <div className="grid md:grid-cols-2 gap-4 p-6">
           {/* Left: My Roster (giving away) */}
           <div>
+            {counterToTrade && (() => {
+              const wantedSchools = counterToTrade.items.filter(i => i.teamId !== counterToTrade.proposerTeamId && i.direction === 'giving')
+              return wantedSchools.length > 0 ? (
+                <div className="bg-danger/10 border border-danger/30 rounded-lg px-3 py-2 mb-3">
+                  <p className="text-[10px] uppercase tracking-wide text-text-muted font-semibold mb-1">Originally wanted from you</p>
+                  <p className="text-xs text-danger-text font-medium">{wantedSchools.map(i => i.schoolName).join(', ')}</p>
+                </div>
+              ) : null
+            })()}
             <h3 className="text-sm font-semibold text-danger-text mb-3 uppercase tracking-wide">
               Your Roster — Select to Give
             </h3>
@@ -268,6 +263,15 @@ export default function TradeProposalModal({
 
           {/* Right: Partner Roster (requesting) */}
           <div>
+            {counterToTrade && (() => {
+              const offeredSchools = counterToTrade.items.filter(i => i.teamId === counterToTrade.proposerTeamId && i.direction === 'giving')
+              return offeredSchools.length > 0 ? (
+                <div className="bg-success/10 border border-success/30 rounded-lg px-3 py-2 mb-3">
+                  <p className="text-[10px] uppercase tracking-wide text-text-muted font-semibold mb-1">Originally offered to you</p>
+                  <p className="text-xs text-success-text font-medium">{offeredSchools.map(i => i.schoolName).join(', ')}</p>
+                </div>
+              ) : null
+            })()}
             <h3 className="text-sm font-semibold text-success-text mb-3 uppercase tracking-wide">
               {partnerTeam.name}'s Roster — Select to Receive
             </h3>
