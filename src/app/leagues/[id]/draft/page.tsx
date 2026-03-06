@@ -5,7 +5,7 @@ import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { useToast } from '@/components/Toast'
-import { WatchlistStar } from '@/components/WatchlistStar'
+
 import { DraftChat } from '@/components/DraftChat'
 import { trackActivity } from '@/app/actions/activity'
 import { track } from '@vercel/analytics'
@@ -93,8 +93,6 @@ export default function DraftRoomPage() {
   const [showResetConfirm, setShowResetConfirm] = useState(false)
   const [mobileTab, setMobileTab] = useState<'schools' | 'history' | 'teams' | 'chat'>('schools')
   const [watchlistedSchoolIds, setWatchlistedSchoolIds] = useState<Set<string>>(new Set())
-  const [draftWatchlistExpanded, setDraftWatchlistExpanded] = useState(true)
-  const panelSchoolIdsRef = useRef<Set<string>>(new Set()) // Schools shown in panel (doesn't shrink on unstar)
 
   // Track if timer has expired (for showing warning)
   const [timerExpired, setTimerExpired] = useState(false)
@@ -203,19 +201,6 @@ export default function DraftRoomPage() {
     return myTeamPickCount >= maxSelectionsPerTeam
   }
 
-  const handleWatchlistToggle = useCallback((schoolId: string, watchlisted: boolean) => {
-    setWatchlistedSchoolIds(prev => {
-      const next = new Set(prev)
-      if (watchlisted) {
-        next.add(schoolId)
-        panelSchoolIdsRef.current.add(schoolId)
-      } else {
-        next.delete(schoolId)
-        panelSchoolIdsRef.current.delete(schoolId)
-      }
-      return next
-    })
-  }, [])
 
   // Filter schools into available and maxed-out categories
   const availableSchools = schools.filter(school => {
@@ -230,9 +215,6 @@ export default function DraftRoomPage() {
     if (!schoolMatchesFilters(school)) return false
     return isSchoolMaxedOut(school)
   }).sort((a, b) => a.name.localeCompare(b.name))
-
-  // Watchlisted schools for summary panel
-  const watchlistedSchools = schools.filter(s => watchlistedSchoolIds.has(s.id))
 
   // Get current team on the clock - derive from draftOrder for consistency with ticker
   const currentPickFromOrder = draftOrder.find(o => o.pick_number === draft?.current_pick)
@@ -336,9 +318,7 @@ export default function DraftRoomPage() {
           .eq('league_id', leagueId)
 
         if (watchlistData) {
-          const ids = new Set(watchlistData.map(w => w.school_id))
-          setWatchlistedSchoolIds(ids)
-          panelSchoolIdsRef.current = new Set(ids)
+          setWatchlistedSchoolIds(new Set(watchlistData.map(w => w.school_id)))
 
           // Populate draft queue from entries with non-null priority
           const queue = watchlistData
@@ -644,10 +624,15 @@ export default function DraftRoomPage() {
     }
   }, [timerExpired, draft?.id, draft?.current_pick, draft?.status, autoPickTriggered, leagueId, addToast])
 
-  // Immediate auto-pick when toggle is ON and it's my turn (no timer wait)
+  // Immediate auto-pick when the team on the clock has auto_pick_enabled
+  // Any connected client fires this — works for AFK users and self-toggle
   useEffect(() => {
-    if (!autoPickEnabled || !draft || draft.status !== 'in_progress') return
-    if (!isMyPick || autoPickTriggered) return
+    if (!draft || draft.status !== 'in_progress') return
+    if (autoPickTriggered) return
+
+    // Check if the current team on the clock has auto-pick enabled
+    const teamOnClock = teams.find(t => t.id === draft.current_team_id)
+    if (!teamOnClock?.auto_pick_enabled) return
 
     // Fire immediately — the server will skip timer check because auto_pick_enabled is true
     const timeout = setTimeout(async () => {
@@ -671,7 +656,7 @@ export default function DraftRoomPage() {
     }, 1000) // 1-second delay to allow UI to render the turn change
 
     return () => clearTimeout(timeout)
-  }, [autoPickEnabled, isMyPick, draft?.id, draft?.current_pick, draft?.status, autoPickTriggered, leagueId, addToast])
+  }, [draft?.id, draft?.current_pick, draft?.current_team_id, draft?.status, autoPickTriggered, teams, leagueId, addToast])
 
   // Close confirmation modal if it's no longer my turn (someone else picked)
   useEffect(() => {
@@ -1360,6 +1345,11 @@ export default function DraftRoomPage() {
     const newValue = !autoPickEnabled
     setAutoPickEnabled(newValue)
 
+    // Update local teams state immediately so the auto-pick trigger sees it
+    setTeams(prev => prev.map(t =>
+      t.id === myTeam.id ? { ...t, auto_pick_enabled: newValue } : t
+    ))
+
     await supabase
       .from('fantasy_teams')
       .update({ auto_pick_enabled: newValue })
@@ -1786,92 +1776,6 @@ export default function DraftRoomPage() {
               </div>
             )}
 
-            {/* Watchlist Panel */}
-            {watchlistedSchools.length > 0 && (
-              <div className="mb-2 border border-warning/30 rounded-lg overflow-hidden">
-                <button
-                  onClick={() => setDraftWatchlistExpanded(!draftWatchlistExpanded)}
-                  className="w-full flex items-center justify-between px-2 py-1.5 bg-warning/10 text-xs"
-                >
-                  <span className="text-text-primary font-medium flex items-center gap-1">
-                    <svg className="w-3.5 h-3.5 text-warning" fill="currentColor" viewBox="0 0 24 24">
-                      <path d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
-                    </svg>
-                    Watchlist ({watchlistedSchools.length})
-                  </span>
-                  <svg className={`w-3.5 h-3.5 text-text-muted transition-transform ${draftWatchlistExpanded ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </svg>
-                </button>
-                {draftWatchlistExpanded && (
-                  <div className="space-y-1 p-1.5 max-h-40 overflow-y-auto">
-                    {watchlistedSchools.map(school => {
-                      const globalPickCount = schoolPickCounts[school.id] || 0
-                      const isMaxed = !isUnlimitedTotal && globalPickCount >= maxSelectionsTotal
-                      const isOnMyTeam = isSchoolOnMyTeam(school)
-                      const canPick = isMyPick && draft?.status === 'in_progress' && !isMaxed && !isOnMyTeam
-                      return (
-                        <div
-                          key={school.id}
-                          onClick={() => canPick && handleSelectSchool(school)}
-                          className={`flex items-center justify-between p-1.5 rounded-lg transition-colors ${
-                            isMaxed || isOnMyTeam ? 'opacity-40' : canPick ? 'cursor-pointer hover:bg-warning/10' : ''
-                          }`}
-                        >
-                          <div className="flex items-center gap-2">
-                            <WatchlistStar
-                              schoolId={school.id}
-                              leagueId={leagueId as string}
-                              initialWatchlisted={watchlistedSchoolIds.has(school.id)}
-                              size="sm"
-                              onToggle={handleWatchlistToggle}
-                            />
-                            {school.logo_url ? (
-                              <img src={school.logo_url} alt="" className="w-6 h-6 rounded-full bg-text-primary p-0.5" />
-                            ) : (
-                              <div
-                                className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold"
-                                style={{ backgroundColor: school.primary_color, color: school.secondary_color }}
-                              >
-                                {school.abbreviation?.slice(0, 2) || school.name.slice(0, 2)}
-                              </div>
-                            )}
-                            <div>
-                              <span className="text-text-primary text-xs font-medium">{school.name}</span>
-                              <div className="text-[10px] text-text-muted">{school.conference}</div>
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-1.5">
-                            {draftQueue.some(q => q.schoolId === school.id) ? (
-                              <span className="text-[9px] px-1.5 py-0.5 rounded bg-brand/20 text-brand-text font-medium">
-                                #{draftQueue.findIndex(q => q.schoolId === school.id) + 1}
-                              </span>
-                            ) : (
-                              <button
-                                onClick={(e) => { e.stopPropagation(); handleAddToQueue(school.id) }}
-                                className="text-[10px] px-1.5 py-0.5 rounded bg-brand/10 text-brand-text hover:bg-brand/20 transition-colors"
-                                title="Add to draft queue"
-                              >
-                                + Queue
-                              </button>
-                            )}
-                            {isMaxed && (
-                              <span className="text-[10px] px-1.5 py-0.5 rounded-full font-medium bg-danger/20 text-danger-text">
-                                Unavailable
-                              </span>
-                            )}
-                            <span className="text-xs px-1.5 py-0.5 rounded bg-surface-subtle text-text-secondary">
-                              {globalPickCount}/{maxSelectionsTotal}
-                            </span>
-                          </div>
-                        </div>
-                      )
-                    })}
-                  </div>
-                )}
-              </div>
-            )}
-
             <div className="space-y-1">
               {availableSchools.map(school => {
                 const globalPickCount = schoolPickCounts[school.id] || 0
@@ -1881,8 +1785,8 @@ export default function DraftRoomPage() {
                     key={school.id}
                     className={`w-full p-2 rounded text-left transition-colors ${
                       isMyPick && draft?.status === 'in_progress'
-                        ? 'hover:ring-2 hover:ring-brand cursor-pointer'
-                        : 'cursor-not-allowed opacity-60'
+                        ? 'hover:ring-2 hover:ring-brand'
+                        : ''
                     }`}
                     style={{
                       backgroundColor: school.primary_color,
@@ -1890,13 +1794,6 @@ export default function DraftRoomPage() {
                     }}
                   >
                     <div className="flex items-center gap-2">
-                      <WatchlistStar
-                        schoolId={school.id}
-                        leagueId={leagueId as string}
-                        initialWatchlisted={watchlistedSchoolIds.has(school.id)}
-                        size="sm"
-                        onToggle={handleWatchlistToggle}
-                      />
                       <button
                         onClick={() => handleSelectSchool(school)}
                         disabled={!isMyPick || draft?.status !== 'in_progress'}
@@ -1920,13 +1817,36 @@ export default function DraftRoomPage() {
                         <div className="font-bold text-sm truncate">{school.name}</div>
                         <div className="text-xs opacity-75">{school.conference}</div>
                       </div>
-                      <div
-                        className="text-xs px-1.5 py-0.5 rounded"
-                        style={{ backgroundColor: school.secondary_color, color: school.primary_color }}
-                      >
-                        {globalPickCount}/{maxSelectionsTotal}
-                      </div>
                       </button>
+                      <div className="flex items-center gap-1 shrink-0">
+                        {draftQueue.some(q => q.schoolId === school.id) ? (
+                          <span className="text-[9px] px-1.5 py-0.5 rounded bg-black/20 font-medium">
+                            #{draftQueue.findIndex(q => q.schoolId === school.id) + 1}
+                          </span>
+                        ) : (
+                          <button
+                            onClick={(e) => { e.stopPropagation(); handleAddToQueue(school.id) }}
+                            className="text-[9px] px-1.5 py-0.5 rounded bg-black/20 hover:bg-black/30 transition-colors"
+                            title="Add to draft queue"
+                          >
+                            + Queue
+                          </button>
+                        )}
+                        <div
+                          className="text-xs px-1.5 py-0.5 rounded"
+                          style={{ backgroundColor: school.secondary_color, color: school.primary_color }}
+                        >
+                          {globalPickCount}/{maxSelectionsTotal}
+                        </div>
+                        {isMyPick && draft?.status === 'in_progress' && (
+                          <button
+                            onClick={() => handleSelectSchool(school)}
+                            className="text-[10px] px-2 py-1 rounded font-bold bg-white/90 text-green-800 hover:bg-white transition-colors"
+                          >
+                            Draft
+                          </button>
+                        )}
+                      </div>
                     </div>
                   </div>
                 )
