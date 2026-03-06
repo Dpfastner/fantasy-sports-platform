@@ -115,6 +115,12 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Failed to reset draft: ' + draftError.message }, { status: 500 })
     }
 
+    // Reset auto-pick for all teams in the league
+    await supabaseAdmin
+      .from('fantasy_teams')
+      .update({ auto_pick_enabled: false })
+      .eq('league_id', leagueId)
+
     // Reset team draft positions (optional - they can re-randomize)
     // We'll leave draft_position intact so manual order is preserved
 

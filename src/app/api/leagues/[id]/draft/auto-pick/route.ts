@@ -8,6 +8,31 @@ import { selectAutoPickSchool, type AutoPickContext } from '@/lib/draft/auto-pic
 
 const limiter = createRateLimiter({ windowMs: 60_000, max: 10 })
 
+// Reset auto_pick_enabled for all teams in a league (used on draft start/reset)
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id: leagueId } = await params
+
+    const authResult = await requireAuth()
+    if (authResult instanceof NextResponse) return authResult
+
+    const supabase = createAdminClient()
+
+    await supabase
+      .from('fantasy_teams')
+      .update({ auto_pick_enabled: false })
+      .eq('league_id', leagueId)
+
+    return NextResponse.json({ success: true })
+  } catch (error) {
+    console.error('Reset auto-pick error:', error)
+    return NextResponse.json({ error: 'Failed to reset auto-pick' }, { status: 500 })
+  }
+}
+
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }

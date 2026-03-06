@@ -799,13 +799,8 @@ export default function DraftRoomPage() {
         return
       }
 
-      // Reset auto-pick for all teams before starting
-      await supabase
-        .from('fantasy_teams')
-        .update({ auto_pick_enabled: false })
-        .eq('league_id', leagueId)
-
-      // Update local teams state
+      // Reset auto-pick for all teams before starting (server-side to bypass RLS)
+      await fetch(`/api/leagues/${leagueId}/draft/auto-pick`, { method: 'DELETE' })
       setTeams(prev => prev.map(t => ({ ...t, auto_pick_enabled: false })))
       setAutoPickEnabled(false)
 
@@ -1245,12 +1240,7 @@ export default function DraftRoomPage() {
       setAutoPickEnabled(false)
       setAutoPickTriggered(false)
 
-      // Reset auto-pick for all teams
-      await supabase
-        .from('fantasy_teams')
-        .update({ auto_pick_enabled: false })
-        .eq('league_id', leagueId)
-
+      // Reset auto-pick local state (server-side reset handled by /api/drafts/reset)
       setTeams(prev => prev.map(t => ({ ...t, auto_pick_enabled: false })))
 
     } catch (err) {
