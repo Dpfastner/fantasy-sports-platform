@@ -103,6 +103,42 @@ export async function POST(
       return NextResponse.json({ error: 'The other team has reached their trade limit for the season' }, { status: 400 })
     }
 
+    // Block same-school-for-same-school trades (e.g. trading Georgia for Georgia)
+    const overlap = giving.filter(id => receiving.includes(id))
+    if (overlap.length > 0) {
+      return NextResponse.json({ error: 'Cannot trade a school for the same school' }, { status: 400 })
+    }
+
+    // Check that receiving schools are not already on proposer's active roster
+    for (const schoolId of receiving) {
+      const { data: alreadyOnRoster } = await supabase
+        .from('roster_periods')
+        .select('id')
+        .eq('fantasy_team_id', myTeam.id)
+        .eq('school_id', schoolId)
+        .is('end_week', null)
+        .maybeSingle()
+
+      if (alreadyOnRoster) {
+        return NextResponse.json({ error: 'You already have one of the requested schools on your roster' }, { status: 400 })
+      }
+    }
+
+    // Check that giving schools are not already on receiver's active roster
+    for (const schoolId of giving) {
+      const { data: alreadyOnRoster } = await supabase
+        .from('roster_periods')
+        .select('id')
+        .eq('fantasy_team_id', receiverTeam.id)
+        .eq('school_id', schoolId)
+        .is('end_week', null)
+        .maybeSingle()
+
+      if (alreadyOnRoster) {
+        return NextResponse.json({ error: 'The other team already has one of the schools you are offering' }, { status: 400 })
+      }
+    }
+
     // Verify giving schools are on user's active roster
     for (const schoolId of giving) {
       const { data: rp } = await supabase

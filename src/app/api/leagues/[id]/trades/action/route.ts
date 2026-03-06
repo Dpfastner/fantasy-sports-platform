@@ -101,6 +101,37 @@ export async function POST(
         }
       }
 
+      // Verify no duplicate schools will result from the trade
+      // Schools the proposer will receive (currently on receiver's roster, direction = 'giving' by receiver)
+      const schoolsGoingToProposer = items.filter(i => i.team_id === receiverTeam.id && i.direction === 'giving').map(i => i.school_id)
+      const schoolsGoingToReceiver = items.filter(i => i.team_id === proposerTeam.id && i.direction === 'giving').map(i => i.school_id)
+
+      for (const schoolId of schoolsGoingToProposer) {
+        const { data: dup } = await supabase
+          .from('roster_periods')
+          .select('id')
+          .eq('fantasy_team_id', proposerTeam.id)
+          .eq('school_id', schoolId)
+          .is('end_week', null)
+          .maybeSingle()
+        if (dup && !schoolsGoingToReceiver.includes(schoolId)) {
+          return NextResponse.json({ error: 'Trade would result in duplicate schools on a roster. It can no longer be completed.' }, { status: 400 })
+        }
+      }
+
+      for (const schoolId of schoolsGoingToReceiver) {
+        const { data: dup } = await supabase
+          .from('roster_periods')
+          .select('id')
+          .eq('fantasy_team_id', receiverTeam.id)
+          .eq('school_id', schoolId)
+          .is('end_week', null)
+          .maybeSingle()
+        if (dup && !schoolsGoingToProposer.includes(schoolId)) {
+          return NextResponse.json({ error: 'Trade would result in duplicate schools on a roster. It can no longer be completed.' }, { status: 400 })
+        }
+      }
+
       // Check for uneven trade — receiver needs to drop schools
       const receiverGiving = items.filter(i => i.team_id === receiverTeam.id && i.direction === 'giving').length
       const receiverReceiving = items.filter(i => i.team_id === proposerTeam.id && i.direction === 'giving').length

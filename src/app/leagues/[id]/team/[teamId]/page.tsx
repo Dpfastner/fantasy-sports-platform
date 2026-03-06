@@ -2,15 +2,12 @@ import { redirect, notFound } from 'next/navigation'
 import Link from 'next/link'
 import { createClient, createAdminClient } from '@/lib/supabase/server'
 import { Header } from '@/components/Header'
+import { RosterList } from '@/components/RosterList'
 import ProposeTradeButton from '@/components/ProposeTradeButton'
 import { getLeagueYear } from '@/lib/league-helpers'
-import { getCurrentWeek } from '@/lib/week'
+import { getCurrentWeek, getSimulatedDate } from '@/lib/week'
+import { getEnvironment } from '@/lib/env'
 import { calculateSchoolGamePoints, DEFAULT_SCORING } from '@/lib/points/calculator'
-import {
-  REGULAR_WEEK_COUNT,
-  SCHEDULE_WEEK_LABELS,
-  ROSTER_SPECIAL_COLUMNS,
-} from '@/lib/constants/season'
 
 export const dynamic = 'force-dynamic'
 
@@ -39,6 +36,7 @@ interface Game {
   id: string
   week_number: number
   game_date: string
+  game_time: string | null
   status: string
   home_school_id: string | null
   away_school_id: string | null
@@ -46,6 +44,13 @@ interface Game {
   away_score: number | null
   home_rank: number | null
   away_rank: number | null
+  home_team_name: string | null
+  away_team_name: string | null
+  home_team_logo_url: string | null
+  away_team_logo_url: string | null
+  quarter: string | null
+  clock: string | null
+  is_conference_game?: boolean
   is_bowl_game: boolean
   is_playoff_game: boolean
   playoff_round: string | null
@@ -55,6 +60,13 @@ interface SchoolPoints {
   school_id: string
   week_number: number
   total_points: number
+  game_id: string | null
+  base_points: number
+  conference_bonus: number
+  over_50_bonus: number
+  shutout_bonus: number
+  ranked_25_bonus: number
+  ranked_10_bonus: number
 }
 
 export default async function TeamViewPage({ params }: PageProps) {
@@ -115,8 +127,10 @@ export default async function TeamViewPage({ params }: PageProps) {
 
   const year = getLeagueYear(league.seasons)
   const currentWeek = await getCurrentWeek(year)
+  const simulatedDate = await getSimulatedDate(year)
+  const environment = getEnvironment()
 
-  // Get league settings for scoring
+  // Get league settings
   const { data: settings } = await adminDb
     .from('league_settings')
     .select(`
@@ -131,6 +145,8 @@ export default async function TeamViewPage({ params }: PageProps) {
       points_conference_championship_win,
       points_conference_championship_loss,
       points_heisman_winner,
+      double_points_enabled,
+      max_double_picks_per_season,
       trades_enabled,
       trade_deadline,
       max_trades_per_season
@@ -171,20 +187,34 @@ export default async function TeamViewPage({ params }: PageProps) {
   const mySchoolIds = myRoster?.map(r => r.school_id) || []
   const allSchoolIds = [...new Set([...schoolIds, ...mySchoolIds])]
 
-  // Get all games for roster schools (both teams for trade modal)
+  // Get all games for roster schools (full data for RosterList)
   let gamesData: Game[] = []
-  if (allSchoolIds.length > 0) {
+  if (schoolIds.length > 0) {
     const { data } = await adminDb
       .from('games')
-      .select('id, week_number, game_date, status, home_school_id, away_school_id, home_score, away_score, home_rank, away_rank, is_bowl_game, is_playoff_game, playoff_round')
+      .select('*')
       .eq('season_id', league.season_id)
-      .or(`home_school_id.in.(${allSchoolIds.join(',')}),away_school_id.in.(${allSchoolIds.join(',')})`)
+      .or(`home_school_id.in.(${schoolIds.join(',')}),away_school_id.in.(${schoolIds.join(',')})`)
     gamesData = (data || []) as Game[]
+  }
+
+  // Also fetch games for trade modal (my schools)
+  let allGamesData = [...gamesData]
+  if (mySchoolIds.length > 0) {
+    const myOnlySchoolIds = mySchoolIds.filter(id => !schoolIds.includes(id))
+    if (myOnlySchoolIds.length > 0) {
+      const { data } = await adminDb
+        .from('games')
+        .select('*')
+        .eq('season_id', league.season_id)
+        .or(`home_school_id.in.(${myOnlySchoolIds.join(',')}),away_school_id.in.(${myOnlySchoolIds.join(',')})`)
+      allGamesData = [...allGamesData, ...(data || []) as Game[]]
+    }
   }
 
   // Fetch conferences for conference game detection
   const gameSchoolIds = new Set<string>()
-  for (const game of gamesData) {
+  for (const game of allGamesData) {
     if (game.home_school_id) gameSchoolIds.add(game.home_school_id)
     if (game.away_school_id) gameSchoolIds.add(game.away_school_id)
   }
@@ -215,9 +245,9 @@ export default async function TeamViewPage({ params }: PageProps) {
     points_ranked_10_loss: Number(settings.points_ranked_10_loss),
   } : DEFAULT_SCORING
 
-  // Compute league-specific school points
+  // Compute league-specific school points (full breakdown for RosterList)
   const computedPoints: SchoolPoints[] = []
-  for (const game of gamesData) {
+  for (const game of allGamesData) {
     if (game.status !== 'completed') continue
     if (game.week_number > currentWeek && game.week_number <= 16) continue
 
@@ -250,6 +280,13 @@ export default async function TeamViewPage({ params }: PageProps) {
         school_id: pts.schoolId,
         week_number: pts.weekNumber,
         total_points: pts.totalPoints,
+        game_id: pts.gameId,
+        base_points: pts.basePoints,
+        conference_bonus: pts.conferenceBonus,
+        over_50_bonus: pts.over50Bonus,
+        shutout_bonus: pts.shutoutBonus,
+        ranked_25_bonus: pts.ranked25Bonus,
+        ranked_10_bonus: pts.ranked10Bonus,
       })
     }
 
@@ -260,29 +297,98 @@ export default async function TeamViewPage({ params }: PageProps) {
         school_id: pts.schoolId,
         week_number: pts.weekNumber,
         total_points: pts.totalPoints,
+        game_id: pts.gameId,
+        base_points: pts.basePoints,
+        conference_bonus: pts.conferenceBonus,
+        over_50_bonus: pts.over50Bonus,
+        shutout_bonus: pts.shutoutBonus,
+        ranked_25_bonus: pts.ranked25Bonus,
+        ranked_10_bonus: pts.ranked10Bonus,
       })
     }
   }
 
-  // W-L records (both teams' schools for trade modal)
-  const schoolRecordsMap = new Map<string, { wins: number; losses: number; confWins: number; confLosses: number }>()
+  // Split points for this team's roster only (for RosterList)
+  const schoolPoints = computedPoints.filter(p => schoolIds.includes(p.school_id))
+
+  // W-L records for this team's roster
+  const schoolRecordsMap = new Map<string, { wins: number; losses: number }>()
   for (const game of gamesData) {
+    if (game.status !== 'completed' || game.home_score === null || game.away_score === null) continue
+    const homeWon = game.home_score > game.away_score
+    if (game.home_school_id && schoolIds.includes(game.home_school_id)) {
+      const r = schoolRecordsMap.get(game.home_school_id) || { wins: 0, losses: 0 }
+      if (homeWon) r.wins++; else r.losses++
+      schoolRecordsMap.set(game.home_school_id, r)
+    }
+    if (game.away_school_id && schoolIds.includes(game.away_school_id)) {
+      const r = schoolRecordsMap.get(game.away_school_id) || { wins: 0, losses: 0 }
+      if (!homeWon) r.wins++; else r.losses++
+      schoolRecordsMap.set(game.away_school_id, r)
+    }
+  }
+
+  // Extended records for trade modal (both teams, with conference records)
+  const tradeRecordsMap = new Map<string, { wins: number; losses: number; confWins: number; confLosses: number }>()
+  for (const game of allGamesData) {
     if (game.status !== 'completed' || game.home_score === null || game.away_score === null) continue
     const homeWon = game.home_score > game.away_score
     const hConf = game.home_school_id ? conferenceMap.get(game.home_school_id) : null
     const aConf = game.away_school_id ? conferenceMap.get(game.away_school_id) : null
     const isConf = !!(hConf && aConf && hConf === aConf)
     if (game.home_school_id && allSchoolIds.includes(game.home_school_id)) {
-      const r = schoolRecordsMap.get(game.home_school_id) || { wins: 0, losses: 0, confWins: 0, confLosses: 0 }
+      const r = tradeRecordsMap.get(game.home_school_id) || { wins: 0, losses: 0, confWins: 0, confLosses: 0 }
       if (homeWon) { r.wins++; if (isConf) r.confWins++ } else { r.losses++; if (isConf) r.confLosses++ }
-      schoolRecordsMap.set(game.home_school_id, r)
+      tradeRecordsMap.set(game.home_school_id, r)
     }
     if (game.away_school_id && allSchoolIds.includes(game.away_school_id)) {
-      const r = schoolRecordsMap.get(game.away_school_id) || { wins: 0, losses: 0, confWins: 0, confLosses: 0 }
+      const r = tradeRecordsMap.get(game.away_school_id) || { wins: 0, losses: 0, confWins: 0, confLosses: 0 }
       if (!homeWon) { r.wins++; if (isConf) r.confWins++ } else { r.losses++; if (isConf) r.confLosses++ }
-      schoolRecordsMap.set(game.away_school_id, r)
+      tradeRecordsMap.set(game.away_school_id, r)
     }
   }
+
+  // Get opponent schools for RosterList (schools that play against roster schools)
+  const opponentSchoolIds = new Set<string>()
+  for (const game of gamesData) {
+    if (game.home_school_id && !schoolIds.includes(game.home_school_id)) {
+      opponentSchoolIds.add(game.home_school_id)
+    }
+    if (game.away_school_id && !schoolIds.includes(game.away_school_id)) {
+      opponentSchoolIds.add(game.away_school_id)
+    }
+  }
+  let opponentSchools: { id: string; name: string; abbreviation: string | null; logo_url: string | null; conference: string }[] = []
+  if (opponentSchoolIds.size > 0) {
+    const { data: oppData } = await adminDb
+      .from('schools')
+      .select('id, name, abbreviation, logo_url, conference')
+      .in('id', Array.from(opponentSchoolIds))
+    opponentSchools = oppData || []
+  }
+
+  // Fetch double picks for this team
+  const { data: doublePicksData } = await adminDb
+    .from('weekly_double_picks')
+    .select('week_number, school_id')
+    .eq('fantasy_team_id', teamId)
+  const doublePicks = (doublePicksData || []) as { week_number: number; school_id: string }[]
+
+  // Fetch event bonuses
+  const { data: eventBonusesData } = await adminDb
+    .from('league_school_event_bonuses')
+    .select('school_id, week_number, bonus_type, points')
+    .eq('league_id', leagueId)
+    .eq('season_id', league.season_id)
+    .in('school_id', schoolIds.length > 0 ? schoolIds : ['none'])
+    .or(`week_number.lte.${currentWeek},week_number.gte.17`)
+
+  const eventBonuses = (eventBonusesData || []) as {
+    school_id: string
+    week_number: number
+    bonus_type: string
+    points: number
+  }[]
 
   // Get current AP rankings for trade modal
   let { data: rankingsData } = await adminDb
@@ -339,7 +445,7 @@ export default async function TeamViewPage({ params }: PageProps) {
   })) || []
 
   const schoolRecordsForModal: Record<string, { wins: number; losses: number; confWins: number; confLosses: number }> = {}
-  for (const [id, rec] of schoolRecordsMap) {
+  for (const [id, rec] of tradeRecordsMap) {
     schoolRecordsForModal[id] = rec
   }
 
@@ -356,10 +462,6 @@ export default async function TeamViewPage({ params }: PageProps) {
   const ownerName = (team.profiles as { display_name: string | null; email: string } | null)?.display_name
     || (team.profiles as { display_name: string | null; email: string } | null)?.email?.split('@')[0]
     || 'Unknown'
-
-  // Build week columns
-  const regularWeeks = Array.from({ length: REGULAR_WEEK_COUNT + 1 }, (_, i) => i)
-  const specialWeeks = ROSTER_SPECIAL_COLUMNS.map(c => c.week)
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gradient-from to-gradient-to">
@@ -451,103 +553,47 @@ export default async function TeamViewPage({ params }: PageProps) {
           </div>
         </div>
 
-        {/* Roster */}
-        <div className="bg-surface rounded-lg p-6">
+        {/* Roster Section - using same RosterList component as own team page */}
+        <div className="bg-surface rounded-lg p-6 mb-8">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-semibold text-text-primary">Roster</h2>
+            <h2 className="text-xl font-semibold text-text-primary">{team.name}&apos;s Roster</h2>
             <span className="text-text-secondary text-sm">Week {currentWeek}</span>
           </div>
 
           {roster && roster.length > 0 ? (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-border text-text-muted text-xs uppercase tracking-wide">
-                    <th className="py-2 px-2 text-left w-8">#</th>
-                    <th className="py-2 px-2 text-left">School</th>
-                    <th className="py-2 px-2 text-center">Record</th>
-                    <th className="py-2 px-2 text-right">Total</th>
-                    {regularWeeks.map(w => (
-                      <th key={w} className="py-2 px-1 text-center min-w-[36px]">
-                        {SCHEDULE_WEEK_LABELS?.[w] || `W${w}`}
-                      </th>
-                    ))}
-                    {specialWeeks.map(w => {
-                      const col = ROSTER_SPECIAL_COLUMNS.find(c => c.week === w)
-                      return (
-                        <th key={w} className="py-2 px-1 text-center min-w-[36px]">
-                          {col?.label || `W${w}`}
-                        </th>
-                      )
-                    })}
-                  </tr>
-                </thead>
-                <tbody>
-                  {roster.map((slot, idx) => {
-                    const school = slot.schools
-                    const record = schoolRecordsMap.get(slot.school_id)
-                    const schoolPts = computedPoints.filter(p => p.school_id === slot.school_id)
-                    const total = schoolPts.reduce((s, p) => s + p.total_points, 0)
-
-                    return (
-                      <tr key={slot.id} className="border-b border-surface-subtle hover:bg-surface-subtle/50">
-                        <td className="py-3 px-2 text-text-muted">{idx + 1}</td>
-                        <td className="py-3 px-2">
-                          <div className="flex items-center gap-2">
-                            {school.logo_url ? (
-                              <img src={school.logo_url} alt={school.name} className="w-6 h-6 object-contain" />
-                            ) : (
-                              <div
-                                className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold"
-                                style={{ backgroundColor: school.primary_color }}
-                              >
-                                {school.abbreviation || school.name.substring(0, 2)}
-                              </div>
-                            )}
-                            <div>
-                              <p className="text-text-primary font-medium">{school.name}</p>
-                              <p className="text-text-muted text-[10px]">{school.conference}</p>
-                            </div>
-                          </div>
-                        </td>
-                        <td className="py-3 px-2 text-center text-text-secondary">
-                          {record ? `${record.wins}-${record.losses}` : '-'}
-                        </td>
-                        <td className="py-3 px-2 text-right font-bold text-text-primary">{total}</td>
-                        {regularWeeks.map(w => {
-                          const wp = schoolPts.find(p => p.week_number === w)
-                          return (
-                            <td key={w} className="py-3 px-1 text-center text-xs">
-                              {wp ? (
-                                <span className={wp.total_points > 0 ? 'text-success-text' : wp.total_points < 0 ? 'text-danger-text' : 'text-text-muted'}>
-                                  {wp.total_points}
-                                </span>
-                              ) : (
-                                <span className="text-text-muted">-</span>
-                              )}
-                            </td>
-                          )
-                        })}
-                        {specialWeeks.map(w => {
-                          const wp = schoolPts.find(p => p.week_number === w)
-                          return (
-                            <td key={w} className="py-3 px-1 text-center text-xs">
-                              {wp ? (
-                                <span className={wp.total_points > 0 ? 'text-success-text' : wp.total_points < 0 ? 'text-danger-text' : 'text-text-muted'}>
-                                  {wp.total_points}
-                                </span>
-                              ) : (
-                                <span className="text-text-muted">-</span>
-                              )}
-                            </td>
-                          )
-                        })}
-                      </tr>
-                    )
-                  })}
-                </tbody>
-              </table>
-            </div>
+            <RosterList
+              roster={roster.map(r => ({
+                id: r.id,
+                school_id: r.school_id,
+                slot_number: r.slot_number,
+                start_week: r.start_week,
+                schools: r.schools,
+              }))}
+              games={gamesData}
+              schoolPoints={schoolPoints}
+              schoolRecordsMap={Object.fromEntries(schoolRecordsMap)}
+              currentWeek={currentWeek}
+              teamId={teamId}
+              seasonId={league.season_id}
+              doublePointsEnabled={settings?.double_points_enabled || false}
+              maxDoublePicksPerSeason={settings?.max_double_picks_per_season || 0}
+              opponentSchools={opponentSchools}
+              doublePicks={doublePicks}
+              environment={environment}
+              simulatedDateISO={simulatedDate.toISOString()}
+              specialEventSettings={{
+                bowlAppearance: settings?.points_bowl_appearance || 0,
+                playoffFirstRound: settings?.points_playoff_first_round || 0,
+                playoffQuarterfinal: settings?.points_playoff_quarterfinal || 0,
+                playoffSemifinal: settings?.points_playoff_semifinal || 0,
+                championshipWin: settings?.points_championship_win || 0,
+                championshipLoss: settings?.points_championship_loss || 0,
+                confChampWin: settings?.points_conference_championship_win || 0,
+                confChampLoss: settings?.points_conference_championship_loss || 0,
+                heismanWinner: settings?.points_heisman_winner || 0,
+              }}
+              eventBonuses={eventBonuses}
+            />
           ) : (
             <p className="text-text-muted">This team hasn&apos;t drafted yet.</p>
           )}
