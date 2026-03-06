@@ -35,6 +35,7 @@ interface DraftPick {
   fantasy_team_id: string
   school_id: string
   picked_at: string
+  is_auto_pick?: boolean
   schools: School
   fantasy_teams: { name: string }
 }
@@ -96,6 +97,13 @@ export default function DraftRoomPage() {
 
   // Track if timer has expired (for showing warning)
   const [timerExpired, setTimerExpired] = useState(false)
+
+  // Auto-pick state
+  const [autoPickTriggered, setAutoPickTriggered] = useState(false)
+  const autoPickTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+
+  // Draft queue (ordered watchlist with priorities)
+  const [draftQueue, setDraftQueue] = useState<{ schoolId: string; priority: number }[]>([])
 
   // Fire-and-forget notification trigger for draft events
   const triggerNotification = useCallback((payload: {
@@ -316,10 +324,10 @@ export default function DraftRoomPage() {
           setSchools(schoolsData as School[])
         }
 
-        // Get user's watchlist for this league
+        // Get user's watchlist for this league (including priority for draft queue)
         const { data: watchlistData } = await supabase
           .from('watchlists')
-          .select('school_id')
+          .select('school_id, priority')
           .eq('user_id', authUser.id)
           .eq('league_id', leagueId)
 
@@ -327,6 +335,13 @@ export default function DraftRoomPage() {
           const ids = new Set(watchlistData.map(w => w.school_id))
           setWatchlistedSchoolIds(ids)
           panelSchoolIdsRef.current = new Set(ids)
+
+          // Populate draft queue from entries with non-null priority
+          const queue = watchlistData
+            .filter((w): w is typeof w & { priority: number } => w.priority !== null)
+            .sort((a, b) => a.priority - b.priority)
+            .map(w => ({ schoolId: w.school_id, priority: w.priority }))
+          setDraftQueue(queue)
         }
 
         // Get draft order
@@ -347,7 +362,7 @@ export default function DraftRoomPage() {
           const { data: picksData } = await supabase
             .from('draft_picks')
             .select(`
-              id, round, pick_number, fantasy_team_id, school_id, picked_at,
+              id, round, pick_number, fantasy_team_id, school_id, picked_at, is_auto_pick,
               schools (id, name, abbreviation, conference, primary_color, secondary_color),
               fantasy_teams (name)
             `)
@@ -409,6 +424,7 @@ export default function DraftRoomPage() {
           // Reset timer when pick changes
           if (newDraft.current_pick !== draft.current_pick) {
             setTimerExpired(false)
+            setAutoPickTriggered(false)
           }
         } else {
           console.log('Realtime: ignoring stale update (server pick', newDraft.current_pick, '< local pick', draft.current_pick, ')')
@@ -489,6 +505,7 @@ export default function DraftRoomPage() {
             // Reset timer expired flag when pick changes
             if (draftData.current_pick !== draft.current_pick) {
               setTimerExpired(false)
+              setAutoPickTriggered(false)
             }
           }
         } else {
@@ -554,6 +571,47 @@ export default function DraftRoomPage() {
     const interval = setInterval(updateTimer, 1000)
     return () => clearInterval(interval)
   }, [draft?.pick_deadline, draft?.status, timerExpired])
+
+  // Auto-pick trigger: when timer expires, wait 5 seconds then call auto-pick API
+  useEffect(() => {
+    if (!timerExpired || !draft || draft.status !== 'in_progress') {
+      if (autoPickTimeoutRef.current) {
+        clearTimeout(autoPickTimeoutRef.current)
+        autoPickTimeoutRef.current = null
+      }
+      return
+    }
+
+    // Don't re-trigger if already triggered for this pick
+    if (autoPickTriggered) return
+
+    autoPickTimeoutRef.current = setTimeout(async () => {
+      setAutoPickTriggered(true)
+      try {
+        const res = await fetch(`/api/leagues/${leagueId}/draft/auto-pick`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            draftId: draft.id,
+            expectedPick: draft.current_pick,
+          }),
+        })
+        const data = await res.json()
+        if (data.success && data.pick) {
+          addToast(`Auto-pick: ${data.pick.schoolName} selected for ${data.pick.teamName}`, 'info')
+        }
+        // If skipped, that's fine — another client handled it or pick already advanced
+      } catch {
+        // Silent failure — polling will catch up with draft state
+      }
+    }, 5000) // 5-second grace period
+
+    return () => {
+      if (autoPickTimeoutRef.current) {
+        clearTimeout(autoPickTimeoutRef.current)
+      }
+    }
+  }, [timerExpired, draft?.id, draft?.current_pick, draft?.status, autoPickTriggered, leagueId, addToast])
 
   // Close confirmation modal if it's no longer my turn (someone else picked)
   useEffect(() => {
@@ -981,6 +1039,7 @@ export default function DraftRoomPage() {
 
     // Reset timer expired flag for the next pick
     setTimerExpired(false)
+    setAutoPickTriggered(false)
 
     const { error, data } = await supabase
       .from('drafts')
@@ -1196,6 +1255,45 @@ export default function DraftRoomPage() {
 
   const draftBoard = generateDraftBoard()
 
+  // ── Draft Queue Handlers ─────────────────────────────────
+  const persistQueueOrder = async (newQueue: { schoolId: string; priority: number }[]) => {
+    await fetch('/api/watchlists/reorder', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        leagueId,
+        order: newQueue.map((q, i) => ({ schoolId: q.schoolId, priority: i + 1 })),
+      }),
+    })
+  }
+
+  const handleMoveInQueue = (schoolId: string, direction: 'up' | 'down') => {
+    const idx = draftQueue.findIndex(q => q.schoolId === schoolId)
+    if (idx < 0) return
+    const newIdx = direction === 'up' ? idx - 1 : idx + 1
+    if (newIdx < 0 || newIdx >= draftQueue.length) return
+
+    const newQueue = [...draftQueue]
+    ;[newQueue[idx], newQueue[newIdx]] = [newQueue[newIdx], newQueue[idx]]
+    const renumbered = newQueue.map((item, i) => ({ ...item, priority: i + 1 }))
+    setDraftQueue(renumbered)
+    persistQueueOrder(renumbered)
+  }
+
+  const handleAddToQueue = (schoolId: string) => {
+    if (draftQueue.some(q => q.schoolId === schoolId)) return
+    const newQueue = [...draftQueue, { schoolId, priority: draftQueue.length + 1 }]
+    setDraftQueue(newQueue)
+    persistQueueOrder(newQueue)
+  }
+
+  const handleRemoveFromQueue = (schoolId: string) => {
+    const filtered = draftQueue.filter(q => q.schoolId !== schoolId)
+    const renumbered = filtered.map((q, i) => ({ ...q, priority: i + 1 }))
+    setDraftQueue(renumbered)
+    persistQueueOrder(renumbered)
+  }
+
   // Get conference abbreviation
   const getConferenceAbbr = (conference: string) => {
     const abbrs: Record<string, string> = {
@@ -1264,7 +1362,9 @@ export default function DraftRoomPage() {
                     timeRemaining <= 30 ? 'text-warning' :
                     'text-text-primary'
                   }`}>
-                    {timerExpired ? 'TIME!' : `${Math.floor(timeRemaining / 60)}:${(timeRemaining % 60).toString().padStart(2, '0')}`}
+                    {timerExpired
+                      ? (autoPickTriggered ? 'AUTO...' : 'TIME!')
+                      : `${Math.floor(timeRemaining / 60)}:${(timeRemaining % 60).toString().padStart(2, '0')}`}
                   </div>
                 )}
               </>
@@ -1489,6 +1589,83 @@ export default function DraftRoomPage() {
           </div>
 
           <div className="flex-1 overflow-y-auto p-2">
+            {/* Draft Queue Panel - Ordered auto-pick list */}
+            {draftQueue.length > 0 && (
+              <div className="mb-2 border border-brand/30 rounded-lg overflow-hidden">
+                <div className="flex items-center justify-between px-2 py-1.5 bg-brand/10 text-xs">
+                  <span className="text-text-primary font-medium flex items-center gap-1">
+                    <svg className="w-3.5 h-3.5 text-brand" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                    </svg>
+                    Draft Queue ({draftQueue.length})
+                  </span>
+                  <span className="text-[9px] px-1.5 py-0.5 rounded bg-brand/20 text-brand-text">Auto-pick order</span>
+                </div>
+                <div className="space-y-0.5 p-1.5 max-h-40 overflow-y-auto">
+                  {draftQueue.map((item, idx) => {
+                    const school = schools.find(s => s.id === item.schoolId)
+                    if (!school) return null
+                    const globalPickCount = schoolPickCounts[school.id] || 0
+                    const isMaxed = !isUnlimitedTotal && globalPickCount >= maxSelectionsTotal
+                    const isOnMyTeam = isSchoolOnMyTeam(school)
+                    const isUnavailable = isMaxed || isOnMyTeam
+                    return (
+                      <div
+                        key={item.schoolId}
+                        className={`flex items-center justify-between p-1.5 rounded-lg ${isUnavailable ? 'opacity-40 line-through' : ''}`}
+                      >
+                        <div className="flex items-center gap-2">
+                          <span className="text-[10px] font-bold text-text-muted w-4 text-right">{idx + 1}</span>
+                          {school.logo_url ? (
+                            <img src={school.logo_url} alt="" className="w-5 h-5 rounded-full bg-text-primary p-0.5" />
+                          ) : (
+                            <div
+                              className="w-5 h-5 rounded-full flex items-center justify-center text-[8px] font-bold"
+                              style={{ backgroundColor: school.primary_color, color: school.secondary_color }}
+                            >
+                              {school.abbreviation?.slice(0, 2) || school.name.slice(0, 2)}
+                            </div>
+                          )}
+                          <span className="text-text-primary text-xs font-medium">{school.name}</span>
+                        </div>
+                        <div className="flex items-center gap-0.5">
+                          <button
+                            onClick={() => handleMoveInQueue(item.schoolId, 'up')}
+                            disabled={idx === 0}
+                            className="p-0.5 text-text-muted hover:text-text-primary disabled:opacity-30"
+                            title="Move up"
+                          >
+                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                            </svg>
+                          </button>
+                          <button
+                            onClick={() => handleMoveInQueue(item.schoolId, 'down')}
+                            disabled={idx === draftQueue.length - 1}
+                            className="p-0.5 text-text-muted hover:text-text-primary disabled:opacity-30"
+                            title="Move down"
+                          >
+                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                            </svg>
+                          </button>
+                          <button
+                            onClick={() => handleRemoveFromQueue(item.schoolId)}
+                            className="p-0.5 text-text-muted hover:text-danger"
+                            title="Remove from queue"
+                          >
+                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                          </button>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
+
             {/* Watchlist Panel */}
             {watchlistedSchools.length > 0 && (
               <div className="mb-2 border border-warning/30 rounded-lg overflow-hidden">
@@ -1545,6 +1722,19 @@ export default function DraftRoomPage() {
                             </div>
                           </div>
                           <div className="flex items-center gap-1.5">
+                            {draftQueue.some(q => q.schoolId === school.id) ? (
+                              <span className="text-[9px] px-1.5 py-0.5 rounded bg-brand/20 text-brand-text font-medium">
+                                #{draftQueue.findIndex(q => q.schoolId === school.id) + 1}
+                              </span>
+                            ) : (
+                              <button
+                                onClick={(e) => { e.stopPropagation(); handleAddToQueue(school.id) }}
+                                className="text-[10px] px-1.5 py-0.5 rounded bg-brand/10 text-brand-text hover:bg-brand/20 transition-colors"
+                                title="Add to draft queue"
+                              >
+                                + Queue
+                              </button>
+                            )}
                             {isMaxed && (
                               <span className="text-[10px] px-1.5 py-0.5 rounded-full font-medium bg-danger/20 text-danger-text">
                                 Unavailable
@@ -1774,6 +1964,9 @@ export default function DraftRoomPage() {
                       </div>
                     )}
                     <span className="font-bold flex-1">{pick.schools.name}</span>
+                    {pick.is_auto_pick && (
+                      <span className="text-[9px] px-1 py-0.5 rounded bg-black/20 font-medium">Auto</span>
+                    )}
                     <span className="text-xs opacity-75">{pick.fantasy_teams.name}</span>
                   </div>
                 ))}

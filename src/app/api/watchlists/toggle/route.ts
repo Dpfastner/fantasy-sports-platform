@@ -26,7 +26,7 @@ export async function POST(request: NextRequest) {
     // Check if already watchlisted
     const { data: existing } = await supabase
       .from('watchlists')
-      .select('id')
+      .select('id, priority')
       .eq('user_id', user.id)
       .eq('school_id', schoolId)
       .eq('league_id', leagueId)
@@ -37,6 +37,28 @@ export async function POST(request: NextRequest) {
         .from('watchlists')
         .delete()
         .eq('id', existing.id)
+
+      // If removed school was in the draft queue, renumber remaining items
+      if (existing.priority !== null) {
+        const { data: remaining } = await supabase
+          .from('watchlists')
+          .select('id, priority')
+          .eq('user_id', user.id)
+          .eq('league_id', leagueId)
+          .not('priority', 'is', null)
+          .order('priority')
+
+        if (remaining) {
+          for (let i = 0; i < remaining.length; i++) {
+            if (remaining[i].priority !== i + 1) {
+              await supabase
+                .from('watchlists')
+                .update({ priority: i + 1 })
+                .eq('id', remaining[i].id)
+            }
+          }
+        }
+      }
 
       return NextResponse.json({ watchlisted: false })
     } else {

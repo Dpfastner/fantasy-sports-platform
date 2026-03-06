@@ -114,3 +114,18 @@ export const draftChatMessageSchema = z.object({
   message: z.string().min(1, 'Message is required').max(500, 'Message too long'),
   draftId: uuidField,
 })
+
+// ── Auto-Pick & Draft Queue ────────────────────────────────
+
+export const autoPickSchema = z.object({
+  draftId: uuidField,
+  expectedPick: z.number().int().min(1),
+})
+
+export const watchlistReorderSchema = z.object({
+  leagueId: uuidField,
+  order: z.array(z.object({
+    schoolId: uuidField,
+    priority: z.number().int().min(1),
+  })),
+})
