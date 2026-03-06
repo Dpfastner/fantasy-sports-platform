@@ -103,6 +103,8 @@ export default function DraftRoomPage() {
 
   // Draft queue (ordered watchlist with priorities)
   const [draftQueue, setDraftQueue] = useState<{ schoolId: string; priority: number }[]>([])
+  const [dragIdx, setDragIdx] = useState<number | null>(null)
+  const [dragOverIdx, setDragOverIdx] = useState<number | null>(null)
 
   // Auto-pick toggle (user can enable to auto-pick when it's their turn)
   const [autoPickEnabled, setAutoPickEnabled] = useState(false)
@@ -1339,6 +1341,19 @@ export default function DraftRoomPage() {
     persistQueueOrder(renumbered)
   }
 
+  const handleDragEnd = () => {
+    if (dragIdx !== null && dragOverIdx !== null && dragIdx !== dragOverIdx) {
+      const newQueue = [...draftQueue]
+      const [dragged] = newQueue.splice(dragIdx, 1)
+      newQueue.splice(dragOverIdx, 0, dragged)
+      const renumbered = newQueue.map((q, i) => ({ ...q, priority: i + 1 }))
+      setDraftQueue(renumbered)
+      persistQueueOrder(renumbered)
+    }
+    setDragIdx(null)
+    setDragOverIdx(null)
+  }
+
   // Toggle auto-pick mode
   const handleToggleAutoPick = async () => {
     if (!myTeam) return
@@ -1711,7 +1726,7 @@ export default function DraftRoomPage() {
                   </span>
                   <span className="text-[9px] px-1.5 py-0.5 rounded bg-brand/20 text-brand-text">Auto-pick order</span>
                 </div>
-                <div className="space-y-0.5 p-1.5 max-h-40 overflow-y-auto">
+                <div className="p-1.5 max-h-48 overflow-y-auto">
                   {draftQueue.map((item, idx) => {
                     const school = schools.find(s => s.id === item.schoolId)
                     if (!school) return null
@@ -1719,56 +1734,83 @@ export default function DraftRoomPage() {
                     const isMaxed = !isUnlimitedTotal && globalPickCount >= maxSelectionsTotal
                     const isOnMyTeam = isSchoolOnMyTeam(school)
                     const isUnavailable = isMaxed || isOnMyTeam
+                    const isDragging = dragIdx === idx
+                    const isDragOver = dragOverIdx === idx
                     return (
-                      <div
-                        key={item.schoolId}
-                        className={`flex items-center justify-between p-1.5 rounded-lg ${isUnavailable ? 'opacity-40 line-through' : ''}`}
-                      >
-                        <div className="flex items-center gap-2">
-                          <span className="text-[10px] font-bold text-text-muted w-4 text-right">{idx + 1}</span>
-                          {school.logo_url ? (
-                            <img src={school.logo_url} alt="" className="w-5 h-5 rounded-full bg-text-primary p-0.5" />
-                          ) : (
-                            <div
-                              className="w-5 h-5 rounded-full flex items-center justify-center text-[8px] font-bold"
-                              style={{ backgroundColor: school.primary_color, color: school.secondary_color }}
+                      <div key={item.schoolId}>
+                        {/* Drop indicator line */}
+                        {isDragOver && dragIdx !== null && dragIdx > idx && (
+                          <div className="h-0.5 bg-brand rounded-full mx-2 my-0.5" />
+                        )}
+                        <div
+                          draggable
+                          onDragStart={() => setDragIdx(idx)}
+                          onDragOver={(e) => { e.preventDefault(); setDragOverIdx(idx) }}
+                          onDragEnd={handleDragEnd}
+                          className={`flex items-center justify-between p-1.5 rounded-lg cursor-grab active:cursor-grabbing transition-opacity ${
+                            isUnavailable ? 'opacity-40 line-through' : ''
+                          } ${isDragging ? 'opacity-40' : ''}`}
+                        >
+                          <div className="flex items-center gap-2">
+                            {/* Drag handle */}
+                            <svg className="w-3 h-3 text-text-muted shrink-0" fill="currentColor" viewBox="0 0 24 24">
+                              <circle cx="9" cy="5" r="1.5" /><circle cx="15" cy="5" r="1.5" />
+                              <circle cx="9" cy="12" r="1.5" /><circle cx="15" cy="12" r="1.5" />
+                              <circle cx="9" cy="19" r="1.5" /><circle cx="15" cy="19" r="1.5" />
+                            </svg>
+                            <span className="text-[10px] font-bold text-text-muted w-4 text-right">{idx + 1}</span>
+                            {school.logo_url ? (
+                              <img src={school.logo_url} alt="" className="w-5 h-5 rounded-full bg-text-primary p-0.5" />
+                            ) : (
+                              <div
+                                className="w-5 h-5 rounded-full flex items-center justify-center text-[8px] font-bold"
+                                style={{ backgroundColor: school.primary_color, color: school.secondary_color }}
+                              >
+                                {school.abbreviation?.slice(0, 2) || school.name.slice(0, 2)}
+                              </div>
+                            )}
+                            <span className="text-text-primary text-xs font-medium">{school.name}</span>
+                          </div>
+                          <div className="flex items-center gap-0.5">
+                            <button
+                              onClick={() => handleMoveInQueue(item.schoolId, 'up')}
+                              disabled={idx === 0}
+                              className="p-0.5 text-text-muted hover:text-text-primary disabled:opacity-30"
+                              title="Move up"
                             >
-                              {school.abbreviation?.slice(0, 2) || school.name.slice(0, 2)}
-                            </div>
-                          )}
-                          <span className="text-text-primary text-xs font-medium">{school.name}</span>
+                              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                              </svg>
+                            </button>
+                            <button
+                              onClick={() => handleMoveInQueue(item.schoolId, 'down')}
+                              disabled={idx === draftQueue.length - 1}
+                              className="p-0.5 text-text-muted hover:text-text-primary disabled:opacity-30"
+                              title="Move down"
+                            >
+                              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                              </svg>
+                            </button>
+                            <button
+                              onClick={() => handleRemoveFromQueue(item.schoolId)}
+                              className="p-0.5 text-text-muted hover:text-danger"
+                              title="Remove from queue"
+                            >
+                              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                              </svg>
+                            </button>
+                          </div>
                         </div>
-                        <div className="flex items-center gap-0.5">
-                          <button
-                            onClick={() => handleMoveInQueue(item.schoolId, 'up')}
-                            disabled={idx === 0}
-                            className="p-0.5 text-text-muted hover:text-text-primary disabled:opacity-30"
-                            title="Move up"
-                          >
-                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
-                            </svg>
-                          </button>
-                          <button
-                            onClick={() => handleMoveInQueue(item.schoolId, 'down')}
-                            disabled={idx === draftQueue.length - 1}
-                            className="p-0.5 text-text-muted hover:text-text-primary disabled:opacity-30"
-                            title="Move down"
-                          >
-                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                            </svg>
-                          </button>
-                          <button
-                            onClick={() => handleRemoveFromQueue(item.schoolId)}
-                            className="p-0.5 text-text-muted hover:text-danger"
-                            title="Remove from queue"
-                          >
-                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                            </svg>
-                          </button>
-                        </div>
+                        {/* Drop indicator line */}
+                        {isDragOver && dragIdx !== null && dragIdx < idx && (
+                          <div className="h-0.5 bg-brand rounded-full mx-2 my-0.5" />
+                        )}
+                        {/* Divider line between items */}
+                        {idx < draftQueue.length - 1 && !isDragOver && (
+                          <div className="h-px bg-border mx-2" />
+                        )}
                       </div>
                     )
                   })}
