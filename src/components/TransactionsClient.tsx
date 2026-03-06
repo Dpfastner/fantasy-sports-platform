@@ -112,6 +112,7 @@ interface TransactionsClientProps {
   specialEventSettings?: SpecialEventSettings
   eventBonuses?: EventBonus[]
   watchlistedSchoolIds?: string[]
+  maxRosterSize?: number
 }
 
 type TransactionStep = 'select-drop' | 'select-add' | 'confirm'
@@ -144,6 +145,7 @@ export default function TransactionsClient({
   specialEventSettings,
   eventBonuses = [],
   watchlistedSchoolIds: watchlistedSchoolIdsProp = [],
+  maxRosterSize = 12,
 }: TransactionsClientProps) {
   const { addToast } = useToast()
   const searchParams = useSearchParams()
@@ -322,26 +324,34 @@ export default function TransactionsClient({
     setError(null)
   }
 
+  const hasEmptySlot = roster.length < maxRosterSize
+  const isAddOnly = hasEmptySlot && !selectedDrop
+
   const handleConfirm = async () => {
-    if (!selectedDrop || !selectedAdd) return
+    if (!selectedAdd) return
+    if (!isAddOnly && !selectedDrop) return
 
     setIsSubmitting(true)
     setError(null)
 
     try {
+      const body: Record<string, unknown> = {
+        teamId,
+        leagueId,
+        seasonId,
+        weekNumber: currentWeek,
+        addedSchoolId: selectedAdd.id,
+        slotNumber: selectedDrop ? selectedDrop.slot_number : roster.length + 1,
+      }
+      if (selectedDrop) {
+        body.droppedSchoolId = selectedDrop.school_id
+        body.rosterPeriodId = selectedDrop.id
+      }
+
       const response = await fetch('/api/transactions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          teamId,
-          leagueId,
-          seasonId,
-          weekNumber: currentWeek,
-          droppedSchoolId: selectedDrop.school_id,
-          addedSchoolId: selectedAdd.id,
-          slotNumber: selectedDrop.slot_number,
-          rosterPeriodId: selectedDrop.id,
-        }),
+        body: JSON.stringify(body),
       })
 
       if (!response.ok) {
@@ -350,7 +360,10 @@ export default function TransactionsClient({
       }
 
       // Show success toast and refresh the page
-      addToast(`Successfully dropped ${selectedDrop.schools.name} and added ${selectedAdd.name}`, 'success')
+      const msg = selectedDrop
+        ? `Successfully dropped ${selectedDrop.schools.name} and added ${selectedAdd.name}`
+        : `Successfully added ${selectedAdd.name}`
+      addToast(msg, 'success')
 
       // Short delay before refresh to show toast
       setTimeout(() => {
@@ -489,6 +502,25 @@ export default function TransactionsClient({
               {step === 'select-drop' && (
                 <div className="bg-surface rounded-lg p-4 md:p-6">
                   <h2 className="text-lg md:text-xl font-semibold text-text-primary mb-3 md:mb-4">Select a school to drop</h2>
+                  {hasEmptySlot && (
+                    <button
+                      onClick={() => {
+                        setSelectedDrop(null)
+                        if (prefilledAddSchool) {
+                          setSelectedAdd(prefilledAddSchool)
+                          setStep('confirm')
+                        } else {
+                          setStep('select-add')
+                        }
+                      }}
+                      className="w-full mb-4 p-3 bg-success/10 border border-success/30 rounded-lg text-success-text hover:bg-success/20 transition-colors text-sm font-medium flex items-center justify-center gap-2"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                      </svg>
+                      You have an empty roster slot — Add a school without dropping
+                    </button>
+                  )}
                   {prefilledAddSchool && (
                     <div className="bg-success/10 border border-success/50 rounded-lg p-3 mb-4 flex items-center gap-3">
                       <p className="text-success-text text-sm">Adding:</p>
@@ -820,7 +852,7 @@ export default function TransactionsClient({
               )}
 
               {/* Step 3: Confirm */}
-              {step === 'confirm' && selectedDrop && selectedAdd && (
+              {step === 'confirm' && selectedAdd && (selectedDrop || isAddOnly) && (
                 <div className="bg-surface rounded-lg p-6">
                   <div className="flex items-center justify-between mb-6">
                     <h2 className="text-xl font-semibold text-text-primary">Confirm Transaction</h2>
@@ -832,29 +864,31 @@ export default function TransactionsClient({
                     </button>
                   </div>
 
-                  <div className="grid md:grid-cols-2 gap-6 mb-6">
+                  <div className={`grid ${selectedDrop ? 'md:grid-cols-2' : ''} gap-6 mb-6`}>
                     {/* Drop */}
-                    <div className="bg-danger/10 border border-danger/50 rounded-lg p-4">
-                      <p className="text-danger-text text-sm mb-3">Dropping</p>
-                      <div className="flex items-center gap-4">
-                        {selectedDrop.schools.logo_url ? (
-                          <img
-                            src={selectedDrop.schools.logo_url}
-                            alt={selectedDrop.schools.name}
-                            className="w-12 h-12 object-contain"
-                          />
-                        ) : (
-                          <div className="w-12 h-12 bg-surface-subtle rounded-full" />
-                        )}
-                        <div>
-                          <p className="text-text-primary font-medium">{selectedDrop.schools.name}</p>
-                          <p className="text-text-secondary text-sm">{selectedDrop.schools.conference}</p>
-                          <p className="text-text-muted text-sm">
-                            {schoolPointsMap[selectedDrop.school_id] || 0} pts this season
-                          </p>
+                    {selectedDrop && (
+                      <div className="bg-danger/10 border border-danger/50 rounded-lg p-4">
+                        <p className="text-danger-text text-sm mb-3">Dropping</p>
+                        <div className="flex items-center gap-4">
+                          {selectedDrop.schools.logo_url ? (
+                            <img
+                              src={selectedDrop.schools.logo_url}
+                              alt={selectedDrop.schools.name}
+                              className="w-12 h-12 object-contain"
+                            />
+                          ) : (
+                            <div className="w-12 h-12 bg-surface-subtle rounded-full" />
+                          )}
+                          <div>
+                            <p className="text-text-primary font-medium">{selectedDrop.schools.name}</p>
+                            <p className="text-text-secondary text-sm">{selectedDrop.schools.conference}</p>
+                            <p className="text-text-muted text-sm">
+                              {schoolPointsMap[selectedDrop.school_id] || 0} pts this season
+                            </p>
+                          </div>
                         </div>
                       </div>
-                    </div>
+                    )}
 
                     {/* Add */}
                     <div className="bg-success/10 border border-success/50 rounded-lg p-4">

@@ -38,6 +38,7 @@ interface School {
 }
 
 interface LeagueSettings {
+  schools_per_team: number
   max_add_drops_per_season: number
   add_drop_deadline: string | null
   max_school_selections_total: number
@@ -102,6 +103,7 @@ export default async function TransactionsPage({ params }: PageProps) {
       season_id,
       seasons (year, name),
       league_settings (
+        schools_per_team,
         max_add_drops_per_season,
         add_drop_deadline,
         max_school_selections_total,
@@ -423,6 +425,7 @@ export default async function TransactionsPage({ params }: PageProps) {
         }}
         eventBonuses={eventBonuses}
         watchlistedSchoolIds={watchlistedSchoolIds}
+        maxRosterSize={settings?.schools_per_team || 12}
       />
       </ErrorBoundary>
       <SandboxWeekSelector currentWeek={currentWeek} environment={environment} />

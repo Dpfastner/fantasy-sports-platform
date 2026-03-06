@@ -2,6 +2,9 @@
 
 import { useState } from 'react'
 import { useToast } from './Toast'
+import dynamic from 'next/dynamic'
+
+const TradeProposalModal = dynamic(() => import('./TradeProposalModal'), { ssr: false })
 
 // ── Types ──────────────────────────────────────────────────
 
@@ -57,6 +60,8 @@ export default function PendingTrades({
   const { addToast } = useToast()
   const [actionLoading, setActionLoading] = useState<string | null>(null)
   const [counterTrade, setCounterTrade] = useState<TradeData | null>(null)
+  const [counterPartnerRoster, setCounterPartnerRoster] = useState<RosterSchool[]>([])
+  const [counterLoading, setCounterLoading] = useState(false)
   const [dropPickerTradeId, setDropPickerTradeId] = useState<string | null>(null)
   const [dropIds, setDropIds] = useState<Set<string>>(new Set())
 
@@ -106,6 +111,29 @@ export default function PendingTrades({
       addToast(err instanceof Error ? err.message : `Failed to ${action} trade`, 'error')
     } finally {
       setActionLoading(null)
+    }
+  }
+
+  const handleCounter = async (trade: TradeData) => {
+    const partnerTeamId = trade.proposerTeamId === myTeamId ? trade.receiverTeamId : trade.proposerTeamId
+    setCounterLoading(true)
+    try {
+      const res = await fetch(`/api/leagues/${leagueId}/teams/${partnerTeamId}/roster`)
+      if (!res.ok) throw new Error('Failed to fetch roster')
+      const data = await res.json()
+      setCounterPartnerRoster((data.roster || []).map((r: Record<string, unknown>) => ({
+        schoolId: r.school_id as string,
+        schoolName: (r.schools as Record<string, unknown>)?.name as string || 'Unknown',
+        abbreviation: (r.schools as Record<string, unknown>)?.abbreviation as string | null,
+        logoUrl: (r.schools as Record<string, unknown>)?.logo_url as string | null,
+        conference: (r.schools as Record<string, unknown>)?.conference as string || '',
+        slotNumber: r.slot_number as number,
+      })))
+      setCounterTrade(trade)
+    } catch {
+      addToast('Failed to load roster for counter-offer', 'error')
+    } finally {
+      setCounterLoading(false)
     }
   }
 
@@ -255,11 +283,11 @@ export default function PendingTrades({
                       Reject
                     </button>
                     <button
-                      onClick={() => setCounterTrade(trade)}
-                      disabled={actionLoading === trade.id}
+                      onClick={() => handleCounter(trade)}
+                      disabled={actionLoading === trade.id || counterLoading}
                       className="px-2.5 py-1 bg-surface hover:bg-surface-subtle text-text-primary border border-border rounded text-xs font-medium disabled:opacity-50 transition-colors"
                     >
-                      Counter
+                      {counterLoading ? '...' : 'Counter'}
                     </button>
                   </>
                 ) : (
@@ -315,7 +343,7 @@ export default function PendingTrades({
 
   return (
     <>
-      <details className="bg-surface rounded-lg mb-8 border border-info/30 overflow-hidden">
+      <details id="trades" className="bg-surface rounded-lg mb-8 border border-info/30 overflow-hidden">
         <summary className="flex items-center justify-between px-4 py-3 cursor-pointer select-none bg-info/5 hover:bg-info/10 transition-colors">
           <h2 className="text-sm font-semibold text-text-primary flex items-center gap-2">
             Trade Offers
@@ -347,57 +375,36 @@ export default function PendingTrades({
         </div>
       </details>
 
-      {/* Counter-offer modal — redirects to partner team page */}
+      {/* Counter-offer modal — opens TradeProposalModal directly */}
       {counterTrade && (
-        <CounterRedirectModal
-          trade={counterTrade}
-          leagueId={leagueId}
-          myTeamId={myTeamId}
+        <TradeProposalModal
+          isOpen={true}
           onClose={() => setCounterTrade(null)}
+          leagueId={leagueId}
+          myTeam={{ id: myTeamId, name: myTeamName }}
+          partnerTeam={{
+            id: counterTrade.proposerTeamId === myTeamId ? counterTrade.receiverTeamId : counterTrade.proposerTeamId,
+            name: counterTrade.proposerTeamId === myTeamId ? counterTrade.receiverTeamName : counterTrade.proposerTeamName,
+          }}
+          myRoster={myRoster}
+          partnerRoster={counterPartnerRoster}
+          schoolPointsMap={{}}
+          rankingsMap={{}}
+          schoolRecordsMap={{}}
+          counterToTrade={{
+            tradeId: counterTrade.id,
+            proposerTeamName: counterTrade.proposerTeamName,
+            items: counterTrade.items.map(i => ({
+              schoolId: i.schoolId,
+              schoolName: i.schoolName,
+              direction: i.direction,
+              teamId: i.teamId,
+            })),
+            message: counterTrade.message,
+          }}
+          onTradeProposed={() => window.location.reload()}
         />
       )}
     </>
-  )
-}
-
-// ── Counter Redirect Modal ────────────────────────────────
-
-function CounterRedirectModal({
-  trade,
-  leagueId,
-  myTeamId,
-  onClose,
-}: {
-  trade: TradeData
-  leagueId: string
-  myTeamId: string
-  onClose: () => void
-}) {
-  const partnerTeamId = trade.proposerTeamId === myTeamId ? trade.receiverTeamId : trade.proposerTeamId
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/60" onClick={onClose} />
-      <div className="relative bg-page border border-border rounded-xl shadow-2xl w-full max-w-md p-6">
-        <h3 className="text-lg font-bold text-text-primary mb-3">Counter Trade</h3>
-        <p className="text-sm text-text-secondary mb-4">
-          To counter this trade, visit the other team&apos;s page where you can propose a new trade with the original offer visible.
-        </p>
-        <div className="flex gap-3">
-          <button
-            onClick={onClose}
-            className="flex-1 px-4 py-2 bg-surface hover:bg-surface-subtle text-text-primary rounded-lg font-medium transition-colors"
-          >
-            Cancel
-          </button>
-          <a
-            href={`/leagues/${leagueId}/team/${partnerTeamId}?counter=${trade.id}`}
-            className="flex-1 px-4 py-2 bg-brand hover:bg-brand-hover text-text-primary rounded-lg font-medium text-center transition-colors"
-          >
-            Go to Team Page
-          </a>
-        </div>
-      </div>
-    </div>
   )
 }

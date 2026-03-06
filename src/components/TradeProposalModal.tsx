@@ -93,7 +93,15 @@ export default function TradeProposalModal({
     setShowDropPicker(false)
   }
 
+  // Set of school IDs on my roster (for blocking duplicate selections)
+  const myRosterSchoolIds = new Set(myRoster.map(s => s.schoolId))
+
   const toggleReceiving = (schoolId: string) => {
+    // Don't allow selecting a school that's already on my roster
+    if (!receivingIds.has(schoolId) && myRosterSchoolIds.has(schoolId)) {
+      addToast('This school is already on your roster', 'error')
+      return
+    }
     setReceivingIds(prev => {
       const next = new Set(prev)
       if (next.has(schoolId)) next.delete(schoolId)
@@ -268,16 +276,20 @@ export default function TradeProposalModal({
             <div className="space-y-1">
               {partnerRoster.map(school => {
                 const selected = receivingIds.has(school.schoolId)
+                const alreadyOnMyRoster = myRosterSchoolIds.has(school.schoolId)
                 const rank = getRank(school.schoolId)
                 const points = schoolPointsMap[school.schoolId] || 0
                 return (
                   <button
                     key={school.schoolId}
                     onClick={() => toggleReceiving(school.schoolId)}
+                    disabled={alreadyOnMyRoster}
                     className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-colors ${
-                      selected
-                        ? 'bg-success/20 border border-success/50'
-                        : 'bg-surface hover:bg-surface-subtle border border-transparent'
+                      alreadyOnMyRoster
+                        ? 'bg-surface/50 opacity-40 cursor-not-allowed border border-transparent'
+                        : selected
+                          ? 'bg-success/20 border border-success/50'
+                          : 'bg-surface hover:bg-surface-subtle border border-transparent'
                     }`}
                   >
                     <div className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 ${
@@ -298,7 +310,10 @@ export default function TradeProposalModal({
                         <span className="text-sm font-medium text-text-primary truncate">{school.schoolName}</span>
                       </div>
                       <div className="text-[11px] text-text-muted">
-                        {school.conference} · {getRecord(school.schoolId)} · {points} pts
+                        {alreadyOnMyRoster
+                          ? 'Already on your roster'
+                          : `${school.conference} · ${getRecord(school.schoolId)} · ${points} pts`
+                        }
                       </div>
                     </div>
                   </button>

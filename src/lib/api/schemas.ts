@@ -26,10 +26,10 @@ export const transactionSchema = z.object({
   leagueId: uuidField,
   seasonId: uuidField.optional(),
   weekNumber: weekNumber,
-  droppedSchoolId: uuidField,
+  droppedSchoolId: uuidField.optional(),    // optional for add-only (empty roster slot)
   addedSchoolId: uuidField,
   slotNumber: z.number().int().min(1),
-  rosterPeriodId: uuidField,
+  rosterPeriodId: uuidField.optional(),     // optional for add-only (empty roster slot)
 })
 
 export const reportSchema = z.object({

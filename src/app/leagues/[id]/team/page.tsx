@@ -126,6 +126,7 @@ export default async function TeamPage({ params }: PageProps) {
   const { data: settings } = await supabase
     .from('league_settings')
     .select(`
+      schools_per_team,
       max_add_drops_per_season,
       add_drop_deadline,
       max_school_selections_total,
@@ -476,7 +477,7 @@ export default async function TeamPage({ params }: PageProps) {
   const { data: tradesRaw } = await adminDb
     .from('trades')
     .select(`
-      id, proposer_team_id, receiver_team_id, status, message, expires_at, proposed_at,
+      id, proposer_team_id, receiver_team_id, status, message, expires_at, proposed_at, dropped_schools,
       trade_items (id, team_id, school_id, direction, schools (id, name, logo_url))
     `)
     .eq('league_id', leagueId)
@@ -527,6 +528,28 @@ export default async function TeamPage({ params }: PageProps) {
       teamId: item.team_id,
     })),
   }))
+
+  // Build set of school IDs involved in accepted/vetoed trades (to exclude from add/drop history)
+  const tradedSchoolIds = new Set<string>()
+  for (const t of tradesRaw || []) {
+    if (t.status === 'accepted' || t.status === 'vetoed') {
+      for (const item of (t.trade_items || []) as unknown as TradeItemRaw[]) {
+        if (item.team_id === team.id && item.direction === 'giving') {
+          tradedSchoolIds.add(item.school_id)
+        }
+      }
+      // Also exclude schools dropped as part of accepting a trade
+      const drops = (t as Record<string, unknown>).dropped_schools as { schoolId: string; teamId: string }[] | null
+      if (drops) {
+        for (const d of drops) {
+          if (d.teamId === team.id) tradedSchoolIds.add(d.schoolId)
+        }
+      }
+    }
+  }
+
+  // Filter droppedRoster to only add/drop transactions (exclude traded schools)
+  const addDropHistory = droppedRoster?.filter(slot => !tradedSchoolIds.has(slot.school_id)) || []
 
   // Build myRoster in the format PendingTrades expects (for drop picker)
   const myRosterForTrades = roster?.map(r => ({
@@ -695,6 +718,33 @@ export default async function TeamPage({ params }: PageProps) {
           ) : (
             <p className="text-text-muted">No schools on roster yet. Complete the draft to build your team.</p>
           )}
+
+          {/* Empty roster slots */}
+          {(() => {
+            const maxRoster = settings?.schools_per_team || 12
+            const currentCount = roster?.length || 0
+            const emptySlots = maxRoster - currentCount
+            if (emptySlots <= 0 || currentCount === 0) return null
+            return (
+              <div className="mt-2 space-y-1">
+                {Array.from({ length: emptySlots }, (_, i) => (
+                  <Link
+                    key={`empty-${i}`}
+                    href={`/leagues/${leagueId}/transactions`}
+                    className="flex items-center gap-3 px-3 py-3 bg-surface-subtle/50 border border-dashed border-border rounded-lg hover:bg-surface-subtle transition-colors"
+                  >
+                    <span className="w-6 text-center text-text-muted font-medium text-sm">{currentCount + i + 1}</span>
+                    <div className="w-8 h-8 rounded-full border-2 border-dashed border-border flex items-center justify-center">
+                      <svg className="w-4 h-4 text-text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                      </svg>
+                    </div>
+                    <span className="text-sm text-text-muted">Empty slot — Add a school</span>
+                  </Link>
+                ))}
+              </div>
+            )
+          })()}
         </div>
 
         {/* Watchlist */}
@@ -901,17 +951,17 @@ export default async function TeamPage({ params }: PageProps) {
           </div>
         )}
 
-        {/* Transaction History - at the bottom */}
-        {droppedRoster && droppedRoster.length > 0 && (
+        {/* Add/Drop History - at the bottom (excludes trades) */}
+        {addDropHistory.length > 0 && (
           <div className="bg-surface rounded-lg p-6 mb-8">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-semibold text-text-primary">Transaction History</h2>
+              <h2 className="text-xl font-semibold text-text-primary">Add/Drop History</h2>
               <span className="text-text-secondary text-sm">
-                {droppedRoster.length} / {settings?.max_add_drops_per_season || 50} transactions used
+                {team.add_drops_used} / {settings?.max_add_drops_per_season || 50} used
               </span>
             </div>
             <div className="space-y-2">
-              {droppedRoster.map((slot) => {
+              {addDropHistory.map((slot) => {
                 const droppedSchool = slot.schools
                 // Find who replaced this school (same slot, started when this one ended)
                 const replacement = allRosterPeriods?.find(

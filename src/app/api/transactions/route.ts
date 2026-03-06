@@ -105,33 +105,61 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Verify the roster period exists and belongs to the team
-    const { data: rosterPeriod, error: rosterError } = await supabase
-      .from('roster_periods')
-      .select('id, school_id, fantasy_team_id, end_week')
-      .eq('id', rosterPeriodId)
-      .eq('fantasy_team_id', teamId)
-      .single()
+    // Determine if this is an add-only transaction (empty roster slot)
+    const isAddOnly = !droppedSchoolId || !rosterPeriodId
 
-    if (rosterError || !rosterPeriod) {
-      return NextResponse.json(
-        { error: 'Roster period not found' },
-        { status: 404 }
-      )
+    if (isAddOnly) {
+      // Verify the team actually has an empty slot
+      const { data: settingsForRoster } = await supabase
+        .from('league_settings')
+        .select('schools_per_team')
+        .eq('league_id', leagueId)
+        .single()
+      const maxRosterSize = settingsForRoster?.schools_per_team || 12
+
+      const { data: activeRoster } = await supabase
+        .from('roster_periods')
+        .select('id')
+        .eq('fantasy_team_id', teamId)
+        .is('end_week', null)
+
+      if ((activeRoster?.length || 0) >= maxRosterSize) {
+        return NextResponse.json(
+          { error: 'Your roster is full. You must drop a school to add one.' },
+          { status: 400 }
+        )
+      }
     }
 
-    if (rosterPeriod.end_week !== null) {
-      return NextResponse.json(
-        { error: 'This school has already been dropped' },
-        { status: 400 }
-      )
-    }
+    if (!isAddOnly) {
+      // Verify the roster period exists and belongs to the team
+      const { data: rosterPeriod, error: rosterError } = await supabase
+        .from('roster_periods')
+        .select('id, school_id, fantasy_team_id, end_week')
+        .eq('id', rosterPeriodId!)
+        .eq('fantasy_team_id', teamId)
+        .single()
 
-    if (rosterPeriod.school_id !== droppedSchoolId) {
-      return NextResponse.json(
-        { error: 'School ID mismatch' },
-        { status: 400 }
-      )
+      if (rosterError || !rosterPeriod) {
+        return NextResponse.json(
+          { error: 'Roster period not found' },
+          { status: 404 }
+        )
+      }
+
+      if (rosterPeriod.end_week !== null) {
+        return NextResponse.json(
+          { error: 'This school has already been dropped' },
+          { status: 400 }
+        )
+      }
+
+      if (rosterPeriod.school_id !== droppedSchoolId) {
+        return NextResponse.json(
+          { error: 'School ID mismatch' },
+          { status: 400 }
+        )
+      }
     }
 
     // Check if the added school is already on the team
@@ -179,17 +207,19 @@ export async function POST(request: NextRequest) {
 
     // All validations passed - execute the transaction
 
-    // 1. Update the dropped school's roster period with end_week
-    const { error: updateError } = await supabase
-      .from('roster_periods')
-      .update({ end_week: weekNumber })
-      .eq('id', rosterPeriodId)
+    // 1. Update the dropped school's roster period with end_week (skip for add-only)
+    if (!isAddOnly && rosterPeriodId) {
+      const { error: updateError } = await supabase
+        .from('roster_periods')
+        .update({ end_week: weekNumber })
+        .eq('id', rosterPeriodId)
 
-    if (updateError) {
-      return NextResponse.json(
-        { error: 'Failed to update roster period' },
-        { status: 500 }
-      )
+      if (updateError) {
+        return NextResponse.json(
+          { error: 'Failed to update roster period' },
+          { status: 500 }
+        )
+      }
     }
 
     // 2. Create new roster period for the added school
@@ -204,11 +234,13 @@ export async function POST(request: NextRequest) {
       })
 
     if (insertError) {
-      // Rollback the previous update
-      await supabase
-        .from('roster_periods')
-        .update({ end_week: null })
-        .eq('id', rosterPeriodId)
+      // Rollback the previous update (only if we dropped someone)
+      if (!isAddOnly && rosterPeriodId) {
+        await supabase
+          .from('roster_periods')
+          .update({ end_week: null })
+          .eq('id', rosterPeriodId)
+      }
 
       return NextResponse.json(
         { error: 'Failed to add new school to roster' },
@@ -222,7 +254,7 @@ export async function POST(request: NextRequest) {
       .insert({
         fantasy_team_id: teamId,
         week_number: weekNumber,
-        dropped_school_id: droppedSchoolId,
+        dropped_school_id: droppedSchoolId || null,
         added_school_id: addedSchoolId,
         slot_number: slotNumber,
       })
@@ -251,22 +283,27 @@ export async function POST(request: NextRequest) {
     })
 
     // Fetch school names for the notification
-    const [droppedSchool, addedSchool, teamInfo] = await Promise.all([
-      supabase.from('schools').select('name').eq('id', droppedSchoolId).single(),
-      supabase.from('schools').select('name').eq('id', addedSchoolId).single(),
-      supabase.from('fantasy_teams').select('name').eq('id', teamId).single(),
-    ])
+    const { data: addedSchool } = await supabase.from('schools').select('name').eq('id', addedSchoolId).single()
+    const { data: teamInfo } = await supabase.from('fantasy_teams').select('name').eq('id', teamId).single()
+    let droppedLabel: string | null = null
+    if (droppedSchoolId) {
+      const { data: droppedSchool } = await supabase.from('schools').select('name').eq('id', droppedSchoolId).single()
+      droppedLabel = droppedSchool?.name || 'a school'
+    }
 
-    const teamLabel = teamInfo.data?.name || 'A team'
-    const droppedLabel = droppedSchool.data?.name || 'a school'
-    const addedLabel = addedSchool.data?.name || 'a school'
+    const addedLabel = addedSchool?.name || 'a school'
+    const teamLabel = teamInfo?.name || 'A team'
+
+    const notifBody = droppedLabel
+      ? `${teamLabel} dropped ${droppedLabel} and added ${addedLabel}`
+      : `${teamLabel} added ${addedLabel}`
 
     notifyLeagueMembers({
       leagueId,
       excludeUserId: user.id,
       type: 'transaction_completed',
       title: 'Transaction Completed',
-      body: `${teamLabel} dropped ${droppedLabel} and added ${addedLabel}`,
+      body: notifBody,
       data: { leagueId },
     })
 

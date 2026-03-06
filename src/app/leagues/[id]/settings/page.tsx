@@ -138,6 +138,21 @@ export default function CommissionerToolsPage() {
   const [editingSecondOwner, setEditingSecondOwner] = useState<string | null>(null)
   const [secondOwnerEmail, setSecondOwnerEmail] = useState('')
 
+  // Trade veto state
+  interface RecentTrade {
+    id: string
+    status: string
+    proposed_at: string
+    resolved_at: string | null
+    proposer_team: { id: string; name: string } | null
+    receiver_team: { id: string; name: string } | null
+    trade_items: { school_id: string; team_id: string; direction: string; schools: { name: string } | null }[]
+  }
+  const [recentTrades, setRecentTrades] = useState<RecentTrade[]>([])
+  const [vetoingTradeId, setVetoingTradeId] = useState<string | null>(null)
+  const [vetoReason, setVetoReason] = useState('')
+  const [vetoSubmitting, setVetoSubmitting] = useState(false)
+
   useEffect(() => {
     async function loadData() {
       try {
@@ -287,6 +302,53 @@ export default function CommissionerToolsPage() {
       setError('Failed to save settings')
     } finally {
       setSaving(false)
+    }
+  }
+
+  // Fetch recent accepted trades for veto section
+  const loadRecentTrades = async () => {
+    const { data } = await supabase
+      .from('trades')
+      .select(`
+        id, status, proposed_at, resolved_at,
+        proposer_team:proposer_team_id (id, name),
+        receiver_team:receiver_team_id (id, name),
+        trade_items (school_id, team_id, direction, schools (name))
+      `)
+      .eq('league_id', leagueId)
+      .in('status', ['accepted', 'vetoed'])
+      .order('resolved_at', { ascending: false })
+      .limit(10)
+    setRecentTrades((data || []) as unknown as RecentTrade[])
+  }
+
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { if (leagueSubTab === 'trades') loadRecentTrades() }, [leagueSubTab])
+
+  const handleVeto = async (tradeId: string) => {
+    if (!vetoReason.trim()) {
+      setError('Please provide a reason for the veto')
+      return
+    }
+    setVetoSubmitting(true)
+    setError(null)
+    try {
+      const res = await fetch(`/api/leagues/${leagueId}/trades/veto`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tradeId, reason: vetoReason.trim() }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Failed to veto trade')
+      setSuccess('Trade vetoed. Rosters have been reversed.')
+      setVetoingTradeId(null)
+      setVetoReason('')
+      loadRecentTrades()
+      setTimeout(() => setSuccess(null), 3000)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to veto trade')
+    } finally {
+      setVetoSubmitting(false)
     }
   }
 
@@ -1262,6 +1324,88 @@ export default function CommissionerToolsPage() {
                       {saving ? 'Saving...' : 'Save Trade Settings'}
                     </button>
                   </div>
+
+                  {/* Commissioner Trade Veto Section */}
+                  {recentTrades.length > 0 && (
+                    <div className="mt-6 pt-6 border-t border-border">
+                      <h3 className="text-lg font-semibold text-text-primary mb-4">Recent Trades</h3>
+                      <p className="text-text-muted text-sm mb-4">Veto accepted trades to reverse roster changes. Both teams will be notified.</p>
+                      <div className="space-y-3">
+                        {recentTrades.map(trade => {
+                          const proposer = trade.proposer_team?.name || 'Unknown'
+                          const receiver = trade.receiver_team?.name || 'Unknown'
+                          const isVetoed = trade.status === 'vetoed'
+                          const proposerGiving = trade.trade_items
+                            .filter(i => i.team_id === trade.proposer_team?.id && i.direction === 'giving')
+                            .map(i => i.schools?.name || 'Unknown')
+                          const receiverGiving = trade.trade_items
+                            .filter(i => i.team_id === trade.receiver_team?.id && i.direction === 'giving')
+                            .map(i => i.schools?.name || 'Unknown')
+
+                          return (
+                            <div key={trade.id} className={`p-4 rounded-lg border ${isVetoed ? 'bg-danger/5 border-danger/20' : 'bg-surface-inset border-border'}`}>
+                              <div className="flex items-center justify-between gap-4 flex-wrap">
+                                <div className="text-sm">
+                                  <span className="font-medium text-text-primary">{proposer}</span>
+                                  <span className="text-text-muted"> traded </span>
+                                  <span className="text-danger-text">{proposerGiving.join(', ')}</span>
+                                  <span className="text-text-muted"> for </span>
+                                  <span className="text-success-text">{receiverGiving.join(', ')}</span>
+                                  <span className="text-text-muted"> from </span>
+                                  <span className="font-medium text-text-primary">{receiver}</span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  {isVetoed ? (
+                                    <span className="text-xs px-2 py-1 bg-danger/20 text-danger-text rounded-full font-medium">Vetoed</span>
+                                  ) : (
+                                    <button
+                                      onClick={() => { setVetoingTradeId(trade.id); setVetoReason('') }}
+                                      className="px-3 py-1.5 bg-danger hover:bg-danger/80 text-white rounded text-xs font-medium transition-colors"
+                                    >
+                                      Veto
+                                    </button>
+                                  )}
+                                </div>
+                              </div>
+                              {trade.resolved_at && (
+                                <p className="text-[10px] text-text-muted mt-1">
+                                  {new Date(trade.resolved_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}
+                                </p>
+                              )}
+                              {/* Veto reason input */}
+                              {vetoingTradeId === trade.id && (
+                                <div className="mt-3 pt-3 border-t border-border">
+                                  <label className="block text-text-secondary text-sm mb-1">Reason for veto</label>
+                                  <input
+                                    type="text"
+                                    value={vetoReason}
+                                    onChange={(e) => setVetoReason(e.target.value)}
+                                    placeholder="e.g. Unfair trade, collusion suspected"
+                                    className="w-full px-3 py-2 bg-surface border border-border rounded-lg text-text-primary text-sm mb-2"
+                                  />
+                                  <div className="flex gap-2">
+                                    <button
+                                      onClick={() => setVetoingTradeId(null)}
+                                      className="px-3 py-1.5 bg-surface hover:bg-surface-subtle text-text-primary border border-border rounded text-xs font-medium transition-colors"
+                                    >
+                                      Cancel
+                                    </button>
+                                    <button
+                                      onClick={() => handleVeto(trade.id)}
+                                      disabled={vetoSubmitting || !vetoReason.trim()}
+                                      className="px-3 py-1.5 bg-danger hover:bg-danger/80 text-white rounded text-xs font-medium disabled:opacity-50 transition-colors"
+                                    >
+                                      {vetoSubmitting ? 'Vetoing...' : 'Confirm Veto'}
+                                    </button>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  )}
                 </section>
               )}
 

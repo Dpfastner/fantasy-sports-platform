@@ -187,14 +187,8 @@ const FEED_ACTIONS = new Set([
   'announcement.updated',
   'announcement.deleted',
   'team.edited',
-  'trade.proposed',
   'trade.accepted',
-  'trade.executed',
-  'trade.rejected',
-  'trade.cancelled',
   'trade.vetoed',
-  'trade.expired',
-  'trade.countered',
 ])
 
 export function LeagueActivityFeed({ events }: LeagueActivityFeedProps) {
