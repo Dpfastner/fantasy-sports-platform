@@ -8,6 +8,7 @@ import { ShareButton } from '@/components/ShareButton'
 import { buildShareUrl } from '@/lib/share'
 import { SITE_URL } from '@/lib/og/constants'
 import { getLeagueYear } from '@/lib/league-helpers'
+import { LeagueNav } from '@/components/LeagueNav'
 
 // Force dynamic rendering to ensure fresh data from database
 export const dynamic = 'force-dynamic'
@@ -103,37 +104,7 @@ export default async function BracketPage({ params }: PageProps) {
         </div>
       </header>
 
-      {/* Navigation */}
-      <nav className="bg-surface/30 border-b border-border">
-        <div className="container mx-auto px-4">
-          <div className="flex gap-4 overflow-x-auto">
-            <Link
-              href={`/leagues/${leagueId}`}
-              className="py-3 px-4 text-text-secondary hover:text-text-primary transition-colors whitespace-nowrap"
-            >
-              Overview
-            </Link>
-            <Link
-              href={`/leagues/${leagueId}/team`}
-              className="py-3 px-4 text-text-secondary hover:text-text-primary transition-colors whitespace-nowrap"
-            >
-              My Team
-            </Link>
-            <Link
-              href={`/leagues/${leagueId}/bracket`}
-              className="py-3 px-4 text-text-primary border-b-2 border-brand whitespace-nowrap"
-            >
-              Playoff Bracket
-            </Link>
-            <Link
-              href={`/leagues/${leagueId}/transactions`}
-              className="py-3 px-4 text-text-secondary hover:text-text-primary transition-colors whitespace-nowrap"
-            >
-              Add/Drop
-            </Link>
-          </div>
-        </div>
-      </nav>
+      <LeagueNav leagueId={leagueId} />
 
       <main className="container mx-auto px-4 py-8">
         <div className="mb-6 flex items-start justify-between">

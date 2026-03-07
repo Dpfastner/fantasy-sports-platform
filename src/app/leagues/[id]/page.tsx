@@ -13,6 +13,8 @@ import { SandboxWeekSelector } from '@/components/SandboxWeekSelector'
 import { ShareButton } from '@/components/ShareButton'
 import { InviteCodeCard } from '@/components/InviteCodeCard'
 import { getCurrentWeek } from '@/lib/week'
+import { ensureContrast } from '@/lib/color-utils'
+import { LeagueNav } from '@/components/LeagueNav'
 import { getEnvironment } from '@/lib/env'
 import { getLeagueYear } from '@/lib/league-helpers'
 import { buildShareUrl } from '@/lib/share'
@@ -382,6 +384,8 @@ export default async function LeaguePage({ params }: PageProps) {
         </Link>
       </Header>
 
+      <LeagueNav leagueId={id} isCommissioner={isCommissioner} />
+
       <main className="container mx-auto px-4 py-6">
         {/* League Header */}
         <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-4 mb-4">
@@ -414,45 +418,6 @@ export default async function LeaguePage({ params }: PageProps) {
           )}
         </div>
 
-        {/* Quick Navigation Bar */}
-        <div className="flex flex-wrap items-center gap-2 mb-6 pb-4 border-b border-border">
-          {isDraftComplete && (
-            <a
-              href="#standings"
-              className="bg-surface hover:bg-surface-subtle text-text-primary text-sm py-2 px-4 rounded-lg transition-colors"
-            >
-              Standings
-            </a>
-          )}
-          <Link
-            href={`/leagues/${id}/schedule`}
-            className="bg-surface hover:bg-surface-subtle text-text-primary text-sm py-2 px-4 rounded-lg transition-colors"
-          >
-            Schedule
-          </Link>
-          {isDraftComplete && (
-            <>
-              <Link
-                href={`/leagues/${id}/transactions`}
-                className="bg-surface hover:bg-surface-subtle text-text-primary text-sm py-2 px-4 rounded-lg transition-colors"
-              >
-                Add/Drop
-              </Link>
-              <Link
-                href={`/leagues/${id}/stats`}
-                className="bg-surface hover:bg-surface-subtle text-text-primary text-sm py-2 px-4 rounded-lg transition-colors"
-              >
-                League Stats
-              </Link>
-              <Link
-                href={`/leagues/${id}/history`}
-                className="bg-surface hover:bg-surface-subtle text-text-primary text-sm py-2 px-4 rounded-lg transition-colors"
-              >
-                History
-              </Link>
-            </>
-          )}
-        </div>
 
         {/* Invite Code (Commissioner only) */}
         {isCommissioner && (
@@ -522,7 +487,7 @@ export default async function LeaguePage({ params }: PageProps) {
                         className="w-8 h-8 rounded flex items-center justify-center text-xs font-bold shrink-0"
                         style={{
                           backgroundColor: team.primary_color || '#374151',
-                          color: team.secondary_color || '#ffffff',
+                          color: ensureContrast(team.primary_color || '#374151', team.secondary_color || '#ffffff'),
                         }}
                       >
                         {team.name.substring(0, 2).toUpperCase()}
@@ -664,7 +629,7 @@ export default async function LeaguePage({ params }: PageProps) {
                       className="w-8 h-8 rounded flex items-center justify-center text-xs font-bold"
                       style={{
                         backgroundColor: userTeam.primary_color || '#374151',
-                        color: userTeam.secondary_color || '#ffffff',
+                        color: ensureContrast(userTeam.primary_color || '#374151', userTeam.secondary_color || '#ffffff'),
                       }}
                     >
                       {userTeam.name.substring(0, 2).toUpperCase()}

@@ -9,6 +9,7 @@ import { useToast } from '@/components/Toast'
 import { DraftChat } from '@/components/DraftChat'
 import { trackActivity } from '@/app/actions/activity'
 import { track } from '@vercel/analytics'
+import { ensureContrast } from '@/lib/color-utils'
 
 interface School {
   id: string
@@ -1791,7 +1792,7 @@ export default function DraftRoomPage() {
                             ) : (
                               <div
                                 className="w-5 h-5 rounded-full flex items-center justify-center text-[8px] font-bold"
-                                style={{ backgroundColor: school.primary_color, color: school.secondary_color }}
+                                style={{ backgroundColor: school.primary_color, color: ensureContrast(school.primary_color, school.secondary_color) }}
                               >
                                 {school.abbreviation?.slice(0, 2) || school.name.slice(0, 2)}
                               </div>
@@ -1859,7 +1860,7 @@ export default function DraftRoomPage() {
                     }`}
                     style={{
                       backgroundColor: school.primary_color,
-                      color: school.secondary_color
+                      color: ensureContrast(school.primary_color, school.secondary_color)
                     }}
                   >
                     <div className="flex items-center gap-2">
@@ -1877,7 +1878,7 @@ export default function DraftRoomPage() {
                       ) : (
                         <div
                           className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold"
-                          style={{ backgroundColor: school.secondary_color, color: school.primary_color }}
+                          style={{ backgroundColor: school.secondary_color, color: ensureContrast(school.secondary_color, school.primary_color) }}
                         >
                           {school.abbreviation?.slice(0, 2) || school.name.slice(0, 2)}
                         </div>
@@ -1903,7 +1904,7 @@ export default function DraftRoomPage() {
                         )}
                         <div
                           className="text-xs px-1.5 py-0.5 rounded"
-                          style={{ backgroundColor: school.secondary_color, color: school.primary_color }}
+                          style={{ backgroundColor: school.secondary_color, color: ensureContrast(school.secondary_color, school.primary_color) }}
                         >
                           {globalPickCount}/{maxSelectionsTotal}
                         </div>
@@ -2067,7 +2068,7 @@ export default function DraftRoomPage() {
                     className="flex items-center gap-2 p-2 rounded text-sm"
                     style={{
                       backgroundColor: pick.schools.primary_color,
-                      color: pick.schools.secondary_color
+                      color: ensureContrast(pick.schools.primary_color, pick.schools.secondary_color)
                     }}
                   >
                     <span className="w-14 text-xs opacity-75">
@@ -2082,7 +2083,7 @@ export default function DraftRoomPage() {
                     ) : (
                       <div
                         className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold"
-                        style={{ backgroundColor: pick.schools.secondary_color, color: pick.schools.primary_color }}
+                        style={{ backgroundColor: pick.schools.secondary_color, color: ensureContrast(pick.schools.secondary_color, pick.schools.primary_color) }}
                       >
                         {pick.schools.abbreviation?.slice(0, 2) || pick.schools.name.slice(0, 2)}
                       </div>
@@ -2144,7 +2145,7 @@ export default function DraftRoomPage() {
                         className="flex items-center gap-2 p-2 rounded text-sm"
                         style={{
                           backgroundColor: pick.schools.primary_color,
-                          color: pick.schools.secondary_color
+                          color: ensureContrast(pick.schools.primary_color, pick.schools.secondary_color)
                         }}
                       >
                         <span className="w-5 text-xs opacity-75">{idx + 1}.</span>
@@ -2157,7 +2158,7 @@ export default function DraftRoomPage() {
                         ) : (
                           <div
                             className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold"
-                            style={{ backgroundColor: pick.schools.secondary_color, color: pick.schools.primary_color }}
+                            style={{ backgroundColor: pick.schools.secondary_color, color: ensureContrast(pick.schools.secondary_color, pick.schools.primary_color) }}
                           >
                             {pick.schools.abbreviation?.slice(0, 2) || pick.schools.name.slice(0, 2)}
                           </div>
@@ -2217,7 +2218,7 @@ export default function DraftRoomPage() {
               className="p-4 rounded-lg mb-6 flex items-center gap-4"
               style={{
                 backgroundColor: pendingPick.primary_color,
-                color: pendingPick.secondary_color
+                color: ensureContrast(pendingPick.primary_color, pendingPick.secondary_color)
               }}
             >
               {pendingPick.logo_url ? (
@@ -2229,7 +2230,7 @@ export default function DraftRoomPage() {
               ) : (
                 <div
                   className="w-16 h-16 rounded-full flex items-center justify-center text-xl font-bold"
-                  style={{ backgroundColor: pendingPick.secondary_color, color: pendingPick.primary_color }}
+                  style={{ backgroundColor: pendingPick.secondary_color, color: ensureContrast(pendingPick.secondary_color, pendingPick.primary_color) }}
                 >
                   {pendingPick.abbreviation?.slice(0, 3) || pendingPick.name.slice(0, 3)}
                 </div>

@@ -479,10 +479,10 @@ export function PlayoffBracket({ seasonId, rosterSchoolIds = [], leagueId }: Pro
         const hasByes = bracketGames.first_round.length > 4
         return (
           <div className="overflow-x-auto pb-4">
-            <div className="flex gap-8 min-w-max">
-              {/* First Round */}
-              <div className="space-y-4">
-                <h3 className="text-sm font-medium text-text-secondary text-center">First Round</h3>
+            <div className="flex gap-8 min-w-max items-stretch">
+              {/* First Round — sets the overall height */}
+              <div>
+                <h3 className="text-sm font-medium text-text-secondary text-center mb-4">First Round</h3>
                 {hasByes ? (
                   <div className="space-y-6">
                     {[0, 1, 2, 3].map(i => (
@@ -501,30 +501,30 @@ export function PlayoffBracket({ seasonId, rosterSchoolIds = [], leagueId }: Pro
                 )}
               </div>
 
-              {/* Quarterfinals */}
-              <div className={`space-y-4 ${hasByes ? 'pt-14' : 'pt-8'}`}>
-                <h3 className="text-sm font-medium text-text-secondary text-center">Quarterfinals</h3>
-                <div className={hasByes ? 'space-y-28' : 'space-y-16'}>
+              {/* Quarterfinals — flex-centered to align with first round pairs */}
+              <div className="flex flex-col">
+                <h3 className="text-sm font-medium text-text-secondary text-center mb-4">Quarterfinals</h3>
+                <div className="flex-1 flex flex-col justify-around">
                   {bracketGames.quarterfinal.map((game, idx) => (
                     <div key={idx}>{renderMatchup(game)}</div>
                   ))}
                 </div>
               </div>
 
-              {/* Semifinals */}
-              <div className={`space-y-4 ${hasByes ? 'pt-32' : 'pt-24'}`}>
-                <h3 className="text-sm font-medium text-text-secondary text-center">Semifinals</h3>
-                <div className={hasByes ? 'space-y-64' : 'space-y-32'}>
+              {/* Semifinals — flex-centered to align with QF pairs */}
+              <div className="flex flex-col">
+                <h3 className="text-sm font-medium text-text-secondary text-center mb-4">Semifinals</h3>
+                <div className="flex-1 flex flex-col justify-around">
                   {bracketGames.semifinal.map((game, idx) => (
                     <div key={idx}>{renderMatchup(game)}</div>
                   ))}
                 </div>
               </div>
 
-              {/* Championship */}
-              <div className={`space-y-4 ${hasByes ? 'pt-56' : 'pt-40'}`}>
-                <h3 className="text-sm font-medium text-text-secondary text-center">Championship</h3>
-                <div>
+              {/* Championship — flex-centered */}
+              <div className="flex flex-col">
+                <h3 className="text-sm font-medium text-text-secondary text-center mb-4">Championship</h3>
+                <div className="flex-1 flex flex-col justify-around">
                   {bracketGames.championship.map((game, idx) => (
                     <div key={idx}>{renderMatchup(game)}</div>
                   ))}

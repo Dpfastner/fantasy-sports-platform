@@ -2,6 +2,7 @@ import { redirect, notFound } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { Header } from '@/components/Header'
+import { LeagueNav } from '@/components/LeagueNav'
 import { SandboxWeekSelector } from '@/components/SandboxWeekSelector'
 import { getCurrentWeek } from '@/lib/week'
 import { getEnvironment } from '@/lib/env'
@@ -282,6 +283,8 @@ export default async function HistoryPage({ params, searchParams }: PageProps) {
           ← {league.name}
         </Link>
       </Header>
+
+      <LeagueNav leagueId={leagueId} />
 
       <main className="max-w-4xl mx-auto px-4 py-6">
         <div className="mb-6">

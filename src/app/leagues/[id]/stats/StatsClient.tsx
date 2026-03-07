@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Header } from '@/components/Header'
+import { LeagueNav } from '@/components/LeagueNav'
 
 interface SchoolRecord {
   id: string
@@ -154,33 +155,13 @@ export default function StatsClient({
         </Link>
       </Header>
 
+      <LeagueNav leagueId={leagueId} />
+
       <main className="container mx-auto px-4 py-6">
         {/* Page Header */}
         <div className="mb-6">
           <h1 className="text-2xl md:text-3xl font-bold text-text-primary mb-1">League Stats</h1>
           <p className="text-text-secondary">{seasonName} - Week {currentWeek}</p>
-        </div>
-
-        {/* Quick Nav */}
-        <div className="flex flex-wrap items-center gap-2 mb-6 pb-4 border-b border-border">
-          <Link
-            href={`/leagues/${leagueId}`}
-            className="bg-surface hover:bg-surface-subtle text-text-primary text-sm py-2 px-4 rounded-lg transition-colors"
-          >
-            League Home
-          </Link>
-          <Link
-            href={`/leagues/${leagueId}/schedule`}
-            className="bg-surface hover:bg-surface-subtle text-text-primary text-sm py-2 px-4 rounded-lg transition-colors"
-          >
-            Schedule
-          </Link>
-          <Link
-            href={`/leagues/${leagueId}/transactions`}
-            className="bg-surface hover:bg-surface-subtle text-text-primary text-sm py-2 px-4 rounded-lg transition-colors"
-          >
-            Add/Drop
-          </Link>
         </div>
 
         {/* Section Toggle */}

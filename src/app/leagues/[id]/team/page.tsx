@@ -9,6 +9,8 @@ import { getCurrentWeek, getSimulatedDate } from '@/lib/week'
 import { getEnvironment } from '@/lib/env'
 import { getLeagueYear } from '@/lib/league-helpers'
 import { calculateSchoolGamePoints, DEFAULT_SCORING } from '@/lib/points/calculator'
+import { ensureContrast, getContrastColor } from '@/lib/color-utils'
+import { LeagueNav } from '@/components/LeagueNav'
 
 // Force dynamic rendering to ensure fresh data from database
 export const dynamic = 'force-dynamic'
@@ -575,35 +577,9 @@ export default async function TeamPage({ params }: PageProps) {
         </Link>
       </Header>
 
-      <main className="container mx-auto px-4 py-8">
-        {/* Quick Nav */}
-        <div className="flex flex-wrap items-center gap-2 mb-6 pb-4 border-b border-border">
-          <Link
-            href={`/leagues/${leagueId}`}
-            className="bg-surface hover:bg-surface-subtle text-text-primary text-sm py-2 px-4 rounded-lg transition-colors"
-          >
-            League Home
-          </Link>
-          <Link
-            href={`/leagues/${leagueId}/schedule`}
-            className="bg-surface hover:bg-surface-subtle text-text-primary text-sm py-2 px-4 rounded-lg transition-colors"
-          >
-            Schedule
-          </Link>
-          <Link
-            href={`/leagues/${leagueId}/transactions`}
-            className="bg-surface hover:bg-surface-subtle text-text-primary text-sm py-2 px-4 rounded-lg transition-colors"
-          >
-            Add/Drop
-          </Link>
-          <Link
-            href={`/leagues/${leagueId}/stats`}
-            className="bg-surface hover:bg-surface-subtle text-text-primary text-sm py-2 px-4 rounded-lg transition-colors"
-          >
-            League Stats
-          </Link>
-        </div>
+      <LeagueNav leagueId={leagueId} />
 
+      <main className="container mx-auto px-4 py-8">
         {/* Team Header */}
         <div
           className="rounded-lg p-6 mb-8"
@@ -625,7 +601,7 @@ export default async function TeamPage({ params }: PageProps) {
                   className="w-16 h-16 rounded-lg flex items-center justify-center text-2xl font-bold"
                   style={{
                     backgroundColor: team.secondary_color || '#ffffff',
-                    color: team.primary_color || '#1a1a1a'
+                    color: ensureContrast(team.secondary_color || '#ffffff', team.primary_color || '#1a1a1a')
                   }}
                 >
                   {team.name.substring(0, 2).toUpperCase()}
@@ -634,19 +610,19 @@ export default async function TeamPage({ params }: PageProps) {
               <div>
                 <h1
                   className="text-3xl font-bold mb-2"
-                  style={{ color: team.secondary_color || '#ffffff' }}
+                  style={{ color: ensureContrast(team.primary_color || '#1f2937', team.secondary_color || '#ffffff') }}
                 >
                   {team.name}
                 </h1>
                 <div
                   className="flex items-center gap-6 flex-wrap"
-                  style={{ color: `${team.secondary_color || '#ffffff'}cc` }}
+                  style={{ color: `${ensureContrast(team.primary_color || '#1f2937', team.secondary_color || '#ffffff')}cc` }}
                 >
-                  <span>Standing: <span className="font-semibold" style={{ color: team.secondary_color || '#ffffff' }}>{standing} of {totalTeams}</span></span>
-                  <span>Total Points: <span className="font-semibold" style={{ color: team.secondary_color || '#ffffff' }}>{team.total_points}</span></span>
-                  <span>Add/Drops: <span className="font-semibold" style={{ color: team.secondary_color || '#ffffff' }}>{team.add_drops_used} / {settings?.max_add_drops_per_season || 50}</span></span>
+                  <span>Standing: <span className="font-semibold" style={{ color: ensureContrast(team.primary_color || '#1f2937', team.secondary_color || '#ffffff') }}>{standing} of {totalTeams}</span></span>
+                  <span>Total Points: <span className="font-semibold" style={{ color: ensureContrast(team.primary_color || '#1f2937', team.secondary_color || '#ffffff') }}>{team.total_points}</span></span>
+                  <span>Add/Drops: <span className="font-semibold" style={{ color: ensureContrast(team.primary_color || '#1f2937', team.secondary_color || '#ffffff') }}>{team.add_drops_used} / {settings?.max_add_drops_per_season || 50}</span></span>
                   {settings?.trades_enabled !== false && (
-                    <span>Trades: <span className="font-semibold" style={{ color: team.secondary_color || '#ffffff' }}>{team.trades_used || 0} / {settings?.max_trades_per_season || 10}</span></span>
+                    <span>Trades: <span className="font-semibold" style={{ color: ensureContrast(team.primary_color || '#1f2937', team.secondary_color || '#ffffff') }}>{team.trades_used || 0} / {settings?.max_trades_per_season || 10}</span></span>
                   )}
                 </div>
               </div>
@@ -656,7 +632,7 @@ export default async function TeamPage({ params }: PageProps) {
               className="px-4 py-2 rounded-lg transition-opacity hover:opacity-80"
               style={{
                 backgroundColor: team.secondary_color || '#ffffff',
-                color: team.primary_color || '#1a1a1a'
+                color: ensureContrast(team.secondary_color || '#ffffff', team.primary_color || '#1a1a1a')
               }}
             >
               Team Settings
@@ -882,8 +858,8 @@ export default async function TeamPage({ params }: PageProps) {
                           <img src={school.logo_url} alt={school.name} className="w-8 h-8 object-contain opacity-40 grayscale" />
                         ) : (
                           <div
-                            className="w-8 h-8 rounded-full flex items-center justify-center text-text-primary font-bold text-xs opacity-40 grayscale"
-                            style={{ backgroundColor: school.primary_color }}
+                            className="w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs opacity-40 grayscale"
+                            style={{ backgroundColor: school.primary_color, color: getContrastColor(school.primary_color) }}
                           >
                             {school.abbreviation || school.name.substring(0, 2)}
                           </div>

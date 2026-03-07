@@ -37,6 +37,13 @@ function getNotificationIcon(type: string): string {
     case 'league_joined': return '👋'
     case 'transaction_completed': return '🔄'
     case 'game_results': return '📊'
+    case 'trade_proposed': return '🤝'
+    case 'trade_accepted': return '✅'
+    case 'trade_rejected': return '❌'
+    case 'trade_vetoed': return '🚫'
+    case 'trade_cancelled': return '↩️'
+    case 'trade_expired':
+    case 'trade_expiring': return '⏳'
     default: return '🔔'
   }
 }
@@ -57,6 +64,7 @@ function getNotificationHref(notification: Notification): string | null {
     case 'transaction_completed':
       return `/leagues/${leagueId}/transactions`
     case 'trade_accepted':
+      if (notification.data?.vetoable) return `/leagues/${leagueId}/settings`
       return `/leagues/${leagueId}/team`
     case 'trade_proposed':
     case 'trade_rejected':

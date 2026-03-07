@@ -8,6 +8,7 @@ import { getLeagueYear } from '@/lib/league-helpers'
 import { getCurrentWeek, getSimulatedDate } from '@/lib/week'
 import { getEnvironment } from '@/lib/env'
 import { calculateSchoolGamePoints, DEFAULT_SCORING } from '@/lib/points/calculator'
+import { ensureContrast } from '@/lib/color-utils'
 
 export const dynamic = 'force-dynamic'
 
@@ -507,7 +508,7 @@ export default async function TeamViewPage({ params }: PageProps) {
                   className="w-16 h-16 rounded-lg flex items-center justify-center text-2xl font-bold"
                   style={{
                     backgroundColor: team.secondary_color || '#ffffff',
-                    color: team.primary_color || '#1a1a1a'
+                    color: ensureContrast(team.secondary_color || '#ffffff', team.primary_color || '#1a1a1a')
                   }}
                 >
                   {team.name.substring(0, 2).toUpperCase()}
@@ -516,11 +517,11 @@ export default async function TeamViewPage({ params }: PageProps) {
               <div>
                 <h1
                   className="text-3xl font-bold mb-1"
-                  style={{ color: team.secondary_color || '#ffffff' }}
+                  style={{ color: ensureContrast(team.primary_color || '#1f2937', team.secondary_color || '#ffffff') }}
                 >
                   {team.name}
                 </h1>
-                <p style={{ color: `${team.secondary_color || '#ffffff'}99` }} className="text-sm mb-2">
+                <p style={{ color: `${ensureContrast(team.primary_color || '#1f2937', team.secondary_color || '#ffffff')}99` }} className="text-sm mb-2">
                   Owned by{' '}
                   <Link href={`/profile/${team.user_id}`} className="underline hover:opacity-80">
                     {ownerName}
@@ -528,10 +529,10 @@ export default async function TeamViewPage({ params }: PageProps) {
                 </p>
                 <div
                   className="flex items-center gap-6 flex-wrap"
-                  style={{ color: `${team.secondary_color || '#ffffff'}cc` }}
+                  style={{ color: `${ensureContrast(team.primary_color || '#1f2937', team.secondary_color || '#ffffff')}cc` }}
                 >
-                  <span>Standing: <span className="font-semibold" style={{ color: team.secondary_color || '#ffffff' }}>{standing} of {totalTeams}</span></span>
-                  <span>Total Points: <span className="font-semibold" style={{ color: team.secondary_color || '#ffffff' }}>{team.total_points}</span></span>
+                  <span>Standing: <span className="font-semibold" style={{ color: ensureContrast(team.primary_color || '#1f2937', team.secondary_color || '#ffffff') }}>{standing} of {totalTeams}</span></span>
+                  <span>Total Points: <span className="font-semibold" style={{ color: ensureContrast(team.primary_color || '#1f2937', team.secondary_color || '#ffffff') }}>{team.total_points}</span></span>
                 </div>
               </div>
             </div>
@@ -547,7 +548,7 @@ export default async function TeamViewPage({ params }: PageProps) {
                 schoolRecordsMap={schoolRecordsForModal}
                 buttonStyle={{
                   backgroundColor: team.secondary_color || '#ffffff',
-                  color: team.primary_color || '#1a1a1a',
+                  color: ensureContrast(team.secondary_color || '#ffffff', team.primary_color || '#1a1a1a'),
                 }}
                 maxRosterSize={settings?.schools_per_team || 12}
               />

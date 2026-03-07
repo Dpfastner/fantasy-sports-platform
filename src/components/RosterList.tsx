@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useToast } from '@/components/Toast'
+import { getContrastColor } from '@/lib/color-utils'
 import { trackActivity } from '@/app/actions/activity'
 import {
   REGULAR_WEEK_COUNT,
@@ -569,8 +570,8 @@ export function RosterList({
                     <img src={school.logo_url} alt={school.name} className="w-8 h-8 object-contain" />
                   ) : (
                     <div
-                      className="w-8 h-8 rounded-full flex items-center justify-center text-text-primary font-bold text-xs"
-                      style={{ backgroundColor: school.primary_color }}
+                      className="w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs"
+                      style={{ backgroundColor: school.primary_color, color: getContrastColor(school.primary_color) }}
                     >
                       {school.abbreviation || school.name.substring(0, 2)}
                     </div>
@@ -809,8 +810,8 @@ export function RosterList({
                   <img src={selectedSchool.logo_url} alt={selectedSchool.name} className="w-10 h-10 object-contain" />
                 ) : (
                   <div
-                    className="w-10 h-10 rounded-full flex items-center justify-center text-text-primary font-bold"
-                    style={{ backgroundColor: selectedSchool.primary_color }}
+                    className="w-10 h-10 rounded-full flex items-center justify-center font-bold"
+                    style={{ backgroundColor: selectedSchool.primary_color, color: getContrastColor(selectedSchool.primary_color) }}
                   >
                     {selectedSchool.abbreviation || selectedSchool.name.substring(0, 2)}
                   </div>

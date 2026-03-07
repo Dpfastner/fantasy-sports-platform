@@ -2,15 +2,16 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { Suspense } from 'react'
 import EmailCaptureForm from '@/components/EmailCaptureForm'
+import { SPORTS } from '@/lib/sports-config'
 
 export const metadata: Metadata = {
-  title: 'Rivyls — Fantasy College Football',
+  title: 'Rivyls — Fantasy Sports Leagues',
   description:
-    'Draft real college football teams, compete with friends, and win weekly prizes. Join the waitlist for the ultimate fantasy college football experience.',
+    'Draft real teams, compete with friends, and win weekly prizes. Fantasy college football and more — Rivyls makes it simple to run the league you\'ve always wanted.',
   openGraph: {
-    title: 'Rivyls — Fantasy College Football',
+    title: 'Rivyls — Fantasy Sports Leagues',
     description:
-      'Draft real college football teams, compete with friends, and win weekly prizes.',
+      'Draft real teams, compete with friends, and win weekly prizes.',
     url: 'https://rivyls.com/welcome',
     siteName: 'Rivyls',
     type: 'website',
@@ -19,15 +20,15 @@ export const metadata: Metadata = {
         url: 'https://rivyls.com/api/og/default',
         width: 1200,
         height: 630,
-        alt: 'Rivyls — Fantasy College Football',
+        alt: 'Rivyls — Fantasy Sports Leagues',
       },
     ],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Rivyls — Fantasy College Football',
+    title: 'Rivyls — Fantasy Sports Leagues',
     description:
-      'Draft real college football teams, compete with friends, and win weekly prizes.',
+      'Draft real teams, compete with friends, and win weekly prizes.',
   },
   robots: { index: true, follow: true },
 }
@@ -38,7 +39,7 @@ const jsonLd = {
   name: 'Rivyls',
   url: 'https://rivyls.com',
   description:
-    'Fantasy college football platform — draft teams, compete with friends, win prizes.',
+    'Fantasy sports platform — draft teams, compete with friends, win prizes.',
 }
 
 export default function WelcomePage() {
@@ -76,7 +77,7 @@ export default function WelcomePage() {
           Your League.<br />Your Rivals.<br />Your Season.
         </h1>
         <p className="text-lg md:text-xl text-text-secondary max-w-2xl mx-auto mb-10 leading-relaxed">
-          Draft real college football teams, compete head-to-head with friends,
+          Draft real teams, compete head-to-head with friends,
           and chase weekly prizes all season long. Rivyls makes it simple to
           run the league you&apos;ve always wanted.
         </p>
@@ -86,6 +87,40 @@ export default function WelcomePage() {
         >
           Join the Waitlist
         </a>
+      </section>
+
+      {/* ── Sports ── */}
+      <section className="bg-surface py-16 md:py-24">
+        <div className="container mx-auto px-4 md:px-8">
+          <h2 className="brand-h2 text-2xl md:text-4xl text-text-primary text-center mb-12 md:mb-16">
+            Pick Your Sport
+          </h2>
+          <div className="grid md:grid-cols-2 gap-6 md:gap-8 max-w-3xl mx-auto">
+            {SPORTS.map((sport) => (
+              <div
+                key={sport.id}
+                className={`rounded-xl p-6 md:p-8 border ${
+                  sport.status === 'active'
+                    ? 'bg-surface-subtle border-brand/40'
+                    : 'bg-surface border-border opacity-70'
+                }`}
+              >
+                <div className="flex items-center gap-3 mb-3">
+                  <span className="text-3xl">{sport.icon}</span>
+                  <div>
+                    <h3 className="brand-h3 text-xl text-text-primary">{sport.name}</h3>
+                    {sport.status === 'coming_soon' && (
+                      <span className="text-xs font-medium text-warning-text bg-warning-bg px-2 py-0.5 rounded-full">
+                        Coming Soon
+                      </span>
+                    )}
+                  </div>
+                </div>
+                <p className="text-text-secondary text-sm leading-relaxed">{sport.description}</p>
+              </div>
+            ))}
+          </div>
+        </div>
       </section>
 
       {/* ── How It Works ── */}
@@ -144,7 +179,7 @@ export default function WelcomePage() {
       {/* ── Features ── */}
       <section className="container mx-auto px-4 md:px-8 py-16 md:py-24">
         <h2 className="brand-h2 text-2xl md:text-4xl text-text-primary text-center mb-12 md:mb-16">
-          Built for College Football Fans
+          Built for Fans
         </h2>
         <div className="grid md:grid-cols-3 gap-6 md:gap-8 max-w-5xl mx-auto">
           {[

@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { Header } from '@/components/Header'
+import { getCurrentWeek } from '@/lib/week'
 
 export default async function DashboardPage() {
   const supabase = await createClient()
@@ -55,6 +56,39 @@ export default async function DashboardPage() {
     ...m.leagues,
     role: m.role
   })).filter(l => l.id) || []
+
+  // Get user's teams for rank info
+  const leagueIds = leagues.map(l => l.id)
+  let userTeamMap: Record<string, { rank: number; totalTeams: number }> = {}
+
+  if (leagueIds.length > 0) {
+    // Get all teams across user's leagues with total_points for ranking
+    const { data: allTeams } = await supabase
+      .from('fantasy_teams')
+      .select('id, league_id, user_id, total_points')
+      .in('league_id', leagueIds)
+      .order('total_points', { ascending: false })
+
+    if (allTeams) {
+      // Group by league and calculate ranks
+      const teamsByLeague: Record<string, typeof allTeams> = {}
+      for (const team of allTeams) {
+        if (!teamsByLeague[team.league_id]) teamsByLeague[team.league_id] = []
+        teamsByLeague[team.league_id].push(team)
+      }
+      for (const [lid, teams] of Object.entries(teamsByLeague)) {
+        const userRank = teams.findIndex(t => t.user_id === user.id) + 1
+        if (userRank > 0) {
+          userTeamMap[lid] = { rank: userRank, totalTeams: teams.length }
+        }
+      }
+    }
+  }
+
+  // Get current week
+  const firstLeagueYear = leagues[0]?.seasons
+  const year = Array.isArray(firstLeagueYear) ? firstLeagueYear[0]?.year : (firstLeagueYear as { year: number } | null)?.year
+  const currentWeek = await getCurrentWeek(year || 2025)
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gradient-from to-gradient-to">
@@ -116,11 +150,18 @@ export default async function DashboardPage() {
                   <h3 className="text-xl font-semibold text-text-primary">
                     {league.name}
                   </h3>
-                  {league.role === 'commissioner' && (
-                    <span className="bg-warning/20 text-warning-text text-xs px-2 py-1 rounded">
-                      Commissioner
-                    </span>
-                  )}
+                  <div className="flex items-center gap-2">
+                    {currentWeek >= 0 && (
+                      <span className="bg-brand/20 text-brand-text text-xs px-2 py-1 rounded font-medium">
+                        Week {currentWeek}
+                      </span>
+                    )}
+                    {league.role === 'commissioner' && (
+                      <span className="bg-warning/20 text-warning-text text-xs px-2 py-1 rounded">
+                        Commissioner
+                      </span>
+                    )}
+                  </div>
                 </div>
                 <div className="space-y-2 text-text-secondary">
                   <p className="flex items-center gap-2">
@@ -131,6 +172,21 @@ export default async function DashboardPage() {
                     <span>📅</span>
                     <span>{league.seasons?.name}</span>
                   </p>
+                  {league.id && userTeamMap[league.id] && (
+                    <p className="flex items-center gap-2">
+                      <span>🏆</span>
+                      <span>
+                        {userTeamMap[league.id].rank === 1
+                          ? '1st'
+                          : userTeamMap[league.id].rank === 2
+                          ? '2nd'
+                          : userTeamMap[league.id].rank === 3
+                          ? '3rd'
+                          : `${userTeamMap[league.id].rank}th`
+                        } of {userTeamMap[league.id].totalTeams}
+                      </span>
+                    </p>
+                  )}
                 </div>
               </Link>
             ))}

@@ -25,6 +25,9 @@ export default function TeamEditPage({ params }: PageProps) {
   const [imageUrl, setImageUrl] = useState('')
   const [leagueName, setLeagueName] = useState('')
   const [hasChanges, setHasChanges] = useState(false)
+  const [logoFile, setLogoFile] = useState<File | null>(null)
+  const [logoPreviewUrl, setLogoPreviewUrl] = useState<string | null>(null)
+  const [showUrlInput, setShowUrlInput] = useState(false)
 
   // Track unsaved changes for beforeunload warning
   const [originalValues, setOriginalValues] = useState({ name: '', primaryColor: '', secondaryColor: '', imageUrl: '' })
@@ -90,8 +93,9 @@ export default function TeamEditPage({ params }: PageProps) {
       || primaryColor !== originalValues.primaryColor
       || secondaryColor !== originalValues.secondaryColor
       || imageUrl !== originalValues.imageUrl
+      || logoFile !== null
     setHasChanges(changed)
-  }, [name, primaryColor, secondaryColor, imageUrl, originalValues])
+  }, [name, primaryColor, secondaryColor, imageUrl, originalValues, logoFile])
 
   // Warn on navigation with unsaved changes
   useEffect(() => {
@@ -104,11 +108,63 @@ export default function TeamEditPage({ params }: PageProps) {
     return () => window.removeEventListener('beforeunload', handler)
   }, [hasChanges, success])
 
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    if (file.size > 500 * 1024) {
+      setError('File too large. Maximum size is 500KB.')
+      return
+    }
+
+    const allowed = ['image/png', 'image/jpeg', 'image/jpg', 'image/gif', 'image/webp', 'image/svg+xml']
+    if (!allowed.includes(file.type)) {
+      setError('Invalid file type. Accepted: PNG, JPG, GIF, WEBP, SVG')
+      return
+    }
+
+    setLogoFile(file)
+    setLogoPreviewUrl(URL.createObjectURL(file))
+    setShowUrlInput(false)
+    setImageUrl('')
+    setError(null)
+  }
+
+  const handleRemoveLogo = () => {
+    setLogoFile(null)
+    if (logoPreviewUrl) URL.revokeObjectURL(logoPreviewUrl)
+    setLogoPreviewUrl(null)
+    setImageUrl('')
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setSaving(true)
     setError(null)
     setSuccess(false)
+
+    let finalImageUrl = imageUrl.trim() || null
+
+    // Upload file if selected
+    if (logoFile) {
+      const formData = new FormData()
+      formData.append('file', logoFile)
+
+      const res = await fetch(`/api/teams/${teamId}/logo`, {
+        method: 'POST',
+        body: formData,
+      })
+
+      if (!res.ok) {
+        const data = await res.json()
+        setError(data.error || 'Logo upload failed. Please try again.')
+        setSaving(false)
+        return
+      }
+
+      const data = await res.json()
+      finalImageUrl = data.url
+    }
 
     const supabase = createClient()
 
@@ -118,7 +174,7 @@ export default function TeamEditPage({ params }: PageProps) {
         name: name.trim(),
         primary_color: primaryColor,
         secondary_color: secondaryColor,
-        image_url: imageUrl.trim() || null,
+        image_url: finalImageUrl,
       })
       .eq('id', teamId)
 
@@ -309,42 +365,78 @@ export default function TeamEditPage({ params }: PageProps) {
               </div>
             </div>
 
-            {/* Team Image URL */}
+            {/* Team Logo */}
             <div>
-              <label htmlFor="imageUrl" className="block text-sm font-medium text-text-secondary mb-2">
-                Team Logo URL <span className="text-text-muted">(optional)</span>
+              <label className="block text-sm font-medium text-text-secondary mb-2">
+                Team Logo <span className="text-text-muted">(optional)</span>
               </label>
-              <input
-                type="url"
-                id="imageUrl"
-                value={imageUrl}
-                onChange={(e) => setImageUrl(e.target.value)}
-                className="w-full px-4 py-2 bg-surface border border-border rounded-lg text-text-primary focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent"
-                placeholder="https://example.com/your-logo.png"
-              />
-              <p className="mt-1 text-xs text-text-muted">
-                Enter a URL to an image for your team logo
-              </p>
-            </div>
 
-            {/* Image Preview */}
-            {imageUrl && (
-              <div>
-                <label className="block text-sm font-medium text-text-secondary mb-2">
-                  Logo Preview
-                </label>
-                <div className="flex justify-center p-4 bg-surface-inset rounded-lg">
+              {/* Current/preview logo */}
+              {(logoPreviewUrl || imageUrl) && (
+                <div className="flex items-center gap-4 mb-3 p-3 bg-surface-inset rounded-lg">
                   <img
-                    src={imageUrl}
+                    src={logoPreviewUrl || imageUrl}
                     alt="Team logo preview"
-                    className="max-h-32 object-contain"
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).style.display = 'none'
-                    }}
+                    className="w-16 h-16 object-contain rounded"
+                    onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
                   />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-text-secondary text-sm truncate">
+                      {logoFile ? logoFile.name : 'Current logo'}
+                    </p>
+                    <button
+                      type="button"
+                      onClick={handleRemoveLogo}
+                      className="text-danger-text text-xs hover:underline mt-1"
+                    >
+                      Remove logo
+                    </button>
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
+
+              {/* File upload */}
+              <label className="flex items-center justify-center gap-2 px-4 py-3 bg-surface border-2 border-dashed border-border hover:border-brand/50 rounded-lg cursor-pointer transition-colors">
+                <svg className="w-5 h-5 text-text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
+                </svg>
+                <span className="text-text-secondary text-sm">Upload an image</span>
+                <input
+                  type="file"
+                  accept="image/png,image/jpeg,image/gif,image/webp,image/svg+xml"
+                  onChange={handleFileChange}
+                  className="hidden"
+                />
+              </label>
+              <p className="mt-1 text-xs text-text-muted">
+                PNG, JPG, GIF, WEBP, or SVG. Max 500KB.
+              </p>
+
+              {/* URL fallback */}
+              {!logoFile && (
+                <div className="mt-2">
+                  {showUrlInput ? (
+                    <div className="mt-2">
+                      <input
+                        type="url"
+                        value={imageUrl}
+                        onChange={(e) => setImageUrl(e.target.value)}
+                        className="w-full px-4 py-2 bg-surface border border-border rounded-lg text-text-primary text-sm focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent"
+                        placeholder="https://example.com/your-logo.png"
+                      />
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => setShowUrlInput(true)}
+                      className="text-brand-text text-xs hover:underline mt-1"
+                    >
+                      Or paste an image URL
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
 
             {/* Submit */}
             <div className="flex gap-4 pt-4">

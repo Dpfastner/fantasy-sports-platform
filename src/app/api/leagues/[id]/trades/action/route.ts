@@ -252,6 +252,28 @@ export async function POST(
         data: { tradeId },
       })
 
+      // Notify commissioner(s) specifically about veto option
+      const { data: commissioners } = await supabase
+        .from('league_members')
+        .select('user_id')
+        .eq('league_id', leagueId)
+        .in('role', ['commissioner', 'co-commissioner'])
+
+      if (commissioners) {
+        for (const comm of commissioners) {
+          // Skip if commissioner is one of the trading parties (they already got notified)
+          if (comm.user_id === proposerTeam.user_id || comm.user_id === receiverTeam.user_id) continue
+          createNotification({
+            userId: comm.user_id,
+            leagueId,
+            type: 'trade_accepted',
+            title: 'Trade Completed — Review & Veto',
+            body: `${proposerTeam.name} traded ${proposerGivingNames.join(', ')} to ${receiverTeam.name} for ${receiverGivingNames.join(', ')}. Review in League Settings → Trades to veto if needed.`,
+            data: { tradeId, vetoable: true },
+          })
+        }
+      }
+
       return NextResponse.json({ success: true, action: 'accepted' })
     }
 

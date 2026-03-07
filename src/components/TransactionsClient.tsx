@@ -1,10 +1,11 @@
 'use client'
 
 import { useState, useMemo, useCallback, useEffect } from 'react'
-import { useSearchParams } from 'next/navigation'
+import { useSearchParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useToast } from './Toast'
 import { Header } from './Header'
+import { LeagueNav } from './LeagueNav'
 import { WatchlistStar } from './WatchlistStar'
 
 interface RosterSchool {
@@ -148,6 +149,7 @@ export default function TransactionsClient({
   maxRosterSize = 12,
 }: TransactionsClientProps) {
   const { addToast } = useToast()
+  const router = useRouter()
   const searchParams = useSearchParams()
   const [step, setStep] = useState<TransactionStep>('select-drop')
   const [selectedDrop, setSelectedDrop] = useState<RosterSchool | null>(null)
@@ -359,16 +361,18 @@ export default function TransactionsClient({
         throw new Error(data.error || 'Transaction failed')
       }
 
-      // Show success toast and refresh the page
       const msg = selectedDrop
         ? `Successfully dropped ${selectedDrop.schools.name} and added ${selectedAdd.name}`
         : `Successfully added ${selectedAdd.name}`
       addToast(msg, 'success')
 
-      // Short delay before refresh to show toast
-      setTimeout(() => {
-        window.location.reload()
-      }, 1500)
+      // Reset form state and refresh server data
+      setSelectedDrop(null)
+      setSelectedAdd(null)
+      setStep('select-drop')
+      setIsSubmitting(false)
+      setError(null)
+      router.refresh()
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Transaction failed'
       setError(errorMessage)
@@ -404,28 +408,9 @@ export default function TransactionsClient({
         </Link>
       </Header>
 
+      <LeagueNav leagueId={leagueId} />
+
       <main className="container mx-auto px-3 md:px-4 py-4 md:py-8">
-        {/* Quick Nav */}
-        <div className="flex flex-wrap items-center gap-2 mb-6 pb-4 border-b border-border">
-          <Link
-            href={`/leagues/${leagueId}`}
-            className="bg-surface hover:bg-surface-subtle text-text-primary text-sm py-2 px-4 rounded-lg transition-colors"
-          >
-            League Home
-          </Link>
-          <Link
-            href={`/leagues/${leagueId}/schedule`}
-            className="bg-surface hover:bg-surface-subtle text-text-primary text-sm py-2 px-4 rounded-lg transition-colors"
-          >
-            Schedule
-          </Link>
-          <Link
-            href={`/leagues/${leagueId}/stats`}
-            className="bg-surface hover:bg-surface-subtle text-text-primary text-sm py-2 px-4 rounded-lg transition-colors"
-          >
-            League Stats
-          </Link>
-        </div>
 
         {/* Page Header */}
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3 mb-4 md:mb-8">

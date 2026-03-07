@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
 import { Header } from '@/components/Header'
 import { useToast } from '@/components/Toast'
+import { ensureContrast } from '@/lib/color-utils'
 import {
   REGULAR_WEEK_COUNT,
   POSTSEASON_START,
@@ -371,7 +372,7 @@ export default function LeaderboardClient({
                           ) : (
                             <div
                               className="w-6 h-6 rounded flex items-center justify-center text-[10px] font-bold flex-shrink-0"
-                              style={{ backgroundColor: team.primary_color || '#374151', color: team.secondary_color || '#ffffff' }}
+                              style={{ backgroundColor: team.primary_color || '#374151', color: ensureContrast(team.primary_color || '#374151', team.secondary_color || '#ffffff') }}
                             >
                               {team.name.substring(0, 2).toUpperCase()}
                             </div>
@@ -465,7 +466,7 @@ export default function LeaderboardClient({
                               ) : (
                                 <div
                                   className="w-6 h-6 rounded flex items-center justify-center text-[10px] font-bold flex-shrink-0"
-                                  style={{ backgroundColor: team.primary_color || '#374151', color: team.secondary_color || '#ffffff' }}
+                                  style={{ backgroundColor: team.primary_color || '#374151', color: ensureContrast(team.primary_color || '#374151', team.secondary_color || '#ffffff') }}
                                 >
                                   {team.name.substring(0, 2).toUpperCase()}
                                 </div>
@@ -653,7 +654,7 @@ export default function LeaderboardClient({
                               className="w-6 h-6 md:w-8 md:h-8 rounded flex items-center justify-center text-[10px] md:text-xs font-bold flex-shrink-0"
                               style={{
                                 backgroundColor: team.primary_color || '#374151',
-                                color: team.secondary_color || '#ffffff',
+                                color: ensureContrast(team.primary_color || '#374151', team.secondary_color || '#ffffff'),
                               }}
                             >
                               {team.name.substring(0, 2).toUpperCase()}
