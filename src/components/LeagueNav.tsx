@@ -11,10 +11,10 @@ interface LeagueNavProps {
 const NAV_ITEMS = [
   { label: 'Overview', path: '' },
   { label: 'My Team', path: '/team' },
+  { label: 'Standings', path: '/stats' },
   { label: 'Schedule', path: '/schedule' },
   { label: 'Add/Drop', path: '/transactions' },
   { label: 'Bracket', path: '/bracket' },
-  { label: 'Stats', path: '/stats' },
   { label: 'History', path: '/history' },
 ]
 

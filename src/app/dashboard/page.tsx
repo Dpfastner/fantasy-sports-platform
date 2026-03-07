@@ -14,14 +14,14 @@ export default async function DashboardPage() {
   }
 
   // Get user profile
-  const { data: profile } = await supabase
+  const { data: profile, error: profileError } = await supabase
     .from('profiles')
     .select('display_name, email')
     .eq('id', user.id)
-    .single() as { data: { display_name: string | null; email: string } | null }
+    .single() as { data: { display_name: string | null; email: string } | null; error: unknown }
 
   // Get user's leagues (as member or commissioner)
-  const { data: leagueMemberships } = await supabase
+  const { data: leagueMemberships, error: leagueError } = await supabase
     .from('league_members')
     .select(`
       role,
@@ -40,6 +40,9 @@ export default async function DashboardPage() {
       )
     `)
     .eq('user_id', user.id)
+
+  // Show error state if critical queries fail (#19)
+  const queryFailed = profileError || leagueError
 
   interface LeagueMembership {
     role: string
@@ -96,6 +99,11 @@ export default async function DashboardPage() {
 
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8">
+        {queryFailed && (
+          <div className="bg-danger/10 border border-danger text-danger-text px-4 py-3 rounded-lg mb-6">
+            Something went wrong loading your data. Try refreshing the page. If the problem persists, check your internet connection.
+          </div>
+        )}
         <div className="flex justify-between items-center mb-8">
           <h1 className="text-3xl font-bold text-text-primary">My Leagues</h1>
           <div className="flex gap-4">
@@ -156,9 +164,9 @@ export default async function DashboardPage() {
                         Week {currentWeek}
                       </span>
                     )}
-                    {league.role === 'commissioner' && (
+                    {(league.role === 'commissioner' || league.role === 'co_commissioner') && (
                       <span className="bg-warning/20 text-warning-text text-xs px-2 py-1 rounded">
-                        Commissioner
+                        {league.role === 'co_commissioner' ? 'Co-Commish' : 'Commissioner'}
                       </span>
                     )}
                   </div>
@@ -172,7 +180,7 @@ export default async function DashboardPage() {
                     <span>📅</span>
                     <span>{league.seasons?.name}</span>
                   </p>
-                  {league.id && userTeamMap[league.id] && (
+                  {league.id && userTeamMap[league.id] && userTeamMap[league.id].totalTeams > 1 && (
                     <p className="flex items-center gap-2">
                       <span>🏆</span>
                       <span>

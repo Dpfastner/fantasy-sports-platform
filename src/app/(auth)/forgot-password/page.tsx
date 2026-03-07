@@ -28,7 +28,7 @@ export default function ForgotPasswordPage() {
 
       setSuccess(true)
     } catch {
-      setError('An unexpected error occurred. Please try again.')
+      setError('Something went wrong sending the reset email. Please check your connection and try again.')
     } finally {
       setLoading(false)
     }

@@ -376,7 +376,7 @@ export default async function LeaguePage({ params }: PageProps) {
             href={`/leagues/${id}/team`}
             className="text-brand-text hover:text-brand-text transition-colors font-medium"
           >
-            My Roster
+            My Team
           </Link>
         )}
         <Link href="/dashboard" className="text-text-secondary hover:text-text-primary transition-colors">
@@ -712,8 +712,8 @@ export default async function LeaguePage({ params }: PageProps) {
                   </div>
                 )}
                 {settings?.high_points_enabled && (
-                  <div className="flex justify-between">
-                    <span className="text-text-secondary">High Points</span>
+                  <div className="flex justify-between items-start">
+                    <span className="text-text-secondary" title="Each week, the team with the most points wins this bonus prize">High Points <span className="text-text-muted text-[10px]">(weekly bonus)</span></span>
                     <span className="text-warning-text">${settings.high_points_weekly_amount}/wk</span>
                   </div>
                 )}

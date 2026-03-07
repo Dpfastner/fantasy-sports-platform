@@ -39,6 +39,7 @@ export function InviteCodeCard({ inviteCode, leagueName, leagueId }: InviteCodeC
           </svg>
         )}
       </button>
+      <span className="text-text-muted text-xs hidden sm:inline">Reusable — anyone can join with this code until the league is full.</span>
       <div className="ml-auto">
         <ShareButton
           shareData={{

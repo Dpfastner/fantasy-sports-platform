@@ -94,6 +94,8 @@ export default function DraftRoomPage() {
   const [isResettingDraft, setIsResettingDraft] = useState(false)
   const [showResetConfirm, setShowResetConfirm] = useState(false)
   const [mobileTab, setMobileTab] = useState<'schools' | 'history' | 'teams' | 'chat'>('schools')
+  const [showDraftHelp, setShowDraftHelp] = useState(false)
+  const [unreadChat, setUnreadChat] = useState(false)
   const [watchlistedSchoolIds, setWatchlistedSchoolIds] = useState<Set<string>>(new Set())
 
   // Track if timer has expired (for showing warning)
@@ -1433,8 +1435,8 @@ export default function DraftRoomPage() {
           {/* Row 1: Back + Title + Status (on mobile shows compactly) */}
           <div className="flex items-center justify-between md:justify-start md:gap-4">
             <div className="flex items-center gap-2 md:gap-4">
-              <Link href={`/leagues/${leagueId}`} className="text-text-secondary hover:text-text-primary text-sm">
-                &larr;
+              <Link href={`/leagues/${leagueId}`} className="text-text-secondary hover:text-text-primary text-sm flex items-center gap-1">
+                &larr; <span className="hidden sm:inline">League</span>
               </Link>
               <h1 className="text-base md:text-lg font-bold text-text-primary truncate max-w-[150px] md:max-w-none">{leagueName} Draft</h1>
             </div>
@@ -1505,6 +1507,14 @@ export default function DraftRoomPage() {
                'Not Started'}
             </span>
 
+            <button
+              onClick={() => setShowDraftHelp(true)}
+              className="px-2.5 py-1.5 rounded text-sm font-medium bg-surface-subtle hover:bg-surface text-text-secondary hover:text-text-primary transition-colors"
+              title="Draft room help"
+            >
+              ?
+            </button>
+
             {isCommissioner && draft?.status === 'not_started' && teams.length >= 1 && teams.length >= memberCount && (
               <button
                 onClick={handleStartDraft}
@@ -1541,12 +1551,21 @@ export default function DraftRoomPage() {
             )}
           </div>
 
-          {/* Mobile Commissioner Controls - shown as row below header on mobile */}
+          {/* Mobile Controls - shown as row below header on mobile */}
+          <div className="flex md:hidden items-center gap-2 pt-1">
+            <button
+              onClick={() => setShowDraftHelp(true)}
+              className="px-2 py-1 rounded text-xs font-medium bg-surface-subtle hover:bg-surface text-text-secondary"
+              title="Help"
+            >
+              ?
+            </button>
+            {actionError && (
+              <span className="text-danger-text text-xs flex-1">{actionError}</span>
+            )}
+          </div>
           {isCommissioner && (
-            <div className="flex md:hidden items-center gap-2 pt-1">
-              {actionError && (
-                <span className="text-danger-text text-xs flex-1">{actionError}</span>
-              )}
+            <div className="flex md:hidden items-center gap-2">
               {draft?.status === 'not_started' && teams.length >= 1 && teams.length >= memberCount && (
                 <button
                   onClick={handleStartDraft}
@@ -1628,8 +1647,12 @@ export default function DraftRoomPage() {
 
       {/* Your Turn Notification */}
       {isMyPick && draft?.status === 'in_progress' && !timerExpired && (
-        <div className="bg-success text-text-primary text-center py-2 font-semibold animate-pulse">
-          It&apos;s your turn! Select a school from the left panel.
+        <div className={`text-text-primary text-center py-2 font-semibold animate-pulse ${
+          timeRemaining !== null && timeRemaining <= 15 ? 'bg-warning' : 'bg-success'
+        }`}>
+          {timeRemaining !== null && timeRemaining <= 15
+            ? `Hurry! Only ${timeRemaining} seconds left to make your pick!`
+            : 'It\u2019s your turn! Select a school from the left panel.'}
         </div>
       )}
 
@@ -1673,14 +1696,17 @@ export default function DraftRoomPage() {
           Teams
         </button>
         <button
-          onClick={() => setMobileTab('chat')}
-          className={`flex-1 py-3 text-sm font-medium transition-colors ${
+          onClick={() => { setMobileTab('chat'); setUnreadChat(false) }}
+          className={`flex-1 py-3 text-sm font-medium transition-colors relative ${
             mobileTab === 'chat'
               ? 'text-text-primary border-b-2 border-brand bg-surface'
               : 'text-text-secondary hover:text-text-primary'
           }`}
         >
           Chat
+          {unreadChat && mobileTab !== 'chat' && (
+            <span className="absolute top-2 right-1/4 w-2 h-2 bg-brand rounded-full" />
+          )}
         </button>
       </div>
 
@@ -1694,15 +1720,16 @@ export default function DraftRoomPage() {
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search..."
+                placeholder="Search schools by name..."
                 className="flex-1 px-2 py-1.5 bg-surface border border-border rounded text-sm text-text-primary placeholder-text-muted"
               />
               <select
                 value={selectedConference}
                 onChange={(e) => setSelectedConference(e.target.value)}
                 className="px-2 py-1.5 bg-surface border border-border rounded text-sm text-text-primary"
+                title="Filter by conference"
               >
-                <option value="all">All</option>
+                <option value="all">All Conf.</option>
                 {conferences.map(conf => (
                   <option key={conf} value={conf}>{getConferenceAbbr(conf)}</option>
                 ))}
@@ -1734,11 +1761,11 @@ export default function DraftRoomPage() {
                     />
                   </button>
                 </div>
-                {autoPickEnabled && (
-                  <div className="px-3 py-1.5 text-[10px] text-text-muted bg-brand/5">
-                    Picks will be made automatically from your queue or best available when it&apos;s your turn.
-                  </div>
-                )}
+                <div className="px-3 py-1.5 text-[10px] text-text-muted bg-brand/5">
+                  {autoPickEnabled
+                    ? 'Picks will be made automatically from your queue or best available when it\u2019s your turn.'
+                    : 'Enable to auto-draft from your queue (or best available) when it\u2019s your turn. Useful if you need to step away.'}
+                </div>
               </div>
             )}
 
@@ -1753,6 +1780,9 @@ export default function DraftRoomPage() {
                     Draft Queue ({draftQueue.length})
                   </span>
                   <span className="text-[9px] px-1.5 py-0.5 rounded bg-brand/20 text-brand-text">Auto-pick order</span>
+                </div>
+                <div className="px-2 py-1 text-[9px] text-text-muted bg-brand/5 border-b border-brand/10">
+                  Drag to reorder. Auto-pick uses this order. Click &quot;+ Queue&quot; on any school to add it.
                 </div>
                 <div className="p-1.5 max-h-48 overflow-y-auto">
                   {draftQueue.map((item, idx) => {
@@ -1923,6 +1953,11 @@ export default function DraftRoomPage() {
               })}
 
               {/* Maxed out schools - shown at bottom with grey strikethrough */}
+              {maxedOutSchools.length > 0 && (
+                <div className="mt-3 mb-1 px-2 py-1.5 text-[10px] text-text-muted border-t border-border">
+                  Schools below have reached the league draft limit ({maxSelectionsTotal} teams max) and are no longer available.
+                </div>
+              )}
               {maxedOutSchools.map(school => (
                 <div
                   key={school.id}
@@ -1983,6 +2018,45 @@ export default function DraftRoomPage() {
                   <p>The commissioner will start the draft when everyone is ready.</p>
                 )}
               </div>
+
+              {/* Draft Rules Summary */}
+              {settings && (
+                <div className="max-w-md mx-auto bg-surface rounded-lg p-4 mb-6">
+                  <h3 className="text-text-primary font-semibold mb-3">Draft Rules</h3>
+                  <div className="grid grid-cols-2 gap-3 text-sm">
+                    <div>
+                      <span className="text-text-muted">Format</span>
+                      <p className="text-text-primary font-medium capitalize">{settings.draft_type} Draft</p>
+                    </div>
+                    <div>
+                      <span className="text-text-muted">Pick Timer</span>
+                      <p className="text-text-primary font-medium">{settings.draft_timer_seconds}s per pick</p>
+                    </div>
+                    <div>
+                      <span className="text-text-muted">Roster Size</span>
+                      <p className="text-text-primary font-medium">{settings.schools_per_team} schools</p>
+                    </div>
+                    <div>
+                      <span className="text-text-muted">Draft Limit</span>
+                      <p className="text-text-primary font-medium">{settings.max_school_selections_total === 0 ? 'Unlimited' : `${settings.max_school_selections_total} teams per school`}</p>
+                    </div>
+                    <div>
+                      <span className="text-text-muted">Teams</span>
+                      <p className="text-text-primary font-medium">{teams.length} teams</p>
+                    </div>
+                    <div>
+                      <span className="text-text-muted">Total Rounds</span>
+                      <p className="text-text-primary font-medium">{settings.schools_per_team} rounds</p>
+                    </div>
+                  </div>
+                  <p className="text-text-muted text-xs mt-3">
+                    {settings.draft_type === 'snake'
+                      ? 'Snake draft: pick order reverses each round (1→12, then 12→1, etc.)'
+                      : 'Linear draft: same pick order every round.'}
+                    {' '}If time expires, auto-pick selects the best available school.
+                  </p>
+                </div>
+              )}
 
               {/* Manual Draft Order Setup */}
               {isCommissioner && settings?.draft_order_type === 'manual' && teams.length >= 1 && (
@@ -2194,7 +2268,7 @@ export default function DraftRoomPage() {
                 title="Drag to resize"
               />
               <div className="flex-1 min-h-0">
-                <DraftChat draftId={draft.id} leagueId={leagueId} currentUserId={user.id} />
+                <DraftChat draftId={draft.id} leagueId={leagueId} currentUserId={user.id} onNewMessage={() => setUnreadChat(true)} />
               </div>
             </div>
           )}
@@ -2207,6 +2281,66 @@ export default function DraftRoomPage() {
           </div>
         )}
       </div>
+
+      {/* Draft Help Modal */}
+      {showDraftHelp && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
+          <div className="bg-surface rounded-lg p-6 max-w-lg w-full mx-4 shadow-xl max-h-[80vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-xl font-bold text-text-primary">Draft Room Guide</h3>
+              <button onClick={() => setShowDraftHelp(false)} className="text-text-muted hover:text-text-primary">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="space-y-4 text-sm">
+              <div>
+                <h4 className="font-semibold text-text-primary mb-1">How to Pick</h4>
+                <p className="text-text-secondary">When it&apos;s your turn, click a school from the left panel, then confirm in the popup. Two clicks total: select, then confirm.</p>
+              </div>
+
+              <div>
+                <h4 className="font-semibold text-text-primary mb-1">Pick Timer</h4>
+                <p className="text-text-secondary">Each pick has a countdown timer. The timer turns yellow at 30s and red at 10s. If time runs out, auto-pick selects the best available school for you.</p>
+              </div>
+
+              <div>
+                <h4 className="font-semibold text-text-primary mb-1">Draft Queue</h4>
+                <p className="text-text-secondary">Click &quot;+ Queue&quot; on any school to add it to your draft queue. Drag to reorder. When auto-pick runs (timer expires or auto-pick enabled), it picks the first available school from your queue.</p>
+              </div>
+
+              <div>
+                <h4 className="font-semibold text-text-primary mb-1">Auto-Pick</h4>
+                <p className="text-text-secondary">Toggle auto-pick on to have the system automatically draft for you when it&apos;s your turn. Picks come from your queue first, then best available. Useful if you need to step away.</p>
+              </div>
+
+              <div>
+                <h4 className="font-semibold text-text-primary mb-1">Draft Limit</h4>
+                <p className="text-text-secondary">Each school can only be drafted by a limited number of teams (shown as X/{maxSelectionsTotal}). Once maxed out, the school appears greyed out and struck through at the bottom of the list.</p>
+              </div>
+
+              <div>
+                <h4 className="font-semibold text-text-primary mb-1">Search & Filter</h4>
+                <p className="text-text-secondary">Use the search box to find schools by name, and the conference dropdown to filter by conference.</p>
+              </div>
+
+              <div>
+                <h4 className="font-semibold text-text-primary mb-1">Draft Chat</h4>
+                <p className="text-text-secondary">Chat with other league members during the draft. On desktop, the chat panel is at the bottom-right — drag the divider to resize. On mobile, use the &quot;Chat&quot; tab.</p>
+              </div>
+            </div>
+
+            <button
+              onClick={() => setShowDraftHelp(false)}
+              className="w-full mt-6 px-4 py-2.5 bg-brand hover:bg-brand-hover text-text-primary rounded-lg font-medium transition-colors"
+            >
+              Got it
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Pick Confirmation Modal */}
       {pendingPick && (

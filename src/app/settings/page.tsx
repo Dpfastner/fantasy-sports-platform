@@ -310,6 +310,7 @@ export default function SettingsPage() {
                   </option>
                 ))}
               </select>
+              <p className="text-text-muted text-xs mt-1">Used for scheduling notifications and displaying game times.</p>
             </div>
             <button
               type="submit"

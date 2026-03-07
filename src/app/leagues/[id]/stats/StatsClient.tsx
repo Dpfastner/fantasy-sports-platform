@@ -142,7 +142,7 @@ export default function StatsClient({
           href={`/leagues/${leagueId}/team`}
           className="text-text-secondary hover:text-text-primary transition-colors"
         >
-          My Roster
+          My Team
         </Link>
         <Link
           href={`/leagues/${leagueId}`}

@@ -139,6 +139,7 @@ export default function TeamEditPage({ params }: PageProps) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (!window.confirm('Save changes to your team?')) return
     setSaving(true)
     setError(null)
     setSuccess(false)

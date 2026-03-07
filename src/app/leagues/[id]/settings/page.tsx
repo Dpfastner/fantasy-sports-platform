@@ -1238,13 +1238,28 @@ export default function CommissionerToolsPage() {
                     </div>
                   </div>
 
-                  <button
-                    onClick={handleSaveSettings}
-                    disabled={saving}
-                    className="w-full bg-brand hover:bg-brand-hover disabled:bg-brand/50 text-text-primary font-semibold py-3 px-4 rounded-lg transition-colors mt-6"
-                  >
-                    {saving ? 'Saving...' : 'Save Scoring Settings'}
-                  </button>
+                  <div className="flex gap-3 mt-6">
+                    <button
+                      onClick={() => {
+                        if (!window.confirm('Reset all scoring values to the Standard preset? You can still adjust individual values after.')) return
+                        const values = getPresetValues('standard')
+                        if (values && settings) {
+                          setSettings({ ...settings, ...values, scoring_preset: 'standard' } as LeagueSettings)
+                          setSelectedPreset('standard')
+                        }
+                      }}
+                      className="bg-surface hover:bg-surface-subtle text-text-secondary font-medium py-3 px-4 rounded-lg transition-colors"
+                    >
+                      Reset to Defaults
+                    </button>
+                    <button
+                      onClick={handleSaveSettings}
+                      disabled={saving}
+                      className="flex-1 bg-brand hover:bg-brand-hover disabled:bg-brand/50 text-text-primary font-semibold py-3 px-4 rounded-lg transition-colors"
+                    >
+                      {saving ? 'Saving...' : 'Save Scoring Settings'}
+                    </button>
+                  </div>
                 </section>
               )}
 
@@ -1315,7 +1330,7 @@ export default function CommissionerToolsPage() {
                     {settings.trades_enabled && (
                       <>
                         <div>
-                          <label className="block text-text-secondary mb-2">Trade Deadline</label>
+                          <label className="block text-text-secondary mb-2">Trade Deadline <span className="text-text-muted text-xs">(optional)</span></label>
                           <input
                             type="date"
                             value={settings.trade_deadline || ''}
@@ -1498,7 +1513,7 @@ export default function CommissionerToolsPage() {
                 <h2 className="text-xl font-semibold text-text-primary mb-6">Draft Configuration</h2>
                 <div className="space-y-4">
                   <div>
-                    <label className="block text-text-secondary mb-2">Draft Date & Time</label>
+                    <label className="block text-text-secondary mb-2">Draft Date & Time <span className="text-text-muted text-xs">(optional — visible to members as a countdown)</span></label>
                     <input
                       type="datetime-local"
                       value={settings.draft_date?.slice(0, 16) || ''}

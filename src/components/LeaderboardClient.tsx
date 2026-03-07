@@ -613,7 +613,7 @@ export default function LeaderboardClient({
                     </>
                   )}
                   {settings?.high_points_enabled && (
-                    <th className="px-2 md:px-4 py-3 text-right text-warning-text font-medium text-sm md:text-base">HP $</th>
+                    <th className="px-2 md:px-4 py-3 text-right text-warning-text font-medium text-sm md:text-base" title="High Points: weekly bonus for the highest-scoring team">HP $</th>
                   )}
                 </tr>
               </thead>

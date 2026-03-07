@@ -75,7 +75,7 @@ function JoinLeagueForm() {
       trackActivity('invite_code.looked_up', data.league.id, { inviteCode: code.trim() })
       setLeaguePreview(data.league)
     } catch {
-      setError('An unexpected error occurred. Please try again.')
+      setError('Something went wrong. Please check your connection and try again.')
     } finally {
       setLoading(false)
     }
@@ -120,7 +120,7 @@ function JoinLeagueForm() {
 
       setJoinSuccess({ leagueId: data.leagueId, leagueName: leaguePreview.name })
     } catch {
-      setError('An unexpected error occurred. Please try again.')
+      setError('Something went wrong. Please check your connection and try again.')
     } finally {
       setLoading(false)
     }

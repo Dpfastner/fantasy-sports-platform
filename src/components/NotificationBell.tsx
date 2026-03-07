@@ -246,7 +246,7 @@ export function NotificationBell({ userId }: NotificationBellProps) {
       {/* Bell button */}
       <button
         onClick={handleToggle}
-        className="relative p-1.5 text-text-secondary hover:text-text-primary transition-colors"
+        className="relative p-2 text-text-secondary hover:text-text-primary transition-colors"
         title="Notifications"
       >
         <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">

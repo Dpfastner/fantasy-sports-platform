@@ -919,9 +919,14 @@ export default function TransactionsClient({
                     <p className="text-text-muted text-sm">
                       The new school will earn points starting from Week {currentWeek}.
                     </p>
-                    <p className="text-warning-text text-xs">
-                      This cannot be undone. The dropped school&apos;s points will no longer count toward your total.
-                    </p>
+                    <div className="flex items-start gap-2 bg-warning/10 border border-warning/30 rounded p-2 mt-2">
+                      <svg className="w-4 h-4 text-warning shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                      </svg>
+                      <p className="text-warning-text text-xs">
+                        This transaction is permanent and cannot be undone.{selectedDrop ? ' The dropped school\u2019s points will no longer count toward your total.' : ''}
+                      </p>
+                    </div>
                   </div>
 
                   <div className="flex gap-4">

@@ -46,7 +46,7 @@ function LoginForm() {
       const nextUrl = searchParams.get('next') || '/dashboard'
       router.push(nextUrl)
     } catch {
-      setError('An unexpected error occurred. Please try again.')
+      setError('Something went wrong. Please check your connection and try again.')
       setLoading(false)
     }
   }

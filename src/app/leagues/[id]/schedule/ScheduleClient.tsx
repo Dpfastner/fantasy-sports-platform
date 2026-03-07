@@ -174,19 +174,19 @@ export default function ScheduleClient({
     rosterSchoolIds.includes(g.away_school_id || '')
   ).length
 
-  // Week label helper
+  // Week label helper (#68 - explain special week names)
   const getWeekLabel = (week: number | string): string => {
     if (typeof week === 'string') {
       if (week === 'all') return 'All Games'
       if (week === 'bowls') return 'Bowl Games'
-      if (week === 'cfp') return 'CFP Bracket Games'
+      if (week === 'cfp') return 'College Football Playoff'
       if (week === 'natty') return 'National Championship'
       return week
     }
-    if (week === 0) return 'Week 0 (Early)'
+    if (week === 0) return 'Week 0 — Early Season'
     if (week >= 1 && week <= 14) return `Week ${week}`
-    if (week === 15) return 'Week 15 (Conf Champs)'
-    if (week === 16) return 'Week 16 (Army-Navy)'
+    if (week === 15) return 'Week 15 — Conference Championships'
+    if (week === 16) return 'Week 16 — Army-Navy / Rivalry Week'
     return `Week ${week}`
   }
 
@@ -212,7 +212,7 @@ export default function ScheduleClient({
           href={`/leagues/${leagueId}/team`}
           className="text-text-secondary hover:text-text-primary transition-colors"
         >
-          My Roster
+          My Team
         </Link>
         <Link
           href={`/leagues/${leagueId}`}
@@ -271,7 +271,7 @@ export default function ScheduleClient({
             <optgroup label="Regular Season">
               {regularWeeks.map((week) => (
                 <option key={week} value={week}>
-                  {getWeekLabel(week)}{week === currentWeek ? ' (Current)' : ''}
+                  {week < currentWeek ? '\u2713 ' : ''}{getWeekLabel(week)}{week === currentWeek ? ' \u25C0 Current' : ''}
                 </option>
               ))}
             </optgroup>

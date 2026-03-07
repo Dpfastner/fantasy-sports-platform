@@ -82,7 +82,7 @@ export default function SignUpPage() {
       track('signup_completed')
       setSuccess(true)
     } catch {
-      setError('An unexpected error occurred. Please try again.')
+      setError('Something went wrong creating your account. Please check your connection and try again.')
     } finally {
       setLoading(false)
     }
@@ -107,7 +107,18 @@ export default function SignUpPage() {
               Click the link and you&apos;ll be taken straight to your dashboard.
             </p>
             <p className="text-text-muted text-sm mb-4">
-              Didn&apos;t receive it? Check your spam folder or try signing up again.
+              Didn&apos;t receive it? Check your spam folder or{' '}
+              <button
+                onClick={async () => {
+                  const { error } = await supabase.auth.resend({ type: 'signup', email })
+                  if (!error) {
+                    alert('Confirmation email resent! Check your inbox.')
+                  }
+                }}
+                className="text-brand-text hover:underline"
+              >
+                resend the confirmation email
+              </button>.
             </p>
             <Link
               href="/login"
@@ -126,7 +137,7 @@ export default function SignUpPage() {
 
           <div className="mb-4">
             <label htmlFor="displayName" className="block text-text-secondary mb-2">
-              Display Name (optional)
+              Display Name <span className="text-text-muted text-xs">(optional)</span>
             </label>
             <input
               type="text"
@@ -167,6 +178,33 @@ export default function SignUpPage() {
                 className="w-full px-4 py-3 bg-surface border border-border rounded-lg text-text-primary placeholder-text-muted focus:outline-none focus:border-brand pr-12"
                 placeholder="At least 6 characters"
               />
+              {/* #2: Password strength indicator */}
+              {password && (
+                <div className="mt-1.5">
+                  <div className="flex gap-1">
+                    {[1, 2, 3, 4].map(level => (
+                      <div
+                        key={level}
+                        className={`h-1 flex-1 rounded-full ${
+                          password.length >= 6 && level <= (
+                            password.length >= 12 && /[A-Z]/.test(password) && /[0-9]/.test(password) && /[^A-Za-z0-9]/.test(password) ? 4
+                            : password.length >= 10 && /[A-Z]/.test(password) && /[0-9]/.test(password) ? 3
+                            : password.length >= 8 && (/[A-Z]/.test(password) || /[0-9]/.test(password)) ? 2
+                            : 1
+                          ) ? ['bg-danger', 'bg-warning', 'bg-info', 'bg-success'][level - 1] : 'bg-border'
+                        }`}
+                      />
+                    ))}
+                  </div>
+                  <p className="text-[10px] text-text-muted mt-0.5">
+                    {password.length < 6 ? 'Too short'
+                      : password.length >= 12 && /[A-Z]/.test(password) && /[0-9]/.test(password) && /[^A-Za-z0-9]/.test(password) ? 'Strong'
+                      : password.length >= 10 && /[A-Z]/.test(password) && /[0-9]/.test(password) ? 'Good'
+                      : password.length >= 8 ? 'Fair'
+                      : 'Weak'}
+                  </p>
+                </div>
+              )}
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
@@ -240,6 +278,7 @@ export default function SignUpPage() {
             />
             <span className="text-text-secondary text-sm">
               I confirm that I am at least 18 years of age.
+              <span className="text-text-muted text-xs block mt-0.5">Required for fantasy sports participation per state regulations.</span>
             </span>
           </label>
 
@@ -253,11 +292,11 @@ export default function SignUpPage() {
             />
             <span className="text-text-secondary text-sm">
               I agree to the{' '}
-              <Link href="/terms" target="_blank" className="text-brand-text hover:underline">
+              <Link href="/terms" className="text-brand-text hover:underline">
                 Terms of Service
               </Link>{' '}
               and{' '}
-              <Link href="/privacy" target="_blank" className="text-brand-text hover:underline">
+              <Link href="/privacy" className="text-brand-text hover:underline">
                 Privacy Policy
               </Link>.
             </span>

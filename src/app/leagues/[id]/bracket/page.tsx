@@ -138,6 +138,16 @@ export default async function BracketPage({ params }: PageProps) {
             <p>Schools on your roster earn bonus points for each playoff round they play in. Points are awarded on top of regular game scoring.</p>
             <p>Schools from your roster are <span className="text-brand-text font-medium">highlighted in purple</span> on the bracket so you can track their progress.</p>
           </div>
+
+          <h2 className="text-lg font-semibold text-text-primary mt-6 mb-3">How Teams Qualify</h2>
+          <div className="text-text-secondary text-sm space-y-2">
+            <p>The 12-team CFP field is selected by the College Football Playoff Committee based on regular season performance:</p>
+            <ul className="list-disc list-inside space-y-1 ml-2">
+              <li><span className="text-text-primary font-medium">Seeds 1-4:</span> Conference champions from the top conferences, earning a first-round bye</li>
+              <li><span className="text-text-primary font-medium">Seeds 5-12:</span> Remaining at-large selections based on strength of schedule, win-loss record, and committee rankings</li>
+            </ul>
+            <p>The bracket is automatically populated once the CFP Committee announces the final selections (typically the first Sunday in December).</p>
+          </div>
         </div>
       </main>
     </div>

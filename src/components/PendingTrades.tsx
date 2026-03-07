@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { useToast } from './Toast'
 import dynamic from 'next/dynamic'
 
@@ -60,6 +61,7 @@ export default function PendingTrades({
   maxRosterSize = 12,
 }: PendingTradesProps) {
   const { addToast } = useToast()
+  const router = useRouter()
   const [actionLoading, setActionLoading] = useState<string | null>(null)
   const [counterTrade, setCounterTrade] = useState<TradeData | null>(null)
   const [counterPartnerRoster, setCounterPartnerRoster] = useState<RosterSchool[]>([])
@@ -108,7 +110,7 @@ export default function PendingTrades({
         cancel: 'Trade cancelled.',
       }
       addToast(messages[action], 'success')
-      window.location.reload()
+      router.refresh()
     } catch (err) {
       addToast(err instanceof Error ? err.message : `Failed to ${action} trade`, 'error')
     } finally {
@@ -415,7 +417,7 @@ export default function PendingTrades({
             })),
             message: counterTrade.message,
           }}
-          onTradeProposed={() => window.location.reload()}
+          onTradeProposed={() => router.refresh()}
           maxRosterSize={maxRosterSize}
         />
       )}

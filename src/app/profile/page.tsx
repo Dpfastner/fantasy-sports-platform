@@ -177,7 +177,7 @@ export default async function ProfilePage() {
         <div className="bg-surface rounded-lg p-6">
           <h2 className="text-xl font-semibold text-text-primary mb-2">Invite Friends</h2>
           <p className="text-text-secondary text-sm mb-4">
-            Share your referral link to invite friends to Rivyls.
+            Share your referral link to invite friends to Rivyls. Referrals help you earn badges and unlock future rewards.
           </p>
           <div className="flex items-center gap-2">
             <input

@@ -16,6 +16,7 @@ interface DraftChatProps {
   draftId: string
   leagueId: string
   currentUserId: string
+  onNewMessage?: () => void
 }
 
 function formatTimeAgo(dateStr: string): string {
@@ -28,7 +29,7 @@ function formatTimeAgo(dateStr: string): string {
   return new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
 }
 
-export function DraftChat({ draftId, leagueId, currentUserId }: DraftChatProps) {
+export function DraftChat({ draftId, leagueId, currentUserId, onNewMessage }: DraftChatProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [input, setInput] = useState('')
   const [sending, setSending] = useState(false)
@@ -122,6 +123,11 @@ export function DraftChat({ draftId, leagueId, currentUserId }: DraftChatProps) 
           if (prev.some(m => m.id === newMsg.id)) return prev
           return [...prev, { ...newMsg, display_name: displayName }]
         })
+
+        // Notify parent of new message from another user
+        if (newMsg.user_id !== currentUserId && onNewMessage) {
+          onNewMessage()
+        }
       })
       .subscribe()
 
