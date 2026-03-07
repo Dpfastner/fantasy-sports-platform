@@ -82,7 +82,7 @@ export default function SignUpPage() {
       track('signup_completed')
       setSuccess(true)
     } catch {
-      setError('An unexpected error occurred')
+      setError('An unexpected error occurred. Please try again.')
     } finally {
       setLoading(false)
     }

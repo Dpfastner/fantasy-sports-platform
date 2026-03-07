@@ -11,6 +11,7 @@ import { LeagueActivityFeed } from '@/components/LeagueActivityFeed'
 import { LeagueChat } from '@/components/LeagueChat'
 import { SandboxWeekSelector } from '@/components/SandboxWeekSelector'
 import { ShareButton } from '@/components/ShareButton'
+import { InviteCodeCard } from '@/components/InviteCodeCard'
 import { getCurrentWeek } from '@/lib/week'
 import { getEnvironment } from '@/lib/env'
 import { getLeagueYear } from '@/lib/league-helpers'
@@ -402,68 +403,64 @@ export default async function LeaguePage({ params }: PageProps) {
           {isCommissioner && (
             <Link
               href={`/leagues/${id}/settings`}
-              className="bg-surface hover:bg-surface-subtle text-text-primary text-sm font-medium py-2 px-4 rounded-lg transition-colors"
+              className="bg-brand hover:bg-brand-hover text-text-primary font-semibold py-2.5 px-5 rounded-lg transition-colors flex items-center gap-2"
             >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
               Commissioner Tools
             </Link>
           )}
         </div>
 
         {/* Quick Navigation Bar */}
-        {isDraftComplete && (
-          <div className="flex flex-wrap items-center gap-2 mb-6 pb-4 border-b border-border">
+        <div className="flex flex-wrap items-center gap-2 mb-6 pb-4 border-b border-border">
+          {isDraftComplete && (
             <a
               href="#standings"
               className="bg-surface hover:bg-surface-subtle text-text-primary text-sm py-2 px-4 rounded-lg transition-colors"
             >
               Standings
             </a>
-            <Link
-              href={`/leagues/${id}/schedule`}
-              className="bg-surface hover:bg-surface-subtle text-text-primary text-sm py-2 px-4 rounded-lg transition-colors"
-            >
-              Schedule
-            </Link>
-            <Link
-              href={`/leagues/${id}/transactions`}
-              className="bg-surface hover:bg-surface-subtle text-text-primary text-sm py-2 px-4 rounded-lg transition-colors"
-            >
-              Add/Drop
-            </Link>
-            <Link
-              href={`/leagues/${id}/stats`}
-              className="bg-surface hover:bg-surface-subtle text-text-primary text-sm py-2 px-4 rounded-lg transition-colors"
-            >
-              League Stats
-            </Link>
-            <Link
-              href={`/leagues/${id}/history`}
-              className="bg-surface hover:bg-surface-subtle text-text-primary text-sm py-2 px-4 rounded-lg transition-colors"
-            >
-              History
-            </Link>
-          </div>
-        )}
+          )}
+          <Link
+            href={`/leagues/${id}/schedule`}
+            className="bg-surface hover:bg-surface-subtle text-text-primary text-sm py-2 px-4 rounded-lg transition-colors"
+          >
+            Schedule
+          </Link>
+          {isDraftComplete && (
+            <>
+              <Link
+                href={`/leagues/${id}/transactions`}
+                className="bg-surface hover:bg-surface-subtle text-text-primary text-sm py-2 px-4 rounded-lg transition-colors"
+              >
+                Add/Drop
+              </Link>
+              <Link
+                href={`/leagues/${id}/stats`}
+                className="bg-surface hover:bg-surface-subtle text-text-primary text-sm py-2 px-4 rounded-lg transition-colors"
+              >
+                League Stats
+              </Link>
+              <Link
+                href={`/leagues/${id}/history`}
+                className="bg-surface hover:bg-surface-subtle text-text-primary text-sm py-2 px-4 rounded-lg transition-colors"
+              >
+                History
+              </Link>
+            </>
+          )}
+        </div>
 
         {/* Invite Code (Commissioner only) */}
         {isCommissioner && (
-          <div className="bg-highlight-row border border-brand rounded-lg p-3 mb-6 flex items-center gap-3">
-            <span className="text-brand-text text-sm">Invite Code:</span>
-            <code className="text-lg font-mono text-text-primary tracking-wider">
-              {league.invite_code}
-            </code>
-            <div className="ml-auto">
-              <ShareButton
-                shareData={{
-                  title: `Join ${league.name} on Rivyls!`,
-                  text: `Join my fantasy college football league "${league.name}" on Rivyls! Use invite code: ${league.invite_code}`,
-                  url: buildShareUrl('/leagues/join', { source: 'invite', campaign: league.name }),
-                }}
-                ogImageUrl={`/api/og/invite?leagueId=${id}`}
-                label="Share Invite"
-              />
-            </div>
-          </div>
+          <InviteCodeCard
+            inviteCode={league.invite_code}
+            leagueName={league.name}
+            leagueId={id}
+          />
         )}
 
         {/* Main Grid - Wider leaderboard, narrower sidebar */}
@@ -510,6 +507,41 @@ export default async function LeaguePage({ params }: PageProps) {
                 memberCount={memberCount || 0}
                 draftDate={settings?.draft_date || null}
               />
+            )}
+
+            {/* Member List (pre-draft) */}
+            {!isDraftComplete && teams && teams.length > 0 && (
+              <div className="bg-surface rounded-lg p-6">
+                <h2 className="text-lg font-semibold text-text-primary mb-4">
+                  Members ({teams.length} / {league.max_teams})
+                </h2>
+                <div className="space-y-3">
+                  {teams.map(team => (
+                    <div key={team.id} className="flex items-center gap-3">
+                      <div
+                        className="w-8 h-8 rounded flex items-center justify-center text-xs font-bold shrink-0"
+                        style={{
+                          backgroundColor: team.primary_color || '#374151',
+                          color: team.secondary_color || '#ffffff',
+                        }}
+                      >
+                        {team.name.substring(0, 2).toUpperCase()}
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-text-primary text-sm font-medium truncate">{team.name}</p>
+                        <p className="text-text-muted text-xs truncate">
+                          {team.profiles?.display_name || team.profiles?.email?.split('@')[0] || 'Unknown'}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                {teams.length < league.max_teams && isCommissioner && (
+                  <p className="text-text-muted text-sm mt-4">
+                    {league.max_teams - teams.length} spot{league.max_teams - teams.length === 1 ? '' : 's'} remaining. Share your invite code to fill the league.
+                  </p>
+                )}
+              </div>
             )}
 
             {/* Leaderboard (only when draft IS completed) */}
@@ -640,9 +672,11 @@ export default async function LeaguePage({ params }: PageProps) {
                   )}
                   <div>
                     <p className="text-text-primary font-medium text-sm">{userTeam.name}</p>
-                    <p className="text-text-muted text-xs">
-                      Rank #{(teams?.findIndex(t => t.id === userTeam.id) || 0) + 1} of {teams?.length || 0}
-                    </p>
+                    {isDraftComplete && (teams?.length || 0) > 1 && (
+                      <p className="text-text-muted text-xs">
+                        Rank #{(teams?.findIndex(t => t.id === userTeam.id) || 0) + 1} of {teams?.length || 0}
+                      </p>
+                    )}
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-2 text-center">

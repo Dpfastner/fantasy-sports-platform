@@ -24,6 +24,10 @@ export default function TeamEditPage({ params }: PageProps) {
   const [secondaryColor, setSecondaryColor] = useState('#ffffff')
   const [imageUrl, setImageUrl] = useState('')
   const [leagueName, setLeagueName] = useState('')
+  const [hasChanges, setHasChanges] = useState(false)
+
+  // Track unsaved changes for beforeunload warning
+  const [originalValues, setOriginalValues] = useState({ name: '', primaryColor: '', secondaryColor: '', imageUrl: '' })
 
   useEffect(() => {
     async function loadTeam() {
@@ -67,11 +71,38 @@ export default function TeamEditPage({ params }: PageProps) {
       setPrimaryColor(team.primary_color || '#1a1a1a')
       setSecondaryColor(team.secondary_color || '#ffffff')
       setImageUrl(team.image_url || '')
+      setOriginalValues({
+        name: team.name,
+        primaryColor: team.primary_color || '#1a1a1a',
+        secondaryColor: team.secondary_color || '#ffffff',
+        imageUrl: team.image_url || '',
+      })
       setLoading(false)
     }
 
     loadTeam()
   }, [params, router])
+
+  // Detect changes
+  useEffect(() => {
+    if (!originalValues.name) return
+    const changed = name !== originalValues.name
+      || primaryColor !== originalValues.primaryColor
+      || secondaryColor !== originalValues.secondaryColor
+      || imageUrl !== originalValues.imageUrl
+    setHasChanges(changed)
+  }, [name, primaryColor, secondaryColor, imageUrl, originalValues])
+
+  // Warn on navigation with unsaved changes
+  useEffect(() => {
+    const handler = (e: BeforeUnloadEvent) => {
+      if (hasChanges && !success) {
+        e.preventDefault()
+      }
+    }
+    window.addEventListener('beforeunload', handler)
+    return () => window.removeEventListener('beforeunload', handler)
+  }, [hasChanges, success])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -166,6 +197,46 @@ export default function TeamEditPage({ params }: PageProps) {
                 className="w-full px-4 py-2 bg-surface border border-border rounded-lg text-text-primary focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent"
                 placeholder="Enter team name"
               />
+            </div>
+
+            {/* Color Presets */}
+            <div>
+              <label className="block text-sm font-medium text-text-secondary mb-2">
+                Color Presets
+              </label>
+              <div className="flex flex-wrap gap-2">
+                {[
+                  { primary: '#1a1a1a', secondary: '#ffffff', label: 'Classic' },
+                  { primary: '#1e3a5f', secondary: '#f0c040', label: 'Navy/Gold' },
+                  { primary: '#8b0000', secondary: '#ffffff', label: 'Crimson' },
+                  { primary: '#002244', secondary: '#c83803', label: 'Navy/Orange' },
+                  { primary: '#333f48', secondary: '#b3a369', label: 'Steel/Gold' },
+                  { primary: '#4b2e83', secondary: '#e8d3a2', label: 'Purple/Gold' },
+                  { primary: '#006747', secondary: '#cfc493', label: 'Green/Gold' },
+                  { primary: '#cc0033', secondary: '#000000', label: 'Red/Black' },
+                ].map((preset) => (
+                  <button
+                    key={preset.label}
+                    type="button"
+                    onClick={() => { setPrimaryColor(preset.primary); setSecondaryColor(preset.secondary) }}
+                    className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border text-xs transition-colors ${
+                      primaryColor === preset.primary && secondaryColor === preset.secondary
+                        ? 'border-brand bg-brand/10'
+                        : 'border-border hover:border-text-muted'
+                    }`}
+                  >
+                    <span
+                      className="w-4 h-4 rounded-full border border-border"
+                      style={{ backgroundColor: preset.primary }}
+                    />
+                    <span
+                      className="w-4 h-4 rounded-full border border-border"
+                      style={{ backgroundColor: preset.secondary }}
+                    />
+                    <span className="text-text-secondary">{preset.label}</span>
+                  </button>
+                ))}
+              </div>
             </div>
 
             {/* Colors */}

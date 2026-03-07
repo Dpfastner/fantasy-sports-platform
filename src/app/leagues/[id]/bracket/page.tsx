@@ -139,7 +139,7 @@ export default async function BracketPage({ params }: PageProps) {
         <div className="mb-6 flex items-start justify-between">
           <div>
             <h1 className="text-3xl font-bold text-text-primary">{year} College Football Playoff</h1>
-            <p className="text-text-secondary mt-2">12-team bracket with schools from your roster highlighted</p>
+            <p className="text-text-secondary mt-2">12-team bracket — top 4 seeds get a first-round bye. Schools on your roster are highlighted.</p>
           </div>
           <ShareButton
             shareData={{
@@ -160,18 +160,14 @@ export default async function BracketPage({ params }: PageProps) {
           />
         </ErrorBoundary>
 
-        {/* Roster schools in playoffs */}
-        {rosterSchoolIds.length > 0 && (
-          <div className="mt-8 bg-surface rounded-lg p-6">
-            <h2 className="text-xl font-semibold text-text-primary mb-4">Your Playoff Teams</h2>
-            <p className="text-text-secondary text-sm mb-4">
-              Schools from your roster that are in the playoffs will be highlighted in purple on the bracket.
-            </p>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {/* This could show roster schools that made playoffs - would need to join with games */}
-            </div>
+        {/* Bracket info */}
+        <div className="mt-8 bg-surface rounded-lg p-6">
+          <h2 className="text-lg font-semibold text-text-primary mb-3">How Playoff Scoring Works</h2>
+          <div className="text-text-secondary text-sm space-y-2">
+            <p>Schools on your roster earn bonus points for each playoff round they play in. Points are awarded on top of regular game scoring.</p>
+            <p>Schools from your roster are <span className="text-brand-text font-medium">highlighted in purple</span> on the bracket so you can track their progress.</p>
           </div>
-        )}
+        </div>
       </main>
     </div>
   )

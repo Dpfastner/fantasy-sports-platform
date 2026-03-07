@@ -43,9 +43,10 @@ function LoginForm() {
 
       trackActivity('login.success')
       setRedirecting(true)
-      router.push('/dashboard')
+      const nextUrl = searchParams.get('next') || '/dashboard'
+      router.push(nextUrl)
     } catch {
-      setError('An unexpected error occurred')
+      setError('An unexpected error occurred. Please try again.')
       setLoading(false)
     }
   }
@@ -131,7 +132,7 @@ function LoginForm() {
 
           <p className="text-text-secondary text-center mt-6">
             Don&apos;t have an account?{' '}
-            <Link href="/signup" className="text-brand-text hover:text-brand-text">
+            <Link href={searchParams.get('next') ? `/signup?next=${encodeURIComponent(searchParams.get('next')!)}` : '/signup'} className="text-brand-text hover:text-brand-text">
               Create one
             </Link>
           </p>

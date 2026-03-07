@@ -34,7 +34,7 @@ export function ArchiveSeasonButton({ leagueId, seasonYear }: ArchiveSeasonButto
       setShowConfirm(false)
       router.refresh()
     } catch {
-      setError('Failed to archive season')
+      setError('Failed to archive season. Please try again.')
       setLoading(false)
     }
   }

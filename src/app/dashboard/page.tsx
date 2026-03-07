@@ -110,7 +110,7 @@ export default async function DashboardPage() {
               <Link
                 key={league.id}
                 href={`/leagues/${league.id}`}
-                className="bg-surface rounded-lg p-6 hover:bg-surface transition-colors border border-border hover:border-border"
+                className="bg-surface rounded-lg p-6 hover:bg-surface-subtle transition-all border border-border hover:border-brand/40 hover:shadow-md"
               >
                 <div className="flex justify-between items-start mb-4">
                   <h3 className="text-xl font-semibold text-text-primary">

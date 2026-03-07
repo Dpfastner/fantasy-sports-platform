@@ -28,7 +28,7 @@ export default function ForgotPasswordPage() {
 
       setSuccess(true)
     } catch {
-      setError('An unexpected error occurred')
+      setError('An unexpected error occurred. Please try again.')
     } finally {
       setLoading(false)
     }

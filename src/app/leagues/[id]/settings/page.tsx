@@ -153,6 +153,26 @@ export default function CommissionerToolsPage() {
   const [vetoReason, setVetoReason] = useState('')
   const [vetoSubmitting, setVetoSubmitting] = useState(false)
 
+  // Unsaved changes tracking
+  const [savedSettingsJson, setSavedSettingsJson] = useState<string>('')
+  const [savedLeagueJson, setSavedLeagueJson] = useState<string>('')
+
+  const hasUnsavedChanges = () => {
+    if (savedSettingsJson && settings && JSON.stringify(settings) !== savedSettingsJson) return true
+    if (savedLeagueJson && league && JSON.stringify(league) !== savedLeagueJson) return true
+    return false
+  }
+
+  useEffect(() => {
+    const handler = (e: BeforeUnloadEvent) => {
+      if (hasUnsavedChanges()) {
+        e.preventDefault()
+      }
+    }
+    window.addEventListener('beforeunload', handler)
+    return () => window.removeEventListener('beforeunload', handler)
+  })
+
   useEffect(() => {
     async function loadData() {
       try {
@@ -175,6 +195,7 @@ export default function CommissionerToolsPage() {
         }
 
         setLeague(leagueData)
+        setSavedLeagueJson(JSON.stringify(leagueData))
         setIsCommissioner(leagueData.created_by === user.id)
 
         if (leagueData.created_by !== user.id) {
@@ -202,17 +223,15 @@ export default function CommissionerToolsPage() {
 
         if (settingsData) {
           setSettings(settingsData as LeagueSettings)
+          setSavedSettingsJson(JSON.stringify(settingsData))
           setSelectedPreset(detectPreset(settingsData))
         }
 
         // Get members first
-        console.log('Fetching members for league:', leagueId)
         const { data: membersData, error: membersError } = await supabase
           .from('league_members')
           .select('id, user_id, role, has_paid, joined_at')
           .eq('league_id', leagueId)
-
-        console.log('Members query result:', { membersData, membersError })
 
         if (membersError) {
           console.error('Error loading members:', membersError)
@@ -255,13 +274,12 @@ export default function CommissionerToolsPage() {
             fantasy_teams: teamsData?.filter(t => t.user_id === member.user_id) || []
           }))
 
-          console.log('Combined members:', combinedMembers)
           setMembers(combinedMembers as unknown as LeagueMember[])
         }
 
       } catch (err) {
         console.error('Error loading settings:', err)
-        setError('Failed to load settings')
+        setError('Failed to load settings. Please refresh the page.')
       } finally {
         setLoading(false)
       }
@@ -295,12 +313,13 @@ export default function CommissionerToolsPage() {
       if (updateError) throw updateError
 
       trackActivity('league.settings_changed', leagueId)
+      setSavedSettingsJson(JSON.stringify(settings))
       setSuccess('Settings saved successfully!')
       window.scrollTo({ top: 0, behavior: 'smooth' })
       setTimeout(() => setSuccess(null), 3000)
     } catch (err) {
       console.error('Error saving settings:', err)
-      setError('Failed to save settings')
+      setError('Failed to save settings. Please check your connection and try again.')
       window.scrollTo({ top: 0, behavior: 'smooth' })
     } finally {
       setSaving(false)
@@ -373,12 +392,13 @@ export default function CommissionerToolsPage() {
 
       if (updateError) throw updateError
 
+      setSavedLeagueJson(JSON.stringify(league))
       setSuccess('League settings saved!')
       window.scrollTo({ top: 0, behavior: 'smooth' })
       setTimeout(() => setSuccess(null), 3000)
     } catch (err) {
       console.error('Error saving league:', err)
-      setError('Failed to save league settings')
+      setError('Failed to save league settings. Please check your connection and try again.')
       window.scrollTo({ top: 0, behavior: 'smooth' })
     } finally {
       setSaving(false)
@@ -400,7 +420,7 @@ export default function CommissionerToolsPage() {
       ))
     } catch (err) {
       console.error('Error updating payment status:', err)
-      setError('Failed to update payment status')
+      setError('Failed to update payment status. Please try again.')
     }
   }
 
@@ -423,7 +443,7 @@ export default function CommissionerToolsPage() {
       setTimeout(() => setSuccess(null), 3000)
     } catch (err) {
       console.error('Error removing member:', err)
-      setError('Failed to remove member')
+      setError('Failed to remove member. Please try again.')
     }
   }
 
@@ -490,7 +510,7 @@ export default function CommissionerToolsPage() {
       setTimeout(() => setSuccess(null), 3000)
     } catch (err) {
       console.error('Error changing role:', err)
-      setError('Failed to change role')
+      setError('Failed to change role. Please try again.')
     }
   }
 
@@ -531,7 +551,7 @@ export default function CommissionerToolsPage() {
       setTimeout(() => setSuccess(null), 3000)
     } catch (err) {
       console.error('Error updating second owner:', err)
-      setError('Failed to update second owner')
+      setError('Failed to update second owner. Please try again.')
     }
   }
 
@@ -557,7 +577,7 @@ export default function CommissionerToolsPage() {
       setTimeout(() => setSuccess(null), 3000)
     } catch (err) {
       console.error('Error removing second owner:', err)
-      setError('Failed to remove second owner')
+      setError('Failed to remove second owner. Please try again.')
     }
   }
 
@@ -575,7 +595,7 @@ export default function CommissionerToolsPage() {
       console.error('Error toggling section visibility:', err)
       // Revert on error
       setSettings(settings)
-      setError('Failed to update setting')
+      setError('Failed to update setting. Please try again.')
     }
   }
 
@@ -752,7 +772,7 @@ export default function CommissionerToolsPage() {
                     </div>
 
                     <div>
-                      <label className="block text-text-secondary mb-2">Entry Fee ($)</label>
+                      <label className="block text-text-secondary mb-2">Entry Fee ($) <span className="text-text-muted text-xs">(optional)</span></label>
                       <input
                         type="number"
                         min="0"
@@ -764,7 +784,7 @@ export default function CommissionerToolsPage() {
                     </div>
 
                     <div>
-                      <label className="block text-text-secondary mb-2">Prize Pool ($)</label>
+                      <label className="block text-text-secondary mb-2">Prize Pool ($) <span className="text-text-muted text-xs">(optional)</span></label>
                       <input
                         type="number"
                         min="0"
@@ -1234,7 +1254,7 @@ export default function CommissionerToolsPage() {
                   <h2 className="text-xl font-semibold text-text-primary mb-6">Transaction Settings</h2>
                   <div className="space-y-4">
                     <div>
-                      <label className="block text-text-secondary mb-2">Final Add/Drop Deadline</label>
+                      <label className="block text-text-secondary mb-2">Final Add/Drop Deadline <span className="text-text-muted text-xs">(optional)</span></label>
                       <input
                         type="date"
                         value={settings.add_drop_deadline || ''}
@@ -1302,7 +1322,7 @@ export default function CommissionerToolsPage() {
                             onChange={(e) => setSettings({ ...settings, trade_deadline: e.target.value || null })}
                             className="w-full px-4 py-3 bg-surface border border-border rounded-lg text-text-primary"
                           />
-                          <p className="text-text-muted text-sm mt-1">Last date teams can propose new trades. Leave blank for no deadline.</p>
+                          <p className="text-text-muted text-sm mt-1">After this date, no new trades can be proposed or accepted. Pending trades will expire. Leave blank for no deadline.</p>
                         </div>
 
                         <div>
@@ -1486,7 +1506,7 @@ export default function CommissionerToolsPage() {
                       disabled={isDraftStarted}
                       className="w-full px-4 py-3 bg-surface border border-border rounded-lg text-text-primary disabled:opacity-50"
                     />
-                    <p className="text-text-muted text-sm mt-1">Scheduled draft time (for display purposes)</p>
+                    <p className="text-text-muted text-sm mt-1">When your league will draft. Members see a countdown on the league page. You still start the draft manually from the Draft Room.</p>
                   </div>
 
                   <div>
@@ -1551,7 +1571,7 @@ export default function CommissionerToolsPage() {
                       <option value="5">5 times</option>
                       <option value="0">Unlimited</option>
                     </select>
-                    <p className="text-text-muted text-sm mt-1">How many teams can draft the same school across the entire league</p>
+                    <p className="text-text-muted text-sm mt-1">How many different teams can draft the same school. 1 = exclusive (once drafted, nobody else can pick that school). 3 = up to 3 teams can share a school.</p>
                   </div>
 
                   <button

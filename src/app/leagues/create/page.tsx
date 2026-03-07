@@ -164,7 +164,7 @@ export default function CreateLeaguePage() {
       // Redirect to the new league page
       router.push(`/leagues/${league.id}`)
     } catch {
-      setError('An unexpected error occurred')
+      setError('An unexpected error occurred. Please try again.')
     } finally {
       setLoading(false)
     }

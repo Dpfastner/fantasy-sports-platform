@@ -433,13 +433,17 @@ export default function TransactionsClient({
             <h1 className="text-2xl md:text-3xl font-bold text-text-primary">Add/Drop</h1>
             <p className="text-text-secondary mt-1 text-sm md:text-base">Week {currentWeek}</p>
           </div>
-          <div className="sm:text-right">
+          <div className="sm:text-right space-y-1">
             <p className="text-text-secondary text-sm md:text-base">
-              Transactions: <span className="text-text-primary font-semibold">{addDropsUsed} / {maxAddDrops}</span>
+              <span className="text-text-primary font-semibold">{addDropsUsed}</span> used of {maxAddDrops} &mdash;{' '}
+              <span className={`font-semibold ${maxAddDrops - addDropsUsed <= 5 ? 'text-warning-text' : 'text-success-text'}`}>
+                {maxAddDrops - addDropsUsed} remaining
+              </span>
             </p>
             {addDropDeadline && (
-              <p className="text-text-muted text-xs md:text-sm">
-                Deadline: {new Date(addDropDeadline).toLocaleDateString()}
+              <p className={`text-xs md:text-sm ${isDeadlinePassed ? 'text-danger-text font-medium' : 'text-text-muted'}`}>
+                Deadline: {new Date(addDropDeadline).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                {!isDeadlinePassed && ` (${Math.ceil((new Date(addDropDeadline).getTime() - Date.now()) / (1000 * 60 * 60 * 24))}d left)`}
               </p>
             )}
           </div>
@@ -922,13 +926,16 @@ export default function TransactionsClient({
                     </div>
                   </div>
 
-                  <div className="bg-surface-inset rounded-lg p-4 mb-6">
+                  <div className="bg-surface-inset rounded-lg p-4 mb-6 space-y-2">
                     <p className="text-text-secondary text-sm">
                       This transaction will use <span className="text-text-primary font-semibold">1</span> of your remaining{' '}
                       <span className="text-text-primary font-semibold">{maxAddDrops - addDropsUsed}</span> transactions.
                     </p>
-                    <p className="text-text-muted text-sm mt-1">
+                    <p className="text-text-muted text-sm">
                       The new school will earn points starting from Week {currentWeek}.
+                    </p>
+                    <p className="text-warning-text text-xs">
+                      This cannot be undone. The dropped school&apos;s points will no longer count toward your total.
                     </p>
                   </div>
 

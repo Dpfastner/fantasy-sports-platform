@@ -58,10 +58,12 @@ export async function POST(request: Request) {
     }
 
     // Fetch related data separately
-    const [sportResult, seasonResult, membersResult] = await Promise.all([
+    const [sportResult, seasonResult, membersResult, settingsResult, draftResult] = await Promise.all([
       admin.from('sports').select('name').eq('id', league.sport_id).single(),
       admin.from('seasons').select('name').eq('id', league.season_id).single(),
       admin.from('league_members').select('id, user_id').eq('league_id', league.id),
+      admin.from('league_settings').select('draft_date, scoring_preset, schools_per_team').eq('league_id', league.id).single(),
+      admin.from('drafts').select('status').eq('league_id', league.id).order('created_at', { ascending: false }).limit(1),
     ])
 
     const members = membersResult.data || []
@@ -73,6 +75,10 @@ export async function POST(request: Request) {
 
     // Lookup mode — return league preview
     if (!teamName) {
+      const settings = settingsResult.data
+      const drafts = draftResult.data || []
+      const latestDraft = drafts[0]
+
       return NextResponse.json({
         success: true,
         league: {
@@ -82,6 +88,10 @@ export async function POST(request: Request) {
           season: seasonResult.data?.name || 'Unknown',
           memberCount: members.length,
           maxTeams: league.max_teams,
+          draftDate: settings?.draft_date || null,
+          draftCompleted: latestDraft?.status === 'completed',
+          scoringPreset: settings?.scoring_preset || null,
+          schoolsPerTeam: settings?.schools_per_team || 5,
         },
       })
     }

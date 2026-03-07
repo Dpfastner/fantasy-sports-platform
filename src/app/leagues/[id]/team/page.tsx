@@ -678,7 +678,7 @@ export default async function TeamPage({ params }: PageProps) {
         {/* Roster Section */}
         <div className="bg-surface rounded-lg p-6 mb-8">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-semibold text-text-primary">My Roster</h2>
+            <h2 className="text-xl font-semibold text-text-primary">My Roster &mdash; {team.name}</h2>
             <span className="text-text-secondary text-sm">Week {currentWeek}</span>
           </div>
 
@@ -717,7 +717,15 @@ export default async function TeamPage({ params }: PageProps) {
               eventBonuses={eventBonuses}
             />
           ) : (
-            <p className="text-text-muted">No schools on roster yet. Complete the draft to build your team.</p>
+            <div className="text-center py-6">
+              <p className="text-text-muted mb-3">Your roster will be filled during the draft.</p>
+              <Link
+                href={`/leagues/${leagueId}/draft`}
+                className="inline-block bg-brand hover:bg-brand-hover text-text-primary font-semibold py-2 px-4 rounded-lg transition-colors text-sm"
+              >
+                Go to Draft Room
+              </Link>
+            </div>
           )}
 
           {/* Empty roster slots */}

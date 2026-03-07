@@ -13,6 +13,49 @@ interface DraftStatusSectionProps {
   draftDate: string | null
 }
 
+function DraftCountdown({ targetDate }: { targetDate: string }) {
+  const [timeLeft, setTimeLeft] = useState('')
+
+  useEffect(() => {
+    function update() {
+      const now = Date.now()
+      const target = new Date(targetDate).getTime()
+      const diff = target - now
+
+      if (diff <= 0) {
+        setTimeLeft('')
+        return
+      }
+
+      const days = Math.floor(diff / (1000 * 60 * 60 * 24))
+      const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))
+      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))
+
+      if (days > 0) {
+        setTimeLeft(`${days}d ${hours}h ${minutes}m`)
+      } else if (hours > 0) {
+        setTimeLeft(`${hours}h ${minutes}m`)
+      } else {
+        const seconds = Math.floor((diff % (1000 * 60)) / 1000)
+        setTimeLeft(`${minutes}m ${seconds}s`)
+      }
+    }
+
+    update()
+    const interval = setInterval(update, 1000)
+    return () => clearInterval(interval)
+  }, [targetDate])
+
+  if (!timeLeft) return null
+
+  return (
+    <div className="inline-flex items-center gap-2 bg-brand/10 border border-brand/30 rounded-lg px-3 py-1.5">
+      <span className="text-brand-text text-sm font-medium">Starts in</span>
+      <span className="text-text-primary font-mono font-bold text-sm">{timeLeft}</span>
+    </div>
+  )
+}
+
 export default function DraftStatusSection({
   leagueId,
   initialStatus,
@@ -77,15 +120,32 @@ export default function DraftStatusSection({
               <span className="text-warning-text">Draft Not Started</span>
             </div>
             {draftDate && (
-              <p className="text-text-secondary mb-4">
-                Scheduled: {new Date(draftDate).toLocaleDateString('en-US', {
-                  weekday: 'long',
-                  year: 'numeric',
-                  month: 'long',
-                  day: 'numeric',
-                  hour: 'numeric',
-                  minute: '2-digit',
-                })}
+              <div className="mb-4 space-y-2">
+                <p className="text-text-secondary">
+                  Scheduled: {new Date(draftDate).toLocaleDateString('en-US', {
+                    weekday: 'long',
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric',
+                    hour: 'numeric',
+                    minute: '2-digit',
+                  })}
+                </p>
+                <DraftCountdown targetDate={draftDate} />
+              </div>
+            )}
+            {!draftDate && isCommissioner && (
+              <p className="text-text-muted mb-4">
+                No draft date set.{' '}
+                <Link href={`/leagues/${leagueId}/settings?tab=draft`} className="text-brand-text hover:underline">
+                  Schedule the draft
+                </Link>{' '}
+                so your league knows when to show up.
+              </p>
+            )}
+            {!draftDate && !isCommissioner && (
+              <p className="text-text-muted mb-4">
+                The commissioner hasn&apos;t scheduled the draft yet.
               </p>
             )}
             {isCommissioner && teamCount >= 1 && allMembersHaveTeams && (

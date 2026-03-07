@@ -1,30 +1,51 @@
 'use client'
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState, useEffect, Suspense } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { trackActivity } from '@/app/actions/activity'
 
-export default function JoinLeaguePage() {
+interface LeaguePreview {
+  id: string
+  name: string
+  sport: string
+  season: string
+  memberCount: number
+  maxTeams: number
+  draftDate: string | null
+  draftCompleted: boolean
+  scoringPreset: string | null
+  schoolsPerTeam: number
+}
+
+function JoinLeagueForm() {
   const [inviteCode, setInviteCode] = useState('')
   const [teamName, setTeamName] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
-  const [leaguePreview, setLeaguePreview] = useState<{
-    id: string
-    name: string
-    sport: string
-    season: string
-    memberCount: number
-    maxTeams: number
-  } | null>(null)
+  const [leaguePreview, setLeaguePreview] = useState<LeaguePreview | null>(null)
+  const [joinSuccess, setJoinSuccess] = useState<{ leagueId: string; leagueName: string } | null>(null)
   const router = useRouter()
+  const searchParams = useSearchParams()
 
-  const handleLookup = async () => {
+  // Pre-fill invite code from URL parameter and auto-lookup
+  useEffect(() => {
+    const codeParam = searchParams.get('code')
+    if (codeParam && !inviteCode) {
+      setInviteCode(codeParam)
+      // Auto-lookup after a tick to let state settle
+      setTimeout(() => {
+        lookupLeague(codeParam)
+      }, 0)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams])
+
+  const lookupLeague = async (code: string) => {
     setError(null)
     setLeaguePreview(null)
 
-    if (!inviteCode.trim()) {
+    if (!code.trim()) {
       setError('Please enter an invite code')
       return
     }
@@ -35,25 +56,32 @@ export default function JoinLeaguePage() {
       const res = await fetch('/api/leagues/join', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ inviteCode: inviteCode.trim() }),
+        body: JSON.stringify({ inviteCode: code.trim() }),
       })
 
       const data = await res.json()
 
       if (!res.ok) {
-        const debugInfo = data.debug ? `\n[Debug: ${JSON.stringify(data.debug)}]` : ''
-        setError((data.error || 'League not found') + debugInfo)
+        if (res.status === 401) {
+          // User is not logged in — redirect to login with return URL
+          const returnUrl = `/leagues/join?code=${encodeURIComponent(code.trim())}`
+          router.push(`/login?next=${encodeURIComponent(returnUrl)}`)
+          return
+        }
+        setError(data.error || 'League not found. Check your invite code and try again.')
         return
       }
 
-      trackActivity('invite_code.looked_up', data.league.id, { inviteCode: inviteCode.trim() })
+      trackActivity('invite_code.looked_up', data.league.id, { inviteCode: code.trim() })
       setLeaguePreview(data.league)
     } catch {
-      setError('An unexpected error occurred')
+      setError('An unexpected error occurred. Please try again.')
     } finally {
       setLoading(false)
     }
   }
+
+  const handleLookup = () => lookupLeague(inviteCode)
 
   const handleJoin = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -90,12 +118,67 @@ export default function JoinLeaguePage() {
         return
       }
 
-      router.push(`/leagues/${data.leagueId}`)
+      setJoinSuccess({ leagueId: data.leagueId, leagueName: leaguePreview.name })
     } catch {
-      setError('An unexpected error occurred')
+      setError('An unexpected error occurred. Please try again.')
     } finally {
       setLoading(false)
     }
+  }
+
+  // Format draft date for display
+  const formatDraftDate = (dateStr: string | null) => {
+    if (!dateStr) return null
+    const date = new Date(dateStr)
+    return date.toLocaleDateString('en-US', {
+      weekday: 'short',
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+    })
+  }
+
+  // Format scoring preset for display
+  const formatScoringPreset = (preset: string | null) => {
+    if (!preset || preset === 'custom') return 'Custom'
+    return preset.charAt(0).toUpperCase() + preset.slice(1)
+  }
+
+  // Success state
+  if (joinSuccess) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-gradient-from to-gradient-to">
+        <header className="bg-surface/50 border-b border-border">
+          <div className="container mx-auto px-4 py-4">
+            <Link href="/dashboard" className="text-2xl font-bold text-text-primary">
+              Rivyls
+            </Link>
+          </div>
+        </header>
+
+        <main className="container mx-auto px-4 py-8">
+          <div className="max-w-md mx-auto">
+            <div className="bg-surface rounded-lg p-8 text-center">
+              <div className="text-success-text text-5xl mb-4">&#10003;</div>
+              <h2 className="text-2xl font-bold text-text-primary mb-4">
+                You&apos;re in!
+              </h2>
+              <p className="text-text-secondary mb-6">
+                You&apos;ve joined <span className="text-text-primary font-semibold">{joinSuccess.leagueName}</span>. Head to your league to see the standings, check the schedule, and get ready for the draft.
+              </p>
+              <button
+                onClick={() => router.push(`/leagues/${joinSuccess.leagueId}`)}
+                className="w-full bg-brand hover:bg-brand-hover text-text-primary font-semibold py-3 px-4 rounded-lg transition-colors"
+              >
+                Go to League
+              </button>
+            </div>
+          </div>
+        </main>
+      </div>
+    )
   }
 
   return (
@@ -117,7 +200,24 @@ export default function JoinLeaguePage() {
             </Link>
           </div>
 
-          <h1 className="text-3xl font-bold text-text-primary mb-8">Join a League</h1>
+          <h1 className="text-3xl font-bold text-text-primary mb-2">Join a League</h1>
+
+          {/* Step indicator */}
+          <div className="flex items-center gap-2 mb-8">
+            <div className={`flex items-center gap-1.5 text-sm ${!leaguePreview ? 'text-brand-text font-semibold' : 'text-text-muted'}`}>
+              <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${!leaguePreview ? 'bg-brand text-text-primary' : 'bg-success text-text-primary'}`}>
+                {leaguePreview ? '\u2713' : '1'}
+              </span>
+              Find League
+            </div>
+            <div className="w-8 h-px bg-border" />
+            <div className={`flex items-center gap-1.5 text-sm ${leaguePreview ? 'text-brand-text font-semibold' : 'text-text-muted'}`}>
+              <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${leaguePreview ? 'bg-brand text-text-primary' : 'bg-surface-subtle text-text-muted'}`}>
+                2
+              </span>
+              Join &amp; Name Team
+            </div>
+          </div>
 
           <div className="bg-surface rounded-lg p-8">
             {error && (
@@ -142,9 +242,11 @@ export default function JoinLeaguePage() {
                     id="inviteCode"
                     value={inviteCode}
                     onChange={(e) => setInviteCode(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleLookup() } }}
                     className="w-full px-4 py-3 bg-surface border border-border rounded-lg text-text-primary placeholder-text-muted focus:outline-none focus:border-brand font-mono text-center text-lg tracking-wider"
                     placeholder="abc123"
                     maxLength={20}
+                    autoFocus
                   />
                 </div>
 
@@ -153,20 +255,44 @@ export default function JoinLeaguePage() {
                   disabled={loading}
                   className="w-full bg-brand hover:bg-brand-hover disabled:bg-brand/50 disabled:cursor-not-allowed text-text-primary font-semibold py-3 px-4 rounded-lg transition-colors"
                 >
-                  {loading ? 'Looking up...' : 'Find League'}
+                  {loading ? 'Looking up...' : 'Look Up League'}
                 </button>
               </div>
             ) : (
               // Step 2: Confirm and enter team name
               <form onSubmit={handleJoin}>
-                <div className="bg-surface rounded-lg p-4 mb-6">
-                  <h3 className="text-text-primary font-semibold mb-2">{leaguePreview.name}</h3>
-                  <div className="text-text-secondary text-sm space-y-1">
-                    <p>Sport: {leaguePreview.sport}</p>
-                    <p>Season: {leaguePreview.season}</p>
-                    <p>
-                      Members: {leaguePreview.memberCount} / {leaguePreview.maxTeams}
-                    </p>
+                {/* League preview card */}
+                <div className="bg-surface-subtle rounded-lg p-4 mb-6 border border-border">
+                  <h3 className="text-text-primary font-semibold text-lg mb-3">{leaguePreview.name}</h3>
+                  <div className="grid grid-cols-2 gap-y-2 text-sm">
+                    <span className="text-text-muted">Sport</span>
+                    <span className="text-text-secondary">{leaguePreview.sport}</span>
+
+                    <span className="text-text-muted">Season</span>
+                    <span className="text-text-secondary">{leaguePreview.season}</span>
+
+                    <span className="text-text-muted">Members</span>
+                    <span className="text-text-secondary">
+                      {leaguePreview.memberCount} / {leaguePreview.maxTeams}
+                      {leaguePreview.memberCount >= leaguePreview.maxTeams && (
+                        <span className="text-danger ml-1">(Full)</span>
+                      )}
+                    </span>
+
+                    <span className="text-text-muted">Schools per team</span>
+                    <span className="text-text-secondary">{leaguePreview.schoolsPerTeam}</span>
+
+                    <span className="text-text-muted">Scoring</span>
+                    <span className="text-text-secondary">{formatScoringPreset(leaguePreview.scoringPreset)}</span>
+
+                    <span className="text-text-muted">Draft</span>
+                    <span className="text-text-secondary">
+                      {leaguePreview.draftCompleted
+                        ? 'Completed'
+                        : leaguePreview.draftDate
+                          ? formatDraftDate(leaguePreview.draftDate)
+                          : 'Not scheduled yet'}
+                    </span>
                   </div>
                 </div>
 
@@ -184,9 +310,10 @@ export default function JoinLeaguePage() {
                     maxLength={25}
                     className="w-full px-4 py-3 bg-surface border border-border rounded-lg text-text-primary placeholder-text-muted focus:outline-none focus:border-brand"
                     placeholder="e.g., Touchdown Titans"
+                    autoFocus
                   />
                   <p className="text-text-muted text-sm mt-1">
-                    3-25 characters
+                    3-25 characters. You can change this later.
                   </p>
                 </div>
 
@@ -198,13 +325,13 @@ export default function JoinLeaguePage() {
                       setTeamName('')
                       setError(null)
                     }}
-                    className="flex-1 bg-surface hover:bg-surface-subtle text-text-primary font-semibold py-3 px-4 rounded-lg transition-colors"
+                    className="flex-1 bg-surface hover:bg-surface-subtle border border-border text-text-primary font-semibold py-3 px-4 rounded-lg transition-colors"
                   >
                     Back
                   </button>
                   <button
                     type="submit"
-                    disabled={loading}
+                    disabled={loading || leaguePreview.memberCount >= leaguePreview.maxTeams}
                     className="flex-1 bg-brand hover:bg-brand-hover disabled:bg-brand/50 disabled:cursor-not-allowed text-text-primary font-semibold py-3 px-4 rounded-lg transition-colors"
                   >
                     {loading ? 'Joining...' : 'Join League'}
@@ -216,5 +343,17 @@ export default function JoinLeaguePage() {
         </div>
       </main>
     </div>
+  )
+}
+
+export default function JoinLeaguePage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gradient-to-b from-gradient-from to-gradient-to flex items-center justify-center">
+        <div className="text-text-primary">Loading...</div>
+      </div>
+    }>
+      <JoinLeagueForm />
+    </Suspense>
   )
 }

@@ -57,6 +57,7 @@ interface LeagueSettings {
   schools_per_team: number
   max_school_selections_total: number
   max_school_selections_per_team: number
+  draft_date: string | null
 }
 
 export default function DraftRoomPage() {
@@ -270,7 +271,7 @@ export default function DraftRoomPage() {
         // Get league settings
         const { data: settingsData } = await supabase
           .from('league_settings')
-          .select('draft_type, draft_order_type, draft_timer_seconds, schools_per_team, max_school_selections_total, max_school_selections_per_team')
+          .select('draft_type, draft_order_type, draft_timer_seconds, schools_per_team, max_school_selections_total, max_school_selections_per_team, draft_date')
           .eq('league_id', leagueId)
           .single()
 
@@ -362,7 +363,7 @@ export default function DraftRoomPage() {
 
       } catch (err) {
         console.error('Error loading draft data:', err)
-        setError('Failed to load draft data')
+        setError('Failed to load draft data. Please refresh the page.')
       } finally {
         setLoading(false)
       }
@@ -1958,12 +1959,27 @@ export default function DraftRoomPage() {
           {draft?.status === 'not_started' && (
             <div className="p-6">
               <div className="text-center text-text-secondary mb-6">
-                <p className="text-xl mb-2">Draft has not started yet</p>
+                <p className="text-xl mb-2">Waiting for the draft to begin</p>
+                {settings?.draft_date && (
+                  <p className="text-text-primary font-medium mb-1">
+                    Scheduled: {new Date(settings.draft_date).toLocaleDateString('en-US', {
+                      weekday: 'long',
+                      month: 'long',
+                      day: 'numeric',
+                      year: 'numeric',
+                      hour: 'numeric',
+                      minute: '2-digit',
+                    })}
+                  </p>
+                )}
                 {teams.length < 1 && (
                   <p>Need at least 2 teams to start the draft</p>
                 )}
                 {isCommissioner && teams.length >= 1 && (
                   <p>Click &quot;Start Draft&quot; when everyone is ready</p>
+                )}
+                {!isCommissioner && teams.length >= 1 && !settings?.draft_date && (
+                  <p>The commissioner will start the draft when everyone is ready.</p>
                 )}
               </div>
 

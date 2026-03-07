@@ -269,9 +269,13 @@ export default function PendingTrades({
                             addToast(`Select ${dropsNeeded} school(s) to drop`, 'error')
                             return
                           }
-                          handleAction(trade.id, 'accept', Array.from(dropIds))
+                          if (window.confirm('Accept this trade? This cannot be undone.')) {
+                            handleAction(trade.id, 'accept', Array.from(dropIds))
+                          }
                         } else {
-                          handleAction(trade.id, 'accept')
+                          if (window.confirm('Accept this trade? This cannot be undone.')) {
+                            handleAction(trade.id, 'accept')
+                          }
                         }
                       }}
                       disabled={actionLoading === trade.id || (needsDrops && showingDropPicker && dropIds.size !== dropsNeeded)}
@@ -280,7 +284,11 @@ export default function PendingTrades({
                       {actionLoading === trade.id ? '...' : 'Accept'}
                     </button>
                     <button
-                      onClick={() => handleAction(trade.id, 'reject')}
+                      onClick={() => {
+                        if (window.confirm('Are you sure you want to reject this trade?')) {
+                          handleAction(trade.id, 'reject')
+                        }
+                      }}
                       disabled={actionLoading === trade.id}
                       className="px-2.5 py-1 bg-danger hover:bg-danger/80 text-white rounded text-xs font-medium disabled:opacity-50 transition-colors"
                     >

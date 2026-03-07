@@ -310,6 +310,15 @@ export default function LeaderboardClient({
           )}
         </div>
 
+        {/* All-zeros encouragement */}
+        {teams.every(t => t.total_points === 0) && currentWeek <= 1 && (
+          <div className="bg-brand/10 border border-brand/30 rounded-lg p-4 mb-4">
+            <p className="text-brand-text text-sm">
+              Scores will update when games begin. Check back once the season kicks off!
+            </p>
+          </div>
+        )}
+
         {/* Standings Table */}
         <div className="bg-surface-subtle rounded-lg overflow-hidden">
           <div className="md:hidden px-4 py-2 bg-surface-inset text-text-secondary text-xs flex items-center gap-2">
