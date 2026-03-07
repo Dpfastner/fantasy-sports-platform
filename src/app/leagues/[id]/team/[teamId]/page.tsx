@@ -467,17 +467,7 @@ export default async function TeamViewPage({ params }: PageProps) {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gradient-from to-gradient-to">
-      <Header userName={profile?.display_name} userEmail={user.email} userId={user.id}>
-        <Link
-          href={`/leagues/${leagueId}`}
-          className="text-text-secondary hover:text-text-primary transition-colors"
-        >
-          {league.name}
-        </Link>
-        <Link href="/dashboard" className="text-text-secondary hover:text-text-primary transition-colors">
-          My Leagues
-        </Link>
-      </Header>
+      <Header userName={profile?.display_name} userEmail={user.email} userId={user.id} />
 
       <main className="container mx-auto px-4 py-8">
         {/* Back link */}

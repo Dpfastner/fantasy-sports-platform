@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import { fetchWithRetry } from '@/lib/api/fetch'
 
 interface Notification {
   id: string
@@ -93,7 +94,7 @@ export function NotificationBell({ userId }: NotificationBellProps) {
   // Fetch notifications
   const fetchNotifications = useCallback(async () => {
     try {
-      const res = await fetch('/api/notifications')
+      const res = await fetchWithRetry('/api/notifications')
       if (!res.ok) return
       const data = await res.json()
       setNotifications(data.notifications || [])

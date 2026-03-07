@@ -370,19 +370,7 @@ export default async function LeaguePage({ params }: PageProps) {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gradient-from to-gradient-to">
-      <Header userName={profile?.display_name} userEmail={user.email} userId={user.id}>
-        {isDraftComplete && userTeam && (
-          <Link
-            href={`/leagues/${id}/team`}
-            className="text-brand-text hover:text-brand-text transition-colors font-medium"
-          >
-            My Team
-          </Link>
-        )}
-        <Link href="/dashboard" className="text-text-secondary hover:text-text-primary transition-colors">
-          My Leagues
-        </Link>
-      </Header>
+      <Header userName={profile?.display_name} userEmail={user.email} userId={user.id} />
 
       <LeagueNav leagueId={id} isCommissioner={isCommissioner} />
 

@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useToast } from './Toast'
+import { fetchWithRetry } from '@/lib/api/fetch'
 import dynamic from 'next/dynamic'
 
 const TradeProposalModal = dynamic(() => import('./TradeProposalModal'), { ssr: false })
@@ -95,7 +96,7 @@ export default function PendingTrades({
         body.dropSchoolIds = drops
       }
 
-      const res = await fetch(`/api/leagues/${leagueId}/trades/action`, {
+      const res = await fetchWithRetry(`/api/leagues/${leagueId}/trades/action`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
@@ -122,7 +123,7 @@ export default function PendingTrades({
     const partnerTeamId = trade.proposerTeamId === myTeamId ? trade.receiverTeamId : trade.proposerTeamId
     setCounterLoading(true)
     try {
-      const res = await fetch(`/api/leagues/${leagueId}/teams/${partnerTeamId}/roster`)
+      const res = await fetchWithRetry(`/api/leagues/${leagueId}/teams/${partnerTeamId}/roster`)
       if (!res.ok) throw new Error('Failed to fetch roster')
       const data = await res.json()
       setCounterPartnerRoster((data.roster || []).map((r: Record<string, unknown>) => ({

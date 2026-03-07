@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { Header } from '@/components/Header'
 import { useToast } from '@/components/Toast'
 import { ensureContrast } from '@/lib/color-utils'
+import { fetchWithRetry } from '@/lib/api/fetch'
 import {
   REGULAR_WEEK_COUNT,
   POSTSEASON_START,
@@ -182,7 +183,7 @@ export default function LeaderboardClient({
 
     async function fetchStats() {
       try {
-        const response = await fetch(`/api/leagues/${leagueId}/stats`)
+        const response = await fetchWithRetry(`/api/leagues/${leagueId}/stats`)
         if (response.ok) {
           const data = await response.json()
           setStats(data)
@@ -539,17 +540,7 @@ export default function LeaderboardClient({
   // --- Full variant ---
   return (
     <div className="min-h-screen bg-gradient-to-b from-gradient-from to-gradient-to">
-      <Header userName={userName} userEmail={userEmail} userId={currentUserId}>
-        <Link
-          href={`/leagues/${leagueId}`}
-          className="text-text-secondary hover:text-text-primary transition-colors text-sm md:text-base truncate max-w-[120px] md:max-w-none"
-        >
-          {leagueName}
-        </Link>
-        <Link href="/dashboard" className="text-text-secondary hover:text-text-primary transition-colors">
-          My Leagues
-        </Link>
-      </Header>
+      <Header userName={userName} userEmail={userEmail} userId={currentUserId} />
 
       <main className="container mx-auto px-3 md:px-4 py-4 md:py-8">
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-6 md:mb-8">

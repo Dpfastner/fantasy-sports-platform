@@ -114,6 +114,7 @@ export default function ScheduleClient({
           const { data } = await query
             .order('game_date', { ascending: true })
             .order('game_time', { ascending: true })
+            .limit(2000)
 
           if (data) {
             setGames(data)
@@ -207,23 +208,7 @@ export default function ScheduleClient({
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gradient-from to-gradient-to">
-      <Header userName={userName} userEmail={userEmail} userId={userId}>
-        <Link
-          href={`/leagues/${leagueId}/team`}
-          className="text-text-secondary hover:text-text-primary transition-colors"
-        >
-          My Team
-        </Link>
-        <Link
-          href={`/leagues/${leagueId}`}
-          className="text-text-secondary hover:text-text-primary transition-colors"
-        >
-          {leagueName}
-        </Link>
-        <Link href="/dashboard" className="text-text-secondary hover:text-text-primary transition-colors">
-          My Leagues
-        </Link>
-      </Header>
+      <Header userName={userName} userEmail={userEmail} userId={userId} />
 
       <LeagueNav leagueId={leagueId} />
 
@@ -363,19 +348,21 @@ export default function ScheduleClient({
                           isLive
                             ? 'border-danger/50 bg-danger/10'
                             : isRosterGame
-                            ? 'border-info/30'
+                            ? 'border-info/50 bg-info/5'
                             : 'border-border'
                         }`}
                       >
                         <div className="flex items-center justify-between text-sm">
-                          <span className={`flex-1 ${isAwayRoster ? 'text-info-text font-medium' : awayWon ? 'text-success-text font-medium' : isCompleted && !awayWon ? 'text-text-secondary' : 'text-text-primary'}`}>
+                          <span className={`flex-1 flex items-center ${isAwayRoster ? 'text-info-text font-medium' : awayWon ? 'text-success-text font-medium' : isCompleted && !awayWon ? 'text-text-secondary' : 'text-text-primary'}`}>
+                            {isAwayRoster && <span className="inline-block w-1.5 h-1.5 bg-info rounded-full mr-1.5 shrink-0" />}
                             {game.away_rank && game.away_rank <= 25 ? `#${game.away_rank} ` : ''}{game.away_team_name || 'TBD'}
                           </span>
-                          <span className="px-3 text-text-muted">
+                          <span className="px-3 text-text-muted shrink-0">
                             {isCompleted ? `${game.away_score} - ${game.home_score}` : isLive ? `${game.away_score ?? 0} - ${game.home_score ?? 0}` : 'vs'}
                           </span>
-                          <span className={`flex-1 text-right ${isHomeRoster ? 'text-info-text font-medium' : homeWon ? 'text-success-text font-medium' : isCompleted && !homeWon ? 'text-text-secondary' : 'text-text-primary'}`}>
+                          <span className={`flex-1 flex items-center justify-end ${isHomeRoster ? 'text-info-text font-medium' : homeWon ? 'text-success-text font-medium' : isCompleted && !homeWon ? 'text-text-secondary' : 'text-text-primary'}`}>
                             {game.home_team_name || 'TBD'}{game.home_rank && game.home_rank <= 25 ? ` #${game.home_rank}` : ''}
+                            {isHomeRoster && <span className="inline-block w-1.5 h-1.5 bg-info rounded-full ml-1.5 shrink-0" />}
                           </span>
                         </div>
                       </div>
@@ -413,7 +400,7 @@ export default function ScheduleClient({
                           isLive
                             ? 'border-danger/50 bg-danger/10'
                             : isRosterGame
-                            ? 'border-info/30'
+                            ? 'border-info/50 bg-info/5'
                             : 'border-border'
                         }`}
                       >
@@ -561,7 +548,7 @@ export default function ScheduleClient({
         {/* Legend */}
         <div className="mt-6 flex items-center gap-4 text-xs text-text-secondary">
           <div className="flex items-center gap-1">
-            <div className="w-3 h-3 border border-info/30 rounded"></div>
+            <div className="w-3 h-3 bg-info/5 border border-info/50 rounded"></div>
             <span>My Roster</span>
           </div>
           <div className="flex items-center gap-1">

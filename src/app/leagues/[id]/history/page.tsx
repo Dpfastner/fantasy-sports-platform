@@ -271,18 +271,7 @@ export default async function HistoryPage({ params, searchParams }: PageProps) {
 
   return (
     <div className="min-h-screen bg-background">
-      <Header
-        userName={profile?.display_name}
-        userEmail={user.email}
-        userId={user.id}
-      >
-        <Link
-          href={`/leagues/${leagueId}`}
-          className="text-text-secondary hover:text-text-primary text-sm transition-colors"
-        >
-          ← {league.name}
-        </Link>
-      </Header>
+      <Header userName={profile?.display_name} userEmail={user.email} userId={user.id} />
 
       <LeagueNav leagueId={leagueId} />
 

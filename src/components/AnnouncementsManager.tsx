@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { ReportContentButton } from '@/components/ReportContentButton'
+import { fetchWithRetry } from '@/lib/api/fetch'
 
 interface Announcement {
   id: string
@@ -41,7 +42,7 @@ export function AnnouncementsManager({
     setSaving(true)
     setError(null)
     try {
-      const res = await fetch(`/api/leagues/${leagueId}/announcements`, {
+      const res = await fetchWithRetry(`/api/leagues/${leagueId}/announcements`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(form),
@@ -63,7 +64,7 @@ export function AnnouncementsManager({
     setSaving(true)
     setError(null)
     try {
-      const res = await fetch(`/api/leagues/${leagueId}/announcements/${id}`, {
+      const res = await fetchWithRetry(`/api/leagues/${leagueId}/announcements/${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(form),
@@ -84,7 +85,7 @@ export function AnnouncementsManager({
   const handleDelete = async (id: string) => {
     if (!confirm('Delete this announcement?')) return
     try {
-      const res = await fetch(`/api/leagues/${leagueId}/announcements/${id}`, {
+      const res = await fetchWithRetry(`/api/leagues/${leagueId}/announcements/${id}`, {
         method: 'DELETE',
       })
       if (!res.ok) throw new Error('Failed to delete announcement')
@@ -97,7 +98,7 @@ export function AnnouncementsManager({
 
   const handleTogglePin = async (id: string, currentPinned: boolean) => {
     try {
-      const res = await fetch(`/api/leagues/${leagueId}/announcements/${id}`, {
+      const res = await fetchWithRetry(`/api/leagues/${leagueId}/announcements/${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ pinned: !currentPinned }),

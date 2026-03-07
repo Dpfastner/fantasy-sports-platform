@@ -131,6 +131,7 @@ export default async function SchedulePage({ params, searchParams }: PageProps) 
   const { data: games } = await gamesQuery
     .order('game_date', { ascending: true })
     .order('game_time', { ascending: true })
+    .limit(2000)
 
   return (
     <>

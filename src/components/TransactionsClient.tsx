@@ -7,6 +7,7 @@ import { useToast } from './Toast'
 import { Header } from './Header'
 import { LeagueNav } from './LeagueNav'
 import { WatchlistStar } from './WatchlistStar'
+import { fetchWithRetry } from '@/lib/api/fetch'
 
 interface RosterSchool {
   id: string
@@ -350,7 +351,7 @@ export default function TransactionsClient({
         body.rosterPeriodId = selectedDrop.id
       }
 
-      const response = await fetch('/api/transactions', {
+      const response = await fetchWithRetry('/api/transactions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
@@ -390,23 +391,7 @@ export default function TransactionsClient({
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gradient-from to-gradient-to">
-      <Header userName={userName} userEmail={userEmail} userId={userId}>
-        <Link
-          href={`/leagues/${leagueId}/team`}
-          className="text-text-secondary hover:text-text-primary transition-colors text-sm md:text-base"
-        >
-          My Roster
-        </Link>
-        <Link
-          href={`/leagues/${leagueId}`}
-          className="text-text-secondary hover:text-text-primary transition-colors text-sm md:text-base truncate max-w-[100px] md:max-w-none"
-        >
-          {leagueName}
-        </Link>
-        <Link href="/dashboard" className="text-text-secondary hover:text-text-primary transition-colors text-sm md:text-base">
-          My Leagues
-        </Link>
-      </Header>
+      <Header userName={userName} userEmail={userEmail} userId={userId} />
 
       <LeagueNav leagueId={leagueId} />
 
