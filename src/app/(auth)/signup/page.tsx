@@ -104,13 +104,16 @@ export default function SignUpPage() {
             <h2 className="text-2xl font-bold text-text-primary mb-4">Check your email</h2>
             <p className="text-text-secondary mb-6">
               We sent a confirmation link to <span className="text-text-primary">{email}</span>.
-              Click the link to activate your account.
+              Click the link and you&apos;ll be taken straight to your dashboard.
+            </p>
+            <p className="text-text-muted text-sm mb-4">
+              Didn&apos;t receive it? Check your spam folder or try signing up again.
             </p>
             <Link
               href="/login"
               className="text-brand-text hover:text-brand-text"
             >
-              Go to login
+              Already confirmed? Sign in
             </Link>
           </div>
         ) : (
@@ -195,7 +198,11 @@ export default function SignUpPage() {
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 required
-                className="w-full px-4 py-3 bg-surface border border-border rounded-lg text-text-primary placeholder-text-muted focus:outline-none focus:border-brand pr-12"
+                className={`w-full px-4 py-3 bg-surface border rounded-lg text-text-primary placeholder-text-muted focus:outline-none focus:border-brand pr-12 ${
+                  confirmPassword && password
+                    ? password === confirmPassword ? 'border-success' : 'border-danger'
+                    : 'border-border'
+                }`}
                 placeholder="Confirm your password"
               />
               <button
@@ -216,6 +223,11 @@ export default function SignUpPage() {
                 )}
               </button>
             </div>
+            {confirmPassword && password && (
+              <p className={`text-xs mt-1 ${password === confirmPassword ? 'text-success-text' : 'text-danger-text'}`}>
+                {password === confirmPassword ? 'Passwords match' : 'Passwords do not match'}
+              </p>
+            )}
           </div>
 
           {/* Age Gate */}

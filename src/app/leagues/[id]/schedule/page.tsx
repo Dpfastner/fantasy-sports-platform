@@ -89,8 +89,13 @@ export default async function SchedulePage({ params, searchParams }: PageProps) 
   const environment = getEnvironment()
 
   // Determine if selection is a category or week number
-  const isCategory = weekParam && ['bowls', 'cfp', 'natty'].includes(weekParam)
-  const selectedWeek = isCategory ? weekParam : (weekParam ? parseInt(weekParam) : currentWeek)
+  const isCategory = weekParam && ['bowls', 'cfp', 'natty', 'all'].includes(weekParam)
+  // Pre-season (before Week 0): default to 'all' to show full schedule
+  const selectedWeek = isCategory
+    ? weekParam
+    : weekParam
+      ? parseInt(weekParam)
+      : currentWeek <= 0 ? 'all' : currentWeek
 
   // Get weeks that have games
   const { data: weeksWithGamesData } = await supabase
@@ -107,16 +112,17 @@ export default async function SchedulePage({ params, searchParams }: PageProps) 
     .eq('season_id', league.season_id)
 
   if (isCategory) {
-    if (weekParam === 'bowls') {
+    if (weekParam === 'bowls' || selectedWeek === 'bowls') {
       // All postseason games (week 17+)
       gamesQuery = gamesQuery.gte('week_number', 17)
-    } else if (weekParam === 'cfp') {
+    } else if (weekParam === 'cfp' || selectedWeek === 'cfp') {
       // Only CFP games (where is_playoff_game is true)
       gamesQuery = gamesQuery.eq('is_playoff_game', true)
-    } else if (weekParam === 'natty') {
+    } else if (weekParam === 'natty' || selectedWeek === 'natty') {
       // Only championship game
       gamesQuery = gamesQuery.eq('playoff_round', 'championship')
     }
+    // 'all' — no additional filter, fetches all games for the season
   } else {
     // Regular week selection
     gamesQuery = gamesQuery.eq('week_number', selectedWeek)

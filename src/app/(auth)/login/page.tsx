@@ -12,6 +12,7 @@ function LoginForm() {
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
+  const [redirecting, setRedirecting] = useState(false)
   const router = useRouter()
   const searchParams = useSearchParams()
   const supabase = createClient()
@@ -36,14 +37,15 @@ function LoginForm() {
 
       if (error) {
         setError(error.message)
+        setLoading(false)
         return
       }
 
       trackActivity('login.success')
+      setRedirecting(true)
       router.push('/dashboard')
     } catch {
       setError('An unexpected error occurred')
-    } finally {
       setLoading(false)
     }
   }
@@ -121,10 +123,10 @@ function LoginForm() {
 
           <button
             type="submit"
-            disabled={loading}
+            disabled={loading || redirecting}
             className="w-full bg-brand hover:bg-brand-hover disabled:bg-brand/50 disabled:cursor-not-allowed text-text-primary font-semibold py-3 px-4 rounded-lg transition-colors"
           >
-            {loading ? 'Signing in...' : 'Sign In'}
+            {redirecting ? 'Redirecting...' : loading ? 'Signing in...' : 'Sign In'}
           </button>
 
           <p className="text-text-secondary text-center mt-6">

@@ -97,7 +97,9 @@ export default function ScheduleClient({
             .eq('season_id', seasonId)
 
           if (typeof selectedWeek === 'string') {
-            if (selectedWeek === 'bowls') {
+            if (selectedWeek === 'all') {
+              // No filter — fetch all games
+            } else if (selectedWeek === 'bowls') {
               query = query.gte('week_number', 17)
             } else if (selectedWeek === 'cfp') {
               query = query.eq('is_playoff_game', true)
@@ -143,14 +145,26 @@ export default function ScheduleClient({
     return true
   })
 
-  // Group games by date
+  // Group games by week (for 'all' view) or by date
+  const isAllView = selectedWeek === 'all'
+
+  const gamesByWeek = new Map<number, Game[]>()
   const gamesByDate = new Map<string, Game[]>()
+
   for (const game of filteredGames) {
-    const date = game.game_date
-    if (!gamesByDate.has(date)) {
-      gamesByDate.set(date, [])
+    if (isAllView) {
+      const week = game.week_number
+      if (!gamesByWeek.has(week)) {
+        gamesByWeek.set(week, [])
+      }
+      gamesByWeek.get(week)!.push(game)
+    } else {
+      const date = game.game_date
+      if (!gamesByDate.has(date)) {
+        gamesByDate.set(date, [])
+      }
+      gamesByDate.get(date)!.push(game)
     }
-    gamesByDate.get(date)!.push(game)
   }
 
   const liveGamesCount = games.filter(g => g.status === 'live').length
@@ -162,6 +176,7 @@ export default function ScheduleClient({
   // Week label helper
   const getWeekLabel = (week: number | string): string => {
     if (typeof week === 'string') {
+      if (week === 'all') return 'All Games'
       if (week === 'bowls') return 'Bowl Games'
       if (week === 'cfp') return 'CFP Bracket Games'
       if (week === 'natty') return 'National Championship'
@@ -271,6 +286,7 @@ export default function ScheduleClient({
             onChange={(e) => handleWeekChange(e.target.value)}
             className="bg-surface text-text-primary text-sm rounded-lg px-4 py-2 border border-border focus:outline-none focus:ring-2 focus:ring-brand"
           >
+            <option value="all">All Games</option>
             <optgroup label="Regular Season">
               {regularWeeks.map((week) => (
                 <option key={week} value={week}>
@@ -340,6 +356,53 @@ export default function ScheduleClient({
         {filteredGames.length === 0 ? (
           <div className="bg-surface rounded-lg p-8 text-center">
             <p className="text-text-secondary">No games found for the selected filters.</p>
+          </div>
+        ) : isAllView ? (
+          /* All Games view: group by week */
+          <div className="space-y-8">
+            {[...gamesByWeek.entries()].sort(([a], [b]) => a - b).map(([week, weekGames]) => (
+              <div key={week}>
+                <h2 className="text-lg font-bold text-text-primary mb-3 pb-2 border-b border-border">
+                  {getWeekLabel(week)}
+                </h2>
+                <div className="space-y-2">
+                  {weekGames.map((game) => {
+                    const isHomeRoster = rosterSchoolIds.includes(game.home_school_id || '')
+                    const isAwayRoster = rosterSchoolIds.includes(game.away_school_id || '')
+                    const isRosterGame = isHomeRoster || isAwayRoster
+                    const isLive = game.status === 'live'
+                    const isCompleted = game.status === 'completed'
+                    const homeWon = isCompleted && (game.home_score || 0) > (game.away_score || 0)
+                    const awayWon = isCompleted && (game.away_score || 0) > (game.home_score || 0)
+
+                    return (
+                      <div
+                        key={game.id}
+                        className={`bg-surface rounded-lg p-3 border ${
+                          isLive
+                            ? 'border-danger/50 bg-danger/10'
+                            : isRosterGame
+                            ? 'border-info/30'
+                            : 'border-border'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between text-sm">
+                          <span className={`flex-1 ${isAwayRoster ? 'text-info-text font-medium' : awayWon ? 'text-success-text font-medium' : isCompleted && !awayWon ? 'text-text-secondary' : 'text-text-primary'}`}>
+                            {game.away_rank && game.away_rank <= 25 ? `#${game.away_rank} ` : ''}{game.away_team_name || 'TBD'}
+                          </span>
+                          <span className="px-3 text-text-muted">
+                            {isCompleted ? `${game.away_score} - ${game.home_score}` : isLive ? `${game.away_score ?? 0} - ${game.home_score ?? 0}` : 'vs'}
+                          </span>
+                          <span className={`flex-1 text-right ${isHomeRoster ? 'text-info-text font-medium' : homeWon ? 'text-success-text font-medium' : isCompleted && !homeWon ? 'text-text-secondary' : 'text-text-primary'}`}>
+                            {game.home_team_name || 'TBD'}{game.home_rank && game.home_rank <= 25 ? ` #${game.home_rank}` : ''}
+                          </span>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            ))}
           </div>
         ) : (
           <div className="space-y-6">

@@ -162,6 +162,8 @@ export function NotificationBell({ userId }: NotificationBellProps) {
     setIsOpen(!isOpen)
   }
 
+  const [markAllReadDone, setMarkAllReadDone] = useState(false)
+
   const handleMarkAllRead = async () => {
     try {
       await fetch('/api/notifications', {
@@ -173,6 +175,8 @@ export function NotificationBell({ userId }: NotificationBellProps) {
         prev.map(n => ({ ...n, read_at: n.read_at || new Date().toISOString() }))
       )
       setUnreadCount(0)
+      setMarkAllReadDone(true)
+      setTimeout(() => setMarkAllReadDone(false), 2000)
     } catch {
       // Silently fail
     }
@@ -192,10 +196,22 @@ export function NotificationBell({ userId }: NotificationBellProps) {
       setUnreadCount(prev => Math.max(0, prev - 1))
     }
 
-    // Navigate
+    // Navigate — handle hash links specially for same-page scroll
     const href = getNotificationHref(notification)
     if (href) {
       setIsOpen(false)
+      if (href.includes('#')) {
+        const [path, hash] = href.split('#')
+        const currentPath = window.location.pathname
+        if (currentPath === path) {
+          // Already on this page — scroll to element
+          const el = document.getElementById(hash)
+          if (el) {
+            el.scrollIntoView({ behavior: 'smooth' })
+            return
+          }
+        }
+      }
       router.push(href)
     }
   }
@@ -225,7 +241,7 @@ export function NotificationBell({ userId }: NotificationBellProps) {
         className="relative p-1.5 text-text-secondary hover:text-text-primary transition-colors"
         title="Notifications"
       >
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
         </svg>
         {unreadCount > 0 && (
@@ -241,14 +257,16 @@ export function NotificationBell({ userId }: NotificationBellProps) {
           {/* Header */}
           <div className="flex items-center justify-between px-4 py-3 border-b border-border shrink-0">
             <h3 className="text-sm font-semibold text-text-primary">Notifications</h3>
-            {unreadCount > 0 && (
+            {markAllReadDone ? (
+              <span className="text-xs text-success-text">Done!</span>
+            ) : unreadCount > 0 ? (
               <button
                 onClick={handleMarkAllRead}
                 className="text-xs text-brand-text hover:text-brand-text/80 transition-colors"
               >
                 Mark all as read
               </button>
-            )}
+            ) : null}
           </div>
 
           {/* Notification list */}

@@ -2,7 +2,7 @@
 
 > **Platform Name**: Rivyls (rivyls.com)
 > **Current Sport**: College Football (base for multi-sport expansion)
-> **Last Updated**: March 5, 2026
+> **Last Updated**: March 6, 2026 (Phase 28 audit complete, 27 tasks finalized)
 > **Audit Date**: February 27, 2026 (full codebase audit of Phases 0-21)
 
 ---
@@ -30,11 +30,11 @@
     - [Phase 22: Audit Fixes & Quick Wins](#phase-22-audit-fixes--quick-wins)
     - [Phase 23: Legal & Compliance](#phase-23-legal--compliance) ✅
     - [Phase 24: Schema Additions](#phase-24-schema-additions)
-11. **SEASON 1 FEATURES — Build First**
-    - [Phase 25: Free Feature Enhancements](#phase-25-free-feature-enhancements)
-    - [Phase 26: Draft Enhancements](#phase-26-draft-enhancements)
-    - [Phase 27: Team-to-Team Trading](#phase-27-team-to-team-trading)
-12. **PRE-LAUNCH — UX Polish**
+11. **SEASON 1 FEATURES — Complete**
+    - [Phase 25: Free Feature Enhancements](#phase-25-free-feature-enhancements) ✅
+    - [Phase 26: Draft Enhancements](#phase-26-draft-enhancements) ✅
+    - [Phase 27: Team-to-Team Trading](#phase-27-team-to-team-trading) ✅
+12. **CURRENT — UX Polish**
     - [Phase 28: UX Audit & User Journey](#phase-28-ux-audit--user-journey)
     - [Phase 29: Mobile Responsiveness](#phase-29-mobile-responsiveness)
 13. **POST-LAUNCH / YEAR 2**
@@ -1279,7 +1279,7 @@ These are features designated as free (never gated behind premium) that improve 
 ## Phase 26: Draft Enhancements
 *Auto-pick and pause/resume for the draft system — needed for August 2026 draft season*
 
-**Status: NOT STARTED**
+**Status: COMPLETE** ✅
 
 ### Background
 
@@ -1287,103 +1287,207 @@ The current draft system works end-to-end but lacks two features commissioners w
 
 ### Tasks
 
-| Task | Description | Details |
-|------|-------------|---------|
-| 26.1 | **Auto-pick logic** | When a user's timer expires without a pick, automatically select a program from their watchlist (if set) or the best available program by composite ranking. Should work for users who go AFK and for users who pre-set an auto-pick preference. |
-| 26.2 | **Draft pause/resume** | Allow commissioners to pause the draft timer (e.g., for connection issues, bathroom breaks). All users see a "Draft Paused" overlay. Commissioner can resume. Draft state preserved if page is reloaded. |
+| Task | Description | Status |
+|------|-------------|--------|
+| 26.1 | **Auto-pick logic** — When timer expires, auto-picks from watchlist (if set) or best available by composite ranking. Works for AFK users. `src/lib/draft/auto-pick.ts`, `src/app/api/leagues/[id]/draft/auto-pick/route.ts`. | ✅ Done |
+| 26.2 | **Draft pause/resume** — Commissioner toggle pauses/resumes draft timer. All users see "Paused" state via Realtime. State preserved on reload. | ✅ Done |
 
 ### Verification
-- [ ] Auto-pick fires when timer expires with no manual selection
-- [ ] Auto-pick uses watchlist priority if available
-- [ ] Commissioner can pause and resume the draft
-- [ ] All users see pause/resume state in real-time
-- [ ] `npm run build` passes
+- [x] Auto-pick fires when timer expires with no manual selection
+- [x] Auto-pick uses watchlist priority if available
+- [x] Commissioner can pause and resume the draft
+- [x] All users see pause/resume state in real-time
+- [x] `npm run build` passes
 
 ---
 
 ## Phase 27: Team-to-Team Trading
 *Mid-season roster trades between users — FREE tier feature*
 
-**Status: NOT STARTED**
+**Status: COMPLETE** ✅
 
 **Depends on**: Phase 14.13 (`trades` and `trade_items` tables already exist)
 
 ### Background
 
-Originally planned as a Pro/premium feature, trading has been moved to the **free tier** for Season 1. This allows all leagues to trade programs between teams during the season. The `trades` and `trade_items` schema was created in Phase 14.
+Originally planned as a Pro/premium feature, trading has been moved to the **free tier** for Season 1. Trades execute immediately on acceptance. Commissioner can veto (reverse) within 24 hours. Multi-school and lopsided trades (1-for-2, 2-for-3, etc.) supported with smart drop logic that accounts for empty roster slots.
+
+### Schema Changes
+- Migration `036_trades_enhancement.sql`: Added `message`, `expires_at`, `counter_to_trade_id`, `dropped_schools` (JSONB), `reminder_sent` to `trades` table. Expanded status CHECK to include `expired` and `countered`. Added `trades_enabled`, `trade_deadline`, `max_trades_per_season` to `league_settings`. Added `trades_used` to `fantasy_teams`.
 
 ### Tasks
 
-| Task | Description | Details |
-|------|-------------|---------|
-| 27.1 | **Trade proposal UI** | Create a trade proposal flow: select a league member, choose programs to send and receive, add an optional message, submit proposal. Show trade preview with program stats/records before confirming. |
-| 27.2 | **Trade review/accept/reject** | Receiving user sees pending trade proposals in their dashboard and team page. Can accept or reject with optional message. Both sides notified of outcome. |
-| 27.3 | **Commissioner trade veto** | Commissioners can veto any trade within a configurable review window (e.g., 24 hours). Vetoed trades are reversed. League settings control whether commissioner review is required before trades execute. |
-| 27.4 | **Trade history log** | Display completed and vetoed trades on the league page. Shows what was traded, when, and between whom. Feeds into the activity log. |
+| Task | Description | Status |
+|------|-------------|--------|
+| 27.1 | **Trade proposal modal** — `TradeProposalModal.tsx`: Full-screen overlay with side-by-side rosters, checkboxes for giving/receiving, school stats (record, points, AP rank), optional message. Duplicate school detection (grey out schools partner already has and vice versa). Drop picker for lopsided trades that would exceed roster max. | ✅ Done |
+| 27.2 | **Propose Trade button** — `ProposeTradeButton.tsx` on opponent team pages (`/leagues/[id]/team/[teamId]`). Hidden when `trades_enabled` is false or `trade_deadline` has passed. | ✅ Done |
+| 27.3 | **Pending trades section** — `PendingTrades.tsx` on own team page. Collapsible section with incoming/outgoing trades, accept/reject/cancel/counter buttons, expiry countdown, drop picker for uneven incoming trades. Recent trade activity sub-section. | ✅ Done |
+| 27.4 | **Accept/Reject/Cancel API** — `src/app/api/leagues/[id]/trades/action/route.ts`. Validates schools still on rosters, checks for duplicates, smart drop logic (only requires drops when roster would exceed max size), executes trade via `executeTrade()`. | ✅ Done |
+| 27.5 | **Counter-offers** — Counter button opens `TradeProposalModal` directly with partner roster fetched via `/api/leagues/[id]/teams/[teamId]/roster`. Original offer shown as contextual banners above each roster column ("Originally offered to you" / "Originally wanted from you"). Original trade marked as `countered`. | ✅ Done |
+| 27.6 | **Commissioner trade veto** — `src/app/api/leagues/[id]/trades/veto/route.ts`. Reverses roster changes, restores dropped schools from `dropped_schools` JSONB, decrements `trades_used` on both teams. UI in league settings page under Trades tab. | ✅ Done |
+| 27.7 | **Trade execution utility** — `src/lib/trades.ts`: `executeTrade()` (roster period swaps), `expireStaleTradesForLeague()` (lazy expiration on page load), `sendExpirationReminders()` (24h warning), `getExpiresAt()` (3 days at midnight EST). | ✅ Done |
+| 27.8 | **Trade settings** — Trades sub-tab in league settings: `trades_enabled` toggle, `trade_deadline` date, `max_trades_per_season` limit. | ✅ Done |
+| 27.9 | **Notifications** — 7 trade notification types (`trade_proposed`, `trade_accepted`, `trade_rejected`, `trade_cancelled`, `trade_vetoed`, `trade_expired`, `trade_expiring`). `trade_accepted` links to own roster page. Others link to trade offers section. League-wide notification on trade completion. | ✅ Done |
+| 27.10 | **Activity feed** — Completed trades (`trade.executed`) and vetoed trades show in league activity feed. Proposed/rejected/cancelled/expired are excluded. | ✅ Done |
+| 27.11 | **Add/Drop history separation** — Trades excluded from add/drop transaction history and counter. Section renamed to "Add/Drop History". | ✅ Done |
+| 27.12 | **Empty roster slot handling** — Empty roster slot placeholders with "Add a school" link. Add-only transactions (no drop required) supported in transactions API. Lopsided trade drop logic accounts for empty slots on both propose and accept paths. | ✅ Done |
+
+### Key Files
+
+| File | Description |
+|------|-------------|
+| `src/lib/trades.ts` | Trade execution, expiration, reminders |
+| `src/app/api/leagues/[id]/trades/route.ts` | POST propose + GET list |
+| `src/app/api/leagues/[id]/trades/action/route.ts` | POST accept/reject/cancel |
+| `src/app/api/leagues/[id]/trades/veto/route.ts` | POST commissioner veto |
+| `src/app/api/leagues/[id]/teams/[teamId]/roster/route.ts` | GET team roster (for counter modal) |
+| `src/components/TradeProposalModal.tsx` | Modal with side-by-side rosters |
+| `src/components/PendingTrades.tsx` | Trade offers section on team page |
+| `src/components/ProposeTradeButton.tsx` | Button + modal on opponent pages |
 
 ### Verification
-- [ ] User can propose a trade to another league member
-- [ ] Receiving user can accept or reject
-- [ ] Commissioner can veto trades
-- [ ] Completed trades update both rosters correctly
-- [ ] Trade history visible on league page
-- [ ] `npm run build` passes
+- [x] Propose trade from opponent's team page → receiver gets notification
+- [x] Accept trade → rosters swap immediately, league notified, activity logged
+- [x] Reject trade → proposer notified
+- [x] Cancel outgoing trade → receiver notified
+- [x] Counter-offer → modal opens with original offer context, new proposal sent
+- [x] Commissioner veto → rosters reversed, both teams notified
+- [x] Trade expiration (3-day, midnight EST) with 24h reminder notification
+- [x] `trades_enabled` toggle hides propose button and blocks API
+- [x] `trade_deadline` blocks proposals after date
+- [x] `max_trades_per_season` blocks both teams when limit reached
+- [x] `trades_used` increments on accept, decrements on veto
+- [x] Lopsided trades: drop picker only shown when roster would exceed max
+- [x] Empty roster slots: no drops needed when slots available
+- [x] Duplicate school detection: greyed out on both sides of trade modal
+- [x] Trade completions excluded from add/drop history
+- [x] `npm run build` passes
 
 ---
 
 ## Phase 28: UX Audit & User Journey
-*Walk through every user-facing flow and optimize layout, navigation, and usability*
+*End-to-end user journey walkthrough, friction audit, and usability fixes*
 
-**Status: NOT STARTED**
+**Status: IN PROGRESS** (28.1 audit complete, implementing fixes)
 
-**Context**: A UX exploration (Mar 1, 2026) audited all user-facing pages and found 10 significant issues including header overflow on mobile, wide tables with no card-based fallback, inconsistent navigation patterns, and fixed pixel widths in roster components. This phase addresses layout and flow problems. Runs after all Season 1 features are built so the audit covers everything in one pass.
+**Context**: All Season 1 features are built (Phases 0-27). Before mobile polish (Phase 29), walk through the entire platform as each user type and fix flow, navigation, and usability issues. Mobile-specific layout fixes are in Phase 29.
 
-### User Journey Steps to Audit
+**Full audit results**: `docs/PHASE_28_AUDIT.md` — 120 friction points across 3 user journeys.
 
-| Flow | Pages | Key Issues Found |
-|------|-------|-----------------|
-| **Signup → First League** | `/signup` → email confirm → `/login` → `/dashboard` → create/join | Post-signup friction: email confirm sends to login, no auto-redirect. No password strength indicator. |
-| **Dashboard** | `/dashboard` | League cards have no hover feedback. No "current week" or "your rank" context. Header buttons can overflow on narrow phones. |
-| **League Home** | `/leagues/[id]` | Sidebar (Your Team stats) drops below leaderboard on mobile. Quick Nav not sticky. No active-page indicator. |
-| **Leaderboard** | Embedded + full at `/leagues/[id]/leaderboard` | 20+ columns need horizontal scroll. Owner names hidden below 640px. Sticky column backgrounds hardcoded hex. Full leaderboard not linked from nav. |
-| **Team/Roster** | `/leagues/[id]/team` | RosterList uses fixed pixel widths — leaves ~140px for weekly columns on phones. No card-based mobile view. |
-| **Add/Drop** | `/leagues/[id]/transactions` | Full-page reload after transaction. No school schedule preview before selection. Filter grid crowded on mobile. |
-| **Draft Room** | `/leagues/[id]/draft` | Best mobile pattern in app (3-tab nav). School color buttons lack contrast check. Commissioner controls push header to 3-4 rows on phones. |
-| **Navigation** | `Header.tsx` + per-page Quick Nav | **Biggest issue**: Header has no hamburger/collapse — 4-5 items overflow on mobile. Navigation inconsistent across pages. No breadcrumbs. |
+**Deferred to post-launch**: Bench roster spots (changes scoring engine, draft strategy, requires lineup management UI)
+
+**Excluded from audit**:
+- Season year default (2025 for testing, will update for production 2026-2027)
+- SandboxWeekSelector (intentional for current testing phase)
+- Welcome email capture page (may not be needed if platform launches before marketing date)
 
 ### Tasks
 
-| Task | Description |
-|------|-------------|
-| 28.1 | **Redesign Header for mobile** — Add hamburger menu or responsive collapse. Current: 4-5 items in single-row flex overflow on phones. |
-| 28.2 | **Standardize navigation** — Create consistent Quick Nav component used across all league pages with same link set and active-page highlighting. |
-| 28.3 | **Fix league home mobile layout** — Move "Your Team" summary above leaderboard on mobile (`order-first lg:order-none`). |
-| 28.4 | **Improve dashboard league cards** — Add hover feedback, "current week" badge, and "your rank" preview. |
-| 28.5 | **Add card-based mobile view for RosterList** — Stacked school cards on mobile: school name, logo, record, total points, expandable weekly breakdown. |
-| 28.6 | **Improve leaderboard mobile experience** — Simplified mobile view (rank, team, total points only) with expandable rows. Fix sticky backgrounds to use CSS variables. |
-| 28.7 | **Fix Add/Drop UX** — Replace `window.location.reload()` with state refresh. Add school schedule preview. Improve filter layout on mobile. |
-| 28.8 | **Add school color contrast check** — Ensure text readable on school color backgrounds in draft room and team settings (WCAG AA 4.5:1 ratio). |
-| 28.9 | **Reduce post-signup friction** — Auto-redirect to dashboard after email confirmation via auth callback. |
-| 28.10 | **Link full leaderboard** — Add navigation link to full leaderboard from league home Quick Nav. |
-| 28.11 | **Make Quick Nav sticky** — Pin league Quick Nav below header so users can navigate without scrolling to top. |
+| Task | Description | Audit Items |
+|------|-------------|-------------|
+| 28.1 | **Full user journey audit** ✅ — Walked through Journeys A (Commissioner), B (Joining User), C (Returning User). Documented 120 friction points. See `docs/PHASE_28_AUDIT.md`. | — |
+| 28.2 | **Header redesign** — Rewrite `Header.tsx` with dropdowns: League selector (all user's leagues across sports), Team selector (all teams in current league, user's team bolded), Profile dropdown. Cross-sport and cross-league aware. Remove `children` slot pattern. Add current page indicator. | #88-94 |
+| 28.3 | **Homepage multi-sport structure** — Refactor `/welcome` and `/page.tsx` to be sport-agnostic. Create `src/lib/sports-config.ts` with sport definitions. Sport cards grid on homepage. Prep for Masters Tournament bracket (April 2026). | #102 |
+| 28.4 | **Team logo upload** — Replace URL-only input with file upload via Supabase Storage. Create `team-logos` bucket (public read, authenticated write). API route for upload. Client-side validation (500KB max, image types only). Keep URL input as collapsed fallback. Fix invalid URL silent failure (show error). | #58, #59 |
+| 28.5 | **Schedule pre-season default** — Add "All Games" option to week selector. Default to it when `currentWeek <= 0`. Show all games grouped by week with headers. | #67 |
+| 28.6 | **Bracket positioning fix** — Fix R1/QF/SF alignment in `PlayoffBracket.tsx`. Replace hardcoded `pt-14`/`pt-32`/`pt-56` with dynamic calculation or CSS Grid. | #83 |
+| 28.7 | **Commissioner settings save UX** — Add `window.scrollTo({ top: 0, behavior: 'smooth' })` after save. Show inline success indicator near Save button too. | #76 |
+| 28.8 | **Standardize Quick Nav** — Create reusable `LeagueNav` component with consistent links: Home, Roster, Standings (scrolls to leaderboard section on league home), Schedule, Transactions, Bracket, History, Settings (commissioner only). Active-page highlighting. Pre-draft: show Home, Roster (blank with message), Schedule, Settings — hide Add/Drop and Transactions since users have no schools yet. | #37, #93 |
+| 28.9 | **Make Quick Nav sticky** — Pin `LeagueNav` below header with `sticky` positioning. Background matches page. z-index below modals, above content. | — |
+| 28.10 | **Improve dashboard league cards** — Add hover feedback (shadow/border), "current week" badge, "your rank" preview, sport icon, draft status, member count. Add co-commissioner badge. Add error state if query fails. Consistent button styling for Join/Create. | #15-20 |
+| 28.11 | **Fix Add/Drop UX** — Replace `window.location.reload()` with state refresh. Add school schedule preview (next 3 games, opponents, home/away). | #62 |
+| 28.12 | **School color contrast check** — Create `getContrastColor()` utility. Apply to draft room, team settings, leaderboard. WCAG AA 4.5:1 ratio. | — |
+| 28.13 | **Link standings in Quick Nav** — "Standings" link scrolls to leaderboard section on league home page (not a separate page). | #71 |
+| 28.14 | **Commissioner veto discoverability** — Send commissioner notification on trade acceptance with link to Settings → Trades. Optional: "Recent Trades" card on league home for commissioners with inline veto. | #86 |
+| 28.15 | **Reduce post-signup friction** — Auto-redirect to `/dashboard` after email confirmation instead of `/login`. | #11 |
+| 28.16 | **Invite & join flow overhaul** — Accept invite code as URL parameter (`/leagues/join?code=abc123`) to pre-fill the input. If user is unauthenticated, redirect to signup/login with return URL to join page. Add step indicator (Step 1 of 2). Enrich league preview (draft date, scoring format, season status, whether draft already happened). Show success toast after joining. Improve invite code copy UX on league home (click code to copy). Add explanation of code reusability/regeneration. Change "Find League" to "Look Up League". | #27-36, #44 |
+| 28.17 | **Auth & signup polish** — Add "Resend confirmation email" link on signup success page. Add next-step guidance ("Click the link in your email, then you'll be logged in automatically"). Add loading indicator on login redirect. Redirect logged-in users from `/` and `/welcome` to `/dashboard`. Add session timeout message instead of silent redirect to login. | #1, #3, #4, #8, #9, #12, #103 |
+| 28.18 | **Pre-draft league experience** — Show member list on league home (who has joined). Add draft countdown timer when draft is scheduled. Make Commissioner Tools button more prominent (larger, colored). Show announcements empty state with "Post your first announcement" CTA for commissioners. Add "Waiting for draft" state on draft page with scheduled date/time. Show blank rosters pre-draft with "Your roster will be filled during the draft" message. Fix sidebar rank display when only 1 member. | #38-43, #54 |
+| 28.19 | **Draft room UX improvements** — Show draft rules summary (format, max per team, pick count, timer). Add brief explanations for watchlist ("Drag to reorder your priority queue") and auto-pick ("When your timer expires, auto-pick drafts your highest priority school"). Add timer warning at 10s remaining (flash/color change). Add chat notification ping when new message arrives. Add tooltip on search + conference filter. Show explanation for disabled/strikethrough schools ("Draft limit reached"). | #45-53 |
+| 28.20 | **Team page & edit polish** — Team page title shows team name clearly, distinguishes own team ("My Roster — Team Name") vs opponent ("Team Name's Roster"). Add color picker preset swatches alongside hex input. Color preview updates in real-time (not just on blur). Add pending trades empty state message. | #55-57, #60 |
+| 28.21 | **Transaction & trade UX** — Show transaction deadline prominently on transactions page. Show remaining add/drops ("5 used of 50 — 45 remaining"). Add permanence warning before confirming transactions ("This cannot be undone"). Add confirmation dialog before accepting/rejecting trades. | #63-65, #87 |
+| 28.22 | **Schedule & leaderboard polish** — Add visual distinction between completed and upcoming games (opacity, checkmark, or "Final" badge). Highlight user's roster schools on schedule. Add weekly points history selector on leaderboard. Add help text for special week labels (Bowls, CFP, Championship). Handle post-draft all-zeros state with encouraging message ("Scores will update when games begin"). | #68-75 |
+| 28.23 | **Notifications polish** — Increase notification bell size for better visibility. Fix hash-link notifications to scroll-to-section when user is already on that page. Add feedback after "Mark all as read" (brief toast or visual confirmation). | #96, #98, #101 |
+| 28.24 | **Error handling & form UX** — Remove debug info from sandbox error messages shown to users. Make error messages actionable ("Invite code not found. Check the code and try again." instead of "An unexpected error occurred"). Add `beforeunload` unsaved changes warning on team edit, commissioner settings, and profile settings pages. Add session timeout message ("Your session expired. Please log in again."). | #112-114 |
+| 28.25 | **Commissioner settings polish** — Add explanation that blank trade deadline = trades allowed all season. Clarify manual draft order mode (how to assign order). Add visual distinction between required and optional settings. Make scoring presets more prominent/discoverable. | #77-82 |
+| 28.26 | **Bracket context** — Show playoff eligibility criteria (top N teams qualify). Brief explanation of bracket format on bracket page. | #84, #85 |
+| 28.27 | **General polish & remaining items** — Add back buttons on pages missing them (draft room, team edit, transactions, schedule). League history empty state shows encouraging message ("Your first season is in progress!"). Add expand/collapse icon indicators on collapsible sections. Profile page: explain badge criteria, referral benefits. League creation: add guidance for max teams, explain public vs private. Standardize terminology (use "team" and "roster" consistently). Add confirmation on "Back to Dashboard" from create league if form has data. | #22-26, #95, #105-111, #118 |
+
+### Implementation Order
+
+**Part 1 — Audit** ✅: 28.1 (journey audit) → reviewed findings → added tasks 28.16-28.27
+
+**Part 2 — Quick wins** (small, isolated changes):
+28.7 (settings scroll), 28.5 (schedule default), 28.15 (signup redirect), 28.13 (standings link), 28.23 (notifications polish), 28.17 (auth polish)
+
+**Part 3 — Medium tasks** (focused component work):
+28.16 (invite flow overhaul), 28.18 (pre-draft experience), 28.20 (team page polish), 28.21 (transaction/trade UX), 28.22 (schedule & leaderboard), 28.24 (error handling & forms), 28.25 (commissioner settings), 28.26 (bracket context), 28.27 (general polish)
+
+**Part 4 — Larger tasks** (significant new functionality):
+28.12 (color contrast), 28.3 (homepage + sports-config), 28.4 (logo upload), 28.6 (bracket fix), 28.14 (veto discoverability), 28.11 (add/drop state refresh), 28.19 (draft room UX)
+
+**Part 5 — Major redesigns** (cross-cutting, depends on earlier tasks):
+28.8 + 28.9 (Quick Nav — standardize + sticky), 28.10 (dashboard cards), 28.2 (header redesign — depends on sports-config from 28.3)
+
+### Key Files
+
+| Area | Files |
+|------|-------|
+| Header | `src/components/Header.tsx` |
+| Homepage | `src/app/welcome/page.tsx`, `src/app/page.tsx` |
+| Auth | `src/app/(auth)/signup/page.tsx`, `src/app/(auth)/login/page.tsx`, `src/app/auth/callback/route.ts` |
+| Dashboard | `src/app/dashboard/page.tsx` |
+| Join Flow | `src/app/leagues/join/page.tsx`, `src/app/api/leagues/join/route.ts` |
+| League Home | `src/app/leagues/[id]/page.tsx` |
+| Draft | `src/app/leagues/[id]/draft/page.tsx` |
+| Team | `src/app/leagues/[id]/team/page.tsx`, `src/app/leagues/[id]/team/edit/page.tsx` |
+| Transactions | `src/components/TransactionsClient.tsx` |
+| Schedule | `src/app/leagues/[id]/schedule/ScheduleClient.tsx` |
+| Bracket | `src/components/PlayoffBracket.tsx` |
+| Settings | `src/app/leagues/[id]/settings/page.tsx` |
+| Notifications | `src/components/NotificationBell.tsx` |
+| Leaderboard | `src/components/LeaderboardClient.tsx` |
+| New files | `src/lib/sports-config.ts`, `src/components/LeagueNav.tsx`, `src/lib/color-utils.ts` |
 
 ### Verification
-- [ ] Walk through complete user journey on desktop: signup → create league → invite → draft → view leaderboard → add/drop → view team
-- [ ] Navigation is consistent across all league pages
-- [ ] Header doesn't overflow on 375px viewport
-- [ ] Leaderboard usable without horizontal scrolling on mobile (simplified view)
-- [ ] RosterList shows card view on mobile
-- [ ] Add/Drop doesn't full-page reload
-- [ ] School color buttons meet WCAG AA contrast (4.5:1 ratio)
+- [x] Complete Journey A walkthrough — 115 friction points documented
+- [x] Complete Journey B+C walkthrough — 100 friction points documented
+- [x] Review findings with user — 117 items approved for Phase 28
+- [ ] Invite code works as URL parameter, unauthenticated users redirected to signup
+- [ ] Post-signup redirects to dashboard (not login)
+- [ ] Logged-in users redirect from homepage to dashboard
+- [ ] Header shows league dropdown with all user's leagues
+- [ ] Header shows team dropdown with all league teams
+- [ ] Homepage renders sport cards from config
+- [ ] Team logo upload works (file → Supabase Storage → displayed)
+- [ ] Schedule defaults to "All Games" before Week 0
+- [ ] Bracket R1 games align with QF games visually
+- [ ] Bracket shows playoff eligibility criteria
+- [ ] Commissioner settings save scrolls to top
+- [ ] Quick Nav consistent across all league pages, sticky, pre-draft aware
+- [ ] Dashboard cards show current week, rank, draft status, hover feedback
+- [ ] Add/Drop doesn't full-page reload, shows school schedule preview
+- [ ] School color backgrounds have readable text (4.5:1)
+- [ ] Commissioner gets notification on trade completion with veto link
+- [ ] Trade accept/reject has confirmation dialog
+- [ ] Transaction page shows deadline and remaining count
+- [ ] Pre-draft: member list visible, draft countdown, commissioner tools prominent
+- [ ] Draft room shows rules summary, watchlist/auto-pick help, timer warning
+- [ ] Team page clearly shows own vs opponent team
+- [ ] Error messages are actionable, no debug info shown to users
+- [ ] Unsaved changes warning on form pages
+- [ ] Back buttons on all interior pages
+- [ ] Notifications bell larger, hash-link scroll works
+- [ ] `npm run build` passes
 
 ---
 
 ## Phase 29: Mobile Responsiveness
-*Systematic mobile testing and fixes across every page at common breakpoints*
+*Comprehensive mobile audit — all layout, navigation, and component fixes for phones and tablets*
 
 **Status: NOT STARTED**
 
-**Context**: Most fantasy sports activity happens on phones. Every page must be tested at standard mobile breakpoints (375px, 390px, 768px) and fixed where needed. Phase 28 addresses structural UX issues; this phase is the comprehensive mobile sweep.
+**Context**: Most fantasy sports activity happens on phones. Every page must be tested at standard mobile breakpoints and fixed where needed. This phase consolidates all mobile-specific work including layout restructuring, component redesigns, and systematic testing.
 
 ### Test Matrix
 
@@ -1403,8 +1507,8 @@ Originally planned as a Pro/premium feature, trading has been moved to the **fre
 | `/signup`, `/login` | Should be fine (centered card) — verify password fields |
 | `/dashboard` | Header button overflow, league card grid |
 | `/leagues/[id]` (league home) | Sidebar ordering, leaderboard scroll, Quick Nav |
-| `/leagues/[id]/team` | RosterList fixed widths, team header wrapping |
-| `/leagues/[id]/team/[teamId]` | Read-only roster view — same issues as team page |
+| `/leagues/[id]/team` | RosterList fixed widths, team header wrapping, trade offers layout |
+| `/leagues/[id]/team/[teamId]` | Read-only roster view, trade proposal modal |
 | `/leagues/[id]/transactions` | Filter grid, step indicators, school cards |
 | `/leagues/[id]/draft` | Already decent — verify 3-tab nav, timer, picker |
 | `/leagues/[id]/schedule` | Game cards, week selector |
@@ -1418,18 +1522,26 @@ Originally planned as a Pro/premium feature, trading has been moved to the **fre
 
 | Task | Description |
 |------|-------------|
-| 29.1 | **Fix all text truncation issues** — Audit every `truncate` and `max-w-[Xpx]` class. Ensure names readable (not cut to 2-3 chars). |
-| 29.2 | **Fix all table overflow** — Every `min-w-max` table must have `overflow-x-auto` container and scroll indicator. |
-| 29.3 | **Test and fix touch targets** — All buttons/links ≥ 44x44px per WCAG guidelines. |
-| 29.4 | **Fix font sizing** — No text smaller than 14px on mobile. Audit all `text-[10px]`, `text-xs` usage. |
-| 29.5 | **Test bracket visualization** — 12-team CFP bracket may not fit on phones. May need horizontal scroll or simplified mobile bracket. |
-| 29.6 | **Test draft room end-to-end on phone** — Verify 3-tab mobile nav, timer, pick confirmations, school search on real phone. |
-| 29.7 | **Fix z-index / overlay issues** — Modals, dropdowns, ReportIssue button must not overlap incorrectly on mobile. |
-| 29.8 | **Test landscape orientation** — Verify pages don't break when phone is sideways. |
+| 29.1 | **Redesign Header for mobile** — Add hamburger menu or responsive collapse. Current: 4-5 items in single-row flex overflow on phones. |
+| 29.2 | **Fix league home mobile layout** — Move "Your Team" summary above leaderboard on mobile (`order-first lg:order-none`). |
+| 29.3 | **Add card-based mobile view for RosterList** — Stacked school cards on mobile: school name, logo, record, total points, expandable weekly breakdown. |
+| 29.4 | **Improve leaderboard mobile experience** — Simplified mobile view (rank, team, total points only) with expandable rows. Fix sticky backgrounds to use CSS variables. |
+| 29.5 | **Improve Add/Drop mobile layout** — Fix filter grid crowding on mobile. |
+| 29.6 | **Fix all text truncation issues** — Audit every `truncate` and `max-w-[Xpx]` class. Ensure names readable (not cut to 2-3 chars). |
+| 29.7 | **Fix all table overflow** — Every `min-w-max` table must have `overflow-x-auto` container and scroll indicator. |
+| 29.8 | **Test and fix touch targets** — All buttons/links ≥ 44x44px per WCAG guidelines. |
+| 29.9 | **Fix font sizing** — No text smaller than 14px on mobile. Audit all `text-[10px]`, `text-xs` usage. |
+| 29.10 | **Test bracket visualization** — 12-team CFP bracket may not fit on phones. May need horizontal scroll or simplified mobile bracket. |
+| 29.11 | **Test draft room end-to-end on phone** — Verify 3-tab mobile nav, timer, pick confirmations, school search on real phone. |
+| 29.12 | **Fix z-index / overlay issues** — Modals, dropdowns, ReportIssue button must not overlap incorrectly on mobile. |
+| 29.13 | **Test landscape orientation** — Verify pages don't break when phone is sideways. |
 
 ### Verification
 - [ ] Every page passes visual inspection at 375px, 390px, and 768px
+- [ ] Header doesn't overflow on 375px viewport
 - [ ] No horizontal page-level scroll (individual tables can scroll within their containers)
+- [ ] RosterList shows card view on mobile
+- [ ] Leaderboard usable without horizontal scrolling on mobile
 - [ ] All touch targets ≥ 44px
 - [ ] No text smaller than 14px
 - [ ] Bracket is viewable on phone
@@ -1540,4 +1652,4 @@ The platform is classified as recreation/entertainment, NOT gambling. This means
 
 ---
 
-*Last Updated: March 3, 2026 (phase reorder: features first, then UX polish; trading moved to free tier)*
+*Last Updated: March 6, 2026 (Phase 28 audit complete — 120 friction points found, 27 tasks finalized from audit findings)*
