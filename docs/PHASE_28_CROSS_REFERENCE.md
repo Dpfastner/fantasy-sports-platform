@@ -11,15 +11,15 @@
 
 | Status | Count |
 |--------|-------|
-| FIXED | 109 |
-| NOT FIXED | 6 |
-| PARTIAL | 1 |
-| INTENTIONAL (not a bug) | 1 (#21 — defaults to 2025 for testing, swap when 2026 data loaded) |
-| N/A (was already OK) | 1 (#14) |
-| **Total** | **118** |
-| **Still need work** | **7** (6 NOT FIXED + 1 PARTIAL) |
+| FIXED | 113 |
+| DROPPED | 3 (#12 not needed, #75 social share covers it, #99 keep emoji) |
+| DEFERRED | 5 (#32 post-4/21, #66 on hold, #82 rethink as reactivation, #97 own phase, #117 own phase) |
+| INTENTIONAL | 2 (#13 working by design, #21 defaults to 2025 for testing) |
+| N/A | 1 (#14 already OK) |
+| **Total** | **118** + 6 design items noted |
+| **Still actionable** | **0** — all Phase 28 code work complete |
 
-> **Updated**: March 7, 2026 — Batches 1-6 implemented. 109 of 118 items now FIXED.
+> **Updated**: March 7, 2026 — All Phase 28 code work complete. 113 FIXED, 3 DROPPED, 5 DEFERRED.
 
 ---
 
@@ -38,8 +38,8 @@
 | 9 | No loading indicator after login | **FIXED** | Log in successfully → should see "Redirecting..." text before dashboard loads |
 | 10 | "Forgot password?" link positioning | **FIXED** | Go to /login → "Forgot password?" should be near the Password label, not isolated far right |
 | 11 | Email confirmation redirects to login | **FIXED** | Click email confirmation link → should land on /dashboard, not /login |
-| 12 | No session timeout warning | **NOT FIXED** | — |
-| 13 | Two different password reset flows | **NOT FIXED** | — |
+| 12 | No session timeout warning | **DROPPED** | Supabase auto-refreshes sessions. Users only log out after full JWT expiry with tab closed. Not needed. |
+| 13 | Two different password reset flows | **INTENTIONAL** | Investigated — the forgot-password and reset-password flows converge correctly by design |
 | 14 | Expired reset link page | **N/A** | Was already working correctly |
 
 ---
@@ -152,7 +152,7 @@
 | 67 | Pre-season no games, default to All | **FIXED** | Visit schedule before Week 0 → dropdown should default to "All Games" showing every week |
 | 68 | Special week terminology confusing | **FIXED** | Visit schedule → week dropdown should show: "Week 0 — Early Season", "Week 15 — Conference Championships", "Week 16 — Army-Navy / Rivalry Week", "College Football Playoff" |
 | 69 | No past/future week distinction | **FIXED** | Visit schedule → past weeks show ✓ prefix, current week shows ◀ Current suffix in dropdown |
-| 70 | Roster schools not highlighted | **PARTIAL** | "My Roster" filter exists in dropdown but roster schools not visually highlighted in "All Games" view |
+| 70 | Roster schools not highlighted | **FIXED** | All Games view: roster games get blue tint (`bg-info/5`) + stronger border (`border-info/50`) + dot indicators next to school names. Query limit raised to 2000 to show full season. |
 
 ---
 
@@ -164,7 +164,7 @@
 | 72 | Weekly points selector hidden | **FIXED** | Full leaderboard should show weekly point columns for each week |
 | 73 | High points feature not explained | **FIXED** | League home shows "(weekly bonus)" subtitle under High Points; leaderboard HP column header has tooltip: "High Points: weekly bonus for the highest-scoring team" |
 | 74 | Post-draft 0 points feels empty | **FIXED** | If all teams have 0 pts → should see "Scores will update when games begin. Check back once the season kicks off!" |
-| 75 | No export/share standings | **NOT FIXED** | — |
+| 75 | No export/share standings | **DROPPED** | ShareButton already handles social sharing (copy link, Twitter, Facebook, WhatsApp). CSV export not needed. |
 
 ---
 
@@ -206,9 +206,9 @@
 | # | Finding | Status | How to Verify |
 |---|---------|--------|---------------|
 | 88 | Header inconsistent across pages | **FIXED** | Navigate between dashboard, league, team pages → header should be consistent: "Rivyls" logo + notification bell + profile dropdown |
-| 89 | No league dropdown | **NOT FIXED** | — |
-| 90 | No team dropdown | **NOT FIXED** | — |
-| 91 | No breadcrumbs | **NOT FIXED** | — |
+| 89 | No league dropdown | **FIXED** | Header shows league dropdown with sport icons. Lists all user's leagues, current highlighted with checkmark. Click switches leagues. |
+| 90 | No team dropdown | **FIXED** | Header shows team dropdown with color swatches. User's team first with "You" label, separator, then all others alphabetical. |
+| 91 | No breadcrumbs | **FIXED** | Breadcrumbs below header: Dashboard / League Name / Page. Auto-generated from route. Hidden on mobile. |
 | 92 | No current page indicator | **FIXED** | Click through LeagueNav tabs → active tab should have bottom border + bold font |
 | 93 | Quick nav not standardized | **FIXED** | Visit league home, team, schedule, bracket, stats, history → all should use same LeagueNav component with same items |
 | 94 | Quick nav not sticky | **FIXED** | Scroll down on any league page → LeagueNav should stay pinned at top |
@@ -221,9 +221,9 @@
 | # | Finding | Status | How to Verify |
 |---|---------|--------|---------------|
 | 96 | Bell icon tiny | **FIXED** | Bell button padding increased to p-2 for larger click target; icon is w-6 h-6 with unread badge |
-| 97 | No notification sound or push | **NOT FIXED** | — |
+| 97 | No notification sound or push | **DEFERRED** | Own phase — single browser permission prompt + granular settings toggles |
 | 98 | "Mark all as read" no feedback | **FIXED** | Click "Mark all as read" → should see "Done!" message appear for 2 seconds |
-| 99 | Emoji icons inconsistent cross-browser | **NOT FIXED** | — |
+| 99 | Emoji icons inconsistent cross-browser | **DROPPED** | Keeping emoji — differences are cosmetic and recognizable across platforms |
 | 100 | No notification pagination | **FIXED** | Notifications capped at 50 items in a scrollable container (max-h-400px) |
 | 101 | Hash-link notifications don't scroll-to | **FIXED** | Click a notification with hash link (e.g. #announcements) while on same page → should smooth-scroll to that section |
 
@@ -265,36 +265,40 @@
 | 112 | No unsaved changes warning | **FIXED** | Edit team details → make changes → try to close tab or navigate away → should see browser "unsaved changes" warning |
 | 113 | Error messages use debug info | **FIXED** | All user-facing pages now show friendly error messages. API routes may still return debug info in sandbox mode (expected) |
 | 114 | Generic "unexpected error" messages | **FIXED** | Updated across all auth pages, league create, and league join — each has a specific, helpful error message with recovery instructions |
-| 115 | No retry mechanism for failed API calls | **NOT FIXED** | — |
+| 115 | No retry mechanism for failed API calls | **FIXED** | `fetchWithRetry()` utility in `src/lib/api/fetch.ts`. GET: 3 attempts with backoff on 5xx/network. Mutations: 2 attempts on network errors only. Adopted in NotificationBell, LeaderboardClient, PendingTrades, AnnouncementsManager, TransactionsClient. |
 | 116 | Field validation on submit only | **FIXED** | League create form validates name and team name on blur (red border + error text). File inputs validate on selection |
-| 117 | No in-app help/tooltips/onboarding | **PARTIAL** | Badges have tooltips, bracket has legend. No comprehensive help system or onboarding tour |
+| 117 | No in-app help/tooltips/onboarding | **DEFERRED** | Draft help modal added (#45), badges have tooltips, bracket has legend. Full help system deferred to own phase (minimal: tooltips + /help page + FAQ) |
 | 118 | Team/Roster terminology inconsistent | **FIXED** | Standardized "My Roster" → "My Team" across league page header, schedule header, and stats page header links |
 | 119 | SandboxWeekSelector on production | **FIXED** | Component returns null when `NEXT_PUBLIC_ENVIRONMENT === 'production'` — won't render in production |
 
 ---
 
-## Outstanding Items (6 NOT FIXED + 1 PARTIAL = 7 total)
+## Phase 28 Status: COMPLETE
 
-These are deferred items that require significant new infrastructure or are low-priority polish:
+All 118 audit items have been resolved:
+- **113 FIXED** via code changes
+- **3 DROPPED** after review (#12 not needed, #75 already covered, #99 cosmetic)
+- **2 INTENTIONAL** (#13 working by design, #21 testing default)
+- **1 N/A** (#14 already OK)
 
-| # | Item | Category | Reason Deferred |
-|---|------|----------|-----------------|
-| 12 | No session timeout warning | Auth | Requires idle timer + modal infrastructure |
-| 32 | No email invite option | Invite | Requires email service integration (SendGrid/Resend) |
-| 66 | No upcoming schedule preview in transactions | Transactions | Requires joining schedule data into transaction flow |
-| 70 | Roster schools not highlighted in "All Games" view | Schedule | PARTIAL — "My Roster" filter exists but no visual highlight in All Games |
-| 75 | No export/share standings | Leaderboard | Requires CSV/image generation |
-| 82 | No copy settings from previous season | Settings | Requires season-to-season data mapping |
-| 115 | No retry mechanism for failed API calls | General | Requires wrapper/hook infrastructure across all fetch calls |
+### Deferred to Future Phases
 
-### Also deferred (design-level changes planned for Phase 29+)
-| # | Item | Notes |
-|---|------|-------|
-| 89 | League dropdown in header | Part of header redesign (Phase 28.2 plan) |
-| 90 | Team dropdown in header | Part of header redesign (Phase 28.2 plan) |
-| 91 | Breadcrumbs | Part of header redesign (Phase 28.2 plan) |
-| 97 | Push notifications | Requires service worker + push API |
-| 99 | Emoji consistency cross-browser | Low priority — cosmetic only |
-| 117 | Comprehensive in-app help system | Draft help modal added (#45); full system deferred |
+| # | Item | Decision | Target |
+|---|------|----------|--------|
+| 32 | Email invite | Save for after 4/21 launch | Post-launch |
+| 66 | Schedule preview in transactions | On hold | TBD |
+| 82 | Copy settings from previous season | Rethink as league reactivation | TBD |
+| 97 | Push notifications | Own phase — single permission prompt + settings toggles | Phase 29+ |
+| 117 | In-app help system | Own phase — minimal: tooltips + /help page + FAQ | Phase 29+ |
 
-> **Note**: Items #13 (password reset flows) was investigated and found to be working correctly by design — the flows converge properly. Not counted as NOT FIXED.
+### Implementation Batches (chronological)
+
+**Prior phases (0-27)**: Items #1, #4, #8-11, #15-17, #20, #22-23, #27-31, #33-35, #37-42, #44, #54-60, #63-64, #67, #72, #74, #76, #78, #81, #83, #85-88, #92-94, #98, #100-105, #107, #110-112, #119 were already fixed.
+
+**Phase 28 Batch 1** (text/UI): #2, #3, #5, #6, #7, #18, #26, #36, #43, #80, #84, #106, #108, #109
+**Phase 28 Batch 2** (draft room): #45, #46, #47, #48, #49, #50, #51, #52, #53, #95
+**Phase 28 Batch 3** (form UX): #24, #25, #61, #65, #77, #116
+**Phase 28 Batch 4** (navigation): #62, #68, #69, #71, #73, #96
+**Phase 28 Batch 5** (complex features): #19, #79, #118
+**Phase 28 Batch 6** (error handling): #113, #114
+**Phase 28 Final** (schedule + retry + header): #70, #89, #90, #91, #115
