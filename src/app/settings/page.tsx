@@ -34,6 +34,7 @@ export default function SettingsPage() {
 
   // Timezone UI
   const [showInternational, setShowInternational] = useState(false)
+  const [tzSearch, setTzSearch] = useState('')
 
   // Notification preferences
   const [emailGameResults, setEmailGameResults] = useState(true)
@@ -257,25 +258,17 @@ export default function SettingsPage() {
     { value: 'Pacific/Honolulu', label: 'Hawaii (HST)' },
   ]
 
-  const internationalTimezones = [
-    { value: 'America/Toronto', label: 'Eastern Canada (ET)', group: 'Americas' },
-    { value: 'America/Mexico_City', label: 'Mexico City (CST)', group: 'Americas' },
-    { value: 'America/Bogota', label: 'Colombia (COT)', group: 'Americas' },
-    { value: 'America/Sao_Paulo', label: 'Brazil (BRT)', group: 'Americas' },
-    { value: 'America/Argentina/Buenos_Aires', label: 'Argentina (ART)', group: 'Americas' },
-    { value: 'Europe/London', label: 'UK (GMT/BST)', group: 'Europe' },
-    { value: 'Europe/Berlin', label: 'Central Europe (CET)', group: 'Europe' },
-    { value: 'Europe/Athens', label: 'Eastern Europe (EET)', group: 'Europe' },
-    { value: 'Asia/Dubai', label: 'Dubai (GST)', group: 'Asia & Pacific' },
-    { value: 'Asia/Kolkata', label: 'India (IST)', group: 'Asia & Pacific' },
-    { value: 'Asia/Tokyo', label: 'Japan (JST)', group: 'Asia & Pacific' },
-    { value: 'Asia/Shanghai', label: 'China (CST)', group: 'Asia & Pacific' },
-    { value: 'Australia/Sydney', label: 'Australia Eastern (AEST)', group: 'Asia & Pacific' },
-    { value: 'Pacific/Auckland', label: 'New Zealand (NZST)', group: 'Asia & Pacific' },
-  ]
+  const usValues = new Set(usTimezones.map(tz => tz.value))
+  const isInternationalTz = !usValues.has(timezone)
 
-  // Auto-expand international section if user already has an international timezone selected
-  const isInternationalTz = !usTimezones.some(tz => tz.value === timezone)
+  // All IANA timezones for search (excluding US ones already shown)
+  const allTimezones = typeof Intl !== 'undefined' && Intl.supportedValuesOf
+    ? Intl.supportedValuesOf('timeZone').filter(tz => !usValues.has(tz))
+    : []
+
+  const filteredTimezones = tzSearch.length >= 2
+    ? allTimezones.filter(tz => tz.toLowerCase().includes(tzSearch.toLowerCase())).slice(0, 20)
+    : []
 
   if (loading) {
     return (
@@ -326,35 +319,77 @@ export default function SettingsPage() {
             </div>
             <div>
               <label className="block text-text-secondary text-sm mb-1">Timezone</label>
-              <select
-                value={timezone}
-                onChange={(e) => setTimezone(e.target.value)}
-                className="w-full px-4 py-2 bg-surface border border-border rounded-lg text-text-primary focus:outline-none focus:border-brand"
-              >
-                {usTimezones.map(tz => (
-                  <option key={tz.value} value={tz.value}>{tz.label}</option>
-                ))}
-                {(showInternational || isInternationalTz) && (() => {
-                  const groups = [...new Set(internationalTimezones.map(tz => tz.group))]
-                  return groups.map(group => (
-                    <optgroup key={group} label={group}>
-                      {internationalTimezones.filter(tz => tz.group === group).map(tz => (
-                        <option key={tz.value} value={tz.value}>{tz.label}</option>
-                      ))}
-                    </optgroup>
-                  ))
-                })()}
-              </select>
               {!showInternational && !isInternationalTz ? (
-                <button
-                  type="button"
-                  onClick={() => setShowInternational(true)}
-                  className="text-brand-text hover:text-brand-text/80 text-xs mt-1 underline"
-                >
-                  Outside the US? Show more timezones
-                </button>
+                <>
+                  <select
+                    value={timezone}
+                    onChange={(e) => setTimezone(e.target.value)}
+                    className="w-full px-4 py-2 bg-surface border border-border rounded-lg text-text-primary focus:outline-none focus:border-brand"
+                  >
+                    {usTimezones.map(tz => (
+                      <option key={tz.value} value={tz.value}>{tz.label}</option>
+                    ))}
+                  </select>
+                  <button
+                    type="button"
+                    onClick={() => setShowInternational(true)}
+                    className="text-brand-text hover:text-brand-text/80 text-xs mt-1 underline"
+                  >
+                    Outside the US? Find your timezone
+                  </button>
+                </>
               ) : (
-                <p className="text-text-muted text-xs mt-1">Used for scheduling notifications and displaying game times.</p>
+                <div className="space-y-2">
+                  {isInternationalTz && (
+                    <div className="px-3 py-2 bg-surface-subtle border border-border rounded-lg text-text-primary text-sm">
+                      Current: <span className="font-medium">{timezone.replace(/_/g, ' ')}</span>
+                    </div>
+                  )}
+                  <input
+                    type="text"
+                    value={tzSearch}
+                    onChange={(e) => setTzSearch(e.target.value)}
+                    placeholder="Search timezone (e.g. London, Tokyo, Sydney)"
+                    className="w-full px-4 py-2 bg-surface border border-border rounded-lg text-text-primary focus:outline-none focus:border-brand"
+                  />
+                  {filteredTimezones.length > 0 && (
+                    <div className="bg-surface border border-border rounded-lg max-h-48 overflow-y-auto">
+                      {filteredTimezones.map(tz => (
+                        <button
+                          key={tz}
+                          type="button"
+                          onClick={() => {
+                            setTimezone(tz)
+                            setTzSearch('')
+                          }}
+                          className={`w-full text-left px-3 py-2 text-sm hover:bg-surface-subtle transition-colors ${
+                            tz === timezone ? 'text-brand-text font-medium bg-brand/10' : 'text-text-primary'
+                          }`}
+                        >
+                          {tz.replace(/_/g, ' ')}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  {tzSearch.length >= 2 && filteredTimezones.length === 0 && (
+                    <p className="text-text-muted text-xs">No timezones found. Try a city name like &quot;London&quot; or &quot;Tokyo&quot;.</p>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowInternational(false)
+                      setTzSearch('')
+                      if (isInternationalTz) {
+                        // Keep their current timezone
+                      } else {
+                        setTimezone('America/New_York')
+                      }
+                    }}
+                    className="text-text-muted hover:text-text-primary text-xs underline"
+                  >
+                    Back to US timezones
+                  </button>
+                </div>
               )}
             </div>
             <button
