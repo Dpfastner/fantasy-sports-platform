@@ -7,6 +7,7 @@ import { createClient } from '@/lib/supabase/client'
 import { trackActivity } from '@/app/actions/activity'
 import { SCORING_PRESETS, SCORING_FIELD_KEYS, detectPreset, getPresetValues, type ScoringPresetKey } from '@/lib/scoring-presets'
 import { UserBadges } from '@/components/UserBadges'
+import { Header } from '@/components/Header'
 import { LeagueNav } from '@/components/LeagueNav'
 import type { UserTier, UserBadgeWithDefinition } from '@/types/database'
 
@@ -149,6 +150,9 @@ export default function CommissionerToolsPage() {
     receiver_team: { id: string; name: string } | null
     trade_items: { school_id: string; team_id: string; direction: string; schools: { name: string } | null }[]
   }
+  const [userName, setUserName] = useState<string | undefined>(undefined)
+  const [userEmail, setUserEmail] = useState<string | undefined>(undefined)
+  const [userId, setUserId] = useState<string | undefined>(undefined)
   const [recentTrades, setRecentTrades] = useState<RecentTrade[]>([])
   const [vetoingTradeId, setVetoingTradeId] = useState<string | null>(null)
   const [vetoReason, setVetoReason] = useState('')
@@ -183,6 +187,17 @@ export default function CommissionerToolsPage() {
           router.push('/login')
           return
         }
+
+        setUserId(user.id)
+        setUserEmail(user.email)
+
+        // Get user profile for header
+        const { data: userProfile } = await supabase
+          .from('profiles')
+          .select('display_name')
+          .eq('id', user.id)
+          .single()
+        setUserName(userProfile?.display_name || undefined)
 
         // Get league info
         const { data: leagueData } = await supabase
@@ -649,14 +664,7 @@ export default function CommissionerToolsPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gradient-from to-gradient-to">
-      {/* Header */}
-      <header className="bg-surface/50 border-b border-border">
-        <div className="container mx-auto px-4 py-4">
-          <Link href={`/leagues/${leagueId}`} className="text-text-secondary hover:text-text-primary">
-            &larr; Back to {league?.name}
-          </Link>
-        </div>
-      </header>
+      <Header userName={userName} userEmail={userEmail} userId={userId} />
 
       <LeagueNav leagueId={leagueId} isCommissioner={true} />
 
