@@ -129,11 +129,15 @@ export function PlayoffBracket({ seasonId, rosterSchoolIds = [], leagueId }: Pro
   }
 
   const organizeBracket = () => {
-    // CFP 12-team format:
-    // First Round (4 games): Seeds 5-12 play (top 4 get byes)
-    // Quarterfinals (4 games): Winners + bye teams
-    // Semifinals (2 games): Quarterfinal winners
-    // Championship (1 game): Semifinal winners
+    // CFP 12-team format bracket positions (top to bottom):
+    // First Round: #8v9, #5v12, #6v11, #7v10
+    // Byes: #1 (above 8v9), #4 (above 5v12), #3 (above 6v11), #2 (above 7v10)
+    // QF: #1vR1w, #4vR1w, #3vR1w, #2vR1w
+    // SF: QF1vQF2 (top half), QF3vQF4 (bottom half)
+
+    const FIRST_ROUND_PAIRS = [[8, 9], [5, 12], [6, 11], [7, 10]]
+    const BYE_SEED_POS: Record<number, number> = { 1: 0, 4: 1, 3: 2, 2: 3 }
+    const TOP_HALF_SEEDS = new Set([1, 4, 5, 8, 9, 12])
 
     const rounds: Record<RoundType, BracketGame[]> = {
       first_round: [],
@@ -142,59 +146,88 @@ export function PlayoffBracket({ seasonId, rosterSchoolIds = [], leagueId }: Pro
       championship: []
     }
 
-    // Group games by round based on bowl_name or playoff_round field
+    // Group games by round
     for (const game of games) {
       const round = determineRound(game)
       const bracketGame = createBracketGame(game, round)
       rounds[round].push(bracketGame)
     }
 
-    // Detect bye teams: seeds 1-4 appear in quarterfinals but NOT in first round
+    // ── Sort first-round games by ESPN seed pair ──
+    const getFirstRoundPos = (g: BracketGame): number => {
+      const seeds = [g.topTeam.seed, g.bottomTeam.seed].filter(Boolean) as number[]
+      for (let i = 0; i < FIRST_ROUND_PAIRS.length; i++) {
+        if (seeds.some(s => FIRST_ROUND_PAIRS[i].includes(s))) return i
+      }
+      return 99
+    }
+    rounds.first_round.sort((a, b) => getFirstRoundPos(a) - getFirstRoundPos(b))
+
+    // ── Detect and position bye teams ──
     const firstRoundSchoolIds = new Set<string>()
     for (const g of rounds.first_round) {
       if (g.game?.home_school_id) firstRoundSchoolIds.add(g.game.home_school_id)
       if (g.game?.away_school_id) firstRoundSchoolIds.add(g.game.away_school_id)
     }
 
-    // For each quarterfinal game, find bye teams (seed 1-4, not in first round)
-    // and create first-round bye entries so the bracket shows them properly
-    const byeTeams: BracketSlot[] = []
+    const byeTeams: { slot: BracketSlot; position: number }[] = []
     for (const qf of rounds.quarterfinal) {
       for (const slot of [qf.topTeam, qf.bottomTeam]) {
         if (slot.seed && slot.seed <= 4 && slot.schoolId && !firstRoundSchoolIds.has(slot.schoolId)) {
-          byeTeams.push({ ...slot })
+          byeTeams.push({ slot: { ...slot }, position: BYE_SEED_POS[slot.seed] ?? byeTeams.length })
         }
       }
     }
+    byeTeams.sort((a, b) => a.position - b.position)
 
-    // Interleave bye entries with actual first-round games (bye above its paired game)
+    // Interleave byes with sorted first-round games (bye above its paired game)
     if (byeTeams.length > 0) {
-      const actualGames = [...rounds.first_round]
+      const sortedGames = [...rounds.first_round]
       const combined: BracketGame[] = []
-      for (let i = 0; i < Math.max(byeTeams.length, actualGames.length); i++) {
+      for (let i = 0; i < Math.max(byeTeams.length, sortedGames.length); i++) {
         if (i < byeTeams.length) {
           const bt = byeTeams[i]
           combined.push({
             topTeam: {
-              seed: bt.seed,
-              schoolId: bt.schoolId,
-              name: bt.name || 'TBD',
-              logo: bt.logo,
-              isOnRoster: bt.isOnRoster,
+              seed: bt.slot.seed,
+              schoolId: bt.slot.schoolId,
+              name: bt.slot.name || 'TBD',
+              logo: bt.slot.logo,
+              isOnRoster: bt.slot.isOnRoster,
             },
             bottomTeam: { name: 'BYE', isBye: true },
             round: 'first_round',
             position: combined.length,
           })
         }
-        if (i < actualGames.length) {
-          combined.push(actualGames[i])
+        if (i < sortedGames.length) {
+          combined.push(sortedGames[i])
         }
       }
       rounds.first_round = combined
     }
 
-    // Ensure proper ordering and fill in bye placeholders
+    // ── Sort quarterfinals by bye seed position ──
+    const getQFPos = (g: BracketGame): number => {
+      const seeds = [g.topTeam.seed, g.bottomTeam.seed].filter(Boolean) as number[]
+      for (const s of seeds) {
+        if (s >= 1 && s <= 4 && BYE_SEED_POS[s] !== undefined) return BYE_SEED_POS[s]
+      }
+      return 99
+    }
+    rounds.quarterfinal.sort((a, b) => getQFPos(a) - getQFPos(b))
+
+    // ── Sort semifinals: top half vs bottom half ──
+    const getSFPos = (g: BracketGame): number => {
+      const seeds = [g.topTeam.seed, g.bottomTeam.seed].filter(Boolean) as number[]
+      for (const s of seeds) {
+        if (TOP_HALF_SEEDS.has(s)) return 0
+      }
+      return 1
+    }
+    rounds.semifinal.sort((a, b) => getSFPos(a) - getSFPos(b))
+
+    // Ensure proper slot counts and fill TBD placeholders
     rounds.first_round = ensureFirstRoundSlots(rounds.first_round)
     rounds.quarterfinal = ensureQuarterfinalSlots(rounds.quarterfinal)
     rounds.semifinal = ensureSemifinalSlots(rounds.semifinal)
@@ -219,28 +252,36 @@ export function PlayoffBracket({ seasonId, rosterSchoolIds = [], leagueId }: Pro
     const awayIsWinner = game.status === 'completed' &&
       (game.away_score || 0) > (game.home_score || 0)
 
+    const homeSlot: BracketSlot = {
+      seed: game.home_rank || undefined,
+      schoolId: game.home_school_id,
+      name: game.home_team_name || 'TBD',
+      logo: game.home_team_logo_url,
+      score: game.home_score,
+      isWinner: homeIsWinner,
+      isOnRoster: rosterSchoolIds.includes(game.home_school_id || ''),
+      gameStatus: game.status
+    }
+
+    const awaySlot: BracketSlot = {
+      seed: game.away_rank || undefined,
+      schoolId: game.away_school_id,
+      name: game.away_team_name || 'TBD',
+      logo: game.away_team_logo_url,
+      score: game.away_score,
+      isWinner: awayIsWinner,
+      isOnRoster: rosterSchoolIds.includes(game.away_school_id || ''),
+      gameStatus: game.status
+    }
+
+    // Higher seed (lower number) goes on top
+    const homeSeed = game.home_rank || 99
+    const awaySeed = game.away_rank || 99
+
     return {
       game,
-      topTeam: {
-        seed: game.away_rank || undefined,
-        schoolId: game.away_school_id,
-        name: game.away_team_name || 'TBD',
-        logo: game.away_team_logo_url,
-        score: game.away_score,
-        isWinner: awayIsWinner,
-        isOnRoster: rosterSchoolIds.includes(game.away_school_id || ''),
-        gameStatus: game.status
-      },
-      bottomTeam: {
-        seed: game.home_rank || undefined,
-        schoolId: game.home_school_id,
-        name: game.home_team_name || 'TBD',
-        logo: game.home_team_logo_url,
-        score: game.home_score,
-        isWinner: homeIsWinner,
-        isOnRoster: rosterSchoolIds.includes(game.home_school_id || ''),
-        gameStatus: game.status
-      },
+      topTeam: homeSeed <= awaySeed ? homeSlot : awaySlot,
+      bottomTeam: homeSeed <= awaySeed ? awaySlot : homeSlot,
       round,
       position: 0
     }

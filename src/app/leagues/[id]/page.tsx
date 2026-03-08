@@ -481,10 +481,10 @@ export default async function LeaguePage({ params }: PageProps) {
                         {team.name.substring(0, 2).toUpperCase()}
                       </div>
                       <div className="min-w-0">
-                        <p className="text-text-primary text-sm font-medium truncate">{team.name}</p>
-                        <p className="text-text-muted text-xs truncate">
+                        <Link href={`/leagues/${id}/team/${team.id}`} className="text-text-primary text-sm font-medium truncate hover:underline block">{team.name}</Link>
+                        <Link href={`/profile/${team.user_id}`} className="text-text-muted text-xs truncate hover:underline block">
                           {team.profiles?.display_name || team.profiles?.email?.split('@')[0] || 'Unknown'}
-                        </p>
+                        </Link>
                       </div>
                     </div>
                   ))}

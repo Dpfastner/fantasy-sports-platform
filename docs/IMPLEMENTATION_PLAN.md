@@ -2,7 +2,7 @@
 
 > **Platform Name**: Rivyls (rivyls.com)
 > **Current Sport**: College Football (base for multi-sport expansion)
-> **Last Updated**: March 6, 2026 (Phase 28 audit complete, 27 tasks finalized)
+> **Last Updated**: March 8, 2026 (Phase 28 complete — verification session done, end-of-phase notes added)
 > **Audit Date**: February 27, 2026 (full codebase audit of Phases 0-21)
 
 ---
@@ -1368,7 +1368,7 @@ Originally planned as a Pro/premium feature, trading has been moved to the **fre
 ## Phase 28: UX Audit & User Journey
 *End-to-end user journey walkthrough, friction audit, and usability fixes*
 
-**Status: IN PROGRESS** (28.1 audit complete, implementing fixes)
+**Status: COMPLETE** (all 118 items resolved — 113 FIXED, 3 DROPPED, 5 DEFERRED, 2 INTENTIONAL, 1 N/A)
 
 **Context**: All Season 1 features are built (Phases 0-27). Before mobile polish (Phase 29), walk through the entire platform as each user type and fix flow, navigation, and usability issues. Mobile-specific layout fixes are in Phase 29.
 
@@ -1453,32 +1453,53 @@ Originally planned as a Pro/premium feature, trading has been moved to the **fre
 - [x] Complete Journey A walkthrough — 115 friction points documented
 - [x] Complete Journey B+C walkthrough — 100 friction points documented
 - [x] Review findings with user — 117 items approved for Phase 28
-- [ ] Invite code works as URL parameter, unauthenticated users redirected to signup
-- [ ] Post-signup redirects to dashboard (not login)
-- [ ] Logged-in users redirect from homepage to dashboard
-- [ ] Header shows league dropdown with all user's leagues
-- [ ] Header shows team dropdown with all league teams
-- [ ] Homepage renders sport cards from config
-- [ ] Team logo upload works (file → Supabase Storage → displayed)
-- [ ] Schedule defaults to "All Games" before Week 0
-- [ ] Bracket R1 games align with QF games visually
-- [ ] Bracket shows playoff eligibility criteria
-- [ ] Commissioner settings save scrolls to top
-- [ ] Quick Nav consistent across all league pages, sticky, pre-draft aware
-- [ ] Dashboard cards show current week, rank, draft status, hover feedback
-- [ ] Add/Drop doesn't full-page reload, shows school schedule preview
-- [ ] School color backgrounds have readable text (4.5:1)
-- [ ] Commissioner gets notification on trade completion with veto link
-- [ ] Trade accept/reject has confirmation dialog
-- [ ] Transaction page shows deadline and remaining count
-- [ ] Pre-draft: member list visible, draft countdown, commissioner tools prominent
-- [ ] Draft room shows rules summary, watchlist/auto-pick help, timer warning
-- [ ] Team page clearly shows own vs opponent team
-- [ ] Error messages are actionable, no debug info shown to users
-- [ ] Unsaved changes warning on form pages
-- [ ] Back buttons on all interior pages
-- [ ] Notifications bell larger, hash-link scroll works
-- [ ] `npm run build` passes
+- [x] Browser verification session (March 8, 2026) — all items verified or verified with fixes
+- [x] Invite code works as URL parameter, unauthenticated users redirected to signup
+- [x] Post-signup redirects to dashboard (not login)
+- [x] Logged-in users redirect from homepage to dashboard
+- [x] Header shows league dropdown with all user's leagues
+- [x] Header shows team dropdown with all league teams
+- [x] Homepage renders sport cards from config
+- [x] Team logo upload works (file → Supabase Storage → displayed)
+- [x] Schedule defaults to "All Games" before Week 0
+- [x] Bracket R1 games sorted by ESPN seed pairs, byes positioned correctly
+- [x] Bracket shows playoff eligibility criteria
+- [x] Commissioner settings save scrolls to top
+- [x] Quick Nav consistent across all league pages, sticky, backdrop blur
+- [x] Dashboard cards show current week, rank, draft status, hover feedback
+- [x] Add/Drop doesn't full-page reload
+- [x] School color backgrounds have readable text (4.5:1)
+- [x] Commissioner gets notification on trade completion with veto link
+- [x] Trade accept/reject has confirmation dialog
+- [x] Transaction page shows deadline and remaining count
+- [x] Pre-draft: member list visible (clickable names), draft countdown, commissioner tools prominent
+- [x] Draft room shows rules summary, watchlist/auto-pick help, timer warning
+- [x] Team page clearly shows own vs opponent team
+- [x] Error messages are actionable, no debug info shown to users
+- [x] Unsaved changes warning on form pages
+- [x] Back buttons on all interior pages
+- [x] Notifications bell larger, hash-link scroll works
+- [x] `npm run build` passes
+
+### End-of-Phase Discussion Items
+
+Items noted during verification for discussion before Phase 29:
+
+1. Multi-sport flow design
+2. Draft date/time UX improvements
+3. Manual draft results entry
+4. Commissioner Tools vs League Settings consolidation
+5. Post-draft settings editability rules
+6. Trade veto: 3-day window then auto-locked
+7. Trade notification detail (show schools being traded)
+8. Unavailable schools alphabetical order
+9. Account deletion impact on active leagues
+10. Draft-pause bug: roster/Add-Drop accessible during paused draft
+11. Reset draft should scroll to top
+12. Manual draft order in league settings (not just draft page)
+13. Back button pattern: browser history vs parent page links
+14. Help system as its own phase (help sections, explanation wording)
+15. Environment naming: production project used for dev/testing
 
 ---
 
@@ -1652,4 +1673,4 @@ The platform is classified as recreation/entertainment, NOT gambling. This means
 
 ---
 
-*Last Updated: March 6, 2026 (Phase 28 audit complete — 120 friction points found, 27 tasks finalized from audit findings)*
+*Last Updated: March 8, 2026 (Phase 28 COMPLETE — 118 items resolved, verification session done, end-of-phase notes added)*

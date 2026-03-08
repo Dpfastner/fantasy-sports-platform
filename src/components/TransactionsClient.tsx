@@ -1026,7 +1026,7 @@ export default function TransactionsClient({
                       >
                         <div className="flex items-center justify-between mb-2">
                           <span className={`text-sm font-medium ${isMyTransaction ? 'text-brand-text' : 'text-text-secondary'}`}>
-                            {tx.team_name}
+                            <Link href={`/leagues/${leagueId}/team/${tx.fantasy_team_id}`} className="hover:underline">{tx.team_name}</Link>
                             {isMyTransaction && <span className="text-text-muted ml-2">(You)</span>}
                           </span>
                           <div className="text-right">

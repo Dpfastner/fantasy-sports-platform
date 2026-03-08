@@ -233,7 +233,8 @@ export default function PendingTrades({
             {isIncoming ? 'Incoming' : 'Outgoing'}
           </span>
           <span className="text-sm text-text-secondary flex-shrink-0">
-            {isIncoming ? `from ${partnerName}` : `to ${partnerName}`}
+            {isIncoming ? 'from ' : 'to '}
+            <a href={`/leagues/${leagueId}/team/${isIncoming ? trade.proposerTeamId : trade.receiverTeamId}`} className="hover:underline">{partnerName}</a>
           </span>
           <span className="text-text-muted">—</span>
           {/* Trade details: "trade [schools] for [schools]" with logos */}

@@ -220,7 +220,7 @@ export function AnnouncementsManager({
                   </div>
                   <p className="text-text-secondary text-sm whitespace-pre-wrap">{a.body}</p>
                   <p className="text-text-muted text-xs mt-2">
-                    — {commName}, {formatDate(a.created_at)}
+                    — <a href={`/profile/${a.commissioner_id}`} className="hover:underline">{commName}</a>, {formatDate(a.created_at)}
                   </p>
                 </div>
                 <div className="flex items-center gap-1 shrink-0">

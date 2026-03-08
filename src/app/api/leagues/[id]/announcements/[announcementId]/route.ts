@@ -26,7 +26,7 @@ export async function PATCH(
       .eq('user_id', user.id)
       .single()
 
-    if (!membership || (membership.role !== 'commissioner' && membership.role !== 'co-commissioner')) {
+    if (!membership || (membership.role !== 'commissioner' && membership.role !== 'co_commissioner')) {
       return NextResponse.json(
         { error: 'Only commissioners can update announcements' },
         { status: 403 }
@@ -105,7 +105,7 @@ export async function DELETE(
       .eq('user_id', user.id)
       .single()
 
-    if (!membership || (membership.role !== 'commissioner' && membership.role !== 'co-commissioner')) {
+    if (!membership || (membership.role !== 'commissioner' && membership.role !== 'co_commissioner')) {
       return NextResponse.json(
         { error: 'Only commissioners can delete announcements' },
         { status: 403 }

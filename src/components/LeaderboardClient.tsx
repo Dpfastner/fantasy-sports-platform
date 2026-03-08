@@ -727,7 +727,7 @@ export default function LeaderboardClient({
                       const team = teams.find(t => t.id === winner.teamId)
                       return (
                         <div key={winner.teamId} className="mb-2 last:mb-0">
-                          <p className="text-text-primary font-medium text-sm">{team?.name}</p>
+                          <Link href={`/leagues/${leagueId}/team/${team?.id}`} className="text-text-primary font-medium text-sm hover:underline block">{team?.name}</Link>
                           <div className="flex justify-between items-center">
                             <span className="text-text-secondary text-xs">{winner.points} pts</span>
                             <span className="text-warning-text text-sm font-semibold">${winner.amount}</span>

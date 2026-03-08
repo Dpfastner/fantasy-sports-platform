@@ -257,12 +257,12 @@ export async function POST(
         .from('league_members')
         .select('user_id')
         .eq('league_id', leagueId)
-        .in('role', ['commissioner', 'co-commissioner'])
+        .in('role', ['commissioner', 'co_commissioner'])
 
       if (commissioners) {
         for (const comm of commissioners) {
-          // Skip if commissioner is one of the trading parties (they already got notified)
-          if (comm.user_id === proposerTeam.user_id || comm.user_id === receiverTeam.user_id) continue
+          // Always notify commissioners about veto — even if they're a trading party,
+          // they need to know they can veto (especially in small leagues)
           createNotification({
             userId: comm.user_id,
             leagueId,

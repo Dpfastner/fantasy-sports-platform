@@ -284,7 +284,7 @@ export default async function HistoryPage({ params, searchParams }: PageProps) {
           <div className="bg-surface rounded-lg p-8 text-center">
             <p className="text-text-muted text-lg mb-2">No past seasons yet</p>
             <p className="text-text-secondary text-sm">
-              Seasons are automatically archived 3 days after the National Championship game.
+              Seasons are automatically archived 3 days after the season ends.
             </p>
           </div>
         ) : (

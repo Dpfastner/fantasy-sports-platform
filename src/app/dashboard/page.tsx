@@ -109,7 +109,7 @@ export default async function DashboardPage() {
           <div className="flex gap-4">
             <Link
               href="/leagues/join"
-              className="bg-surface hover:bg-surface-subtle text-text-primary font-semibold py-2 px-4 rounded-lg transition-colors"
+              className="bg-surface hover:bg-surface-subtle text-text-primary font-semibold py-2 px-4 rounded-lg transition-all border border-border hover:border-brand/40 hover:shadow-md"
             >
               Join League
             </Link>
@@ -134,7 +134,7 @@ export default async function DashboardPage() {
             <div className="flex gap-4 justify-center">
               <Link
                 href="/leagues/join"
-                className="bg-surface hover:bg-surface-subtle text-text-primary font-semibold py-2 px-6 rounded-lg transition-colors"
+                className="bg-surface hover:bg-surface-subtle text-text-primary font-semibold py-2 px-6 rounded-lg transition-all border border-border hover:border-brand/40 hover:shadow-md"
               >
                 Join with Code
               </Link>

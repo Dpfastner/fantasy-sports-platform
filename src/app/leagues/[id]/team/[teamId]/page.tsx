@@ -2,6 +2,7 @@ import { redirect, notFound } from 'next/navigation'
 import Link from 'next/link'
 import { createClient, createAdminClient } from '@/lib/supabase/server'
 import { Header } from '@/components/Header'
+import { LeagueNav } from '@/components/LeagueNav'
 import { RosterList } from '@/components/RosterList'
 import ProposeTradeButton from '@/components/ProposeTradeButton'
 import { getLeagueYear } from '@/lib/league-helpers'
@@ -468,6 +469,8 @@ export default async function TeamViewPage({ params }: PageProps) {
   return (
     <div className="min-h-screen bg-gradient-to-b from-gradient-from to-gradient-to">
       <Header userName={profile?.display_name} userEmail={user.email} userId={user.id} />
+
+      <LeagueNav leagueId={leagueId} />
 
       <main className="container mx-auto px-4 py-8">
         {/* Back link */}

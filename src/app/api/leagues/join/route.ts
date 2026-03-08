@@ -142,7 +142,7 @@ export async function POST(request: Request) {
       .from('league_members')
       .select('user_id')
       .eq('league_id', league.id)
-      .in('role', ['commissioner', 'co-commissioner'])
+      .in('role', ['commissioner', 'co_commissioner'])
 
     for (const comm of commissioners || []) {
       createNotification({

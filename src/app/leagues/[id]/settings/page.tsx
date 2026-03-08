@@ -7,6 +7,7 @@ import { createClient } from '@/lib/supabase/client'
 import { trackActivity } from '@/app/actions/activity'
 import { SCORING_PRESETS, SCORING_FIELD_KEYS, detectPreset, getPresetValues, type ScoringPresetKey } from '@/lib/scoring-presets'
 import { UserBadges } from '@/components/UserBadges'
+import { LeagueNav } from '@/components/LeagueNav'
 import type { UserTier, UserBadgeWithDefinition } from '@/types/database'
 
 // Full settings interface matching database schema
@@ -171,7 +172,8 @@ export default function CommissionerToolsPage() {
     }
     window.addEventListener('beforeunload', handler)
     return () => window.removeEventListener('beforeunload', handler)
-  })
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [savedSettingsJson, savedLeagueJson, settings, league])
 
   useEffect(() => {
     async function loadData() {
@@ -655,6 +657,8 @@ export default function CommissionerToolsPage() {
           </Link>
         </div>
       </header>
+
+      <LeagueNav leagueId={leagueId} isCommissioner={true} />
 
       <main className="container mx-auto px-4 py-8">
         <div className="max-w-4xl mx-auto">
@@ -1274,7 +1278,7 @@ export default function CommissionerToolsPage() {
                         type="date"
                         value={settings.add_drop_deadline || ''}
                         onChange={(e) => setSettings({ ...settings, add_drop_deadline: e.target.value || null })}
-                        className="w-full px-4 py-3 bg-surface border border-border rounded-lg text-text-primary"
+                        className="w-full px-4 py-3 bg-surface border border-border rounded-lg text-text-primary [color-scheme:dark]"
                       />
                       <p className="text-text-muted text-sm mt-1">Last date teams can make add/drop transactions (usually Monday before Week 7)</p>
                     </div>
@@ -1335,7 +1339,7 @@ export default function CommissionerToolsPage() {
                             type="date"
                             value={settings.trade_deadline || ''}
                             onChange={(e) => setSettings({ ...settings, trade_deadline: e.target.value || null })}
-                            className="w-full px-4 py-3 bg-surface border border-border rounded-lg text-text-primary"
+                            className="w-full px-4 py-3 bg-surface border border-border rounded-lg text-text-primary [color-scheme:dark]"
                           />
                           <p className="text-text-muted text-sm mt-1">After this date, no new trades can be proposed or accepted. Pending trades will expire. Leave blank for no deadline.</p>
                         </div>
@@ -1516,12 +1520,20 @@ export default function CommissionerToolsPage() {
                     <label className="block text-text-secondary mb-2">Draft Date & Time <span className="text-text-muted text-xs">(optional — visible to members as a countdown)</span></label>
                     <input
                       type="datetime-local"
-                      value={settings.draft_date?.slice(0, 16) || ''}
+                      value={settings.draft_date
+                        ? new Date(settings.draft_date).toLocaleString('sv-SE', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false }).replace(' ', 'T')
+                        : ''
+                      }
                       onChange={(e) => setSettings({ ...settings, draft_date: e.target.value ? new Date(e.target.value).toISOString() : null })}
                       disabled={isDraftStarted}
-                      className="w-full px-4 py-3 bg-surface border border-border rounded-lg text-text-primary disabled:opacity-50"
+                      className="w-full px-4 py-3 bg-surface border border-border rounded-lg text-text-primary disabled:opacity-50 [color-scheme:dark]"
                     />
                     <p className="text-text-muted text-sm mt-1">When your league will draft. Members see a countdown on the league page. You still start the draft manually from the Draft Room.</p>
+                    {settings.draft_date && (
+                      <p className="text-text-muted text-xs mt-1">
+                        Displays as: {new Date(settings.draft_date).toLocaleString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit', timeZoneName: 'short' })}
+                      </p>
+                    )}
                   </div>
 
                   <div>

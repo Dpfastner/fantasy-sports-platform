@@ -1926,7 +1926,7 @@ export default function DraftRoomPage() {
                         ) : (
                           <button
                             onClick={(e) => { e.stopPropagation(); handleAddToQueue(school.id) }}
-                            className="text-[9px] px-1.5 py-0.5 rounded bg-black/20 hover:bg-black/30 transition-colors"
+                            className="text-[11px] px-1.5 py-0.5 rounded bg-black/20 hover:bg-black/30 transition-colors font-medium"
                             title="Add to draft queue"
                           >
                             + Queue
@@ -2264,7 +2264,7 @@ export default function DraftRoomPage() {
                   document.body.style.cursor = 'row-resize'
                   document.body.style.userSelect = 'none'
                 }}
-                className="h-1.5 bg-border hover:bg-brand cursor-row-resize shrink-0 transition-colors"
+                className={`h-1.5 cursor-row-resize shrink-0 transition-colors ${unreadChat ? 'bg-brand animate-pulse' : 'bg-border hover:bg-brand'}`}
                 title="Drag to resize"
               />
               <div className="flex-1 min-h-0">

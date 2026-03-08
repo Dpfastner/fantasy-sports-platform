@@ -31,7 +31,7 @@ export async function updateSession(request: NextRequest) {
   // Supabase email links (password reset, signup confirmation) may redirect to
   // the root URL with ?code=XXX instead of /auth/callback
   const code = request.nextUrl.searchParams.get('code')
-  if (code && !request.nextUrl.pathname.startsWith('/auth/callback')) {
+  if (code && !request.nextUrl.pathname.startsWith('/auth/callback') && !request.nextUrl.pathname.startsWith('/leagues/join')) {
     const url = request.nextUrl.clone()
     const currentPath = request.nextUrl.pathname
     url.pathname = '/auth/callback'

@@ -348,13 +348,13 @@ export default function ScheduleClient({
                           isLive
                             ? 'border-danger/50 bg-danger/10'
                             : isRosterGame
-                            ? 'border-info/50 bg-info/5'
+                            ? 'border-info bg-info/10'
                             : 'border-border'
                         }`}
                       >
                         <div className="flex items-center justify-between text-sm">
                           <span className={`flex-1 flex items-center ${isAwayRoster ? 'text-info-text font-medium' : awayWon ? 'text-success-text font-medium' : isCompleted && !awayWon ? 'text-text-secondary' : 'text-text-primary'}`}>
-                            {isAwayRoster && <span className="inline-block w-1.5 h-1.5 bg-info rounded-full mr-1.5 shrink-0" />}
+                            {isAwayRoster && <span className="inline-block w-2 h-2 bg-info rounded-full mr-1.5 shrink-0" />}
                             {game.away_rank && game.away_rank <= 25 ? `#${game.away_rank} ` : ''}{game.away_team_name || 'TBD'}
                           </span>
                           <span className="px-3 text-text-muted shrink-0">
@@ -362,7 +362,7 @@ export default function ScheduleClient({
                           </span>
                           <span className={`flex-1 flex items-center justify-end ${isHomeRoster ? 'text-info-text font-medium' : homeWon ? 'text-success-text font-medium' : isCompleted && !homeWon ? 'text-text-secondary' : 'text-text-primary'}`}>
                             {game.home_team_name || 'TBD'}{game.home_rank && game.home_rank <= 25 ? ` #${game.home_rank}` : ''}
-                            {isHomeRoster && <span className="inline-block w-1.5 h-1.5 bg-info rounded-full ml-1.5 shrink-0" />}
+                            {isHomeRoster && <span className="inline-block w-2 h-2 bg-info rounded-full ml-1.5 shrink-0" />}
                           </span>
                         </div>
                       </div>
@@ -400,7 +400,7 @@ export default function ScheduleClient({
                           isLive
                             ? 'border-danger/50 bg-danger/10'
                             : isRosterGame
-                            ? 'border-info/50 bg-info/5'
+                            ? 'border-info bg-info/10'
                             : 'border-border'
                         }`}
                       >
@@ -548,7 +548,7 @@ export default function ScheduleClient({
         {/* Legend */}
         <div className="mt-6 flex items-center gap-4 text-xs text-text-secondary">
           <div className="flex items-center gap-1">
-            <div className="w-3 h-3 bg-info/5 border border-info/50 rounded"></div>
+            <div className="w-3 h-3 bg-info/10 border border-info rounded"></div>
             <span>My Roster</span>
           </div>
           <div className="flex items-center gap-1">

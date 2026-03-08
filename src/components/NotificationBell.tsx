@@ -124,7 +124,7 @@ export function NotificationBell({ userId }: NotificationBellProps) {
         const newNotif = payload.new as Notification
         setNotifications(prev => {
           if (prev.some(n => n.id === newNotif.id)) return prev
-          return [newNotif, ...prev].slice(0, 50)
+          return [newNotif, ...prev].slice(0, 25)
         })
         setUnreadCount(prev => prev + 1)
       })

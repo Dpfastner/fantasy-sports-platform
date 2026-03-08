@@ -19,7 +19,7 @@
 | **Total** | **118** + 6 design items noted |
 | **Still actionable** | **0** — all Phase 28 code work complete |
 
-> **Updated**: March 7, 2026 — All Phase 28 code work complete. 113 FIXED, 3 DROPPED, 5 DEFERRED.
+> **Updated**: March 8, 2026 — Verification session complete. All bugs from browser testing fixed. 113 FIXED, 3 DROPPED, 5 DEFERRED. Ready for end-of-phase discussion.
 
 ---
 
@@ -92,7 +92,7 @@
 | # | Finding | Status | How to Verify |
 |---|---------|--------|---------------|
 | 37 | Quick nav hidden until draft | **FIXED** | Visit any league page → LeagueNav bar should show all items (Overview, My Team, Schedule, etc.) regardless of draft status |
-| 38 | No member list on league home | **FIXED** | League home should show member list with team names and display names |
+| 38 | No member list on league home | **FIXED** | League home shows member list. Team names are clickable links to roster pages. Usernames link to profiles. Also linked: TransactionsClient, PendingTrades, LeaderboardClient HP Winners, AnnouncementsManager commissioner names. |
 | 39 | No countdown timer to draft | **FIXED** | If draft is scheduled, should see "Starts in: XdXhXm" countdown |
 | 40 | Commissioner Tools button small/grey | **FIXED** | As commissioner, button should be brand-colored (prominent), not grey |
 | 41 | Announcements section empty | **FIXED** | Commissioner should see announcements editor; non-commissioners see posted announcements |
@@ -152,7 +152,7 @@
 | 67 | Pre-season no games, default to All | **FIXED** | Visit schedule before Week 0 → dropdown should default to "All Games" showing every week |
 | 68 | Special week terminology confusing | **FIXED** | Visit schedule → week dropdown should show: "Week 0 — Early Season", "Week 15 — Conference Championships", "Week 16 — Army-Navy / Rivalry Week", "College Football Playoff" |
 | 69 | No past/future week distinction | **FIXED** | Visit schedule → past weeks show ✓ prefix, current week shows ◀ Current suffix in dropdown |
-| 70 | Roster schools not highlighted | **FIXED** | All Games view: roster games get blue tint (`bg-info/5`) + stronger border (`border-info/50`) + dot indicators next to school names. Query limit raised to 2000 to show full season. |
+| 70 | Roster schools not highlighted | **FIXED** | All Games view: roster games get blue tint (`bg-info/10`) + solid border (`border-info`) + larger dot indicators (`w-2 h-2`) next to school names. Query limit raised to 2000. |
 
 ---
 
@@ -160,7 +160,7 @@
 
 | # | Finding | Status | How to Verify |
 |---|---------|--------|---------------|
-| 71 | No leaderboard in quick nav | **FIXED** | LeagueNav now has "Standings" link (renamed from "Stats") positioned before Schedule in the nav order |
+| 71 | No leaderboard in quick nav | **FIXED** | LeagueNav now has "Records" link (school records/standings page). User clarified: "Overview" = leaderboard, "Records" = school standings — keeps terminology clear. |
 | 72 | Weekly points selector hidden | **FIXED** | Full leaderboard should show weekly point columns for each week |
 | 73 | High points feature not explained | **FIXED** | League home shows "(weekly bonus)" subtitle under High Points; leaderboard HP column header has tooltip: "High Points: weekly bonus for the highest-scoring team" |
 | 74 | Post-draft 0 points feels empty | **FIXED** | If all teams have 0 pts → should see "Scores will update when games begin. Check back once the season kicks off!" |
@@ -186,7 +186,7 @@
 
 | # | Finding | Status | How to Verify |
 |---|---------|--------|---------------|
-| 83 | Bracket positioning broken | **FIXED** | Visit bracket page → R1 games should vertically align/center with the QF games they feed into |
+| 83 | Bracket positioning broken | **FIXED** | Bracket reworked with seed-based sorting: R1 games ordered #8v9, #5v12, #6v11, #7v10. Byes positioned correctly (#1 above 8v9, #4 above 5v12, etc). QF/SF sorted by seed. Higher seed on top in each matchup. |
 | 84 | No playoff qualification explanation | **FIXED** | Bracket page shows subtitle explaining format: "12-team bracket — top 4 seeds get a first-round bye. Schools on your roster are highlighted." |
 | 85 | No documentation of bracket generation | **FIXED** | Bracket page should show subtitle: "12-team bracket — top 4 seeds get a first-round bye. Schools on your roster are highlighted." |
 
@@ -196,7 +196,7 @@
 
 | # | Finding | Status | How to Verify |
 |---|---------|--------|---------------|
-| 86 | Commissioner veto buried | **FIXED** | Accept a trade → commissioner should get notification "Trade Completed — Review & Veto" that links to Settings → Trades |
+| 86 | Commissioner veto buried | **FIXED** | Fixed 2 bugs: (1) `co-commissioner` → `co_commissioner` role name mismatch across 6 API files, (2) removed skip logic that prevented commissioners from getting veto notification when they were a trading party. Now all commissioners always get notified. |
 | 87 | No confirmation on destructive trade actions | **FIXED** | Accept/reject/cancel a trade → should see confirmation flow before action executes |
 
 ---
@@ -253,7 +253,7 @@
 
 | # | Finding | Status | How to Verify |
 |---|---------|--------|---------------|
-| 110 | Empty history for new leagues | **FIXED** | Visit history for new league → should see "No past seasons yet" with explanation: "Seasons are automatically archived 3 days after the National Championship game" |
+| 110 | Empty history for new leagues | **FIXED** | Visit history for new league → should see "No past seasons yet" with explanation: "Seasons are automatically archived 3 days after the season ends." |
 | 111 | Collapsible sections no icon | **FIXED** | Collapsible sections should show rotating chevron icon that flips on expand/collapse |
 
 ---
@@ -302,3 +302,43 @@ All 118 audit items have been resolved:
 **Phase 28 Batch 5** (complex features): #19, #79, #118
 **Phase 28 Batch 6** (error handling): #113, #114
 **Phase 28 Final** (schedule + retry + header): #70, #89, #90, #91, #115
+
+**Verification Session** (March 8, 2026 — bugs found during browser testing):
+- #27: Middleware invite URL fix (excluded `/leagues/join` from auth code interception)
+- #38: Platform-wide clickable team names and usernames (6 components)
+- #39: Timezone fix for draft date display (UTC→local conversion)
+- #47: Queue text size increased (9px→11px)
+- #52: Chat unread pulse indicator on mobile drag handle
+- #67: All Games empty state fix (`isCategory` derived from computed `selectedWeek`)
+- #70: Roster highlighting enhanced (stronger border + tint)
+- #71: Renamed "Standings" → "Records" in LeagueNav
+- #80: Calendar icon visibility (`[color-scheme:dark]` on date inputs)
+- #83: Bracket reworked with seed-based positioning
+- #86: Veto notification: fixed 2 bugs (role name mismatch + skip logic)
+- #88: Added LeagueNav to team/[teamId] and settings pages
+- #93: LeagueNav backdrop blur (`bg-surface/80 backdrop-blur-md`)
+- #100: Notification limit reduced 50→25
+- #108: Timezone abbreviations in settings dropdown
+- #110: "Season ends" wording (was "NC game")
+- #112: `beforeunload` useEffect dependency array fix
+- co_commissioner audit: Fixed hyphen→underscore across 6 API routes
+
+### End-of-Phase Discussion Items
+
+The following items were noted during verification for discussion before moving to Phase 29:
+
+1. **Multi-sport flow** — How should sport selection work when creating leagues? Per-league or per-season?
+2. **Draft date/time UX** — Consider improvements to how draft scheduling works
+3. **Manual draft results** — Entry mechanism for drafts conducted outside the platform
+4. **Commissioner tools consolidation** — Commissioner Tools button vs League Settings — combine or keep separate?
+5. **Post-draft settings UX** — Which settings should be editable after draft completes?
+6. **Trade veto window** — Consider 3-day window then auto-locked (no indefinite veto)
+7. **Trade notification detail** — Expand notification to show which schools are being traded
+8. **Unavailable schools order** — Should unavailable/draft-limited schools be in alphabetical order?
+9. **Account deletion** — What happens to active leagues when a user deletes their account?
+10. **Draft-pause bug** — Roster/Add-Drop pages are accessible during a paused draft
+11. **Reset draft scroll** — Should scroll to top after draft reset
+12. **#81: Draft order in settings** — Allow setting manual draft order in league settings (not just draft page)
+13. **#95: Back button behavior** — Browser history (`router.back()`) vs parent page links — decide on pattern
+14. **#45: Help system** — User requested this as its own phase for help sections and explanation wording
+15. **#119: Environment naming** — Production project is being used for development/testing. Consider renaming to clarify

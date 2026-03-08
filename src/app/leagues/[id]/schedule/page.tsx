@@ -88,14 +88,13 @@ export default async function SchedulePage({ params, searchParams }: PageProps) 
   }
   const environment = getEnvironment()
 
-  // Determine if selection is a category or week number
-  const isCategory = weekParam && ['bowls', 'cfp', 'natty', 'all'].includes(weekParam)
-  // Pre-season (before Week 0): default to 'all' to show full schedule
-  const selectedWeek = isCategory
+  // Determine selected week — pre-season defaults to 'all'
+  const selectedWeek = weekParam && ['bowls', 'cfp', 'natty', 'all'].includes(weekParam)
     ? weekParam
     : weekParam
       ? parseInt(weekParam)
       : currentWeek <= 0 ? 'all' : currentWeek
+  const isCategory = typeof selectedWeek === 'string'
 
   // Get weeks that have games
   const { data: weeksWithGamesData } = await supabase

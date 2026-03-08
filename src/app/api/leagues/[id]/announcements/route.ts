@@ -75,7 +75,7 @@ export async function POST(
       .eq('user_id', user.id)
       .single()
 
-    if (!membership || (membership.role !== 'commissioner' && membership.role !== 'co-commissioner')) {
+    if (!membership || (membership.role !== 'commissioner' && membership.role !== 'co_commissioner')) {
       return NextResponse.json(
         { error: 'Only commissioners can create announcements' },
         { status: 403 }

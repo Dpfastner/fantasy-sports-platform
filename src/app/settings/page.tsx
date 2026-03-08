@@ -240,14 +240,14 @@ export default function SettingsPage() {
     }
   }
 
-  const timezones = [
-    'America/New_York',
-    'America/Chicago',
-    'America/Denver',
-    'America/Los_Angeles',
-    'America/Phoenix',
-    'America/Anchorage',
-    'Pacific/Honolulu',
+  const timezones: { value: string; label: string }[] = [
+    { value: 'America/New_York', label: 'Eastern (ET)' },
+    { value: 'America/Chicago', label: 'Central (CT)' },
+    { value: 'America/Denver', label: 'Mountain (MT)' },
+    { value: 'America/Los_Angeles', label: 'Pacific (PT)' },
+    { value: 'America/Phoenix', label: 'Arizona (MST)' },
+    { value: 'America/Anchorage', label: 'Alaska (AKT)' },
+    { value: 'Pacific/Honolulu', label: 'Hawaii (HST)' },
   ]
 
   if (loading) {
@@ -305,8 +305,8 @@ export default function SettingsPage() {
                 className="w-full px-4 py-2 bg-surface border border-border rounded-lg text-text-primary focus:outline-none focus:border-brand"
               >
                 {timezones.map((tz) => (
-                  <option key={tz} value={tz}>
-                    {tz.replace('_', ' ').replace('America/', '').replace('Pacific/', '')}
+                  <option key={tz.value} value={tz.value}>
+                    {tz.label}
                   </option>
                 ))}
               </select>
