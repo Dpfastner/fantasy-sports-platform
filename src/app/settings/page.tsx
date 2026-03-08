@@ -240,14 +240,32 @@ export default function SettingsPage() {
     }
   }
 
-  const timezones: { value: string; label: string }[] = [
-    { value: 'America/New_York', label: 'Eastern (ET)' },
-    { value: 'America/Chicago', label: 'Central (CT)' },
-    { value: 'America/Denver', label: 'Mountain (MT)' },
-    { value: 'America/Los_Angeles', label: 'Pacific (PT)' },
-    { value: 'America/Phoenix', label: 'Arizona (MST)' },
-    { value: 'America/Anchorage', label: 'Alaska (AKT)' },
-    { value: 'Pacific/Honolulu', label: 'Hawaii (HST)' },
+  const timezones: { value: string; label: string; group: string }[] = [
+    // US
+    { value: 'America/New_York', label: 'Eastern (ET)', group: 'United States' },
+    { value: 'America/Chicago', label: 'Central (CT)', group: 'United States' },
+    { value: 'America/Denver', label: 'Mountain (MT)', group: 'United States' },
+    { value: 'America/Los_Angeles', label: 'Pacific (PT)', group: 'United States' },
+    { value: 'America/Phoenix', label: 'Arizona (MST)', group: 'United States' },
+    { value: 'America/Anchorage', label: 'Alaska (AKT)', group: 'United States' },
+    { value: 'Pacific/Honolulu', label: 'Hawaii (HST)', group: 'United States' },
+    // Americas
+    { value: 'America/Toronto', label: 'Eastern Canada (ET)', group: 'Americas' },
+    { value: 'America/Mexico_City', label: 'Mexico City (CST)', group: 'Americas' },
+    { value: 'America/Bogota', label: 'Colombia (COT)', group: 'Americas' },
+    { value: 'America/Sao_Paulo', label: 'Brazil (BRT)', group: 'Americas' },
+    { value: 'America/Argentina/Buenos_Aires', label: 'Argentina (ART)', group: 'Americas' },
+    // Europe
+    { value: 'Europe/London', label: 'UK (GMT/BST)', group: 'Europe' },
+    { value: 'Europe/Berlin', label: 'Central Europe (CET)', group: 'Europe' },
+    { value: 'Europe/Athens', label: 'Eastern Europe (EET)', group: 'Europe' },
+    // Asia & Pacific
+    { value: 'Asia/Dubai', label: 'Dubai (GST)', group: 'Asia & Pacific' },
+    { value: 'Asia/Kolkata', label: 'India (IST)', group: 'Asia & Pacific' },
+    { value: 'Asia/Tokyo', label: 'Japan (JST)', group: 'Asia & Pacific' },
+    { value: 'Asia/Shanghai', label: 'China (CST)', group: 'Asia & Pacific' },
+    { value: 'Australia/Sydney', label: 'Australia Eastern (AEST)', group: 'Asia & Pacific' },
+    { value: 'Pacific/Auckland', label: 'New Zealand (NZST)', group: 'Asia & Pacific' },
   ]
 
   if (loading) {
@@ -304,11 +322,16 @@ export default function SettingsPage() {
                 onChange={(e) => setTimezone(e.target.value)}
                 className="w-full px-4 py-2 bg-surface border border-border rounded-lg text-text-primary focus:outline-none focus:border-brand"
               >
-                {timezones.map((tz) => (
-                  <option key={tz.value} value={tz.value}>
-                    {tz.label}
-                  </option>
-                ))}
+                {(() => {
+                  const groups = [...new Set(timezones.map(tz => tz.group))]
+                  return groups.map(group => (
+                    <optgroup key={group} label={group}>
+                      {timezones.filter(tz => tz.group === group).map(tz => (
+                        <option key={tz.value} value={tz.value}>{tz.label}</option>
+                      ))}
+                    </optgroup>
+                  ))
+                })()}
               </select>
               <p className="text-text-muted text-xs mt-1">Used for scheduling notifications and displaying game times.</p>
             </div>

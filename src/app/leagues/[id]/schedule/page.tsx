@@ -88,21 +88,21 @@ export default async function SchedulePage({ params, searchParams }: PageProps) 
   }
   const environment = getEnvironment()
 
-  // Determine selected week — pre-season defaults to 'all'
-  const selectedWeek = weekParam && ['bowls', 'cfp', 'natty', 'all'].includes(weekParam)
-    ? weekParam
-    : weekParam
-      ? parseInt(weekParam)
-      : currentWeek <= 0 ? 'all' : currentWeek
-  const isCategory = typeof selectedWeek === 'string'
-
-  // Get weeks that have games
+  // Get weeks that have games (needed for default selection logic)
   const { data: weeksWithGamesData } = await supabase
     .from('games')
     .select('week_number')
     .eq('season_id', league.season_id)
 
   const weeksWithGames = [...new Set(weeksWithGamesData?.map(g => g.week_number) || [])].sort((a, b) => a - b)
+
+  // Determine selected week — defaults to 'all' if pre-season or current week has no games
+  const selectedWeek = weekParam && ['bowls', 'cfp', 'natty', 'all'].includes(weekParam)
+    ? weekParam
+    : weekParam
+      ? parseInt(weekParam)
+      : (currentWeek <= 0 || !weeksWithGames.includes(currentWeek)) ? 'all' : currentWeek
+  const isCategory = typeof selectedWeek === 'string'
 
   // Get games based on selection (week number or category)
   let gamesQuery = supabase
