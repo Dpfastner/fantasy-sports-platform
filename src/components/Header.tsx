@@ -8,6 +8,7 @@ import { NotificationBell } from './NotificationBell'
 import { useLeagueContext } from '@/contexts/LeagueContext'
 import { LeagueDropdown } from './header/LeagueDropdown'
 import { TeamDropdown } from './header/TeamDropdown'
+import { Breadcrumbs } from './header/Breadcrumbs'
 
 interface HeaderProps {
   userName?: string | null
@@ -54,27 +55,30 @@ export function Header({ userName, userEmail, userId, showUserMenu = true, child
           Rivyls
         </Link>
 
-        {/* Center: League/Team dropdowns (when in league context) or legacy children */}
-        {leagueCtx ? (
-          <div className="hidden sm:flex items-center gap-1 min-w-0">
-            <LeagueDropdown
-              currentLeague={leagueCtx.currentLeague}
-              leagues={leagueCtx.userLeagues}
-            />
-            {leagueCtx.userTeam && (
-              <TeamDropdown
-                leagueId={leagueCtx.currentLeague.id}
-                teams={leagueCtx.teamsInLeague}
-                userTeam={leagueCtx.userTeam}
-              />
-            )}
-          </div>
-        ) : children ? (
+        {/* Legacy children (non-league pages) */}
+        {!leagueCtx && children && (
           <div className="hidden sm:flex items-center gap-4">{children}</div>
-        ) : null}
+        )}
 
-        {/* Right: Notification bell + Profile dropdown */}
-        <div className="flex items-center gap-3 shrink-0">
+        {/* Right: League/Team dropdowns + Notification bell + Profile dropdown */}
+        <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+          {/* League/Team dropdowns (right-aligned, desktop only) */}
+          {leagueCtx && (
+            <div className="hidden sm:flex items-center gap-1">
+              <LeagueDropdown
+                currentLeague={leagueCtx.currentLeague}
+                leagues={leagueCtx.userLeagues}
+              />
+              {leagueCtx.userTeam && (
+                <TeamDropdown
+                  leagueId={leagueCtx.currentLeague.id}
+                  teams={leagueCtx.teamsInLeague}
+                  userTeam={leagueCtx.userTeam}
+                />
+              )}
+            </div>
+          )}
+
           {showUserMenu && (
             <>
               {userId && <NotificationBell userId={userId} />}
@@ -148,6 +152,12 @@ export function Header({ userName, userEmail, userId, showUserMenu = true, child
         </div>
       </div>
 
+      {/* Breadcrumbs row (league pages only, desktop only) */}
+      {leagueCtx && (
+        <div className="container mx-auto px-4 pb-2">
+          <Breadcrumbs />
+        </div>
+      )}
     </header>
   )
 }
