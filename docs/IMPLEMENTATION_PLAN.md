@@ -2,7 +2,7 @@
 
 > **Platform Name**: Rivyls (rivyls.com)
 > **Current Sport**: College Football (base for multi-sport expansion)
-> **Last Updated**: March 8, 2026 (Phase 28 complete — verification session done, end-of-phase notes added)
+> **Last Updated**: March 9, 2026 (Phase 28 complete, Phase 28.5 added)
 > **Audit Date**: February 27, 2026 (full codebase audit of Phases 0-21)
 
 ---
@@ -35,7 +35,8 @@
     - [Phase 26: Draft Enhancements](#phase-26-draft-enhancements) ✅
     - [Phase 27: Team-to-Team Trading](#phase-27-team-to-team-trading) ✅
 12. **CURRENT — UX Polish**
-    - [Phase 28: UX Audit & User Journey](#phase-28-ux-audit--user-journey)
+    - [Phase 28: UX Audit & User Journey](#phase-28-ux-audit--user-journey) ✅
+    - [Phase 28.5: Invite Flow Fix & Account Deletion Safety](#phase-285-invite-flow-fix--account-deletion-safety)
     - [Phase 29: Mobile Responsiveness](#phase-29-mobile-responsiveness)
 13. **POST-LAUNCH / YEAR 2**
     - [Future Phases 30-36](#future-phases)
@@ -1503,6 +1504,72 @@ Items noted during verification for discussion before Phase 29:
 
 ---
 
+## Phase 28.5: Invite Flow Fix & Account Deletion Safety
+*Fix invite URL redirect bug and prevent account deletion from destroying league data mid-season*
+
+**Status: NOT STARTED**
+
+**Context**: Two issues identified during Phase 28 verification that need to be addressed before mobile polish.
+
+### 28.5.1 — Invite URL Redirect Fix (#27)
+
+**Problem**: When an unauthenticated user clicks an invite link (`/leagues/join?code=abc123`), they're redirected to login. If they click through to signup, the `next` parameter (containing the invite code) is lost. After email confirmation, they land on `/dashboard` instead of `/leagues/join?code=abc123`.
+
+**Root cause**: The signup page (`src/app/(auth)/signup/page.tsx`) does not read or preserve the `next` query parameter.
+
+**Tasks**:
+
+| Task | Description |
+|------|-------------|
+| 28.5.1a | **Signup page: preserve `next` param** — Read `next` from searchParams, pass it through to the Supabase signup `emailRedirectTo` option so the confirmation callback includes it |
+| 28.5.1b | **Auth callback: verify `next` param flows through** — Confirm `/auth/callback/route.ts` receives and redirects to the `next` URL after email confirmation |
+| 28.5.1c | **Login ↔ Signup links: preserve `next` in both directions** — Ensure the "Create one" link on login and the "Already have an account?" link on signup both carry the `next` param |
+| 28.5.1d | **End-to-end test** — Walk through: invite link → login → signup → email confirm → lands on join page with code pre-filled |
+
+**Files**: `src/app/(auth)/signup/page.tsx`, `src/app/(auth)/login/page.tsx`, `src/app/auth/callback/route.ts`, `src/app/leagues/join/page.tsx`
+
+### 28.5.2 — Account Deletion Safety (Mid-Season)
+
+**Problem**: When a user deletes their account, `DELETE /api/account/delete` explicitly deletes their `fantasy_teams` rows. Because all related tables use `ON DELETE CASCADE`, this destroys:
+- All weekly points history (leaderboard changes retroactively)
+- All draft picks (draft history has holes)
+- All transactions (league transaction log loses entries)
+- All trades involving that team (other teams' trade records are also deleted)
+- Roster periods (no record schools were ever owned)
+
+This breaks leagues mid-season. A team vanishing from the leaderboard with all historical data erased is unacceptable.
+
+**Solution**: Instead of deleting the fantasy team, anonymize it and mark it inactive. The team stays on the leaderboard with all points and history intact.
+
+**Tasks**:
+
+| Task | Description |
+|------|-------------|
+| 28.5.2a | **Migration: add `is_deleted` column to `fantasy_teams`** — `ALTER TABLE fantasy_teams ADD COLUMN is_deleted BOOLEAN NOT NULL DEFAULT false` |
+| 28.5.2b | **Update account deletion route** — Instead of deleting fantasy_teams, update them: set `name` to "Deleted Team", `user_id` to null (or a system user), `is_deleted = true`. Do NOT delete `fantasy_team_weekly_points`, `roster_periods`, `draft_picks`, or `transactions` |
+| 28.5.2c | **Update FK constraint** — Change `fantasy_teams.user_id` from `ON DELETE CASCADE` to `ON DELETE SET NULL` so deleting the auth user doesn't cascade-delete the team |
+| 28.5.2d | **Update leaderboard** — Show deleted teams as "Deleted Team" with a muted/greyed style, no clickable links |
+| 28.5.2e | **Update team pages** — If someone navigates to a deleted team's roster, show "This team's owner has left the league" message with the frozen roster |
+| 28.5.2f | **Update draft history** — Show "Deleted Team" for picks made by deleted users |
+| 28.5.2g | **Update trade history** — Show "Deleted Team" for trades involving deleted users |
+| 28.5.2h | **Cancel pending trades** — Auto-cancel any open trades involving the deleted team |
+| 28.5.2i | **Freeze roster** — Deleted teams cannot make transactions, trades, or participate in future drafts |
+| 28.5.2j | **Deletion confirmation UI** — Show the user which leagues they're in and warn that their team will be frozen (not deleted) with "Deleted Team" name |
+
+**Files**: `src/app/api/account/delete/route.ts`, `src/components/LeaderboardClient.tsx`, `src/app/leagues/[id]/team/[teamId]/page.tsx`, `src/app/leagues/[id]/draft/page.tsx`, `src/components/PendingTrades.tsx`, `src/app/settings/page.tsx`, new migration
+
+### Verification
+- [ ] Invite link → signup → email confirm → lands on join page with code
+- [ ] Login ↔ signup links preserve `next` param in both directions
+- [ ] Account deletion anonymizes team to "Deleted Team" instead of deleting
+- [ ] Leaderboard still shows deleted team with correct historical points
+- [ ] Draft history shows "Deleted Team" for picks by deleted users
+- [ ] Pending trades are auto-cancelled on deletion
+- [ ] Deleted team's roster page shows frozen state message
+- [ ] `npm run build` passes
+
+---
+
 ## Phase 29: Mobile Responsiveness
 *Comprehensive mobile audit — all layout, navigation, and component fixes for phones and tablets*
 
@@ -1673,4 +1740,4 @@ The platform is classified as recreation/entertainment, NOT gambling. This means
 
 ---
 
-*Last Updated: March 8, 2026 (Phase 28 COMPLETE — 118 items resolved, verification session done, end-of-phase notes added)*
+*Last Updated: March 9, 2026 (Phase 28 COMPLETE, Phase 28.5 added — Invite Flow Fix & Account Deletion Safety)*
