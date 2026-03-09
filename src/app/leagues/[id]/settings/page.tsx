@@ -131,6 +131,7 @@ export default function CommissionerToolsPage() {
     owner_name: string
   }
   const [draftOrderTeams, setDraftOrderTeams] = useState<DraftOrderTeam[]>([])
+  const [draggedTeamId, setDraggedTeamId] = useState<string | null>(null)
 
   const [league, setLeague] = useState<League | null>(null)
   const [settings, setSettings] = useState<LeagueSettings | null>(null)
@@ -367,6 +368,28 @@ export default function CommissionerToolsPage() {
     // Persist to DB
     await supabase.from('fantasy_teams').update({ draft_position: posB }).eq('id', teamA.id)
     await supabase.from('fantasy_teams').update({ draft_position: posA }).eq('id', teamB.id)
+  }
+
+  const handleDraftOrderDrop = async (draggedId: string, targetId: string) => {
+    if (draggedId === targetId) return
+    const sorted = [...draftOrderTeams].sort((a, b) => a.draft_position - b.draft_position)
+    const dragIdx = sorted.findIndex(t => t.id === draggedId)
+    const dropIdx = sorted.findIndex(t => t.id === targetId)
+    if (dragIdx < 0 || dropIdx < 0) return
+
+    // Reorder: remove dragged item, insert at drop position
+    const reordered = [...sorted]
+    const [removed] = reordered.splice(dragIdx, 1)
+    reordered.splice(dropIdx, 0, removed)
+
+    // Assign new positions (1-indexed)
+    const updated = reordered.map((t, i) => ({ ...t, draft_position: i + 1 }))
+    setDraftOrderTeams(updated)
+
+    // Persist all positions to DB
+    for (const team of updated) {
+      await supabase.from('fantasy_teams').update({ draft_position: team.draft_position }).eq('id', team.id)
+    }
   }
 
   const updateScoringField = (field: string, value: number) => {
@@ -1661,45 +1684,70 @@ export default function CommissionerToolsPage() {
                   {settings.draft_order_type === 'manual' && draftOrderTeams.length > 0 && (
                     <div className="bg-surface-inset rounded-lg p-4">
                       <h3 className="text-sm font-semibold text-text-secondary mb-3">Draft Order</h3>
+                      {isCommissioner && !isDraftStarted && (
+                        <p className="text-text-muted text-xs mb-3">Drag to reorder or use the arrows.</p>
+                      )}
                       <div className="space-y-2">
                         {[...draftOrderTeams]
                           .sort((a, b) => a.draft_position - b.draft_position)
-                          .map((team, idx) => (
-                            <div
-                              key={team.id}
-                              className="flex items-center gap-3 bg-surface rounded-lg px-4 py-3"
-                            >
-                              <span className="text-text-muted text-sm font-mono w-6 text-center">{idx + 1}.</span>
-                              <div className="flex-1 min-w-0">
-                                <p className="text-text-primary text-sm font-medium truncate">{team.name}</p>
-                                <p className="text-text-muted text-xs truncate">{team.owner_name}</p>
-                              </div>
-                              {isCommissioner && !isDraftStarted && (
-                                <div className="flex flex-col gap-0.5">
-                                  <button
-                                    onClick={() => handleMoveDraftOrder(team.id, 'up')}
-                                    disabled={idx === 0}
-                                    className="p-1 text-text-secondary hover:text-text-primary disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-                                    title="Move up"
-                                  >
-                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
-                                    </svg>
-                                  </button>
-                                  <button
-                                    onClick={() => handleMoveDraftOrder(team.id, 'down')}
-                                    disabled={idx === draftOrderTeams.length - 1}
-                                    className="p-1 text-text-secondary hover:text-text-primary disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-                                    title="Move down"
-                                  >
-                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                                    </svg>
-                                  </button>
+                          .map((team, idx) => {
+                            const canDrag = isCommissioner && !isDraftStarted
+                            return (
+                              <div
+                                key={team.id}
+                                draggable={canDrag}
+                                onDragStart={() => canDrag && setDraggedTeamId(team.id)}
+                                onDragEnd={() => setDraggedTeamId(null)}
+                                onDragOver={(e) => { if (canDrag) e.preventDefault() }}
+                                onDrop={() => {
+                                  if (canDrag && draggedTeamId && draggedTeamId !== team.id) {
+                                    handleDraftOrderDrop(draggedTeamId, team.id)
+                                    setDraggedTeamId(null)
+                                  }
+                                }}
+                                className={`flex items-center gap-3 bg-surface rounded-lg px-4 py-3 transition-all ${
+                                  canDrag ? 'cursor-grab active:cursor-grabbing' : ''
+                                } ${draggedTeamId === team.id ? 'opacity-50 scale-95' : ''} ${
+                                  draggedTeamId && draggedTeamId !== team.id ? 'border-2 border-dashed border-transparent hover:border-brand/40' : ''
+                                }`}
+                              >
+                                {canDrag && (
+                                  <svg className="w-4 h-4 text-text-muted shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8h16M4 16h16" />
+                                  </svg>
+                                )}
+                                <span className="text-text-muted text-sm font-mono w-6 text-center">{idx + 1}.</span>
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-text-primary text-sm font-medium truncate">{team.name}</p>
+                                  <p className="text-text-muted text-xs truncate">{team.owner_name}</p>
                                 </div>
-                              )}
-                            </div>
-                          ))}
+                                {canDrag && (
+                                  <div className="flex flex-col gap-0.5">
+                                    <button
+                                      onClick={() => handleMoveDraftOrder(team.id, 'up')}
+                                      disabled={idx === 0}
+                                      className="p-1 text-text-secondary hover:text-text-primary disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                                      title="Move up"
+                                    >
+                                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                                      </svg>
+                                    </button>
+                                    <button
+                                      onClick={() => handleMoveDraftOrder(team.id, 'down')}
+                                      disabled={idx === draftOrderTeams.length - 1}
+                                      className="p-1 text-text-secondary hover:text-text-primary disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                                      title="Move down"
+                                    >
+                                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                      </svg>
+                                    </button>
+                                  </div>
+                                )}
+                              </div>
+                            )
+                          })}
                       </div>
                       {isDraftStarted && (
                         <p className="text-text-muted text-xs mt-2">Draft order cannot be changed after the draft has started.</p>
