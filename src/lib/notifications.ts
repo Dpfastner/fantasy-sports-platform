@@ -22,6 +22,49 @@ export type NotificationType =
   | 'trade_expiring'
   | 'system'
 
+/**
+ * Maps notification types to preference column names.
+ * 'system' is always delivered (no user toggle).
+ */
+const TYPE_TO_PREF: Record<string, string> = {
+  draft_started: 'inapp_draft',
+  draft_your_turn: 'inapp_draft',
+  draft_pick_made: 'inapp_draft',
+  draft_completed: 'inapp_draft',
+  game_results: 'inapp_game_results',
+  trade_proposed: 'inapp_trades',
+  trade_accepted: 'inapp_trades',
+  trade_rejected: 'inapp_trades',
+  trade_cancelled: 'inapp_trades',
+  trade_vetoed: 'inapp_trades',
+  trade_expired: 'inapp_trades',
+  trade_expiring: 'inapp_trades',
+  transaction_completed: 'inapp_transactions',
+  announcement_posted: 'inapp_announcements',
+  chat_mention: 'inapp_chat_mentions',
+  league_joined: 'inapp_league_activity',
+}
+
+/**
+ * Check if a user has opted out of a notification type.
+ * Returns true if the notification should be delivered.
+ */
+async function shouldDeliver(userId: string, type: NotificationType): Promise<boolean> {
+  const prefColumn = TYPE_TO_PREF[type]
+  if (!prefColumn) return true // system notifications always deliver
+
+  const supabase = createAdminClient()
+  const { data } = await supabase
+    .from('notification_preferences')
+    .select(prefColumn)
+    .eq('user_id', userId)
+    .maybeSingle()
+
+  if (!data) return true // no preferences row = all defaults (true)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return (data as any)[prefColumn] !== false
+}
+
 interface CreateNotificationParams {
   userId: string
   leagueId?: string | null
@@ -33,27 +76,41 @@ interface CreateNotificationParams {
 
 /**
  * Create a single notification for a user.
+ * Respects user in-app notification preferences.
  * Fire-and-forget — never blocks the calling request.
  */
 export function createNotification(params: CreateNotificationParams): void {
   const { userId, leagueId = null, type, title, body, data = {} } = params
   const supabase = createAdminClient()
 
-  supabase
-    .from('notifications')
-    .insert({
-      user_id: userId,
-      league_id: leagueId,
-      type,
-      title,
-      body,
-      data,
-    })
-    .then(({ error }) => {
-      if (error) {
-        console.error(`[notifications] Failed to create ${type}:`, error.message)
-      }
-    })
+  shouldDeliver(userId, type).then(deliver => {
+    if (!deliver) return
+
+    supabase
+      .from('notifications')
+      .insert({
+        user_id: userId,
+        league_id: leagueId,
+        type,
+        title,
+        body,
+        data,
+      })
+      .then(({ error }) => {
+        if (error) {
+          console.error(`[notifications] Failed to create ${type}:`, error.message)
+        }
+      })
+  }).catch(err => {
+    console.error(`[notifications] Preference check failed for ${type}:`, err)
+    // Fail open: deliver the notification anyway
+    supabase
+      .from('notifications')
+      .insert({ user_id: userId, league_id: leagueId, type, title, body, data })
+      .then(({ error }) => {
+        if (error) console.error(`[notifications] Fallback insert failed:`, error.message)
+      })
+  })
 }
 
 interface NotifyLeagueMembersParams {
@@ -67,6 +124,7 @@ interface NotifyLeagueMembersParams {
 
 /**
  * Send a notification to all members of a league, optionally excluding a user.
+ * Respects user in-app notification preferences.
  * Fire-and-forget.
  */
 export async function notifyLeagueMembers(params: NotifyLeagueMembersParams): Promise<void> {
@@ -83,9 +141,31 @@ export async function notifyLeagueMembers(params: NotifyLeagueMembersParams): Pr
     return
   }
 
-  const recipients = excludeUserId
+  const candidates = excludeUserId
     ? members.filter(m => m.user_id !== excludeUserId)
     : members
+
+  if (candidates.length === 0) return
+
+  // Check preferences for all candidates
+  const prefColumn = TYPE_TO_PREF[type]
+  let recipients = candidates
+
+  if (prefColumn) {
+    const userIds = candidates.map(m => m.user_id)
+    const { data: prefs } = await supabase
+      .from('notification_preferences')
+      .select('user_id, inapp_draft, inapp_game_results, inapp_trades, inapp_transactions, inapp_announcements, inapp_chat_mentions, inapp_league_activity')
+      .in('user_id', userIds)
+
+    if (prefs && prefs.length > 0) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const optedOut = new Set(
+        prefs.filter(p => (p as any)[prefColumn] === false).map(p => p.user_id)
+      )
+      recipients = candidates.filter(m => !optedOut.has(m.user_id))
+    }
+  }
 
   if (recipients.length === 0) return
 
@@ -110,6 +190,7 @@ export async function notifyLeagueMembers(params: NotifyLeagueMembersParams): Pr
 /**
  * Send draft_pick_made notifications with throttle.
  * Skips users who already have >= 3 unread draft_pick_made notifications for this draft.
+ * Respects user in-app notification preferences.
  */
 export async function notifyDraftPickThrottled(params: {
   leagueId: string
@@ -128,7 +209,20 @@ export async function notifyDraftPickThrottled(params: {
 
   if (!members) return
 
-  const recipients = members.filter(m => m.user_id !== excludeUserId)
+  const candidates = members.filter(m => m.user_id !== excludeUserId)
+  if (candidates.length === 0) return
+
+  // Check in-app draft preference for all candidates
+  const userIds = candidates.map(m => m.user_id)
+  const { data: prefs } = await supabase
+    .from('notification_preferences')
+    .select('user_id, inapp_draft')
+    .in('user_id', userIds)
+
+  const optedOut = new Set(
+    (prefs || []).filter(p => p.inapp_draft === false).map(p => p.user_id)
+  )
+  const recipients = candidates.filter(m => !optedOut.has(m.user_id))
   if (recipients.length === 0) return
 
   // Check unread counts for each recipient

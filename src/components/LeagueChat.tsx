@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef, useCallback } from 'react'
+import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { ReportContentButton } from '@/components/ReportContentButton'
 
@@ -253,9 +254,12 @@ export function LeagueChat({ leagueId, currentUserId, initialMessages, initialRe
             return (
               <div key={msg.id} className="group px-1">
                 <div className="flex items-baseline gap-2">
-                  <span className={`text-xs font-semibold ${isOwn ? 'text-brand-text' : 'text-text-primary'}`}>
+                  <Link
+                    href={`/profile/${msg.user_id}`}
+                    className={`text-xs font-semibold hover:underline ${isOwn ? 'text-brand-text' : 'text-text-primary'}`}
+                  >
                     {msg.display_name}
-                  </span>
+                  </Link>
                   <span className="text-text-muted text-[10px]">
                     {formatTimeAgo(msg.created_at)}
                   </span>

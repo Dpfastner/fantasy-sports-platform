@@ -9,6 +9,7 @@ import { buildShareUrl } from '@/lib/share'
 import { SITE_URL } from '@/lib/og/constants'
 import { getLeagueYear } from '@/lib/league-helpers'
 import { LeagueNav } from '@/components/LeagueNav'
+import { Header } from '@/components/Header'
 
 // Force dynamic rendering to ensure fresh data from database
 export const dynamic = 'force-dynamic'
@@ -40,6 +41,13 @@ export default async function BracketPage({ params }: PageProps) {
   if (!user) {
     redirect('/login')
   }
+
+  // Get user profile for header
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('display_name')
+    .eq('id', user.id)
+    .single()
 
   // Get league info
   const { data: league } = await supabase
@@ -87,22 +95,7 @@ export default async function BracketPage({ params }: PageProps) {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gradient-from to-gradient-to">
-      {/* Header */}
-      <header className="bg-surface/50 border-b border-border">
-        <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-          <Link href="/dashboard" className="text-2xl font-bold text-text-primary">
-            Rivyls
-          </Link>
-          <div className="flex items-center gap-4">
-            <Link
-              href={`/leagues/${leagueId}`}
-              className="text-text-secondary hover:text-text-primary transition-colors"
-            >
-              {league.name}
-            </Link>
-          </div>
-        </div>
-      </header>
+      <Header userName={profile?.display_name} userEmail={user.email} userId={user.id} />
 
       <LeagueNav leagueId={leagueId} />
 

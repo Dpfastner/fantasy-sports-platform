@@ -123,6 +123,15 @@ export default function CommissionerToolsPage() {
   const [isCommissioner, setIsCommissioner] = useState(false)
   const [draftStatus, setDraftStatus] = useState<string>('not_started')
 
+  // Draft order reordering
+  interface DraftOrderTeam {
+    id: string
+    name: string
+    draft_position: number
+    owner_name: string
+  }
+  const [draftOrderTeams, setDraftOrderTeams] = useState<DraftOrderTeam[]>([])
+
   const [league, setLeague] = useState<League | null>(null)
   const [settings, setSettings] = useState<LeagueSettings | null>(null)
   const [selectedPreset, setSelectedPreset] = useState<ScoringPresetKey>('custom')
@@ -213,12 +222,22 @@ export default function CommissionerToolsPage() {
 
         setLeague(leagueData)
         setSavedLeagueJson(JSON.stringify(leagueData))
-        setIsCommissioner(leagueData.created_by === user.id)
 
-        if (leagueData.created_by !== user.id) {
-          setError('Only the commissioner can access settings')
+        // Check membership role to determine commissioner access
+        const { data: membershipData } = await supabase
+          .from('league_members')
+          .select('role')
+          .eq('league_id', leagueId)
+          .eq('user_id', user.id)
+          .single()
+
+        if (!membershipData) {
+          setError('You are not a member of this league')
           return
         }
+
+        const hasCommissionerRole = membershipData.role === 'commissioner' || membershipData.role === 'co_commissioner'
+        setIsCommissioner(hasCommissionerRole)
 
         // Get draft status
         const { data: draft } = await supabase
@@ -242,6 +261,25 @@ export default function CommissionerToolsPage() {
           setSettings(settingsData as LeagueSettings)
           setSavedSettingsJson(JSON.stringify(settingsData))
           setSelectedPreset(detectPreset(settingsData))
+        }
+
+        // Load teams for draft order reordering
+        const { data: draftTeamsData } = await supabase
+          .from('fantasy_teams')
+          .select('id, name, draft_position, user_id, profiles!fantasy_teams_user_id_fkey(display_name, email)')
+          .eq('league_id', leagueId)
+          .order('draft_position', { ascending: true })
+
+        if (draftTeamsData) {
+          setDraftOrderTeams(
+            draftTeamsData.map((t, i) => ({
+              id: t.id,
+              name: t.name,
+              draft_position: t.draft_position || i + 1,
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              owner_name: (t.profiles as any)?.display_name || (t.profiles as any)?.email?.split('@')[0] || 'Unknown',
+            }))
+          )
         }
 
         // Get members first
@@ -304,6 +342,32 @@ export default function CommissionerToolsPage() {
 
     loadData()
   }, [leagueId, router, supabase])
+
+  const handleMoveDraftOrder = async (teamId: string, direction: 'up' | 'down') => {
+    const sorted = [...draftOrderTeams].sort((a, b) => a.draft_position - b.draft_position)
+    const idx = sorted.findIndex(t => t.id === teamId)
+    if (idx < 0) return
+    const swapIdx = direction === 'up' ? idx - 1 : idx + 1
+    if (swapIdx < 0 || swapIdx >= sorted.length) return
+
+    const teamA = sorted[idx]
+    const teamB = sorted[swapIdx]
+    const posA = teamA.draft_position
+    const posB = teamB.draft_position
+
+    // Optimistic update
+    setDraftOrderTeams(prev =>
+      prev.map(t => {
+        if (t.id === teamA.id) return { ...t, draft_position: posB }
+        if (t.id === teamB.id) return { ...t, draft_position: posA }
+        return t
+      })
+    )
+
+    // Persist to DB
+    await supabase.from('fantasy_teams').update({ draft_position: posB }).eq('id', teamA.id)
+    await supabase.from('fantasy_teams').update({ draft_position: posA }).eq('id', teamB.id)
+  }
 
   const updateScoringField = (field: string, value: number) => {
     if (!settings) return
@@ -642,7 +706,7 @@ export default function CommissionerToolsPage() {
   if (loading) {
     return (
       <div className="min-h-screen bg-page flex items-center justify-center">
-        <div className="text-text-primary">Loading commissioner tools...</div>
+        <div className="text-text-primary">Loading league settings...</div>
       </div>
     )
   }
@@ -666,12 +730,18 @@ export default function CommissionerToolsPage() {
     <div className="min-h-screen bg-gradient-to-b from-gradient-from to-gradient-to">
       <Header userName={userName} userEmail={userEmail} userId={userId} />
 
-      <LeagueNav leagueId={leagueId} isCommissioner={true} />
+      <LeagueNav leagueId={leagueId} />
 
       <main className="container mx-auto px-4 py-8">
         <div className="max-w-4xl mx-auto">
-          <h1 className="text-3xl font-bold text-text-primary mb-2">Commissioner Tools</h1>
-          <p className="text-text-secondary mb-6">Manage your league settings, draft, and members</p>
+          <h1 className="text-3xl font-bold text-text-primary mb-2">League Settings</h1>
+          {isCommissioner ? (
+            <p className="text-text-secondary mb-6">Manage your league settings, draft, and members</p>
+          ) : (
+            <div className="bg-info/10 border border-info/30 text-info-text px-4 py-3 rounded-lg mb-6 text-sm">
+              You are viewing league settings in read-only mode. Only commissioners can edit these settings.
+            </div>
+          )}
 
           {/* Status Messages */}
           {isDraftStarted && (
@@ -920,13 +990,15 @@ export default function CommissionerToolsPage() {
                       )}
                     </div>
 
-                    <button
-                      onClick={() => { handleSaveLeague(); handleSaveSettings(); }}
-                      disabled={saving}
-                      className="w-full bg-brand hover:bg-brand-hover disabled:bg-brand/50 text-text-primary font-semibold py-3 px-4 rounded-lg transition-colors mt-4"
-                    >
-                      {saving ? 'Saving...' : 'Save Basic Settings'}
-                    </button>
+                    {isCommissioner && (
+                      <button
+                        onClick={() => { handleSaveLeague(); handleSaveSettings(); }}
+                        disabled={saving}
+                        className="w-full bg-brand hover:bg-brand-hover disabled:bg-brand/50 text-text-primary font-semibold py-3 px-4 rounded-lg transition-colors mt-4"
+                      >
+                        {saving ? 'Saving...' : 'Save Basic Settings'}
+                      </button>
+                    )}
                   </div>
                 </section>
               )}
@@ -966,13 +1038,15 @@ export default function CommissionerToolsPage() {
                       <p className="text-text-muted text-sm mt-1">Usually 1 - each team can only have a school once</p>
                     </div>
 
-                    <button
-                      onClick={handleSaveSettings}
-                      disabled={saving || isDraftStarted}
-                      className="w-full bg-brand hover:bg-brand-hover disabled:bg-brand/50 text-text-primary font-semibold py-3 px-4 rounded-lg transition-colors mt-4"
-                    >
-                      {saving ? 'Saving...' : 'Save Roster Settings'}
-                    </button>
+                    {isCommissioner && (
+                      <button
+                        onClick={handleSaveSettings}
+                        disabled={saving || isDraftStarted}
+                        className="w-full bg-brand hover:bg-brand-hover disabled:bg-brand/50 text-text-primary font-semibold py-3 px-4 rounded-lg transition-colors mt-4"
+                      >
+                        {saving ? 'Saving...' : 'Save Roster Settings'}
+                      </button>
+                    )}
                   </div>
                 </section>
               )}
@@ -1250,28 +1324,30 @@ export default function CommissionerToolsPage() {
                     </div>
                   </div>
 
-                  <div className="flex gap-3 mt-6">
-                    <button
-                      onClick={() => {
-                        if (!window.confirm('Reset all scoring values to the Standard preset? You can still adjust individual values after.')) return
-                        const values = getPresetValues('standard')
-                        if (values && settings) {
-                          setSettings({ ...settings, ...values, scoring_preset: 'standard' } as LeagueSettings)
-                          setSelectedPreset('standard')
-                        }
-                      }}
-                      className="bg-surface hover:bg-surface-subtle text-text-secondary font-medium py-3 px-4 rounded-lg transition-colors"
-                    >
-                      Reset to Defaults
-                    </button>
-                    <button
-                      onClick={handleSaveSettings}
-                      disabled={saving}
-                      className="flex-1 bg-brand hover:bg-brand-hover disabled:bg-brand/50 text-text-primary font-semibold py-3 px-4 rounded-lg transition-colors"
-                    >
-                      {saving ? 'Saving...' : 'Save Scoring Settings'}
-                    </button>
-                  </div>
+                  {isCommissioner && (
+                    <div className="flex gap-3 mt-6">
+                      <button
+                        onClick={() => {
+                          if (!window.confirm('Reset all scoring values to the Standard preset? You can still adjust individual values after.')) return
+                          const values = getPresetValues('standard')
+                          if (values && settings) {
+                            setSettings({ ...settings, ...values, scoring_preset: 'standard' } as LeagueSettings)
+                            setSelectedPreset('standard')
+                          }
+                        }}
+                        className="bg-surface hover:bg-surface-subtle text-text-secondary font-medium py-3 px-4 rounded-lg transition-colors"
+                      >
+                        Reset to Defaults
+                      </button>
+                      <button
+                        onClick={handleSaveSettings}
+                        disabled={saving}
+                        className="flex-1 bg-brand hover:bg-brand-hover disabled:bg-brand/50 text-text-primary font-semibold py-3 px-4 rounded-lg transition-colors"
+                      >
+                        {saving ? 'Saving...' : 'Save Scoring Settings'}
+                      </button>
+                    </div>
+                  )}
                 </section>
               )}
 
@@ -1304,13 +1380,15 @@ export default function CommissionerToolsPage() {
                       <p className="text-text-muted text-sm mt-1">Total number of add/drops allowed per team (50 recommended)</p>
                     </div>
 
-                    <button
-                      onClick={handleSaveSettings}
-                      disabled={saving}
-                      className="w-full bg-brand hover:bg-brand-hover disabled:bg-brand/50 text-text-primary font-semibold py-3 px-4 rounded-lg transition-colors mt-4"
-                    >
-                      {saving ? 'Saving...' : 'Save Transaction Settings'}
-                    </button>
+                    {isCommissioner && (
+                      <button
+                        onClick={handleSaveSettings}
+                        disabled={saving}
+                        className="w-full bg-brand hover:bg-brand-hover disabled:bg-brand/50 text-text-primary font-semibold py-3 px-4 rounded-lg transition-colors mt-4"
+                      >
+                        {saving ? 'Saving...' : 'Save Transaction Settings'}
+                      </button>
+                    )}
                   </div>
                 </section>
               )}
@@ -1367,13 +1445,15 @@ export default function CommissionerToolsPage() {
                       </>
                     )}
 
-                    <button
-                      onClick={handleSaveSettings}
-                      disabled={saving}
-                      className="w-full bg-brand hover:bg-brand-hover disabled:bg-brand/50 text-text-primary font-semibold py-3 px-4 rounded-lg transition-colors mt-4"
-                    >
-                      {saving ? 'Saving...' : 'Save Trade Settings'}
-                    </button>
+                    {isCommissioner && (
+                      <button
+                        onClick={handleSaveSettings}
+                        disabled={saving}
+                        className="w-full bg-brand hover:bg-brand-hover disabled:bg-brand/50 text-text-primary font-semibold py-3 px-4 rounded-lg transition-colors mt-4"
+                      >
+                        {saving ? 'Saving...' : 'Save Trade Settings'}
+                      </button>
+                    )}
                   </div>
 
                   {/* Commissioner Trade Veto Section */}
@@ -1505,13 +1585,15 @@ export default function CommissionerToolsPage() {
                       </div>
                     )}
 
-                    <button
-                      onClick={handleSaveSettings}
-                      disabled={saving}
-                      className="w-full bg-brand hover:bg-brand-hover disabled:bg-brand/50 text-text-primary font-semibold py-3 px-4 rounded-lg transition-colors mt-4"
-                    >
-                      {saving ? 'Saving...' : 'Save Double Points Settings'}
-                    </button>
+                    {isCommissioner && (
+                      <button
+                        onClick={handleSaveSettings}
+                        disabled={saving}
+                        className="w-full bg-brand hover:bg-brand-hover disabled:bg-brand/50 text-text-primary font-semibold py-3 px-4 rounded-lg transition-colors mt-4"
+                      >
+                        {saving ? 'Saving...' : 'Save Double Points Settings'}
+                      </button>
+                    )}
                   </div>
                 </section>
               )}
@@ -1570,10 +1652,60 @@ export default function CommissionerToolsPage() {
                     </select>
                     <p className="text-text-muted text-sm mt-1">
                       {settings.draft_order_type === 'manual'
-                        ? 'Set the draft order on the draft page before starting'
+                        ? 'Drag teams to set your preferred order below'
                         : 'Teams will be randomly ordered when the draft begins'}
                     </p>
                   </div>
+
+                  {/* Manual Draft Order Reordering */}
+                  {settings.draft_order_type === 'manual' && draftOrderTeams.length > 0 && (
+                    <div className="bg-surface-inset rounded-lg p-4">
+                      <h3 className="text-sm font-semibold text-text-secondary mb-3">Draft Order</h3>
+                      <div className="space-y-2">
+                        {[...draftOrderTeams]
+                          .sort((a, b) => a.draft_position - b.draft_position)
+                          .map((team, idx) => (
+                            <div
+                              key={team.id}
+                              className="flex items-center gap-3 bg-surface rounded-lg px-4 py-3"
+                            >
+                              <span className="text-text-muted text-sm font-mono w-6 text-center">{idx + 1}.</span>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-text-primary text-sm font-medium truncate">{team.name}</p>
+                                <p className="text-text-muted text-xs truncate">{team.owner_name}</p>
+                              </div>
+                              {isCommissioner && !isDraftStarted && (
+                                <div className="flex flex-col gap-0.5">
+                                  <button
+                                    onClick={() => handleMoveDraftOrder(team.id, 'up')}
+                                    disabled={idx === 0}
+                                    className="p-1 text-text-secondary hover:text-text-primary disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                                    title="Move up"
+                                  >
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                                    </svg>
+                                  </button>
+                                  <button
+                                    onClick={() => handleMoveDraftOrder(team.id, 'down')}
+                                    disabled={idx === draftOrderTeams.length - 1}
+                                    className="p-1 text-text-secondary hover:text-text-primary disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                                    title="Move down"
+                                  >
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                    </svg>
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                      </div>
+                      {isDraftStarted && (
+                        <p className="text-text-muted text-xs mt-2">Draft order cannot be changed after the draft has started.</p>
+                      )}
+                    </div>
+                  )}
 
                   <div>
                     <label className="block text-text-secondary mb-2">Pick Timer</label>
@@ -1609,13 +1741,15 @@ export default function CommissionerToolsPage() {
                     <p className="text-text-muted text-sm mt-1">How many different teams can draft the same school. 1 = exclusive (once drafted, nobody else can pick that school). 3 = up to 3 teams can share a school.</p>
                   </div>
 
-                  <button
-                    onClick={handleSaveSettings}
-                    disabled={saving || isDraftStarted}
-                    className="w-full bg-brand hover:bg-brand-hover disabled:bg-brand/50 text-text-primary font-semibold py-3 px-4 rounded-lg transition-colors mt-4"
-                  >
-                    {saving ? 'Saving...' : 'Save Draft Settings'}
-                  </button>
+                  {isCommissioner && (
+                    <button
+                      onClick={handleSaveSettings}
+                      disabled={saving || isDraftStarted}
+                      className="w-full bg-brand hover:bg-brand-hover disabled:bg-brand/50 text-text-primary font-semibold py-3 px-4 rounded-lg transition-colors mt-4"
+                    >
+                      {saving ? 'Saving...' : 'Save Draft Settings'}
+                    </button>
+                  )}
                 </div>
               </section>
 
@@ -1654,8 +1788,8 @@ export default function CommissionerToolsPage() {
                           <th className="pb-4 pr-4 font-medium">Email</th>
                           <th className="pb-4 pr-4 font-medium">Second Owner</th>
                           <th className="pb-4 pr-4 font-medium">Role</th>
-                          <th className="pb-4 pr-4 font-medium">Paid</th>
-                          <th className="pb-4 font-medium"></th>
+                          {isCommissioner && <th className="pb-4 pr-4 font-medium">Paid</th>}
+                          {isCommissioner && <th className="pb-4 font-medium"></th>}
                         </tr>
                       </thead>
                       <tbody>
@@ -1682,47 +1816,55 @@ export default function CommissionerToolsPage() {
                               </td>
                               <td className="py-4 pr-4">
                                 {team ? (
-                                  editingSecondOwner === team.id ? (
-                                    <div className="flex items-center gap-2">
-                                      <input
-                                        type="email"
-                                        value={secondOwnerEmail}
-                                        onChange={(e) => setSecondOwnerEmail(e.target.value)}
-                                        placeholder="Enter email"
-                                        className="px-2 py-1 bg-surface text-text-primary text-sm rounded border border-border w-36"
-                                      />
+                                  isCommissioner ? (
+                                    editingSecondOwner === team.id ? (
+                                      <div className="flex items-center gap-2">
+                                        <input
+                                          type="email"
+                                          value={secondOwnerEmail}
+                                          onChange={(e) => setSecondOwnerEmail(e.target.value)}
+                                          placeholder="Enter email"
+                                          className="px-2 py-1 bg-surface text-text-primary text-sm rounded border border-border w-36"
+                                        />
+                                        <button
+                                          onClick={() => handleAddSecondOwnerByEmail(team.id, secondOwnerEmail)}
+                                          className="px-2 py-1 bg-success hover:bg-success-hover text-text-primary text-xs rounded"
+                                        >
+                                          Add
+                                        </button>
+                                        <button
+                                          onClick={() => { setEditingSecondOwner(null); setSecondOwnerEmail('') }}
+                                          className="px-2 py-1 bg-surface-subtle hover:bg-surface-subtle text-text-primary text-xs rounded"
+                                        >
+                                          Cancel
+                                        </button>
+                                      </div>
+                                    ) : team.second_owner_id ? (
+                                      <div className="flex items-center gap-2">
+                                        <span className="text-text-primary text-sm">
+                                          {secondOwnerProfile?.display_name || secondOwnerProfile?.email || 'Unknown'}
+                                        </span>
+                                        <button
+                                          onClick={() => handleRemoveSecondOwner(team.id)}
+                                          className="px-2 py-1 bg-danger/50 hover:bg-danger text-text-primary text-xs rounded"
+                                        >
+                                          Remove
+                                        </button>
+                                      </div>
+                                    ) : (
                                       <button
-                                        onClick={() => handleAddSecondOwnerByEmail(team.id, secondOwnerEmail)}
-                                        className="px-2 py-1 bg-success hover:bg-success-hover text-text-primary text-xs rounded"
+                                        onClick={() => setEditingSecondOwner(team.id)}
+                                        className="px-3 py-1 bg-brand hover:bg-brand-hover text-text-primary text-xs rounded"
                                       >
-                                        Add
+                                        Add Second Owner
                                       </button>
-                                      <button
-                                        onClick={() => { setEditingSecondOwner(null); setSecondOwnerEmail('') }}
-                                        className="px-2 py-1 bg-surface-subtle hover:bg-surface-subtle text-text-primary text-xs rounded"
-                                      >
-                                        Cancel
-                                      </button>
-                                    </div>
+                                    )
                                   ) : team.second_owner_id ? (
-                                    <div className="flex items-center gap-2">
-                                      <span className="text-text-primary text-sm">
-                                        {secondOwnerProfile?.display_name || secondOwnerProfile?.email || 'Unknown'}
-                                      </span>
-                                      <button
-                                        onClick={() => handleRemoveSecondOwner(team.id)}
-                                        className="px-2 py-1 bg-danger/50 hover:bg-danger text-text-primary text-xs rounded"
-                                      >
-                                        Remove
-                                      </button>
-                                    </div>
+                                    <span className="text-text-primary text-sm">
+                                      {secondOwnerProfile?.display_name || secondOwnerProfile?.email || 'Unknown'}
+                                    </span>
                                   ) : (
-                                    <button
-                                      onClick={() => setEditingSecondOwner(team.id)}
-                                      className="px-3 py-1 bg-brand hover:bg-brand-hover text-text-primary text-xs rounded"
-                                    >
-                                      Add Second Owner
-                                    </button>
+                                    <span className="text-text-muted text-sm">None</span>
                                   )
                                 ) : (
                                   <span className="text-text-muted">-</span>
@@ -1733,7 +1875,7 @@ export default function CommissionerToolsPage() {
                                   <span className="px-3 py-1 rounded text-xs font-medium bg-info/20 text-info-text">
                                     Commissioner
                                   </span>
-                                ) : (
+                                ) : isCommissioner ? (
                                   <select
                                     value={member.role}
                                     onChange={(e) => {
@@ -1746,30 +1888,38 @@ export default function CommissionerToolsPage() {
                                     <option value="co_commissioner">Co-Commissioner</option>
                                     <option value="commissioner">Transfer Commissioner</option>
                                   </select>
+                                ) : (
+                                  <span className="px-3 py-1 rounded text-xs font-medium bg-surface-subtle text-text-secondary capitalize">
+                                    {member.role === 'co_commissioner' ? 'Co-Commissioner' : member.role}
+                                  </span>
                                 )}
                               </td>
-                              <td className="py-4 pr-4">
-                                <button
-                                  onClick={() => handleTogglePaid(member.id, member.has_paid)}
-                                  className={`px-3 py-1 rounded text-xs font-medium transition-colors ${
-                                    member.has_paid
-                                      ? 'bg-success/20 text-success-text hover:bg-success/30'
-                                      : 'bg-danger/20 text-danger-text hover:bg-danger/30'
-                                  }`}
-                                >
-                                  {member.has_paid ? 'Paid' : 'Unpaid'}
-                                </button>
-                              </td>
-                              <td className="py-4">
-                                {!isCommissionerMember && (
+                              {isCommissioner && (
+                                <td className="py-4 pr-4">
                                   <button
-                                    onClick={() => handleRemoveMember(member.id, member.profiles?.display_name || 'this member')}
-                                    className="px-2 py-1 bg-danger hover:bg-danger-hover text-text-primary text-xs rounded transition-colors"
+                                    onClick={() => handleTogglePaid(member.id, member.has_paid)}
+                                    className={`px-3 py-1 rounded text-xs font-medium transition-colors ${
+                                      member.has_paid
+                                        ? 'bg-success/20 text-success-text hover:bg-success/30'
+                                        : 'bg-danger/20 text-danger-text hover:bg-danger/30'
+                                    }`}
                                   >
-                                    Remove
+                                    {member.has_paid ? 'Paid' : 'Unpaid'}
                                   </button>
-                                )}
-                              </td>
+                                </td>
+                              )}
+                              {isCommissioner && (
+                                <td className="py-4">
+                                  {!isCommissionerMember && (
+                                    <button
+                                      onClick={() => handleRemoveMember(member.id, member.profiles?.display_name || 'this member')}
+                                      className="px-2 py-1 bg-danger hover:bg-danger-hover text-text-primary text-xs rounded transition-colors"
+                                    >
+                                      Remove
+                                    </button>
+                                  )}
+                                </td>
+                              )}
                             </tr>
                           )
                         })}
@@ -1817,10 +1967,11 @@ export default function CommissionerToolsPage() {
                       <p className="text-text-secondary text-sm mt-1">Post updates and news for your league members</p>
                     </div>
                     <button
-                      onClick={() => handleToggleSectionVisibility('show_announcements')}
+                      onClick={() => isCommissioner && handleToggleSectionVisibility('show_announcements')}
+                      disabled={!isCommissioner}
                       className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
                         settings.show_announcements ? 'bg-brand' : 'bg-surface-subtle'
-                      }`}
+                      } ${!isCommissioner ? 'opacity-50 cursor-not-allowed' : ''}`}
                     >
                       <span
                         className={`inline-block h-4 w-4 transform rounded-full bg-text-primary transition-transform ${
@@ -1837,10 +1988,11 @@ export default function CommissionerToolsPage() {
                       <p className="text-text-secondary text-sm mt-1">Real-time chat with your league members</p>
                     </div>
                     <button
-                      onClick={() => handleToggleSectionVisibility('show_chat')}
+                      onClick={() => isCommissioner && handleToggleSectionVisibility('show_chat')}
+                      disabled={!isCommissioner}
                       className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
                         settings.show_chat ? 'bg-brand' : 'bg-surface-subtle'
-                      }`}
+                      } ${!isCommissioner ? 'opacity-50 cursor-not-allowed' : ''}`}
                     >
                       <span
                         className={`inline-block h-4 w-4 transform rounded-full bg-text-primary transition-transform ${
@@ -1857,10 +2009,11 @@ export default function CommissionerToolsPage() {
                       <p className="text-text-secondary text-sm mt-1">Auto-generated feed of draft picks, transactions, and more</p>
                     </div>
                     <button
-                      onClick={() => handleToggleSectionVisibility('show_activity_feed')}
+                      onClick={() => isCommissioner && handleToggleSectionVisibility('show_activity_feed')}
+                      disabled={!isCommissioner}
                       className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
                         settings.show_activity_feed ? 'bg-brand' : 'bg-surface-subtle'
-                      }`}
+                      } ${!isCommissioner ? 'opacity-50 cursor-not-allowed' : ''}`}
                     >
                       <span
                         className={`inline-block h-4 w-4 transform rounded-full bg-text-primary transition-transform ${

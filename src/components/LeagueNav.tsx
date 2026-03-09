@@ -18,19 +18,14 @@ const NAV_ITEMS = [
   { label: 'Add/Drop', path: '/transactions' },
   { label: 'Bracket', path: '/bracket' },
   { label: 'History', path: '/history' },
+  { label: 'League Settings', path: '/settings' },
 ]
 
-export function LeagueNav({ leagueId, isCommissioner: isCommissionerProp }: LeagueNavProps) {
+export function LeagueNav({ leagueId }: LeagueNavProps) {
   const pathname = usePathname()
   const basePath = `/leagues/${leagueId}`
-  const leagueCtx = useLeagueContext()
 
-  // Prefer context value, fall back to prop for backward compat
-  const isCommissioner = leagueCtx?.isCommissioner ?? isCommissionerProp ?? false
-
-  const items = isCommissioner
-    ? [...NAV_ITEMS, { label: 'Settings', path: '/settings' }]
-    : NAV_ITEMS
+  const items = NAV_ITEMS
 
   return (
     <nav className="bg-surface/80 backdrop-blur-md border-b border-border sticky top-0 z-30">

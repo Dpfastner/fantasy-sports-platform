@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { Header } from '@/components/Header'
 import { trackActivity } from '@/app/actions/activity'
@@ -36,11 +37,19 @@ export default function SettingsPage() {
   const [showInternational, setShowInternational] = useState(false)
   const [tzSearch, setTzSearch] = useState('')
 
-  // Notification preferences
+  // Notification preferences — email
   const [emailGameResults, setEmailGameResults] = useState(true)
   const [emailDraftReminders, setEmailDraftReminders] = useState(true)
   const [emailTransactionConfirmations, setEmailTransactionConfirmations] = useState(true)
   const [emailLeagueAnnouncements, setEmailLeagueAnnouncements] = useState(true)
+  // Notification preferences — in-app
+  const [inappDraft, setInappDraft] = useState(true)
+  const [inappGameResults, setInappGameResults] = useState(true)
+  const [inappTrades, setInappTrades] = useState(true)
+  const [inappTransactions, setInappTransactions] = useState(true)
+  const [inappAnnouncements, setInappAnnouncements] = useState(true)
+  const [inappChatMentions, setInappChatMentions] = useState(true)
+  const [inappLeagueActivity, setInappLeagueActivity] = useState(true)
   const [savingNotifications, setSavingNotifications] = useState(false)
 
   // Account deletion
@@ -84,7 +93,7 @@ export default function SettingsPage() {
       // Load notification preferences
       const { data: notifData } = await supabase
         .from('notification_preferences')
-        .select('email_game_results, email_draft_reminders, email_transaction_confirmations, email_league_announcements')
+        .select('email_game_results, email_draft_reminders, email_transaction_confirmations, email_league_announcements, inapp_draft, inapp_game_results, inapp_trades, inapp_transactions, inapp_announcements, inapp_chat_mentions, inapp_league_activity')
         .eq('user_id', user.id)
         .maybeSingle()
 
@@ -93,6 +102,13 @@ export default function SettingsPage() {
         setEmailDraftReminders(notifData.email_draft_reminders)
         setEmailTransactionConfirmations(notifData.email_transaction_confirmations)
         setEmailLeagueAnnouncements(notifData.email_league_announcements)
+        if (notifData.inapp_draft !== undefined) setInappDraft(notifData.inapp_draft)
+        if (notifData.inapp_game_results !== undefined) setInappGameResults(notifData.inapp_game_results)
+        if (notifData.inapp_trades !== undefined) setInappTrades(notifData.inapp_trades)
+        if (notifData.inapp_transactions !== undefined) setInappTransactions(notifData.inapp_transactions)
+        if (notifData.inapp_announcements !== undefined) setInappAnnouncements(notifData.inapp_announcements)
+        if (notifData.inapp_chat_mentions !== undefined) setInappChatMentions(notifData.inapp_chat_mentions)
+        if (notifData.inapp_league_activity !== undefined) setInappLeagueActivity(notifData.inapp_league_activity)
       }
 
       setLoading(false)
@@ -211,6 +227,13 @@ export default function SettingsPage() {
         email_draft_reminders: emailDraftReminders,
         email_transaction_confirmations: emailTransactionConfirmations,
         email_league_announcements: emailLeagueAnnouncements,
+        inapp_draft: inappDraft,
+        inapp_game_results: inappGameResults,
+        inapp_trades: inappTrades,
+        inapp_transactions: inappTransactions,
+        inapp_announcements: inappAnnouncements,
+        inapp_chat_mentions: inappChatMentions,
+        inapp_league_activity: inappLeagueActivity,
       }
 
       // Upsert: create if not exists, update if exists
@@ -284,9 +307,9 @@ export default function SettingsPage() {
 
       <main className="container mx-auto px-4 py-8 max-w-2xl">
         <div className="mb-6">
-          <button onClick={() => router.back()} className="text-text-secondary hover:text-text-primary transition-colors">
-            &larr; Back
-          </button>
+          <Link href="/dashboard" className="text-text-secondary hover:text-text-primary transition-colors">
+            &larr; Dashboard
+          </Link>
         </div>
 
         <h1 className="text-3xl font-bold text-text-primary mb-8">Account Settings</h1>
@@ -515,7 +538,60 @@ export default function SettingsPage() {
         {/* Notification Preferences */}
         <div className="bg-surface rounded-lg p-6 mt-6">
           <h2 className="text-xl font-semibold text-text-primary mb-2">Notifications</h2>
-          <p className="text-text-muted text-sm mb-4">
+
+          {/* In-App Notifications */}
+          <h3 className="text-sm font-semibold text-text-secondary uppercase tracking-wide mt-4 mb-3">In-App Notifications</h3>
+          <p className="text-text-muted text-sm mb-3">
+            Control which notifications appear in your notification bell.
+          </p>
+          <div className="space-y-3 mb-6">
+            <NotificationToggle
+              label="Draft Notifications"
+              description="Draft started, your turn to pick, picks made, and draft completed"
+              checked={inappDraft}
+              onChange={setInappDraft}
+            />
+            <NotificationToggle
+              label="Game Results"
+              description="Weekly score updates when games are completed"
+              checked={inappGameResults}
+              onChange={setInappGameResults}
+            />
+            <NotificationToggle
+              label="Trade Notifications"
+              description="Trade proposals, acceptances, rejections, vetoes, and expirations"
+              checked={inappTrades}
+              onChange={setInappTrades}
+            />
+            <NotificationToggle
+              label="Transaction Confirmations"
+              description="Confirmation when add/drop transactions are processed"
+              checked={inappTransactions}
+              onChange={setInappTransactions}
+            />
+            <NotificationToggle
+              label="League Announcements"
+              description="Updates posted by your league commissioners"
+              checked={inappAnnouncements}
+              onChange={setInappAnnouncements}
+            />
+            <NotificationToggle
+              label="Chat Mentions"
+              description="When someone mentions you in league chat"
+              checked={inappChatMentions}
+              onChange={setInappChatMentions}
+            />
+            <NotificationToggle
+              label="League Activity"
+              description="Members joining your league and other league events"
+              checked={inappLeagueActivity}
+              onChange={setInappLeagueActivity}
+            />
+          </div>
+
+          {/* Email Notifications */}
+          <h3 className="text-sm font-semibold text-text-secondary uppercase tracking-wide mb-3">Email Notifications</h3>
+          <p className="text-text-muted text-sm mb-3">
             Choose which email notifications you&apos;d like to receive.
           </p>
           <div className="space-y-3">
