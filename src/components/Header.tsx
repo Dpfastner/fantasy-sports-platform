@@ -8,7 +8,6 @@ import { NotificationBell } from './NotificationBell'
 import { useLeagueContext } from '@/contexts/LeagueContext'
 import { LeagueDropdown } from './header/LeagueDropdown'
 import { TeamDropdown } from './header/TeamDropdown'
-import { Breadcrumbs } from './header/Breadcrumbs'
 
 interface HeaderProps {
   userName?: string | null
@@ -152,12 +151,6 @@ export function Header({ userName, userEmail, userId, showUserMenu = true, child
         </div>
       </div>
 
-      {/* Breadcrumbs row (league pages only, desktop only) */}
-      {leagueCtx && (
-        <div className="container mx-auto px-4 pb-2">
-          <Breadcrumbs />
-        </div>
-      )}
     </header>
   )
 }
