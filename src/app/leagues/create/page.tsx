@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { trackActivity } from '@/app/actions/activity'
 import { track } from '@vercel/analytics'
+import { SchoolPicker } from '@/components/SchoolPicker'
 
 interface Sport {
   id: string
@@ -33,6 +34,8 @@ export default function CreateLeaguePage() {
   const [seasons, setSeasons] = useState<Season[]>([])
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
+  const [favoriteSchoolId, setFavoriteSchoolId] = useState<string | null>(null)
+  const [hasExistingFavorite, setHasExistingFavorite] = useState(false)
   const [showPreview, setShowPreview] = useState(false)
   const [touched, setTouched] = useState<Record<string, boolean>>({})
   const router = useRouter()
@@ -68,6 +71,23 @@ export default function CreateLeaguePage() {
     }
     loadSports()
   }, [supabase])
+
+  // Check for existing sport favorite when sport changes
+  useEffect(() => {
+    async function checkFavorite() {
+      if (!sportId) return
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+      const { data: existing } = await supabase
+        .from('user_sport_favorites')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('sport_id', sportId)
+        .maybeSingle()
+      setHasExistingFavorite(!!existing)
+    }
+    checkFavorite()
+  }, [sportId, supabase])
 
   // Load seasons when sport changes - auto-select 2025 season
   useEffect(() => {
@@ -174,6 +194,34 @@ export default function CreateLeaguePage() {
         console.error('Failed to create team:', teamError)
       }
 
+      // Save sport favorite if provided
+      if (favoriteSchoolId && sportId) {
+        const { data: inserted } = await supabase
+          .from('user_sport_favorites')
+          .upsert(
+            { user_id: user.id, sport_id: sportId, school_id: favoriteSchoolId },
+            { onConflict: 'user_id,sport_id' }
+          )
+          .select('id')
+          .single()
+
+        if (inserted) {
+          // If first favorite, set as featured + sync favorite_school_id
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('featured_favorite_id')
+            .eq('id', user.id)
+            .single()
+
+          if (!profile?.featured_favorite_id) {
+            await supabase
+              .from('profiles')
+              .update({ featured_favorite_id: inserted.id, favorite_school_id: favoriteSchoolId })
+              .eq('id', user.id)
+          }
+        }
+      }
+
       // Track events
       trackActivity('league.created', league.id, { leagueName: name.trim(), maxTeams })
       track('league_created')
@@ -274,6 +322,16 @@ export default function CreateLeaguePage() {
                 As the commissioner, you'll need a team to participate in the draft
               </p>
             </div>
+
+            {!hasExistingFavorite && sportId && (
+              <div className="mb-6">
+                <SchoolPicker
+                  value={favoriteSchoolId}
+                  onChange={setFavoriteSchoolId}
+                  label={`Your Favorite ${sports.find(s => s.id === sportId)?.name || ''} Team`}
+                />
+              </div>
+            )}
 
             <div className="grid md:grid-cols-2 gap-6 mb-6">
               <div>

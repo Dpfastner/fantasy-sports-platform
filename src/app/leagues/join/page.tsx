@@ -4,11 +4,14 @@ import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { trackActivity } from '@/app/actions/activity'
+import { createClient } from '@/lib/supabase/client'
+import { SchoolPicker } from '@/components/SchoolPicker'
 
 interface LeaguePreview {
   id: string
   name: string
   sport: string
+  sportId: string
   season: string
   memberCount: number
   maxTeams: number
@@ -24,9 +27,12 @@ function JoinLeagueForm() {
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [leaguePreview, setLeaguePreview] = useState<LeaguePreview | null>(null)
+  const [favoriteSchoolId, setFavoriteSchoolId] = useState<string | null>(null)
+  const [hasExistingFavorite, setHasExistingFavorite] = useState(false)
   const [joinSuccess, setJoinSuccess] = useState<{ leagueId: string; leagueName: string } | null>(null)
   const router = useRouter()
   const searchParams = useSearchParams()
+  const supabase = createClient()
 
   // Pre-fill invite code from URL parameter and auto-lookup
   useEffect(() => {
@@ -74,6 +80,20 @@ function JoinLeagueForm() {
 
       trackActivity('invite_code.looked_up', data.league.id, { inviteCode: code.trim() })
       setLeaguePreview(data.league)
+
+      // Check if user already has a favorite for this sport
+      if (data.league.sportId) {
+        const { data: { user } } = await supabase.auth.getUser()
+        if (user) {
+          const { data: existing } = await supabase
+            .from('user_sport_favorites')
+            .select('id')
+            .eq('user_id', user.id)
+            .eq('sport_id', data.league.sportId)
+            .maybeSingle()
+          setHasExistingFavorite(!!existing)
+        }
+      }
     } catch {
       setError('Something went wrong. Please check your connection and try again.')
     } finally {
@@ -108,7 +128,11 @@ function JoinLeagueForm() {
       const res = await fetch('/api/leagues/join', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ inviteCode: inviteCode.trim(), teamName: teamName.trim() }),
+        body: JSON.stringify({
+          inviteCode: inviteCode.trim(),
+          teamName: teamName.trim(),
+          ...(favoriteSchoolId && { favoriteSchoolId }),
+        }),
       })
 
       const data = await res.json()
@@ -316,6 +340,16 @@ function JoinLeagueForm() {
                     3-25 characters. You can change this later.
                   </p>
                 </div>
+
+                {!hasExistingFavorite && (
+                  <div className="mb-6">
+                    <SchoolPicker
+                      value={favoriteSchoolId}
+                      onChange={setFavoriteSchoolId}
+                      label={`Your Favorite ${leaguePreview.sport} Team`}
+                    />
+                  </div>
+                )}
 
                 <div className="flex gap-4">
                   <button

@@ -144,13 +144,49 @@ export default function SettingsPage() {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) throw new Error('Not authenticated')
 
+      const profileUpdate: Record<string, unknown> = {
+        display_name: displayName,
+        timezone: timezone,
+        favorite_school_id: favoriteSchoolId,
+      }
+
+      // Upsert into user_sport_favorites for CFB if a school is selected
+      if (favoriteSchoolId) {
+        // Look up CFB sport_id
+        const { data: cfbSport } = await supabase
+          .from('sports')
+          .select('id')
+          .eq('slug', 'college_football')
+          .single()
+
+        if (cfbSport) {
+          const { data: upserted } = await supabase
+            .from('user_sport_favorites')
+            .upsert(
+              { user_id: user.id, sport_id: cfbSport.id, school_id: favoriteSchoolId },
+              { onConflict: 'user_id,sport_id' }
+            )
+            .select('id')
+            .single()
+
+          // If user has no featured favorite, set this one
+          if (upserted) {
+            const { data: currentProfile } = await supabase
+              .from('profiles')
+              .select('featured_favorite_id')
+              .eq('id', user.id)
+              .single()
+
+            if (!currentProfile?.featured_favorite_id) {
+              profileUpdate.featured_favorite_id = upserted.id
+            }
+          }
+        }
+      }
+
       const { error } = await supabase
         .from('profiles')
-        .update({
-          display_name: displayName,
-          timezone: timezone,
-          favorite_school_id: favoriteSchoolId,
-        })
+        .update(profileUpdate)
         .eq('id', user.id)
 
       if (error) throw error

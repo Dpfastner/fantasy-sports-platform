@@ -8,7 +8,7 @@ import { ShareButton } from '@/components/ShareButton'
 import { buildShareUrl } from '@/lib/share'
 import { SITE_URL } from '@/lib/og/constants'
 import { getUserBadges } from '@/lib/badges'
-import { Pennant } from '@/components/Pennant'
+import { ProfileBannerCollection } from '@/components/ProfileBannerCollection'
 import type { UserTier } from '@/types/database'
 
 interface LeagueRow {
@@ -32,7 +32,7 @@ export default async function ProfilePage() {
   const [profileResult, leaguesResult, badges] = await Promise.all([
     supabase
       .from('profiles')
-      .select('id, display_name, email, tier, referred_by, created_at, favorite_school_id')
+      .select('id, display_name, email, tier, referred_by, created_at, favorite_school_id, featured_favorite_id')
       .eq('id', user.id)
       .single(),
     supabase
@@ -47,16 +47,30 @@ export default async function ProfilePage() {
     redirect('/login')
   }
 
-  // Fetch favorite school data if set
-  let favoriteSchool: { name: string; logo_url: string | null; primary_color: string; secondary_color: string } | null = null
-  if (profile.favorite_school_id) {
-    const { data: schoolData } = await supabase
-      .from('schools')
-      .select('name, logo_url, primary_color, secondary_color')
-      .eq('id', profile.favorite_school_id)
-      .single()
-    favoriteSchool = schoolData
+  // Fetch all sport favorites for this user
+  const { data: sportFavorites } = await supabase
+    .from('user_sport_favorites')
+    .select('id, banner_color_scheme, sport_id, school_id, schools(id, name, logo_url, primary_color, secondary_color), sports(name)')
+    .eq('user_id', user.id)
+    .order('created_at')
+
+  interface SportFavoriteRow {
+    id: string
+    banner_color_scheme: string
+    sport_id: string
+    school_id: string
+    schools: { id: string; name: string; logo_url: string | null; primary_color: string; secondary_color: string } | null
+    sports: { name: string } | null
   }
+
+  const favorites = ((sportFavorites || []) as unknown as SportFavoriteRow[])
+    .filter(sf => sf.schools)
+    .map(sf => ({
+      id: sf.id,
+      sportName: sf.sports?.name || 'Unknown',
+      school: sf.schools!,
+      bannerColorScheme: (sf.banner_color_scheme || 'primary') as 'primary' | 'alternate',
+    }))
 
   const leagues = (leaguesResult.data || []) as unknown as LeagueRow[]
   const commissionerLeagues = leagues.filter(l => l.role === 'commissioner' || l.role === 'co_commissioner')
@@ -106,11 +120,12 @@ export default async function ProfilePage() {
               <p className="text-text-muted text-sm mt-1">Member since {joinDate}</p>
             </div>
             <div className="flex items-start gap-3">
-              {favoriteSchool && (
-                <div className="flex flex-col items-center">
-                  <span className="text-text-muted text-xs mb-1">Your Team</span>
-                  <Pennant school={favoriteSchool} variant="banner" size="md" />
-                </div>
+              {favorites.length > 0 && (
+                <ProfileBannerCollection
+                  favorites={favorites}
+                  featuredId={profile.featured_favorite_id}
+                  userId={user.id}
+                />
               )}
               <Link
                 href="/settings"
@@ -120,13 +135,13 @@ export default async function ProfilePage() {
               </Link>
             </div>
           </div>
-          {!favoriteSchool && (
+          {favorites.length === 0 && (
             <div className="mt-4 pt-4 border-t border-border">
               <Link
-                href="/settings"
+                href="/leagues/join"
                 className="text-brand-text hover:text-brand-text/80 text-sm"
               >
-                Add your favorite FBS team &rarr;
+                Join a league to collect your first team banner &rarr;
               </Link>
             </div>
           )}

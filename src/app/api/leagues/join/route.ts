@@ -29,6 +29,7 @@ export async function POST(request: Request) {
     if (!validation.success) return validation.response
 
     const { inviteCode, teamName } = validation.data
+    const favoriteSchoolId = rawBody.favoriteSchoolId as string | undefined
 
     // Use admin client to bypass RLS for invite code lookup
     const admin = createAdminClient()
@@ -85,6 +86,7 @@ export async function POST(request: Request) {
           id: league.id,
           name: league.name,
           sport: sportResult.data?.name || 'Unknown',
+          sportId: league.sport_id,
           season: seasonResult.data?.name || 'Unknown',
           memberCount: members.length,
           maxTeams: league.max_teams,
@@ -128,6 +130,34 @@ export async function POST(request: Request) {
 
     if (teamError) {
       return NextResponse.json({ error: 'Failed to create team' }, { status: 500 })
+    }
+
+    // Save sport favorite if provided
+    if (favoriteSchoolId) {
+      const { data: inserted } = await admin
+        .from('user_sport_favorites')
+        .upsert(
+          { user_id: user.id, sport_id: league.sport_id, school_id: favoriteSchoolId },
+          { onConflict: 'user_id,sport_id' }
+        )
+        .select('id')
+        .single()
+
+      // If user has no featured favorite yet, set this as featured + sync favorite_school_id
+      if (inserted) {
+        const { data: profile } = await admin
+          .from('profiles')
+          .select('featured_favorite_id')
+          .eq('id', user.id)
+          .single()
+
+        if (!profile?.featured_favorite_id) {
+          await admin
+            .from('profiles')
+            .update({ featured_favorite_id: inserted.id, favorite_school_id: favoriteSchoolId })
+            .eq('id', user.id)
+        }
+      }
     }
 
     logActivity({

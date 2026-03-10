@@ -13,6 +13,9 @@ interface PennantProps {
   school: PennantSchool
   variant?: 'pennant' | 'banner' | 'ribbon'
   size?: 'sm' | 'md' | 'lg'
+  colorScheme?: 'primary' | 'alternate'
+  onClick?: () => void
+  interactive?: boolean
 }
 
 const SIZES = {
@@ -22,30 +25,50 @@ const SIZES = {
 } as const
 
 /**
- * Pick the best bg/accent pairing. If primary_color is very light (e.g. white),
- * swap so the darker color becomes the background.
+ * Pick the best bg/accent pairing.
+ * - 'primary' (default): darker color as background
+ * - 'alternate': force swap — lighter/accent color as background
  */
-function resolveColors(school: PennantSchool) {
+function resolveColors(school: PennantSchool, colorScheme: 'primary' | 'alternate' = 'primary') {
   const primaryIsLight = isLightColor(school.primary_color)
-  const bgColor = primaryIsLight ? school.secondary_color : school.primary_color
-  const accentColor = primaryIsLight ? school.primary_color : school.secondary_color
+
+  let bgColor: string
+  let accentColor: string
+
+  if (colorScheme === 'alternate') {
+    // Force the opposite of the default
+    bgColor = primaryIsLight ? school.primary_color : school.secondary_color
+    accentColor = primaryIsLight ? school.secondary_color : school.primary_color
+  } else {
+    // Default: darker color as background
+    bgColor = primaryIsLight ? school.secondary_color : school.primary_color
+    accentColor = primaryIsLight ? school.primary_color : school.secondary_color
+  }
+
   const textColor = ensureContrast(bgColor, accentColor)
   return { bgColor, accentColor, textColor }
 }
 
-export function Pennant({ school, variant = 'pennant', size = 'md' }: PennantProps) {
-  const colors = resolveColors(school)
+export function Pennant({ school, variant = 'pennant', size = 'md', colorScheme = 'primary', onClick, interactive }: PennantProps) {
+  const colors = resolveColors(school, colorScheme)
   const s = SIZES[size]
+  const wrapperClass = interactive ? 'cursor-pointer hover:scale-105 transition-transform' : ''
 
-  if (variant === 'banner') {
-    return <BannerVariant school={school} colors={colors} size={size} />
+  const content = variant === 'banner'
+    ? <BannerVariant school={school} colors={colors} size={size} />
+    : variant === 'ribbon'
+    ? <RibbonVariant school={school} colors={colors} s={s} />
+    : <PennantVariant school={school} colors={colors} s={s} />
+
+  if (onClick) {
+    return (
+      <button type="button" onClick={onClick} className={`inline-block ${wrapperClass}`}>
+        {content}
+      </button>
+    )
   }
 
-  if (variant === 'ribbon') {
-    return <RibbonVariant school={school} colors={colors} s={s} />
-  }
-
-  return <PennantVariant school={school} colors={colors} s={s} />
+  return content
 }
 
 interface ResolvedColors {
@@ -309,7 +332,7 @@ function SchoolLogo({ school, size }: { school: PennantSchool; size: number }) {
     )
   }
 
-  const { bgColor, accentColor } = resolveColors(school)
+  const { bgColor, accentColor } = resolveColors(school, 'primary')
   return (
     <div
       className="rounded-full shrink-0 flex items-center justify-center font-bold"
