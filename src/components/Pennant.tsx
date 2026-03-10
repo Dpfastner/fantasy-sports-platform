@@ -12,13 +12,14 @@ interface PennantSchool {
 interface PennantProps {
   school: PennantSchool
   variant?: 'pennant' | 'banner' | 'ribbon'
-  size?: 'sm' | 'md' | 'lg'
+  size?: 'xs' | 'sm' | 'md' | 'lg'
   colorScheme?: 'primary' | 'alternate'
   onClick?: () => void
   interactive?: boolean
 }
 
 const SIZES = {
+  xs: { width: 80, height: 32, logo: 12, text: 'text-[9px]', gap: 'gap-0.5' },
   sm: { width: 120, height: 48, logo: 16, text: 'text-xs', gap: 'gap-1' },
   md: { width: 200, height: 64, logo: 24, text: 'text-sm', gap: 'gap-2' },
   lg: { width: 280, height: 80, logo: 32, text: 'text-base', gap: 'gap-2.5' },
@@ -114,8 +115,9 @@ function PennantVariant({ school, colors, s }: { school: PennantSchool; colors: 
 }
 
 /** Variant B — Vertical hanging banner with 3D fabric effect */
-function BannerVariant({ school, colors, size }: { school: PennantSchool; colors: ResolvedColors; size: 'sm' | 'md' | 'lg' }) {
+function BannerVariant({ school, colors, size }: { school: PennantSchool; colors: ResolvedColors; size: 'xs' | 'sm' | 'md' | 'lg' }) {
   const dims = {
+    xs: { width: 36, height: 64, logo: 14, text: 'text-[8px]', ripples: 2 },
     sm: { width: 56, height: 100, logo: 20, text: 'text-[10px]', ripples: 3 },
     md: { width: 72, height: 140, logo: 28, text: 'text-xs', ripples: 4 },
     lg: { width: 88, height: 180, logo: 36, text: 'text-sm', ripples: 5 },
