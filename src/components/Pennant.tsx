@@ -108,19 +108,36 @@ function BannerVariant({ school, textColor, size }: { school: PennantSchool; tex
             className="banner-ripple absolute left-0 right-0 pointer-events-none"
             style={{
               top: `${20 + (i * 60) / d.ripples}%`,
-              height: 1,
-              background: `linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.12) 20%, rgba(255,255,255,0.18) 50%, rgba(255,255,255,0.12) 80%, transparent 100%)`,
+              height: 2,
+              background: `linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.15) 15%, rgba(255,255,255,0.25) 50%, rgba(255,255,255,0.15) 85%, transparent 100%)`,
               animationDelay: `${1.2 + i * 0.3}s`,
             }}
           />
         ))}
-        {/* Vertical fold highlight — subtle center crease */}
+        {/* Center fold crease — prominent fabric crease */}
         <div
           className="absolute top-0 bottom-0 pointer-events-none banner-fold"
           style={{
-            left: '45%',
-            width: '12%',
-            background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.06) 50%, transparent)',
+            left: '40%',
+            width: '20%',
+            background: 'linear-gradient(90deg, rgba(0,0,0,0.1), rgba(255,255,255,0.18) 35%, rgba(255,255,255,0.28) 50%, rgba(255,255,255,0.18) 65%, rgba(0,0,0,0.1))',
+          }}
+        />
+        {/* Secondary fold lines for fabric depth */}
+        <div
+          className="absolute top-0 bottom-0 pointer-events-none"
+          style={{
+            left: '18%',
+            width: '6%',
+            background: 'linear-gradient(90deg, transparent, rgba(0,0,0,0.08) 50%, transparent)',
+          }}
+        />
+        <div
+          className="absolute top-0 bottom-0 pointer-events-none"
+          style={{
+            right: '18%',
+            width: '6%',
+            background: 'linear-gradient(90deg, transparent, rgba(0,0,0,0.08) 50%, transparent)',
           }}
         />
         {/* Content */}

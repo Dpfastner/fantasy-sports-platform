@@ -105,16 +105,16 @@ export default async function ProfilePage() {
               <p className="text-text-secondary">{profile.email}</p>
               <p className="text-text-muted text-sm mt-1">Member since {joinDate}</p>
             </div>
-            <div className="flex flex-col items-end gap-2">
-              <Link
-                href="/settings"
-                className="px-4 py-2 bg-surface-subtle hover:bg-surface-inset text-text-secondary hover:text-text-primary rounded-lg transition-colors text-sm"
-              >
-                Edit Profile
-              </Link>
+            <div className="flex items-start gap-3">
               {favoriteSchool && (
                 <Pennant school={favoriteSchool} variant="banner" size="md" />
               )}
+              <Link
+                href="/settings"
+                className="px-4 py-2 bg-surface-subtle hover:bg-surface-inset text-text-secondary hover:text-text-primary rounded-lg transition-colors text-sm shrink-0"
+              >
+                Edit Profile
+              </Link>
             </div>
           </div>
           {!favoriteSchool && (

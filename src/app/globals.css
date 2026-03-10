@@ -299,8 +299,10 @@ body {
 }
 
 @keyframes banner-settle {
-  0%, 100% { transform: scaleY(1); }
-  50% { transform: scaleY(1.015); }
+  0%, 100% { transform: scaleY(1) rotate(0deg) skewX(0deg); }
+  25% { transform: scaleY(1.025) rotate(0.8deg) skewX(0.5deg); }
+  50% { transform: scaleY(0.98) rotate(-0.5deg) skewX(-0.3deg); }
+  75% { transform: scaleY(1.02) rotate(0.4deg) skewX(0.2deg); }
 }
 
 @keyframes ribbon-flutter {
@@ -336,10 +338,10 @@ body {
   animation: banner-ripple 3.5s ease-in-out infinite;
 }
 
-/* Subtle vertical fold shimmer */
+/* Vertical fold shimmer — prominent center crease pulse */
 @keyframes banner-fold-shimmer {
-  0%, 100% { opacity: 0.3; }
-  50% { opacity: 0.8; }
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 1; }
 }
 
 .banner-fold {
