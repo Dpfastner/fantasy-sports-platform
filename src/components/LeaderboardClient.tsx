@@ -22,12 +22,13 @@ import {
 interface TeamData {
   id: string
   name: string
-  user_id: string
+  user_id: string | null
   total_points: number
   high_points_winnings: number
   primary_color: string
   secondary_color: string
   image_url: string | null
+  is_deleted: boolean
   profiles: { display_name: string | null; email: string } | null
 }
 
@@ -159,6 +160,7 @@ export default function LeaderboardClient({
               primary_color,
               secondary_color,
               image_url,
+              is_deleted,
               profiles!fantasy_teams_user_id_fkey(display_name, email)
             `)
             .eq('league_id', leagueId)
@@ -360,7 +362,7 @@ export default function LeaderboardClient({
                     <tr
                       key={team.id}
                       className={`border-t border-border-subtle transition-colors ${
-                        isCurrentUser ? 'bg-highlight-row' : 'hover:bg-surface-subtle'
+                        team.is_deleted ? 'opacity-50' : isCurrentUser ? 'bg-highlight-row' : 'hover:bg-surface-subtle'
                       }`}
                     >
                       <td className="px-2 md:px-4 py-2 text-text-secondary sticky left-0 z-10 text-sm" style={{ backgroundColor: stickyBgColor }}>
@@ -368,7 +370,11 @@ export default function LeaderboardClient({
                       </td>
                       <td className="px-2 md:px-4 py-2 sticky left-6 md:left-10 z-10" style={{ backgroundColor: stickyBgColor }}>
                         <div className="flex items-center gap-2">
-                          {team.image_url ? (
+                          {team.is_deleted ? (
+                            <div className="w-6 h-6 rounded flex items-center justify-center text-[10px] font-bold flex-shrink-0 bg-border text-text-muted">
+                              --
+                            </div>
+                          ) : team.image_url ? (
                             <img src={team.image_url} alt={team.name} className="w-6 h-6 object-contain rounded flex-shrink-0" />
                           ) : (
                             <div
@@ -379,10 +385,16 @@ export default function LeaderboardClient({
                             </div>
                           )}
                           <div className="min-w-0">
-                            <Link href={`/leagues/${leagueId}/team/${team.id}`} className="text-text-primary font-medium text-sm truncate max-w-[100px] md:max-w-none hover:underline block">{team.name}</Link>
-                            <Link href={`/profile/${team.user_id}`} className="text-text-muted text-[10px] truncate hidden sm:block hover:underline">
-                              {team.profiles?.display_name || team.profiles?.email?.split('@')[0]}
-                            </Link>
+                            {team.is_deleted ? (
+                              <span className="text-text-muted font-medium text-sm">Deleted Team</span>
+                            ) : (
+                              <>
+                                <Link href={`/leagues/${leagueId}/team/${team.id}`} className="text-text-primary font-medium text-sm truncate max-w-[100px] md:max-w-none hover:underline block">{team.name}</Link>
+                                <Link href={`/profile/${team.user_id}`} className="text-text-muted text-[10px] truncate hidden sm:block hover:underline">
+                                  {team.profiles?.display_name || team.profiles?.email?.split('@')[0]}
+                                </Link>
+                              </>
+                            )}
                           </div>
                         </div>
                       </td>
@@ -462,7 +474,9 @@ export default function LeaderboardClient({
                           <td className="px-2 md:px-4 py-2 text-text-secondary sticky left-0 z-10 text-sm" style={{ backgroundColor: hpStickyBgColor }}>{index + 1}</td>
                           <td className="px-2 md:px-4 py-2 sticky left-6 md:left-10 z-10" style={{ backgroundColor: hpStickyBgColor }}>
                             <div className="flex items-center gap-2">
-                              {team.image_url ? (
+                              {team.is_deleted ? (
+                                <div className="w-6 h-6 rounded flex items-center justify-center text-[10px] font-bold flex-shrink-0 bg-border text-text-muted">--</div>
+                              ) : team.image_url ? (
                                 <img src={team.image_url} alt={team.name} className="w-6 h-6 object-contain rounded flex-shrink-0" />
                               ) : (
                                 <div
@@ -473,10 +487,16 @@ export default function LeaderboardClient({
                                 </div>
                               )}
                               <div className="min-w-0">
-                                <Link href={`/leagues/${leagueId}/team/${team.id}`} className="text-text-primary font-medium text-sm truncate max-w-[100px] md:max-w-none hover:underline block">{team.name}</Link>
-                                <Link href={`/profile/${team.user_id}`} className="text-text-muted text-[10px] truncate hidden sm:block hover:underline">
-                                  {team.profiles?.display_name || team.profiles?.email?.split('@')[0]}
-                                </Link>
+                                {team.is_deleted ? (
+                                  <span className="text-text-muted font-medium text-sm">Deleted Team</span>
+                                ) : (
+                                  <>
+                                    <Link href={`/leagues/${leagueId}/team/${team.id}`} className="text-text-primary font-medium text-sm truncate max-w-[100px] md:max-w-none hover:underline block">{team.name}</Link>
+                                    <Link href={`/profile/${team.user_id}`} className="text-text-muted text-[10px] truncate hidden sm:block hover:underline">
+                                      {team.profiles?.display_name || team.profiles?.email?.split('@')[0]}
+                                    </Link>
+                                  </>
+                                )}
                               </div>
                             </div>
                           </td>
@@ -620,7 +640,7 @@ export default function LeaderboardClient({
                     <tr
                       key={team.id}
                       className={`border-t border-border-subtle transition-colors ${
-                        isCurrentUser ? 'bg-highlight-row' : 'hover:bg-surface-subtle'
+                        team.is_deleted ? 'opacity-50' : isCurrentUser ? 'bg-highlight-row' : 'hover:bg-surface-subtle'
                       }`}
                     >
                       <td
@@ -634,7 +654,11 @@ export default function LeaderboardClient({
                         style={{ backgroundColor: stickyBgColor }}
                       >
                         <div className="flex items-center gap-2 md:gap-3">
-                          {team.image_url ? (
+                          {team.is_deleted ? (
+                            <div className="w-6 h-6 md:w-8 md:h-8 rounded flex items-center justify-center text-[10px] md:text-xs font-bold flex-shrink-0 bg-border text-text-muted">
+                              --
+                            </div>
+                          ) : team.image_url ? (
                             <img
                               src={team.image_url}
                               alt={team.name}
@@ -652,10 +676,16 @@ export default function LeaderboardClient({
                             </div>
                           )}
                           <div className="min-w-0">
-                            <Link href={`/leagues/${leagueId}/team/${team.id}`} className="text-text-primary font-medium text-sm md:text-base truncate max-w-[100px] md:max-w-none hover:underline block">{team.name}</Link>
-                            <Link href={`/profile/${team.user_id}`} className="text-text-muted text-[10px] md:text-xs truncate hidden sm:block hover:underline">
-                              {team.profiles?.display_name || team.profiles?.email?.split('@')[0]}
-                            </Link>
+                            {team.is_deleted ? (
+                              <span className="text-text-muted font-medium text-sm md:text-base">Deleted Team</span>
+                            ) : (
+                              <>
+                                <Link href={`/leagues/${leagueId}/team/${team.id}`} className="text-text-primary font-medium text-sm md:text-base truncate max-w-[100px] md:max-w-none hover:underline block">{team.name}</Link>
+                                <Link href={`/profile/${team.user_id}`} className="text-text-muted text-[10px] md:text-xs truncate hidden sm:block hover:underline">
+                                  {team.profiles?.display_name || team.profiles?.email?.split('@')[0]}
+                                </Link>
+                              </>
+                            )}
                           </div>
                         </div>
                       </td>
@@ -727,7 +757,11 @@ export default function LeaderboardClient({
                       const team = teams.find(t => t.id === winner.teamId)
                       return (
                         <div key={winner.teamId} className="mb-2 last:mb-0">
-                          <Link href={`/leagues/${leagueId}/team/${team?.id}`} className="text-text-primary font-medium text-sm hover:underline block">{team?.name}</Link>
+                          {team?.is_deleted ? (
+                            <span className="text-text-muted font-medium text-sm block">Deleted Team</span>
+                          ) : (
+                            <Link href={`/leagues/${leagueId}/team/${team?.id}`} className="text-text-primary font-medium text-sm hover:underline block">{team?.name}</Link>
+                          )}
                           <div className="flex justify-between items-center">
                             <span className="text-text-secondary text-xs">{winner.points} pts</span>
                             <span className="text-warning-text text-sm font-semibold">${winner.amount}</span>

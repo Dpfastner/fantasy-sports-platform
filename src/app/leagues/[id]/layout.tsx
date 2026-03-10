@@ -43,6 +43,7 @@ export default async function LeagueLayout({ children, params }: LayoutProps) {
       .from('fantasy_teams')
       .select('id, name, user_id, primary_color, secondary_color, image_url')
       .eq('league_id', leagueId)
+      .eq('is_deleted', false)
       .order('name'),
   ])
 

@@ -66,6 +66,7 @@ export async function GET(
         user_id,
         total_points,
         high_points_winnings,
+        is_deleted,
         profiles!fantasy_teams_user_id_fkey(display_name, email)
       `)
       .eq('league_id', leagueId)

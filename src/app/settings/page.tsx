@@ -56,6 +56,7 @@ export default function SettingsPage() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [deleteConfirmText, setDeleteConfirmText] = useState('')
   const [deleting, setDeleting] = useState(false)
+  const [userLeagueTeams, setUserLeagueTeams] = useState<{ leagueName: string; teamName: string }[]>([])
 
   // Messages
   const [successMessage, setSuccessMessage] = useState('')
@@ -640,15 +641,42 @@ export default function SettingsPage() {
           {!showDeleteConfirm ? (
             <button
               type="button"
-              onClick={() => setShowDeleteConfirm(true)}
+              onClick={async () => {
+                setShowDeleteConfirm(true)
+                // Fetch user's leagues and teams for the warning
+                const { data: { user } } = await supabase.auth.getUser()
+                if (user) {
+                  const { data } = await supabase
+                    .from('fantasy_teams')
+                    .select('name, leagues(name)')
+                    .eq('user_id', user.id)
+                    .eq('is_deleted', false)
+                  if (data) {
+                    setUserLeagueTeams(data.map((t: Record<string, unknown>) => ({
+                      leagueName: (t.leagues as { name: string } | null)?.name || 'Unknown League',
+                      teamName: t.name as string,
+                    })))
+                  }
+                }
+              }}
               className="bg-danger/20 hover:bg-danger/30 text-danger-text font-semibold py-2 px-4 rounded-lg transition-colors"
             >
               Delete My Account
             </button>
           ) : (
             <div className="space-y-3">
+              {userLeagueTeams.length > 0 && (
+                <div className="bg-surface-subtle rounded-lg p-3">
+                  <p className="text-text-secondary text-sm mb-2">Your teams in active leagues:</p>
+                  <ul className="text-text-primary text-sm space-y-1">
+                    {userLeagueTeams.map((lt, i) => (
+                      <li key={i}>{lt.teamName} <span className="text-text-muted">in {lt.leagueName}</span></li>
+                    ))}
+                  </ul>
+                </div>
+              )}
               <p className="text-danger-text text-sm font-medium">
-                This will permanently delete your account, remove you from all leagues, and anonymize your data. Type <strong>DELETE</strong> to confirm.
+                This will permanently delete your account and anonymize your data. Your teams will be renamed to &quot;Deleted Team&quot; and frozen — league standings and history will be preserved. Type <strong>DELETE</strong> to confirm.
               </p>
               <input
                 type="text"

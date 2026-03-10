@@ -440,7 +440,7 @@ export interface Database {
         Row: {
           id: string
           league_id: string
-          user_id: string
+          user_id: string | null
           name: string
           primary_color: string
           secondary_color: string
@@ -451,6 +451,7 @@ export interface Database {
           add_drops_used: number
           trades_used: number
           second_owner_id: string | null
+          is_deleted: boolean
           created_at: string
           updated_at: string
         }
@@ -468,13 +469,14 @@ export interface Database {
           add_drops_used?: number
           trades_used?: number
           second_owner_id?: string | null
+          is_deleted?: boolean
           created_at?: string
           updated_at?: string
         }
         Update: {
           id?: string
           league_id?: string
-          user_id?: string
+          user_id?: string | null
           name?: string
           primary_color?: string
           secondary_color?: string
@@ -485,6 +487,7 @@ export interface Database {
           add_drops_used?: number
           trades_used?: number
           second_owner_id?: string | null
+          is_deleted?: boolean
           created_at?: string
           updated_at?: string
         }

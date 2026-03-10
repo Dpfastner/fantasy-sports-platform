@@ -88,7 +88,7 @@ interface LeagueData {
 interface TeamData {
   id: string
   name: string
-  user_id: string
+  user_id: string | null
   total_points: number
   high_points_winnings: number
   add_drops_used: number
@@ -96,6 +96,7 @@ interface TeamData {
   primary_color: string
   secondary_color: string
   image_url: string | null
+  is_deleted: boolean
   profiles: { display_name: string | null; email: string } | null
 }
 
@@ -170,7 +171,7 @@ export default async function LeaguePage({ params }: PageProps) {
     .from('fantasy_teams')
     .select(`
       id, name, user_id, total_points, high_points_winnings, add_drops_used, trades_used,
-      primary_color, secondary_color, image_url,
+      primary_color, secondary_color, image_url, is_deleted,
       profiles!fantasy_teams_user_id_fkey(display_name, email)
     `)
     .eq('league_id', id)
@@ -221,7 +222,9 @@ export default async function LeaguePage({ params }: PageProps) {
   if (teams) {
     for (const team of teams) {
       const profile = team.profiles as { display_name: string | null; email: string } | null
-      commissionerNames.set(team.user_id, profile?.display_name || profile?.email?.split('@')[0] || 'Commissioner')
+      if (team.user_id) {
+        commissionerNames.set(team.user_id, profile?.display_name || profile?.email?.split('@')[0] || 'Commissioner')
+      }
     }
   }
 

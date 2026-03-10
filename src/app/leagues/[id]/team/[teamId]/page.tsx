@@ -427,7 +427,7 @@ export default async function TeamViewPage({ params }: PageProps) {
   const tradePastDeadline = settings?.trade_deadline
     ? new Date(settings.trade_deadline + 'T23:59:59') < new Date()
     : false
-  const canTrade = !!(myTeam && myRoster && myRoster.length > 0 && tradesEnabled && !tradePastDeadline)
+  const canTrade = !!(myTeam && myRoster && myRoster.length > 0 && tradesEnabled && !tradePastDeadline && !team.is_deleted)
 
   const myRosterForModal = myRoster?.map(r => ({
     schoolId: r.school_id,
@@ -479,6 +479,15 @@ export default async function TeamViewPage({ params }: PageProps) {
             &larr; Back to {league.name}
           </Link>
         </div>
+
+        {/* Deleted team banner */}
+        {team.is_deleted && (
+          <div className="bg-warning/10 border border-warning/30 rounded-lg px-4 py-3 mb-4">
+            <p className="text-warning-text text-sm font-medium">
+              This team&apos;s owner has left the league. Their roster is frozen.
+            </p>
+          </div>
+        )}
 
         {/* Team Header */}
         <div

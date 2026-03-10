@@ -4,8 +4,9 @@ import { createAdminClient } from '@/lib/supabase/server'
 
 /**
  * Delete the authenticated user's account.
- * Anonymizes/deletes: profile, league memberships, activity log,
- * badges, tos_agreements, fantasy teams, and the auth user record.
+ * Soft-deletes fantasy teams (renames to "Deleted Team", freezes roster,
+ * cancels pending trades) so league history is preserved.
+ * Anonymizes profile, deletes league memberships and auth user record.
  */
 export async function DELETE() {
   const authResult = await requireAuth()
@@ -52,32 +53,45 @@ export async function DELETE() {
       }
     }
 
-    // 2. Delete user data from tables (cascade handles some, but be explicit)
-    // Order matters to respect foreign key constraints
+    // 2. Delete non-league user data
     // Note: tos_agreements is intentionally NOT deleted here.
     // Privacy Policy Section 5 requires 7-year retention of consent records.
     // The FK is ON DELETE SET NULL so records survive auth user deletion.
-    const tables = [
-      'activity_log',
-      'user_badges',
-      'notification_preferences',
-      'fantasy_team_weekly_points',
-    ]
-
-    for (const table of tables) {
+    for (const table of ['activity_log', 'user_badges', 'notification_preferences']) {
       await supabase.from(table).delete().eq('user_id', user.id)
     }
 
-    // Delete fantasy teams (need team IDs first for roster cleanup)
+    // 3. Soft-delete fantasy teams — preserve all league history
     const { data: teams } = await supabase
       .from('fantasy_teams')
       .select('id')
-      .eq('owner_id', user.id)
+      .eq('user_id', user.id)
 
     if (teams && teams.length > 0) {
       const teamIds = teams.map(t => t.id)
-      await supabase.from('rosters').delete().in('fantasy_team_id', teamIds)
-      await supabase.from('fantasy_teams').delete().eq('owner_id', user.id)
+
+      // Cancel any pending trades involving these teams
+      await supabase
+        .from('trades')
+        .update({ status: 'cancelled' })
+        .eq('status', 'pending')
+        .in('proposer_team_id', teamIds)
+      await supabase
+        .from('trades')
+        .update({ status: 'cancelled' })
+        .eq('status', 'pending')
+        .in('receiver_team_id', teamIds)
+
+      // Soft-delete: rename, unlink owner, mark deleted
+      await supabase
+        .from('fantasy_teams')
+        .update({
+          name: 'Deleted Team',
+          user_id: null,
+          is_deleted: true,
+          image_url: null,
+        })
+        .in('id', teamIds)
     }
 
     // Delete league memberships
