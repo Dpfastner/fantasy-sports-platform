@@ -72,12 +72,12 @@ function PennantVariant({ school, textColor, s }: { school: PennantSchool; textC
   )
 }
 
-/** Variant B — Vertical hanging banner */
+/** Variant B — Vertical hanging banner with fabric ripple effect */
 function BannerVariant({ school, textColor, size }: { school: PennantSchool; textColor: string; size: 'sm' | 'md' | 'lg' }) {
   const dims = {
-    sm: { width: 56, height: 100, logo: 20, text: 'text-[10px]' },
-    md: { width: 72, height: 140, logo: 28, text: 'text-xs' },
-    lg: { width: 88, height: 180, logo: 36, text: 'text-sm' },
+    sm: { width: 56, height: 100, logo: 20, text: 'text-[10px]', ripples: 3 },
+    md: { width: 72, height: 140, logo: 28, text: 'text-xs', ripples: 4 },
+    lg: { width: 88, height: 180, logo: 36, text: 'text-sm', ripples: 5 },
   }
   const d = dims[size]
 
@@ -94,14 +94,37 @@ function BannerVariant({ school, textColor, size }: { school: PennantSchool; tex
       />
       {/* Banner body — unfurls top-to-bottom on load */}
       <div
-        className="animate-banner-unfurl origin-top"
+        className="animate-banner-unfurl origin-top relative overflow-hidden"
         style={{
           width: d.width,
           height: d.height,
           backgroundColor: school.primary_color,
         }}
       >
-        <div className="flex flex-col items-center justify-center h-full px-1 py-2">
+        {/* Fabric ripple lines — staggered horizontal creases */}
+        {Array.from({ length: d.ripples }).map((_, i) => (
+          <div
+            key={i}
+            className="banner-ripple absolute left-0 right-0 pointer-events-none"
+            style={{
+              top: `${20 + (i * 60) / d.ripples}%`,
+              height: 1,
+              background: `linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.12) 20%, rgba(255,255,255,0.18) 50%, rgba(255,255,255,0.12) 80%, transparent 100%)`,
+              animationDelay: `${1.2 + i * 0.3}s`,
+            }}
+          />
+        ))}
+        {/* Vertical fold highlight — subtle center crease */}
+        <div
+          className="absolute top-0 bottom-0 pointer-events-none banner-fold"
+          style={{
+            left: '45%',
+            width: '12%',
+            background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.06) 50%, transparent)',
+          }}
+        />
+        {/* Content */}
+        <div className="relative z-10 flex flex-col items-center justify-center h-full px-1 py-2">
           <SchoolLogo school={school} size={d.logo} />
           <span
             className={`${d.text} font-bold text-center mt-1 leading-tight`}

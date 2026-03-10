@@ -113,7 +113,7 @@ export default async function ProfilePage() {
                 Edit Profile
               </Link>
               {favoriteSchool && (
-                <Pennant school={favoriteSchool} size="md" />
+                <Pennant school={favoriteSchool} variant="banner" size="md" />
               )}
             </div>
           </div>
@@ -128,28 +128,6 @@ export default async function ProfilePage() {
             </div>
           )}
         </div>
-
-        {/* Pennant Variants Preview — pick your favorite! */}
-        {favoriteSchool && (
-          <div className="bg-surface rounded-lg p-6 mb-6">
-            <h2 className="text-xl font-semibold text-text-primary mb-1">Your Pennant</h2>
-            <p className="text-text-muted text-sm mb-4">Three styles — which is your favorite?</p>
-            <div className="flex flex-wrap gap-8 items-start">
-              <div className="flex flex-col items-center gap-2">
-                <Pennant school={favoriteSchool} variant="pennant" size="md" />
-                <span className="text-text-muted text-xs">Classic Pennant</span>
-              </div>
-              <div className="flex flex-col items-center gap-2">
-                <Pennant school={favoriteSchool} variant="banner" size="md" />
-                <span className="text-text-muted text-xs">Hanging Banner</span>
-              </div>
-              <div className="flex flex-col items-center gap-2">
-                <Pennant school={favoriteSchool} variant="ribbon" size="md" />
-                <span className="text-text-muted text-xs">Ribbon</span>
-              </div>
-            </div>
-          </div>
-        )}
 
         {/* Trophy Case */}
         {badges.length > 0 && (

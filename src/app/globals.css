@@ -322,6 +322,30 @@ body {
   animation: ribbon-flutter 4s ease-in-out infinite;
 }
 
+/* Banner fabric ripple — horizontal crease lines that wave down */
+@keyframes banner-ripple {
+  0% { opacity: 0; transform: scaleX(0.3) translateY(0); }
+  20% { opacity: 1; transform: scaleX(1) translateY(0); }
+  50% { opacity: 0.7; transform: scaleX(1.05) translateY(2px); }
+  80% { opacity: 1; transform: scaleX(0.95) translateY(-1px); }
+  100% { opacity: 0; transform: scaleX(0.3) translateY(0); }
+}
+
+.banner-ripple {
+  opacity: 0;
+  animation: banner-ripple 3.5s ease-in-out infinite;
+}
+
+/* Subtle vertical fold shimmer */
+@keyframes banner-fold-shimmer {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 0.8; }
+}
+
+.banner-fold {
+  animation: banner-fold-shimmer 4s ease-in-out 1.2s infinite;
+}
+
 /* ============================================================
    Brand Typography (from Rivyls Brand Guidelines v1, Section 7)
    Montserrat for headings, Inter for body
