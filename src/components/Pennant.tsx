@@ -193,19 +193,17 @@ function BannerVariant({ school, colors, size }: { school: PennantSchool; colors
           )
         })}
 
-        {/* Center fold crease — 3D ridge with shadow/highlight */}
+        {/* Center fold crease — subtle 3D ridge */}
         <div
           className="absolute top-0 bottom-0 pointer-events-none banner-fold"
           style={{
-            left: '44%',
-            width: '14%',
+            left: '46%',
+            width: '8%',
             background: `linear-gradient(90deg,
-              rgba(0,0,0,0.12),
-              rgba(0,0,0,0.04) 30%,
-              rgba(255,255,255,0.2) 48%,
-              rgba(255,255,255,0.08) 52%,
-              rgba(0,0,0,0.04) 70%,
-              rgba(0,0,0,0.1))`,
+              rgba(0,0,0,0.04),
+              rgba(255,255,255,0.08) 48%,
+              rgba(255,255,255,0.03) 52%,
+              rgba(0,0,0,0.03))`,
           }}
         />
 

@@ -107,7 +107,10 @@ export default async function ProfilePage() {
             </div>
             <div className="flex items-start gap-3">
               {favoriteSchool && (
-                <Pennant school={favoriteSchool} variant="banner" size="md" />
+                <div className="flex flex-col items-center">
+                  <span className="text-text-muted text-xs mb-1">Your Team</span>
+                  <Pennant school={favoriteSchool} variant="banner" size="md" />
+                </div>
               )}
               <Link
                 href="/settings"
