@@ -1,6 +1,6 @@
 'use client'
 
-import { ensureContrast } from '@/lib/color-utils'
+import { ensureContrast, isLightColor } from '@/lib/color-utils'
 
 interface PennantSchool {
   name: string
@@ -21,23 +21,41 @@ const SIZES = {
   lg: { width: 280, height: 80, logo: 32, text: 'text-base', gap: 'gap-2.5' },
 } as const
 
+/**
+ * Pick the best bg/accent pairing. If primary_color is very light (e.g. white),
+ * swap so the darker color becomes the background.
+ */
+function resolveColors(school: PennantSchool) {
+  const primaryIsLight = isLightColor(school.primary_color)
+  const bgColor = primaryIsLight ? school.secondary_color : school.primary_color
+  const accentColor = primaryIsLight ? school.primary_color : school.secondary_color
+  const textColor = ensureContrast(bgColor, accentColor)
+  return { bgColor, accentColor, textColor }
+}
+
 export function Pennant({ school, variant = 'pennant', size = 'md' }: PennantProps) {
-  const textColor = ensureContrast(school.primary_color, school.secondary_color)
+  const colors = resolveColors(school)
   const s = SIZES[size]
 
   if (variant === 'banner') {
-    return <BannerVariant school={school} textColor={textColor} size={size} />
+    return <BannerVariant school={school} colors={colors} size={size} />
   }
 
   if (variant === 'ribbon') {
-    return <RibbonVariant school={school} textColor={textColor} s={s} />
+    return <RibbonVariant school={school} colors={colors} s={s} />
   }
 
-  return <PennantVariant school={school} textColor={textColor} s={s} />
+  return <PennantVariant school={school} colors={colors} s={s} />
+}
+
+interface ResolvedColors {
+  bgColor: string
+  accentColor: string
+  textColor: string
 }
 
 /** Variant A — Classic horizontal triangle pennant */
-function PennantVariant({ school, textColor, s }: { school: PennantSchool; textColor: string; s: typeof SIZES[keyof typeof SIZES] }) {
+function PennantVariant({ school, colors, s }: { school: PennantSchool; colors: ResolvedColors; s: typeof SIZES[keyof typeof SIZES] }) {
   return (
     <div className="inline-flex items-start">
       {/* Pole */}
@@ -45,7 +63,7 @@ function PennantVariant({ school, textColor, s }: { school: PennantSchool; textC
         className="w-1 rounded-full shrink-0"
         style={{
           height: s.height + 8,
-          backgroundColor: school.secondary_color,
+          backgroundColor: colors.accentColor,
         }}
       />
       {/* Pennant body */}
@@ -54,7 +72,7 @@ function PennantVariant({ school, textColor, s }: { school: PennantSchool; textC
         style={{
           width: s.width,
           height: s.height,
-          backgroundColor: school.primary_color,
+          backgroundColor: colors.bgColor,
           clipPath: 'polygon(0 0, 100% 0, 85% 50%, 100% 100%, 0 100%)',
         }}
       >
@@ -62,7 +80,7 @@ function PennantVariant({ school, textColor, s }: { school: PennantSchool; textC
           <SchoolLogo school={school} size={s.logo} />
           <span
             className={`${s.text} font-bold truncate`}
-            style={{ color: textColor }}
+            style={{ color: colors.textColor }}
           >
             {school.name}
           </span>
@@ -72,8 +90,8 @@ function PennantVariant({ school, textColor, s }: { school: PennantSchool; textC
   )
 }
 
-/** Variant B — Vertical hanging banner with fabric ripple effect */
-function BannerVariant({ school, textColor, size }: { school: PennantSchool; textColor: string; size: 'sm' | 'md' | 'lg' }) {
+/** Variant B — Vertical hanging banner with 3D fabric effect */
+function BannerVariant({ school, colors, size }: { school: PennantSchool; colors: ResolvedColors; size: 'sm' | 'md' | 'lg' }) {
   const dims = {
     sm: { width: 56, height: 100, logo: 20, text: 'text-[10px]', ripples: 3 },
     md: { width: 72, height: 140, logo: 28, text: 'text-xs', ripples: 4 },
@@ -82,73 +100,150 @@ function BannerVariant({ school, textColor, size }: { school: PennantSchool; tex
   const d = dims[size]
 
   return (
-    <div className="inline-flex flex-col items-center">
-      {/* Pole/rod */}
+    <div className="inline-flex flex-col items-center" style={{ perspective: 400 }}>
+      {/* Pole/rod — 3D cylinder look */}
       <div
-        className="rounded-full"
+        className="rounded-full relative"
         style={{
           width: d.width + 8,
-          height: 4,
-          backgroundColor: school.secondary_color,
+          height: 6,
+          background: `linear-gradient(180deg, ${colors.accentColor}, ${colors.accentColor}88 60%, ${colors.accentColor}44)`,
+          boxShadow: `0 2px 4px rgba(0,0,0,0.3)`,
         }}
       />
-      {/* Banner body — unfurls top-to-bottom on load */}
+      {/* Banner body — 3D fabric with perspective */}
       <div
         className="animate-banner-unfurl origin-top relative overflow-hidden"
         style={{
           width: d.width,
           height: d.height,
-          backgroundColor: school.primary_color,
+          transformStyle: 'preserve-3d',
         }}
       >
-        {/* Fabric ripple lines — staggered horizontal creases */}
-        {Array.from({ length: d.ripples }).map((_, i) => (
-          <div
-            key={i}
-            className="banner-ripple absolute left-0 right-0 pointer-events-none"
-            style={{
-              top: `${20 + (i * 60) / d.ripples}%`,
-              height: 2,
-              background: `linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.15) 15%, rgba(255,255,255,0.25) 50%, rgba(255,255,255,0.15) 85%, transparent 100%)`,
-              animationDelay: `${1.2 + i * 0.3}s`,
-            }}
-          />
-        ))}
-        {/* Center fold crease — prominent fabric crease */}
+        {/* Base fabric color */}
+        <div
+          className="absolute inset-0"
+          style={{ backgroundColor: colors.bgColor }}
+        />
+
+        {/* 3D cylindrical shading — left-to-right lighting gradient */}
+        <div
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            background: `linear-gradient(90deg,
+              rgba(0,0,0,0.18) 0%,
+              rgba(0,0,0,0.06) 15%,
+              rgba(255,255,255,0.08) 30%,
+              rgba(255,255,255,0.12) 45%,
+              rgba(255,255,255,0.04) 55%,
+              rgba(0,0,0,0.04) 70%,
+              rgba(0,0,0,0.14) 100%)`,
+          }}
+        />
+
+        {/* 3D fabric wave — vertical undulation overlay */}
+        <div
+          className="absolute inset-0 pointer-events-none banner-fabric-wave"
+          style={{
+            background: `repeating-linear-gradient(90deg,
+              rgba(0,0,0,0.06) 0px,
+              transparent 4px,
+              rgba(255,255,255,0.06) 8px,
+              transparent 12px,
+              rgba(0,0,0,0.04) 16px)`,
+          }}
+        />
+
+        {/* Horizontal fabric folds — 3D creases with shadow/highlight pairs */}
+        {Array.from({ length: d.ripples }).map((_, i) => {
+          const yPos = 20 + (i * 60) / d.ripples
+          return (
+            <div key={i} className="banner-ripple absolute left-0 right-0 pointer-events-none" style={{ animationDelay: `${1.2 + i * 0.3}s` }}>
+              {/* Shadow above crease */}
+              <div
+                className="absolute left-0 right-0"
+                style={{
+                  top: `${yPos - 1.5}%`,
+                  height: 3,
+                  background: `linear-gradient(90deg,
+                    transparent 5%,
+                    rgba(0,0,0,0.12) 20%,
+                    rgba(0,0,0,0.18) 50%,
+                    rgba(0,0,0,0.12) 80%,
+                    transparent 95%)`,
+                  position: 'absolute',
+                }}
+              />
+              {/* Highlight below crease */}
+              <div
+                className="absolute left-0 right-0"
+                style={{
+                  top: `${yPos + 0.5}%`,
+                  height: 2,
+                  background: `linear-gradient(90deg,
+                    transparent 5%,
+                    rgba(255,255,255,0.15) 20%,
+                    rgba(255,255,255,0.25) 50%,
+                    rgba(255,255,255,0.15) 80%,
+                    transparent 95%)`,
+                  position: 'absolute',
+                }}
+              />
+            </div>
+          )
+        })}
+
+        {/* Center fold crease — 3D ridge with shadow/highlight */}
         <div
           className="absolute top-0 bottom-0 pointer-events-none banner-fold"
           style={{
-            left: '40%',
-            width: '20%',
-            background: 'linear-gradient(90deg, rgba(0,0,0,0.1), rgba(255,255,255,0.18) 35%, rgba(255,255,255,0.28) 50%, rgba(255,255,255,0.18) 65%, rgba(0,0,0,0.1))',
+            left: '44%',
+            width: '14%',
+            background: `linear-gradient(90deg,
+              rgba(0,0,0,0.12),
+              rgba(0,0,0,0.04) 30%,
+              rgba(255,255,255,0.2) 48%,
+              rgba(255,255,255,0.08) 52%,
+              rgba(0,0,0,0.04) 70%,
+              rgba(0,0,0,0.1))`,
           }}
         />
-        {/* Secondary fold lines for fabric depth */}
+
+        {/* Edge shadows for 3D depth */}
         <div
-          className="absolute top-0 bottom-0 pointer-events-none"
+          className="absolute top-0 bottom-0 left-0 pointer-events-none"
           style={{
-            left: '18%',
-            width: '6%',
-            background: 'linear-gradient(90deg, transparent, rgba(0,0,0,0.08) 50%, transparent)',
+            width: '8%',
+            background: 'linear-gradient(90deg, rgba(0,0,0,0.2), transparent)',
           }}
         />
         <div
-          className="absolute top-0 bottom-0 pointer-events-none"
+          className="absolute top-0 bottom-0 right-0 pointer-events-none"
           style={{
-            right: '18%',
-            width: '6%',
-            background: 'linear-gradient(90deg, transparent, rgba(0,0,0,0.08) 50%, transparent)',
+            width: '8%',
+            background: 'linear-gradient(270deg, rgba(0,0,0,0.15), transparent)',
           }}
         />
+
+        {/* Top shadow — fabric drapes from rod */}
+        <div
+          className="absolute top-0 left-0 right-0 pointer-events-none"
+          style={{
+            height: '12%',
+            background: 'linear-gradient(180deg, rgba(0,0,0,0.15), transparent)',
+          }}
+        />
+
         {/* Content */}
         <div className="relative z-10 flex flex-col items-center justify-center h-full px-1 py-2">
           <SchoolLogo school={school} size={d.logo} />
           <span
             className={`${d.text} font-bold text-center mt-1 leading-tight`}
             style={{
-              color: textColor,
+              color: colors.textColor,
               writingMode: d.width < 72 ? 'vertical-rl' : undefined,
               textOrientation: d.width < 72 ? 'mixed' : undefined,
+              textShadow: '0 1px 2px rgba(0,0,0,0.3)',
             }}
           >
             {school.name}
@@ -160,7 +255,7 @@ function BannerVariant({ school, textColor, size }: { school: PennantSchool; tex
 }
 
 /** Variant C — Horizontal ribbon/sash */
-function RibbonVariant({ school, textColor, s }: { school: PennantSchool; textColor: string; s: typeof SIZES[keyof typeof SIZES] }) {
+function RibbonVariant({ school, colors, s }: { school: PennantSchool; colors: ResolvedColors; s: typeof SIZES[keyof typeof SIZES] }) {
   return (
     <div
       className="animate-ribbon-flutter inline-flex items-center relative"
@@ -173,7 +268,7 @@ function RibbonVariant({ school, textColor, s }: { school: PennantSchool; textCo
       <div
         className="absolute inset-0 rounded-sm"
         style={{
-          backgroundColor: school.primary_color,
+          backgroundColor: colors.bgColor,
           clipPath: 'polygon(4% 0%, 96% 0%, 100% 50%, 96% 100%, 4% 100%, 0% 50%)',
         }}
       />
@@ -182,7 +277,7 @@ function RibbonVariant({ school, textColor, s }: { school: PennantSchool; textCo
         <SchoolLogo school={school} size={s.logo} />
         <span
           className={`${s.text} font-bold truncate`}
-          style={{ color: textColor }}
+          style={{ color: colors.textColor }}
         >
           {school.name}
         </span>
@@ -191,7 +286,7 @@ function RibbonVariant({ school, textColor, s }: { school: PennantSchool; textCo
       <div
         className="absolute inset-0 rounded-sm"
         style={{
-          border: `2px solid ${school.secondary_color}`,
+          border: `2px solid ${colors.accentColor}`,
           clipPath: 'polygon(4% 0%, 96% 0%, 100% 50%, 96% 100%, 4% 100%, 0% 50%)',
           opacity: 0.6,
         }}
@@ -207,18 +302,24 @@ function SchoolLogo({ school, size }: { school: PennantSchool; size: number }) {
         src={school.logo_url}
         alt={school.name}
         className="object-contain shrink-0"
-        style={{ width: size, height: size }}
+        style={{
+          width: size,
+          height: size,
+          filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.3))',
+        }}
       />
     )
   }
 
+  const { bgColor, accentColor } = resolveColors(school)
   return (
     <div
-      className="rounded-full shrink-0 flex items-center justify-center font-bold text-white"
+      className="rounded-full shrink-0 flex items-center justify-center font-bold"
       style={{
         width: size,
         height: size,
-        backgroundColor: school.secondary_color,
+        backgroundColor: accentColor,
+        color: ensureContrast(accentColor, bgColor),
         fontSize: size * 0.4,
       }}
     >

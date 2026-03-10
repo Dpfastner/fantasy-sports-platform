@@ -68,3 +68,14 @@ export function ensureContrast(bgColor: string, textColor: string): string {
   if (contrastRatio(bgColor, textColor) >= 4.5) return textColor
   return getContrastColor(bgColor)
 }
+
+/**
+ * Returns true if a color is very light (luminance > 0.7).
+ * Used to detect when a "primary" color like white would be a poor
+ * background choice for a banner/pennant.
+ */
+export function isLightColor(hex: string): boolean {
+  const rgb = hexToRgb(hex)
+  if (!rgb) return false
+  return relativeLuminance(rgb.r, rgb.g, rgb.b) > 0.7
+}

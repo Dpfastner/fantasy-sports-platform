@@ -299,10 +299,11 @@ body {
 }
 
 @keyframes banner-settle {
-  0%, 100% { transform: scaleY(1) rotate(0deg) skewX(0deg); }
-  25% { transform: scaleY(1.025) rotate(0.8deg) skewX(0.5deg); }
-  50% { transform: scaleY(0.98) rotate(-0.5deg) skewX(-0.3deg); }
-  75% { transform: scaleY(1.02) rotate(0.4deg) skewX(0.2deg); }
+  0%, 100% { transform: perspective(400px) rotateY(0deg) rotateX(0deg) scaleY(1); }
+  20% { transform: perspective(400px) rotateY(2deg) rotateX(0.5deg) scaleY(1.02); }
+  40% { transform: perspective(400px) rotateY(-1.5deg) rotateX(-0.3deg) scaleY(0.99); }
+  60% { transform: perspective(400px) rotateY(1deg) rotateX(0.3deg) scaleY(1.01); }
+  80% { transform: perspective(400px) rotateY(-0.8deg) rotateX(-0.2deg) scaleY(1); }
 }
 
 @keyframes ribbon-flutter {
@@ -324,28 +325,39 @@ body {
   animation: ribbon-flutter 4s ease-in-out infinite;
 }
 
-/* Banner fabric ripple — horizontal crease lines that wave down */
+/* Banner fabric ripple — 3D crease lines that undulate */
 @keyframes banner-ripple {
-  0% { opacity: 0; transform: scaleX(0.3) translateY(0); }
-  20% { opacity: 1; transform: scaleX(1) translateY(0); }
-  50% { opacity: 0.7; transform: scaleX(1.05) translateY(2px); }
-  80% { opacity: 1; transform: scaleX(0.95) translateY(-1px); }
-  100% { opacity: 0; transform: scaleX(0.3) translateY(0); }
+  0% { opacity: 0; transform: scaleX(0.5) translateY(0); }
+  15% { opacity: 1; transform: scaleX(1) translateY(0); }
+  35% { opacity: 0.9; transform: scaleX(1.02) translateY(1.5px); }
+  55% { opacity: 0.7; transform: scaleX(0.98) translateY(-1px); }
+  75% { opacity: 0.9; transform: scaleX(1.01) translateY(0.5px); }
+  100% { opacity: 0; transform: scaleX(0.5) translateY(0); }
 }
 
 .banner-ripple {
   opacity: 0;
-  animation: banner-ripple 3.5s ease-in-out infinite;
+  animation: banner-ripple 4s ease-in-out infinite;
 }
 
-/* Vertical fold shimmer — prominent center crease pulse */
+/* Vertical fold shimmer — 3D center crease pulse */
 @keyframes banner-fold-shimmer {
-  0%, 100% { opacity: 0.5; }
+  0%, 100% { opacity: 0.6; }
   50% { opacity: 1; }
 }
 
 .banner-fold {
-  animation: banner-fold-shimmer 4s ease-in-out 1.2s infinite;
+  animation: banner-fold-shimmer 3.5s ease-in-out 1.2s infinite;
+}
+
+/* 3D vertical fabric undulation */
+@keyframes banner-fabric-wave {
+  0%, 100% { opacity: 0.4; transform: translateX(0); }
+  50% { opacity: 0.7; transform: translateX(1px); }
+}
+
+.banner-fabric-wave {
+  animation: banner-fabric-wave 3s ease-in-out 1.5s infinite;
 }
 
 /* ============================================================

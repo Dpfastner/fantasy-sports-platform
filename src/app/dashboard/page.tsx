@@ -5,6 +5,7 @@ import { Header } from '@/components/Header'
 import { FanZoneWidget } from '@/components/FanZoneWidget'
 import { getCurrentWeek } from '@/lib/week'
 import { getRival } from '@/lib/rivalries'
+import { isLightColor } from '@/lib/color-utils'
 
 export default async function DashboardPage() {
   const supabase = await createClient()
@@ -113,23 +114,24 @@ export default async function DashboardPage() {
   // Fetch fan distribution (all users with a favorite school)
   const { data: fanProfiles } = await supabase
     .from('profiles')
-    .select('favorite_school_id, schools(name, primary_color, logo_url)')
+    .select('favorite_school_id, schools(name, primary_color, secondary_color, logo_url)')
     .not('favorite_school_id', 'is', null)
 
   if (fanProfiles && fanProfiles.length > 0) {
-    // Aggregate by school
+    // Aggregate by school — use secondary_color when primary is too light (e.g. white)
     const counts = new Map<string, { name: string; count: number; color: string; logoUrl: string | null }>()
     for (const fp of fanProfiles) {
-      const school = fp.schools as unknown as { name: string; primary_color: string; logo_url: string | null } | null
+      const school = fp.schools as unknown as { name: string; primary_color: string; secondary_color: string; logo_url: string | null } | null
       if (!school || !fp.favorite_school_id) continue
       const existing = counts.get(fp.favorite_school_id)
       if (existing) {
         existing.count++
       } else {
+        const chartColor = isLightColor(school.primary_color) ? school.secondary_color : school.primary_color
         counts.set(fp.favorite_school_id, {
           name: school.name,
           count: 1,
-          color: school.primary_color,
+          color: chartColor,
           logoUrl: school.logo_url,
         })
       }
