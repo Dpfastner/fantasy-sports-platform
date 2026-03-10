@@ -55,8 +55,11 @@ export async function updateSession(request: NextRequest) {
   )
 
   if (isProtectedPath && !user) {
+    const originalUrl = request.nextUrl.pathname + request.nextUrl.search
     const url = request.nextUrl.clone()
     url.pathname = '/login'
+    url.search = ''
+    url.searchParams.set('next', originalUrl)
     return NextResponse.redirect(url)
   }
 
@@ -74,8 +77,17 @@ export async function updateSession(request: NextRequest) {
   )
 
   if (isAuthPath && user) {
+    const next = request.nextUrl.searchParams.get('next')
     const url = request.nextUrl.clone()
-    url.pathname = '/dashboard'
+    // Only honor relative paths to prevent open redirect
+    if (next && next.startsWith('/')) {
+      const parsed = new URL(next, request.nextUrl.origin)
+      url.pathname = parsed.pathname
+      url.search = parsed.search
+    } else {
+      url.pathname = '/dashboard'
+      url.search = ''
+    }
     return NextResponse.redirect(url)
   }
 
