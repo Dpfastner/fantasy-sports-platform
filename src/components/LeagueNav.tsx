@@ -31,7 +31,7 @@ export function LeagueNav({ leagueId }: LeagueNavProps) {
 
   return (
     <nav className="bg-surface/80 backdrop-blur-md border-b border-border sticky top-0 z-30">
-      <div className="container mx-auto px-4">
+      <div className="container mx-auto px-4 relative">
         <div className="flex gap-1 overflow-x-auto scrollbar-hide">
           {items.map(({ label, path }) => {
             const href = `${basePath}${path}`
@@ -67,6 +67,8 @@ export function LeagueNav({ leagueId }: LeagueNavProps) {
             )
           })}
         </div>
+        {/* Scroll affordance — right fade gradient on mobile */}
+        <div className="absolute right-0 top-0 bottom-0 w-8 pointer-events-none bg-gradient-to-l from-surface/80 to-transparent md:hidden" />
       </div>
     </nav>
   )

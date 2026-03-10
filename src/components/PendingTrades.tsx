@@ -283,7 +283,7 @@ export default function PendingTrades({
                         }
                       }}
                       disabled={actionLoading === trade.id || (needsDrops && showingDropPicker && dropIds.size !== dropsNeeded)}
-                      className="px-2.5 py-1 bg-success hover:bg-success/80 text-white rounded text-xs font-medium disabled:opacity-50 transition-colors"
+                      className="px-3 py-2 bg-success hover:bg-success/80 text-white rounded text-xs font-medium disabled:opacity-50 transition-colors"
                     >
                       {actionLoading === trade.id ? '...' : 'Accept'}
                     </button>
@@ -294,14 +294,14 @@ export default function PendingTrades({
                         }
                       }}
                       disabled={actionLoading === trade.id}
-                      className="px-2.5 py-1 bg-danger hover:bg-danger/80 text-white rounded text-xs font-medium disabled:opacity-50 transition-colors"
+                      className="px-3 py-2 bg-danger hover:bg-danger/80 text-white rounded text-xs font-medium disabled:opacity-50 transition-colors"
                     >
                       Reject
                     </button>
                     <button
                       onClick={() => handleCounter(trade)}
                       disabled={actionLoading === trade.id || counterLoading}
-                      className="px-2.5 py-1 bg-surface hover:bg-surface-subtle text-text-primary border border-border rounded text-xs font-medium disabled:opacity-50 transition-colors"
+                      className="px-3 py-2 bg-surface hover:bg-surface-subtle text-text-primary border border-border rounded text-xs font-medium disabled:opacity-50 transition-colors"
                     >
                       {counterLoading ? '...' : 'Counter'}
                     </button>
@@ -310,7 +310,7 @@ export default function PendingTrades({
                   <button
                     onClick={() => handleAction(trade.id, 'cancel')}
                     disabled={actionLoading === trade.id}
-                    className="px-2.5 py-1 bg-surface hover:bg-surface-subtle text-text-primary border border-border rounded text-xs font-medium disabled:opacity-50 transition-colors"
+                    className="px-3 py-2 bg-surface hover:bg-surface-subtle text-text-primary border border-border rounded text-xs font-medium disabled:opacity-50 transition-colors"
                   >
                     {actionLoading === trade.id ? '...' : 'Cancel'}
                   </button>

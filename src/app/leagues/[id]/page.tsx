@@ -583,8 +583,8 @@ export default async function LeaguePage({ params }: PageProps) {
             )}
           </div>
 
-          {/* Sidebar - 1 column */}
-          <div className="space-y-4">
+          {/* Sidebar - 1 column, appears first on mobile so "Your Team" is visible without scrolling */}
+          <div className="space-y-4 order-first lg:order-none">
             {/* Your Team Summary - Compact */}
             {userTeam && (
               <div className="bg-surface rounded-lg p-4">
@@ -625,16 +625,16 @@ export default async function LeaguePage({ params }: PageProps) {
                 <div className="grid grid-cols-2 gap-2 text-center">
                   <div className="bg-surface-inset rounded p-2">
                     <p className="text-lg font-bold text-text-primary">{userTeam.total_points}</p>
-                    <p className="text-text-secondary text-[10px] uppercase">Points</p>
+                    <p className="text-text-secondary text-xs uppercase">Points</p>
                   </div>
                   <div className="bg-surface-inset rounded p-2">
                     <p className="text-lg font-bold text-text-primary">{userTeam.add_drops_used}/{settings?.max_add_drops_per_season || 50}</p>
-                    <p className="text-text-secondary text-[10px] uppercase">Add/Drops</p>
+                    <p className="text-text-secondary text-xs uppercase">Add/Drops</p>
                   </div>
                   {settings?.trades_enabled && (
                     <div className="bg-surface-inset rounded p-2">
                       <p className="text-lg font-bold text-text-primary">{userTeam.trades_used || 0}/{settings.max_trades_per_season || 10}</p>
-                      <p className="text-text-secondary text-[10px] uppercase">Trades</p>
+                      <p className="text-text-secondary text-xs uppercase">Trades</p>
                     </div>
                   )}
                   {settings?.double_points_enabled && (
@@ -642,7 +642,7 @@ export default async function LeaguePage({ params }: PageProps) {
                       <p className="text-lg font-bold text-info-text">
                         {doublePicksUsed}/{settings.max_double_picks_per_season > 0 ? settings.max_double_picks_per_season : '∞'}
                       </p>
-                      <p className="text-text-secondary text-[10px] uppercase">2x Picks</p>
+                      <p className="text-text-secondary text-xs uppercase">2x Picks</p>
                     </div>
                   )}
                   {settings?.high_points_enabled && (
@@ -650,7 +650,7 @@ export default async function LeaguePage({ params }: PageProps) {
                       <p className="text-lg font-bold text-warning-text">
                         ${userTeam.high_points_winnings || 0}
                       </p>
-                      <p className="text-text-secondary text-[10px] uppercase">HP Won</p>
+                      <p className="text-text-secondary text-xs uppercase">HP Won</p>
                     </div>
                   )}
                 </div>
@@ -691,7 +691,7 @@ export default async function LeaguePage({ params }: PageProps) {
                 )}
                 {settings?.high_points_enabled && (
                   <div className="flex justify-between items-start">
-                    <span className="text-text-secondary" title="Each week, the team with the most points wins this bonus prize">High Points <span className="text-text-muted text-[10px]">(weekly bonus)</span></span>
+                    <span className="text-text-secondary" title="Each week, the team with the most points wins this bonus prize">High Points <span className="text-text-muted">(weekly bonus)</span></span>
                     <span className="text-warning-text">${settings.high_points_weekly_amount}/wk</span>
                   </div>
                 )}

@@ -388,7 +388,7 @@ export function PlayoffBracket({ seasonId, rosterSchoolIds = [], leagueId }: Pro
     const gameInfo = bracketGame.game
 
     return (
-      <div className="w-48">
+      <div className="w-36 md:w-48">
         <div className="bg-surface rounded-lg overflow-hidden border border-border">
           {renderTeamSlot(bracketGame.topTeam, isLive)}
           <div className="border-t border-border" />
@@ -427,7 +427,7 @@ export function PlayoffBracket({ seasonId, rosterSchoolIds = [], leagueId }: Pro
           {[1, 2, 3, 4].map(i => (
             <div key={i} className="space-y-4">
               {[1, 2, 3, 4].slice(0, 5 - i).map(j => (
-                <div key={j} className="w-48 h-20 bg-surface rounded" />
+                <div key={j} className="w-36 md:w-48 h-20 bg-surface rounded" />
               ))}
             </div>
           ))}
@@ -515,12 +515,20 @@ export function PlayoffBracket({ seasonId, rosterSchoolIds = [], leagueId }: Pro
         </div>
       )}
 
+      {/* Scroll hint for mobile */}
+      <div className="md:hidden px-4 py-2 bg-surface-inset text-text-secondary text-xs flex items-center gap-2 rounded-lg mb-2">
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+        </svg>
+        Scroll right to see full bracket
+      </div>
+
       {/* Bracket layout - horizontal scroll on mobile */}
       {(() => {
         const hasByes = bracketGames.first_round.length > 4
         return (
           <div className="overflow-x-auto pb-4">
-            <div className="flex gap-8 min-w-max items-stretch">
+            <div className="flex gap-4 md:gap-8 min-w-max items-stretch">
               {/* First Round — sets the overall height */}
               <div>
                 <h3 className="text-sm font-medium text-text-secondary text-center mb-4">First Round</h3>

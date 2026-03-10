@@ -357,7 +357,7 @@ export default function LeaderboardClient({
                 {teams.map((team, index) => {
                   const isCurrentUser = team.user_id === currentUserId
                   const teamWeekly = weeklyPointsMap.get(team.id)
-                  const stickyBgColor = isCurrentUser ? '#1e2a3a' : '#1f2937'
+                  const stickyBgColor = isCurrentUser ? 'var(--palette-highlight-row)' : 'var(--palette-surface-subtle)'
                   return (
                     <tr
                       key={team.id}
@@ -463,7 +463,7 @@ export default function LeaderboardClient({
                         return winners?.find(w => w.teamId === team.id)
                       }
                       const hasAnyWins = regularWeeks.some(week => getWinForWeek(week))
-                      const hpStickyBgColor = isCurrentUser ? '#1e2a3a' : hasAnyWins ? '#2a2517' : '#1f2937'
+                      const hpStickyBgColor = isCurrentUser ? 'var(--palette-highlight-row)' : hasAnyWins ? 'var(--palette-highlight-special)' : 'var(--palette-surface-subtle)'
                       return (
                         <tr
                           key={team.id}
@@ -633,8 +633,8 @@ export default function LeaderboardClient({
                   const isCurrentUser = team.user_id === currentUserId
                   const teamWeekly = weeklyPointsMap.get(team.id)
 
-                  // Solid background color for sticky cells - hex values to ensure opacity
-                  const stickyBgColor = isCurrentUser ? '#1e2a3a' : '#1f2937'
+                  // Solid background color for sticky cells - CSS variables for palette compatibility
+                  const stickyBgColor = isCurrentUser ? 'var(--palette-highlight-row)' : 'var(--palette-surface-subtle)'
 
                   return (
                     <tr

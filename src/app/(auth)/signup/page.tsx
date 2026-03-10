@@ -210,7 +210,7 @@ function SignUpForm() {
                       />
                     ))}
                   </div>
-                  <p className="text-[10px] text-text-muted mt-0.5">
+                  <p className="text-xs text-text-muted mt-0.5">
                     {password.length < 6 ? 'Too short'
                       : password.length >= 12 && /[A-Z]/.test(password) && /[0-9]/.test(password) && /[^A-Za-z0-9]/.test(password) ? 'Strong'
                       : password.length >= 10 && /[A-Z]/.test(password) && /[0-9]/.test(password) ? 'Good'
@@ -222,7 +222,7 @@ function SignUpForm() {
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-text-secondary hover:text-text-primary transition-colors"
+                className="absolute right-1 top-1/2 -translate-y-1/2 text-text-secondary hover:text-text-primary transition-colors p-2"
                 tabIndex={-1}
               >
                 {showPassword ? (
@@ -260,7 +260,7 @@ function SignUpForm() {
               <button
                 type="button"
                 onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-text-secondary hover:text-text-primary transition-colors"
+                className="absolute right-1 top-1/2 -translate-y-1/2 text-text-secondary hover:text-text-primary transition-colors p-2"
                 tabIndex={-1}
               >
                 {showConfirmPassword ? (

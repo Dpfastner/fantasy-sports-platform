@@ -480,7 +480,7 @@ export default function SettingsPage() {
                 <button
                   type="button"
                   onClick={() => setShowNewPassword(!showNewPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-text-secondary hover:text-text-primary transition-colors"
+                  className="absolute right-1 top-1/2 -translate-y-1/2 text-text-secondary hover:text-text-primary transition-colors p-2"
                   tabIndex={-1}
                 >
                   {showNewPassword ? (
@@ -510,7 +510,7 @@ export default function SettingsPage() {
                 <button
                   type="button"
                   onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-text-secondary hover:text-text-primary transition-colors"
+                  className="absolute right-1 top-1/2 -translate-y-1/2 text-text-secondary hover:text-text-primary transition-colors p-2"
                   tabIndex={-1}
                 >
                   {showConfirmPassword ? (

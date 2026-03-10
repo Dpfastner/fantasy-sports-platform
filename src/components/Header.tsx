@@ -84,10 +84,15 @@ export function Header({ userName, userEmail, userId, showUserMenu = true, child
               <div className="relative" ref={dropdownRef}>
                 <button
                   onClick={() => setProfileOpen(!profileOpen)}
-                  className="flex items-center gap-1.5 text-text-secondary hover:text-text-primary transition-colors"
+                  className="flex items-center gap-1.5 text-text-secondary hover:text-text-primary transition-colors min-w-[44px] min-h-[44px] justify-center sm:min-w-0 sm:min-h-0"
                 >
+                  {/* Mobile: user initial circle */}
+                  <span className="sm:hidden w-8 h-8 rounded-full bg-brand/20 text-brand-text text-sm font-semibold flex items-center justify-center shrink-0">
+                    {displayName.charAt(0).toUpperCase()}
+                  </span>
+                  {/* Desktop: full name */}
                   <span className="text-sm hidden sm:inline">{displayName}</span>
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <svg className="w-4 h-4 hidden sm:block" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
                   </svg>
                 </button>
