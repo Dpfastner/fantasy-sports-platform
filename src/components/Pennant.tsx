@@ -92,14 +92,13 @@ function BannerVariant({ school, textColor, size }: { school: PennantSchool; tex
           backgroundColor: school.secondary_color,
         }}
       />
-      {/* Banner body */}
+      {/* Banner body — unfurls top-to-bottom on load */}
       <div
-        className="animate-banner-sway origin-top"
+        className="animate-banner-unfurl origin-top"
         style={{
           width: d.width,
           height: d.height,
           backgroundColor: school.primary_color,
-          clipPath: 'polygon(0 0, 100% 0, 100% 85%, 50% 100%, 0 85%)',
         }}
       >
         <div className="flex flex-col items-center justify-center h-full px-1 py-2">

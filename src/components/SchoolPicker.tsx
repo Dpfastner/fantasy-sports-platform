@@ -116,13 +116,13 @@ export function SchoolPicker({ value, onChange, label = 'Favorite FBS Team' }: S
           />
 
           {open && (
-            <div className="absolute z-50 left-0 right-0 mt-1 bg-surface border border-border rounded-lg shadow-lg max-h-48 overflow-y-auto">
+            <div className="absolute z-50 left-0 right-0 mt-1 bg-surface border border-border rounded-lg shadow-lg max-h-64 overflow-y-auto">
               {filtered.length === 0 ? (
                 <div className="px-4 py-3 text-text-muted text-sm">
                   {search ? 'No schools found' : 'Type to search...'}
                 </div>
               ) : (
-                filtered.slice(0, 20).map(school => (
+                filtered.map(school => (
                   <button
                     key={school.id}
                     type="button"
