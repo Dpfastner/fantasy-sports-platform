@@ -1,12 +1,14 @@
 'use client'
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState, Suspense } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { track } from '@vercel/analytics'
 
-export default function SignUpPage() {
+function SignUpForm() {
+  const searchParams = useSearchParams()
+  const next = searchParams.get('next')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
@@ -48,6 +50,10 @@ export default function SignUpPage() {
     setLoading(true)
 
     try {
+      const redirectTo = next
+        ? `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}`
+        : `${window.location.origin}/auth/callback`
+
       const { error, data } = await supabase.auth.signUp({
         email,
         password,
@@ -55,6 +61,7 @@ export default function SignUpPage() {
           data: {
             display_name: displayName || email.split('@')[0],
           },
+          emailRedirectTo: redirectTo,
         },
       })
 
@@ -104,13 +111,20 @@ export default function SignUpPage() {
             <h2 className="text-2xl font-bold text-text-primary mb-4">Check your email</h2>
             <p className="text-text-secondary mb-6">
               We sent a confirmation link to <span className="text-text-primary">{email}</span>.
-              Click the link and you&apos;ll be taken straight to your dashboard.
+              Click the link and you&apos;ll be signed in automatically.
             </p>
             <p className="text-text-muted text-sm mb-4">
               Didn&apos;t receive it? Check your spam folder or{' '}
               <button
                 onClick={async () => {
-                  const { error } = await supabase.auth.resend({ type: 'signup', email })
+                  const resendRedirect = next
+                    ? `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}`
+                    : `${window.location.origin}/auth/callback`
+                  const { error } = await supabase.auth.resend({
+                    type: 'signup',
+                    email,
+                    options: { emailRedirectTo: resendRedirect },
+                  })
                   if (!error) {
                     alert('Confirmation email resent! Check your inbox.')
                   }
@@ -121,7 +135,7 @@ export default function SignUpPage() {
               </button>.
             </p>
             <Link
-              href="/login"
+              href={next ? `/login?next=${encodeURIComponent(next)}` : '/login'}
               className="text-brand-text hover:text-brand-text"
             >
               Already confirmed? Sign in
@@ -312,7 +326,7 @@ export default function SignUpPage() {
 
           <p className="text-text-secondary text-center mt-6">
             Already have an account?{' '}
-            <Link href="/login" className="text-brand-text hover:text-brand-text">
+            <Link href={next ? `/login?next=${encodeURIComponent(next)}` : '/login'} className="text-brand-text hover:text-brand-text">
               Sign in
             </Link>
           </p>
@@ -320,5 +334,17 @@ export default function SignUpPage() {
         )}
       </div>
     </div>
+  )
+}
+
+export default function SignUpPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gradient-to-b from-gradient-from to-gradient-to flex items-center justify-center">
+        <div className="text-text-primary">Loading...</div>
+      </div>
+    }>
+      <SignUpForm />
+    </Suspense>
   )
 }
