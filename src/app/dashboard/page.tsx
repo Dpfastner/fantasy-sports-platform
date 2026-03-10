@@ -2,7 +2,9 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { Header } from '@/components/Header'
+import { FanZoneWidget } from '@/components/FanZoneWidget'
 import { getCurrentWeek } from '@/lib/week'
+import { getRival } from '@/lib/rivalries'
 
 export default async function DashboardPage() {
   const supabase = await createClient()
@@ -16,9 +18,9 @@ export default async function DashboardPage() {
   // Get user profile
   const { data: profile, error: profileError } = await supabase
     .from('profiles')
-    .select('display_name, email')
+    .select('display_name, email, favorite_school_id')
     .eq('id', user.id)
-    .single() as { data: { display_name: string | null; email: string } | null; error: unknown }
+    .single() as { data: { display_name: string | null; email: string; favorite_school_id: string | null } | null; error: unknown }
 
   // Get user's leagues (as member or commissioner)
   const { data: leagueMemberships, error: leagueError } = await supabase
@@ -92,6 +94,68 @@ export default async function DashboardPage() {
   const firstLeagueYear = leagues[0]?.seasons
   const year = Array.isArray(firstLeagueYear) ? firstLeagueYear[0]?.year : (firstLeagueYear as { year: number } | null)?.year
   const currentWeek = await getCurrentWeek(year || 2025)
+
+  // Fan Zone data
+  let userSchool: { name: string; logo_url: string | null; primary_color: string; secondary_color: string } | null = null
+  let fanDistribution: { schoolName: string; count: number; color: string; logoUrl: string | null }[] = []
+  let totalFans = 0
+  let rivalSchool: { name: string; count: number } | null = null
+
+  if (profile?.favorite_school_id) {
+    const { data: schoolData } = await supabase
+      .from('schools')
+      .select('name, logo_url, primary_color, secondary_color')
+      .eq('id', profile.favorite_school_id)
+      .single()
+    userSchool = schoolData
+  }
+
+  // Fetch fan distribution (all users with a favorite school)
+  const { data: fanProfiles } = await supabase
+    .from('profiles')
+    .select('favorite_school_id, schools(name, primary_color, logo_url)')
+    .not('favorite_school_id', 'is', null)
+
+  if (fanProfiles && fanProfiles.length > 0) {
+    // Aggregate by school
+    const counts = new Map<string, { name: string; count: number; color: string; logoUrl: string | null }>()
+    for (const fp of fanProfiles) {
+      const school = fp.schools as unknown as { name: string; primary_color: string; logo_url: string | null } | null
+      if (!school || !fp.favorite_school_id) continue
+      const existing = counts.get(fp.favorite_school_id)
+      if (existing) {
+        existing.count++
+      } else {
+        counts.set(fp.favorite_school_id, {
+          name: school.name,
+          count: 1,
+          color: school.primary_color,
+          logoUrl: school.logo_url,
+        })
+      }
+    }
+
+    fanDistribution = Array.from(counts.values())
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 10)
+      .map(e => ({ schoolName: e.name, count: e.count, color: e.color, logoUrl: e.logoUrl }))
+    totalFans = fanProfiles.length
+
+    // Check for rivalry
+    if (userSchool) {
+      const rivalName = getRival(userSchool.name)
+      if (rivalName) {
+        const rivalEntry = Array.from(counts.values()).find(e => e.name === rivalName)
+        if (rivalEntry) {
+          rivalSchool = { name: rivalName, count: rivalEntry.count }
+        } else {
+          rivalSchool = { name: rivalName, count: 0 }
+        }
+      }
+    }
+  }
+
+  const referralUrl = `https://rivyls.com/welcome?ref=${user.id}`
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gradient-from to-gradient-to">
@@ -200,6 +264,19 @@ export default async function DashboardPage() {
             ))}
           </div>
         )}
+
+        {/* Fan Zone Widget */}
+        <div className="mt-8">
+          <FanZoneWidget
+            userSchool={userSchool}
+            fanDistribution={fanDistribution}
+            totalFans={totalFans}
+            rivalSchool={rivalSchool}
+            referralUrl={referralUrl}
+            displayName={profile?.display_name || 'A friend'}
+            userId={user.id}
+          />
+        </div>
       </main>
     </div>
   )

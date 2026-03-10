@@ -1,0 +1,71 @@
+/**
+ * Major FBS rivalry mappings for targeted fan engagement messaging.
+ * Maps school name → primary rival school name.
+ */
+const FBS_RIVALRIES: Record<string, string> = {
+  'Alabama': 'Auburn',
+  'Auburn': 'Alabama',
+  'Ohio State': 'Michigan',
+  'Michigan': 'Ohio State',
+  'Michigan State': 'Michigan',
+  'Florida': 'Georgia',
+  'Georgia': 'Florida',
+  'USC': 'UCLA',
+  'UCLA': 'USC',
+  'Texas': 'Oklahoma',
+  'Oklahoma': 'Texas',
+  'Clemson': 'South Carolina',
+  'South Carolina': 'Clemson',
+  'Florida State': 'Miami',
+  'Miami': 'Florida State',
+  'Army': 'Navy',
+  'Navy': 'Army',
+  'Oregon': 'Oregon State',
+  'Oregon State': 'Oregon',
+  'Iowa': 'Iowa State',
+  'Iowa State': 'Iowa',
+  'North Carolina': 'Duke',
+  'Duke': 'North Carolina',
+  'Virginia': 'Virginia Tech',
+  'Virginia Tech': 'Virginia',
+  'Mississippi State': 'Ole Miss',
+  'Ole Miss': 'Mississippi State',
+  'Kansas': 'Kansas State',
+  'Kansas State': 'Kansas',
+  'Louisville': 'Kentucky',
+  'Kentucky': 'Louisville',
+  'Purdue': 'Indiana',
+  'Indiana': 'Purdue',
+  'Colorado': 'Colorado State',
+  'Colorado State': 'Colorado',
+  'Arizona': 'Arizona State',
+  'Arizona State': 'Arizona',
+  'Utah': 'BYU',
+  'BYU': 'Utah',
+  'Stanford': 'California',
+  'California': 'Stanford',
+  'Washington': 'Washington State',
+  'Washington State': 'Washington',
+  'Nebraska': 'Iowa',
+  'Tennessee': 'Alabama',
+  'LSU': 'Alabama',
+  'Texas A&M': 'Texas',
+  'Penn State': 'Ohio State',
+  'Wisconsin': 'Minnesota',
+  'Minnesota': 'Wisconsin',
+  'Pittsburgh': 'West Virginia',
+  'West Virginia': 'Pittsburgh',
+  'Baylor': 'TCU',
+  'TCU': 'Baylor',
+  'Notre Dame': 'USC',
+  'NC State': 'North Carolina',
+  'Georgia Tech': 'Georgia',
+  'Wake Forest': 'Duke',
+}
+
+/**
+ * Returns the primary rival school name for the given school, or null if no rivalry is mapped.
+ */
+export function getRival(schoolName: string): string | null {
+  return FBS_RIVALRIES[schoolName] ?? null
+}

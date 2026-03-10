@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { track } from '@vercel/analytics'
+import { SchoolPicker } from '@/components/SchoolPicker'
 
 function SignUpForm() {
   const searchParams = useSearchParams()
@@ -17,6 +18,7 @@ function SignUpForm() {
   const [displayName, setDisplayName] = useState('')
   const [ageConfirmed, setAgeConfirmed] = useState(false)
   const [tosAccepted, setTosAccepted] = useState(false)
+  const [favoriteSchoolId, setFavoriteSchoolId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -68,6 +70,17 @@ function SignUpForm() {
       if (error) {
         setError(error.message)
         return
+      }
+
+      // Set favorite school (uses admin client, no session needed)
+      if (data.user?.id && favoriteSchoolId) {
+        fetch('/api/profile/favorite-school', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId: data.user.id, schoolId: favoriteSchoolId }),
+        }).catch(() => {
+          // Non-blocking — signup still succeeds
+        })
       }
 
       // Log ToS acceptance (uses admin client, no session needed)
@@ -161,6 +174,10 @@ function SignUpForm() {
               className="w-full px-4 py-3 bg-surface border border-border rounded-lg text-text-primary placeholder-text-muted focus:outline-none focus:border-brand"
               placeholder="Your name"
             />
+          </div>
+
+          <div className="mb-4">
+            <SchoolPicker value={favoriteSchoolId} onChange={setFavoriteSchoolId} />
           </div>
 
           <div className="mb-4">

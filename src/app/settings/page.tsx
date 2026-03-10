@@ -6,11 +6,13 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { Header } from '@/components/Header'
 import { trackActivity } from '@/app/actions/activity'
+import { SchoolPicker } from '@/components/SchoolPicker'
 
 interface Profile {
   display_name: string | null
   email: string
   timezone: string
+  favorite_school_id: string | null
 }
 
 export default function SettingsPage() {
@@ -32,6 +34,7 @@ export default function SettingsPage() {
   const [showNewPassword, setShowNewPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [timezone, setTimezone] = useState('America/New_York')
+  const [favoriteSchoolId, setFavoriteSchoolId] = useState<string | null>(null)
 
   // Timezone UI
   const [showInternational, setShowInternational] = useState(false)
@@ -77,7 +80,7 @@ export default function SettingsPage() {
 
       const { data: profileData } = await supabase
         .from('profiles')
-        .select('display_name, email, timezone')
+        .select('display_name, email, timezone, favorite_school_id')
         .eq('id', user.id)
         .single()
 
@@ -86,6 +89,7 @@ export default function SettingsPage() {
         setDisplayName(profileData.display_name || '')
         const tz = profileData.timezone || 'America/New_York'
         setTimezone(tz)
+        setFavoriteSchoolId(profileData.favorite_school_id || null)
         // Auto-expand international section if user already has an international timezone
         const usValues = ['America/New_York', 'America/Chicago', 'America/Denver', 'America/Los_Angeles', 'America/Phoenix', 'America/Anchorage', 'Pacific/Honolulu']
         if (!usValues.includes(tz)) setShowInternational(true)
@@ -145,6 +149,7 @@ export default function SettingsPage() {
         .update({
           display_name: displayName,
           timezone: timezone,
+          favorite_school_id: favoriteSchoolId,
         })
         .eq('id', user.id)
 
@@ -341,6 +346,7 @@ export default function SettingsPage() {
                 placeholder="Your display name"
               />
             </div>
+            <SchoolPicker value={favoriteSchoolId} onChange={setFavoriteSchoolId} />
             <div>
               <label className="block text-text-secondary text-sm mb-1">Timezone</label>
               {!showInternational && !isInternationalTz ? (

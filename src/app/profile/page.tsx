@@ -8,6 +8,7 @@ import { ShareButton } from '@/components/ShareButton'
 import { buildShareUrl } from '@/lib/share'
 import { SITE_URL } from '@/lib/og/constants'
 import { getUserBadges } from '@/lib/badges'
+import { Pennant } from '@/components/Pennant'
 import type { UserTier } from '@/types/database'
 
 interface LeagueRow {
@@ -31,7 +32,7 @@ export default async function ProfilePage() {
   const [profileResult, leaguesResult, badges] = await Promise.all([
     supabase
       .from('profiles')
-      .select('id, display_name, email, tier, referred_by, created_at')
+      .select('id, display_name, email, tier, referred_by, created_at, favorite_school_id')
       .eq('id', user.id)
       .single(),
     supabase
@@ -44,6 +45,17 @@ export default async function ProfilePage() {
   const profile = profileResult.data
   if (!profile) {
     redirect('/login')
+  }
+
+  // Fetch favorite school data if set
+  let favoriteSchool: { name: string; logo_url: string | null; primary_color: string; secondary_color: string } | null = null
+  if (profile.favorite_school_id) {
+    const { data: schoolData } = await supabase
+      .from('schools')
+      .select('name, logo_url, primary_color, secondary_color')
+      .eq('id', profile.favorite_school_id)
+      .single()
+    favoriteSchool = schoolData
   }
 
   const leagues = (leaguesResult.data || []) as unknown as LeagueRow[]
@@ -93,14 +105,51 @@ export default async function ProfilePage() {
               <p className="text-text-secondary">{profile.email}</p>
               <p className="text-text-muted text-sm mt-1">Member since {joinDate}</p>
             </div>
-            <Link
-              href="/settings"
-              className="px-4 py-2 bg-surface-subtle hover:bg-surface-inset text-text-secondary hover:text-text-primary rounded-lg transition-colors text-sm"
-            >
-              Edit Profile
-            </Link>
+            <div className="flex flex-col items-end gap-2">
+              <Link
+                href="/settings"
+                className="px-4 py-2 bg-surface-subtle hover:bg-surface-inset text-text-secondary hover:text-text-primary rounded-lg transition-colors text-sm"
+              >
+                Edit Profile
+              </Link>
+              {favoriteSchool && (
+                <Pennant school={favoriteSchool} size="md" />
+              )}
+            </div>
           </div>
+          {!favoriteSchool && (
+            <div className="mt-4 pt-4 border-t border-border">
+              <Link
+                href="/settings"
+                className="text-brand-text hover:text-brand-text/80 text-sm"
+              >
+                Add your favorite FBS team &rarr;
+              </Link>
+            </div>
+          )}
         </div>
+
+        {/* Pennant Variants Preview — pick your favorite! */}
+        {favoriteSchool && (
+          <div className="bg-surface rounded-lg p-6 mb-6">
+            <h2 className="text-xl font-semibold text-text-primary mb-1">Your Pennant</h2>
+            <p className="text-text-muted text-sm mb-4">Three styles — which is your favorite?</p>
+            <div className="flex flex-wrap gap-8 items-start">
+              <div className="flex flex-col items-center gap-2">
+                <Pennant school={favoriteSchool} variant="pennant" size="md" />
+                <span className="text-text-muted text-xs">Classic Pennant</span>
+              </div>
+              <div className="flex flex-col items-center gap-2">
+                <Pennant school={favoriteSchool} variant="banner" size="md" />
+                <span className="text-text-muted text-xs">Hanging Banner</span>
+              </div>
+              <div className="flex flex-col items-center gap-2">
+                <Pennant school={favoriteSchool} variant="ribbon" size="md" />
+                <span className="text-text-muted text-xs">Ribbon</span>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Trophy Case */}
         {badges.length > 0 && (
