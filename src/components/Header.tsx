@@ -141,6 +141,13 @@ export function Header({ userName, userEmail, userId, showUserMenu = true, child
                     >
                       Settings
                     </Link>
+                    <Link
+                      href="/help"
+                      className="block px-4 py-2 text-sm text-text-secondary hover:bg-surface-subtle hover:text-text-primary transition-colors"
+                      onClick={() => setProfileOpen(false)}
+                    >
+                      Help
+                    </Link>
                     <div className="border-t border-border my-1" />
                     <button
                       onClick={handleLogout}

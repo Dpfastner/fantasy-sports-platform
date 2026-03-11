@@ -7,6 +7,7 @@ import { areCronsEnabled, getEnvironment } from '@/lib/env'
 import { calculateCurrentWeek, WEEK_CHAMPIONSHIP } from '@/lib/constants/season'
 import { archiveLeagueSeason } from '@/lib/archive-season'
 import { createNotification } from '@/lib/notifications'
+import { validateScoreboardResponse, validateRankingsResponse, hashResponseStructure, logApiHealth } from '@/lib/api/espn-monitor'
 
 // Verify the request is from Vercel Cron
 function verifyCronRequest(request: Request): boolean {
@@ -43,6 +44,7 @@ export async function GET(request: Request) {
     const results = {
       rankings: { success: false, error: null as string | null },
       currentWeekGames: { success: false, synced: 0, error: null as string | null },
+      apiHealth: { rankingsValid: true, scoreboardValid: true, issues: [] as string[] },
       failsafe: { checked: false, weeksRecalculated: [] as number[], error: null as string | null },
       autoArchive: { checked: false, archived: [] as string[], error: null as string | null },
       preSeasonReminder: { checked: false, notified: 0, error: null as string | null },
@@ -82,7 +84,18 @@ export async function GET(request: Request) {
 
     // Sync Rankings
     try {
+      const rankingsStartTime = Date.now()
       const rankingsData = await fetchRankings(year)
+      const rankingsTime = Date.now() - rankingsStartTime
+
+      // Monitor rankings response structure
+      const rankingsValidation = validateRankingsResponse(rankingsData)
+      const rankingsHash = hashResponseStructure(rankingsData)
+      logApiHealth(supabase, 'rankings', 200, rankingsTime, rankingsValidation.valid, rankingsHash, rankingsValidation.issues)
+      if (!rankingsValidation.valid) {
+        results.apiHealth.rankingsValid = false
+        results.apiHealth.issues.push(...rankingsValidation.issues.map(i => `rankings: ${i}`))
+      }
       const apPoll = rankingsData.rankings?.find(
         r => r.name.toLowerCase().includes('ap') || r.type === 'ap'
       )
@@ -119,7 +132,19 @@ export async function GET(request: Request) {
 
     // Sync Current Week Games
     try {
+      const scoreboardStartTime = Date.now()
       const games = await fetchScoreboard(year, currentWeek, 2)
+      const scoreboardTime = Date.now() - scoreboardStartTime
+
+      // Monitor scoreboard response structure (wrap in events for validator)
+      const scoreboardValidation = validateScoreboardResponse({ events: games })
+      const scoreboardHash = hashResponseStructure({ events: games })
+      logApiHealth(supabase, 'scoreboard', 200, scoreboardTime, scoreboardValidation.valid, scoreboardHash, scoreboardValidation.issues)
+      if (!scoreboardValidation.valid) {
+        results.apiHealth.scoreboardValid = false
+        results.apiHealth.issues.push(...scoreboardValidation.issues.map(i => `scoreboard: ${i}`))
+      }
+
       let syncedCount = 0
 
       for (const game of games) {
@@ -179,6 +204,9 @@ export async function GET(request: Request) {
               home_team_logo_url: homeTeamLogoUrl,
               away_team_name: awayTeamName,
               away_team_logo_url: awayTeamLogoUrl,
+              is_manual_override: false,
+              manual_override_at: null,
+              manual_override_by: null,
             },
             { onConflict: 'season_id,external_game_id' }
           )

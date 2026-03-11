@@ -9,6 +9,8 @@ const navItems = [
   { href: '/admin/badges', label: 'Badges' },
   { href: '/admin/analytics', label: 'Analytics' },
   { href: '/admin/reports', label: 'Reports' },
+  { href: '/admin/scores', label: 'Scores' },
+  { href: '/admin/monitoring', label: 'Monitoring' },
 ]
 
 export default function AdminNav() {

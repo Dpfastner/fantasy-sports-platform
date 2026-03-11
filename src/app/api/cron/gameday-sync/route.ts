@@ -5,6 +5,7 @@ import { fetchScoreboard } from '@/lib/api/espn'
 import { calculateAllPoints } from '@/lib/points/calculator'
 import { areCronsEnabled, getEnvironment } from '@/lib/env'
 import { calculateCurrentWeek } from '@/lib/constants/season'
+import { validateScoreboardResponse, hashResponseStructure, logApiHealth } from '@/lib/api/espn-monitor'
 
 // Verify the request is from Vercel Cron
 function verifyCronRequest(request: Request): boolean {
@@ -159,7 +160,14 @@ export async function GET(request: Request) {
     const currentWeek = calculateCurrentWeek(year, now.getTime())
 
     // Fetch live scores from ESPN
+    const scoreboardStartTime = Date.now()
     const games = await fetchScoreboard(year, currentWeek, 2)
+    const scoreboardTime = Date.now() - scoreboardStartTime
+
+    // Monitor ESPN response
+    const validation = validateScoreboardResponse({ events: games })
+    const hash = hashResponseStructure({ events: games })
+    logApiHealth(supabase, 'scoreboard', 200, scoreboardTime, validation.valid, hash, validation.issues)
 
     let updatedCount = 0
     let inProgressCount = 0
@@ -214,6 +222,9 @@ export async function GET(request: Request) {
           possession_team_id: competition.situation?.possession
             ? schoolMap.get(competition.situation.possession) || null
             : null,
+          is_manual_override: false,
+          manual_override_at: null,
+          manual_override_by: null,
           updated_at: now.toISOString(),
         })
         .eq('external_game_id', game.id)

@@ -756,6 +756,9 @@ export interface Database {
           quarter: string | null
           clock: string | null
           possession_team_id: string | null
+          is_manual_override: boolean
+          manual_override_at: string | null
+          manual_override_by: string | null
           completed_at: string | null
           created_at: string
           updated_at: string
@@ -787,6 +790,9 @@ export interface Database {
           quarter?: string | null
           clock?: string | null
           possession_team_id?: string | null
+          is_manual_override?: boolean
+          manual_override_at?: string | null
+          manual_override_by?: string | null
           completed_at?: string | null
           created_at?: string
           updated_at?: string
@@ -818,6 +824,9 @@ export interface Database {
           quarter?: string | null
           clock?: string | null
           possession_team_id?: string | null
+          is_manual_override?: boolean
+          manual_override_at?: string | null
+          manual_override_by?: string | null
           completed_at?: string | null
           created_at?: string
           updated_at?: string
