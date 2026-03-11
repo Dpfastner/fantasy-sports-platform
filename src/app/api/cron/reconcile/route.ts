@@ -6,6 +6,8 @@ import { areCronsEnabled, getEnvironment } from '@/lib/env'
 interface ReconciliationResult {
   teamPointsFixed: number
   highPointsFixed: number
+  notificationsDeleted: number
+  espnHealthDeleted: number
   errors: string[]
 }
 
@@ -33,6 +35,8 @@ export async function POST(request: NextRequest) {
     const result: ReconciliationResult = {
       teamPointsFixed: 0,
       highPointsFixed: 0,
+      notificationsDeleted: 0,
+      espnHealthDeleted: 0,
       errors: [],
     }
 
@@ -188,6 +192,50 @@ export async function POST(request: NextRequest) {
           }
         }
       }
+    }
+
+    // 3. Clean up old read notifications (older than 90 days)
+    try {
+      const ninetyDaysAgo = new Date()
+      ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90)
+
+      const { data: deleted, error: deleteError } = await supabase
+        .from('notifications')
+        .delete()
+        .eq('is_read', true)
+        .lt('created_at', ninetyDaysAgo.toISOString())
+        .select('id')
+
+      if (deleteError) {
+        result.errors.push(`Failed to clean up old notifications: ${deleteError.message}`)
+      } else {
+        result.notificationsDeleted = deleted?.length || 0
+        if (result.notificationsDeleted > 0) {
+          console.log(`Deleted ${result.notificationsDeleted} read notifications older than 90 days`)
+        }
+      }
+    } catch (error) {
+      result.errors.push(`Notification cleanup error: ${String(error)}`)
+    }
+
+    // 4. Clean up old ESPN API health checks (keep last 30 days)
+    try {
+      const thirtyDaysAgo = new Date()
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
+
+      const { data: deleted, error: deleteError } = await supabase
+        .from('espn_api_health')
+        .delete()
+        .lt('checked_at', thirtyDaysAgo.toISOString())
+        .select('id')
+
+      if (deleteError) {
+        result.errors.push(`Failed to clean up ESPN health checks: ${deleteError.message}`)
+      } else {
+        result.espnHealthDeleted = deleted?.length || 0
+      }
+    } catch (error) {
+      result.errors.push(`ESPN health cleanup error: ${String(error)}`)
     }
 
     console.log('Reconciliation complete:', result)
