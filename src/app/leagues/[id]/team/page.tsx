@@ -436,6 +436,7 @@ export default async function TeamPage({ params }: PageProps) {
     .from('weekly_double_picks')
     .select('week_number, school_id')
     .eq('fantasy_team_id', team.id)
+    .eq('season_id', league.season_id)
 
   const doublePicks = (doublePicksData || []) as { week_number: number; school_id: string }[]
 

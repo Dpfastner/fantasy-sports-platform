@@ -58,6 +58,7 @@ export async function archiveLeagueSeason(
     .from('fantasy_team_weekly_points')
     .select('fantasy_team_id, week_number, points, is_high_points_winner, high_points_amount')
     .in('fantasy_team_id', safeTeamIds)
+    .eq('season_id', league.season_id)
     .lte('week_number', currentWeek)
     .order('week_number', { ascending: true })
 
@@ -174,6 +175,7 @@ export async function archiveLeagueSeason(
     .from('league_seasons')
     .insert({
       league_id: leagueId,
+      season_id: league.season_id,
       season_year: seasonYear,
       final_standings: finalStandings,
       champion_user_id: championUserId,
@@ -186,6 +188,12 @@ export async function archiveLeagueSeason(
     }
     throw new Error(`Failed to archive: ${insertError.message}`)
   }
+
+  // Set league to dormant
+  await supabase
+    .from('leagues')
+    .update({ status: 'dormant' })
+    .eq('id', leagueId)
 
   return { success: true, seasonYear, championUserId }
 }

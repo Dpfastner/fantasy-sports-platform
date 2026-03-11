@@ -351,6 +351,7 @@ export async function calculateFantasyTeamPoints(
       .select('fantasy_team_id, school_id')
       .in('fantasy_team_id', teamIds)
       .eq('week_number', weekNumber)
+      .eq('season_id', league.season_id)
 
     for (const pick of doublePicks || []) {
       doublePicksMap.set(pick.fantasy_team_id, pick.school_id)
@@ -433,6 +434,7 @@ export async function calculateFantasyTeamPoints(
         })
         .eq('fantasy_team_id', team.id)
         .eq('week_number', weekNumber)
+        .eq('season_id', league.season_id)
     }
 
     teamPoints.push({ teamId: team.id, points: weeklyTotal, bonusPoints })
@@ -461,6 +463,7 @@ export async function calculateFantasyTeamPoints(
     .delete()
     .in('fantasy_team_id', teamIds)
     .eq('week_number', weekNumber)
+    .eq('season_id', league.season_id)
 
   if (deleteTeamPtsError) {
     errors.push(`Failed to clear existing team points for week ${weekNumber}: ${deleteTeamPtsError.message}`)
@@ -476,6 +479,7 @@ export async function calculateFantasyTeamPoints(
         fantasy_team_id: tp.teamId,
         week_number: weekNumber,
         points: tp.points,
+        season_id: league.season_id,
         is_high_points_winner: isWinner,
         high_points_amount: isWinner ? highPointsAmount : 0,
       })
@@ -493,6 +497,7 @@ export async function calculateFantasyTeamPoints(
       .from('fantasy_team_weekly_points')
       .select('points, high_points_amount')
       .eq('fantasy_team_id', team.id)
+      .eq('season_id', league.season_id)
 
     const totalPoints = (allWeeklyPoints || []).reduce((sum, wp) => sum + Number(wp.points), 0)
     const highPointsWinnings = (allWeeklyPoints || []).reduce((sum, wp) => sum + Number(wp.high_points_amount), 0)

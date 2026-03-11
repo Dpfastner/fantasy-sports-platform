@@ -17,6 +17,7 @@ interface LeagueRow {
   leagues: {
     id: string
     name: string
+    status: string | null
     max_teams: number
   }
 }
@@ -37,7 +38,7 @@ export default async function ProfilePage() {
       .single(),
     supabase
       .from('league_members')
-      .select('league_id, role, leagues(id, name, max_teams)')
+      .select('league_id, role, leagues(id, name, status, max_teams)')
       .eq('user_id', user.id),
     getUserBadges(user.id),
   ])
@@ -72,7 +73,9 @@ export default async function ProfilePage() {
       bannerColorScheme: (sf.banner_color_scheme || 'primary') as 'primary' | 'alternate',
     }))
 
-  const leagues = (leaguesResult.data || []) as unknown as LeagueRow[]
+  const allLeagues = (leaguesResult.data || []) as unknown as LeagueRow[]
+  const leagues = allLeagues.filter(l => l.leagues.status !== 'dormant')
+  const dormantLeagues = allLeagues.filter(l => l.leagues.status === 'dormant')
   const commissionerLeagues = leagues.filter(l => l.role === 'commissioner' || l.role === 'co_commissioner')
   const memberLeagues = leagues.filter(l => l.role === 'member')
 
@@ -161,7 +164,7 @@ export default async function ProfilePage() {
         <div className="bg-surface rounded-lg p-6 mb-6">
           <h2 className="text-xl font-semibold text-text-primary mb-4">My Leagues</h2>
 
-          {leagues.length === 0 ? (
+          {allLeagues.length === 0 ? (
             <p className="text-text-secondary">
               You haven&apos;t joined any leagues yet.{' '}
               <Link href="/leagues/create" className="text-brand hover:text-brand-hover">
@@ -209,6 +212,27 @@ export default async function ProfilePage() {
                       className="flex items-center justify-between py-3 px-4 rounded-lg hover:bg-surface-subtle transition-colors"
                     >
                       <span className="text-text-primary font-medium">{l.leagues.name}</span>
+                      <span className="text-text-muted text-sm">{l.leagues.max_teams} teams</span>
+                    </Link>
+                  ))}
+                </div>
+              )}
+
+              {dormantLeagues.length > 0 && (
+                <div className="pt-3 mt-3 border-t border-border">
+                  <h3 className="text-text-muted text-sm font-medium mb-2 uppercase tracking-wider">
+                    Past Seasons
+                  </h3>
+                  {dormantLeagues.map((l) => (
+                    <Link
+                      key={l.league_id}
+                      href={`/leagues/${l.league_id}`}
+                      className="flex items-center justify-between py-3 px-4 rounded-lg hover:bg-surface-subtle transition-colors opacity-75 hover:opacity-100"
+                    >
+                      <div className="flex items-center gap-2">
+                        <span className="text-text-secondary font-medium">{l.leagues.name}</span>
+                        <span className="bg-surface-inset text-text-muted text-xs px-1.5 py-0.5 rounded">Dormant</span>
+                      </div>
                       <span className="text-text-muted text-sm">{l.leagues.max_teams} teams</span>
                     </Link>
                   ))}

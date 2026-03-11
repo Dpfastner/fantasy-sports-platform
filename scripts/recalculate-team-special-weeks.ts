@@ -70,6 +70,7 @@ async function recalculateTeamSpecialWeeks() {
               points: totalPoints,
               is_high_points_winner: false,
               high_points_amount: 0,
+              season_id: season.id,
             }, { onConflict: 'fantasy_team_id,week_number' })
 
           console.log(`  ${team.name} Week ${weekNumber}: ${totalPoints} pts`)

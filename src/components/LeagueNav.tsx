@@ -21,13 +21,19 @@ const NAV_ITEMS = [
   { label: 'League Settings', path: '/settings' },
 ]
 
+const DORMANT_NAV_ITEMS = [
+  { label: 'Overview', path: '' },
+  { label: 'History', path: '/history' },
+]
+
 export function LeagueNav({ leagueId }: LeagueNavProps) {
   const pathname = usePathname()
   const basePath = `/leagues/${leagueId}`
   const leagueCtx = useLeagueContext()
   const isCommissioner = leagueCtx?.isCommissioner ?? false
+  const isDormant = leagueCtx?.isDormant ?? false
 
-  const items = NAV_ITEMS
+  const items = isDormant ? DORMANT_NAV_ITEMS : NAV_ITEMS
 
   return (
     <nav className="bg-surface/80 backdrop-blur-md border-b border-border sticky top-0 z-30">

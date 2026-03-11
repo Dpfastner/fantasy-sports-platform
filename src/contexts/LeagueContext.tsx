@@ -28,6 +28,7 @@ export interface LeagueContextValue {
   teamsInLeague: TeamSummary[]
   userTeam: TeamSummary | null
   isCommissioner: boolean
+  isDormant: boolean
 }
 
 const LeagueContext = createContext<LeagueContextValue | null>(null)

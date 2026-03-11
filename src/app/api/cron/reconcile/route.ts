@@ -38,11 +38,22 @@ export async function POST(request: NextRequest) {
 
     console.log('Starting nightly reconciliation...')
 
-    // 1. Reconcile fantasy team total points
-    // Get all fantasy teams with their weekly points
-    const { data: teams, error: teamsError } = await supabase
-      .from('fantasy_teams')
-      .select('id, total_points, high_points_winnings')
+    // 1. Reconcile fantasy team total points (active leagues only)
+    // Get all active league IDs first
+    const { data: activeLeagues } = await supabase
+      .from('leagues')
+      .select('id')
+      .neq('status', 'dormant')
+    const activeLeagueIds = (activeLeagues || []).map(l => l.id)
+
+    // Get all fantasy teams in active leagues
+    const { data: teams, error: teamsError } = activeLeagueIds.length > 0
+      ? await supabase
+          .from('fantasy_teams')
+          .select('id, total_points, high_points_winnings')
+          .in('league_id', activeLeagueIds)
+          .eq('is_deleted', false)
+      : { data: [] as { id: string; total_points: number; high_points_winnings: number }[], error: null }
 
     if (teamsError) {
       result.errors.push(`Failed to fetch teams: ${teamsError.message}`)
@@ -98,7 +109,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // 2. Verify high points winners per week per league
+    // 2. Verify high points winners per week per league (skip dormant)
     const { data: leagues, error: leaguesError } = await supabase
       .from('leagues')
       .select(`
@@ -109,6 +120,7 @@ export async function POST(request: NextRequest) {
           high_points_allow_ties
         )
       `)
+      .neq('status', 'dormant')
 
     if (leaguesError) {
       result.errors.push(`Failed to fetch leagues: ${leaguesError.message}`)

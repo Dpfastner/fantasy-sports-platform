@@ -85,6 +85,7 @@ export async function GET(
       .from('fantasy_team_weekly_points')
       .select('fantasy_team_id, week_number, points, is_high_points_winner, high_points_amount')
       .in('fantasy_team_id', teamIds)
+      .eq('season_id', league.season_id)
       .lte('week_number', currentWeek)
       .order('week_number', { ascending: true })
 

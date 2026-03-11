@@ -2,7 +2,7 @@
 
 > **Platform Name**: Rivyls (rivyls.com)
 > **Current Sport**: College Football (base for multi-sport expansion)
-> **Last Updated**: March 9, 2026 (Phase 28 complete, Phase 28.5 added)
+> **Last Updated**: March 10, 2026 (Phases 28.5, 29, 30 complete)
 > **Audit Date**: February 27, 2026 (full codebase audit of Phases 0-21)
 
 ---
@@ -36,10 +36,12 @@
     - [Phase 27: Team-to-Team Trading](#phase-27-team-to-team-trading) ✅
 12. **CURRENT — UX Polish**
     - [Phase 28: UX Audit & User Journey](#phase-28-ux-audit--user-journey) ✅
-    - [Phase 28.5: Invite Flow Fix & Account Deletion Safety](#phase-285-invite-flow-fix--account-deletion-safety)
-    - [Phase 29: Mobile Responsiveness](#phase-29-mobile-responsiveness)
-13. **POST-LAUNCH / YEAR 2**
-    - [Future Phases 30-36](#future-phases)
+    - [Phase 28.5: Invite Flow Fix & Account Deletion Safety](#phase-285-invite-flow-fix--account-deletion-safety) ✅
+    - [Phase 29: Mobile Responsiveness](#phase-29-mobile-responsiveness) ✅
+13. **COMPLETE — Fan Engagement**
+    - [Phase 30: Favorite Teams & Banner Collection](#phase-30-favorite-teams--banner-collection) ✅
+14. **POST-LAUNCH / YEAR 2**
+    - [Future Phases 31-36](#future-phases)
 
 ---
 
@@ -463,16 +465,23 @@ Phase 27: Team-to-Team Trading          ░░░░░░░░░░░░  Tr
 *UX audit and mobile sweep after all Season 1 features are built.*
 
 ```
-Phase 28: UX Audit & User Journey       ░░░░░░░░░░░░  Navigation, layout, flow optimization
-Phase 29: Mobile Responsiveness          ░░░░░░░░░░░░  Systematic mobile testing at all breakpoints
+Phase 28: UX Audit & User Journey       ████████████  COMPLETE ✅
+Phase 28.5: Invite Flow & Deletion      ████████████  COMPLETE ✅
+Phase 29: Mobile Responsiveness          ████████████  COMPLETE ✅
+```
+
+### COMPLETE — Fan Engagement
+
+```
+Phase 30: Favorite Teams & Banners       ████████████  COMPLETE ✅
 ```
 
 ### POST-LAUNCH / YEAR 2
 
 ```
-Phase 30: Email/Push Notifications       ░░░░░░░░░░░░  Blocked until Apr 21 DNS transfer
-Phase 31: Multi-Sport Architecture       ░░░░░░░░░░░░  Year 2 expansion prep
-Future Phases 32-36                      ░░░░░░░░░░░░  Year 2+ features
+Phase 31: Historical Season Caching      ░░░░░░░░░░░░  Archive past seasons, returning users
+Phase 32: Multi-Sport Architecture       ░░░░░░░░░░░░  Year 2 expansion prep
+Future Phases 33-37                      ░░░░░░░░░░░░  Year 2+ features (incl. notifications post-DNS)
 ```
 
 ### Visual Build Order
@@ -522,14 +531,19 @@ Phase 27 (Trading — FREE)    ░░░░░░░░░░░░
 
 ━━━ PRE-LAUNCH (UX Polish) ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         ↓
-Phase 28 (UX Audit)          ░░░░░░░░░░░░
+Phase 28 (UX Audit)          ████████████  COMPLETE ✅
         ↓
-Phase 29 (Mobile)            ░░░░░░░░░░░░
+Phase 28.5 (Invite/Delete)   ████████████  COMPLETE ✅
+        ↓
+Phase 29 (Mobile)            ████████████  COMPLETE ✅
+
+━━━ FAN ENGAGEMENT (Complete) ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Phase 30 (Favorite Teams)    ████████████  COMPLETE ✅
 
 ━━━ POST-LAUNCH / YEAR 2 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Phase 30 (Notifications)     ░░░░░░░░░░░░
-Phase 31 (Multi-Sport Arch)  ░░░░░░░░░░░░
-Future Phases 32-36          ░░░░░░░░░░░░
+Phase 31 (Season Caching)    ░░░░░░░░░░░░
+Phase 32 (Multi-Sport Arch)  ░░░░░░░░░░░░
+Future Phases 33-37          ░░░░░░░░░░░░
 ```
 
 ### June Deadline Decision Framework
@@ -1504,10 +1518,10 @@ Items noted during verification for discussion before Phase 29:
 
 ---
 
-## Phase 28.5: Invite Flow Fix & Account Deletion Safety
+## Phase 28.5: Invite Flow Fix & Account Deletion Safety ✅
 *Fix invite URL redirect bug and prevent account deletion from destroying league data mid-season*
 
-**Status: NOT STARTED**
+**Status: COMPLETE**
 
 **Context**: Two issues identified during Phase 28 verification that need to be addressed before mobile polish.
 
@@ -1570,10 +1584,10 @@ This breaks leagues mid-season. A team vanishing from the leaderboard with all h
 
 ---
 
-## Phase 29: Mobile Responsiveness
+## Phase 29: Mobile Responsiveness ✅
 *Comprehensive mobile audit — all layout, navigation, and component fixes for phones and tablets*
 
-**Status: NOT STARTED**
+**Status: COMPLETE**
 
 **Context**: Most fantasy sports activity happens on phones. Every page must be tested at standard mobile breakpoints and fixed where needed. This phase consolidates all mobile-specific work including layout restructuring, component redesigns, and systematic testing.
 
@@ -1638,19 +1652,61 @@ This breaks leagues mid-season. A team vanishing from the leaderboard with all h
 
 ---
 
+## Phase 30: Favorite Teams & Banner Collection ✅
+
+**Status**: COMPLETE (March 10, 2026)
+
+**Context**: As Rivyls expands to NFL, golf, and international sports, each sport needs its own favorite team. Users pick their favorite when joining/creating a league (sport-contextual). The profile page shows a single featured banner with a click-to-pick dropdown for switching between sports.
+
+### Data Model
+- **New table**: `user_sport_favorites` — one favorite team per sport per user, with `banner_color_scheme` column
+- **New column**: `profiles.featured_favorite_id` — FK to `user_sport_favorites`, determines displayed banner
+- **Invariant**: `profiles.favorite_school_id` stays in sync with featured favorite's school_id (Fan Zone unchanged)
+- **Migration**: `supabase/migrations/039_user_sport_favorites.sql`
+
+| Task | Description |
+|------|-------------|
+| 30.1 | ✅ Create `user_sport_favorites` table with RLS + migration from existing `favorite_school_id` data |
+| 30.2 | ✅ Add `colorScheme` (primary/alternate), `onClick`, `interactive`, and `xs` size props to `Pennant.tsx` |
+| 30.3 | ✅ Add `isLightColor()` utility — auto-swap colors when primary is too light (e.g. Alabama white) |
+| 30.4 | ✅ Remove SchoolPicker from signup flow |
+| 30.5 | ✅ Add SchoolPicker to join league flow (first league per sport only) |
+| 30.6 | ✅ Add SchoolPicker to create league flow (first league per sport only) |
+| 30.7 | ✅ Create `ProfileBannerCollection.tsx` — single featured banner, click to open picker dropdown |
+| 30.8 | ✅ Update profile page with banner collection component |
+| 30.9 | ✅ Update settings page to upsert into `user_sport_favorites` |
+
+### Files Changed
+| File | Action |
+|------|--------|
+| `supabase/migrations/039_user_sport_favorites.sql` | New — table, RLS, data migration |
+| `src/components/Pennant.tsx` | Modified — colorScheme, onClick, interactive, xs size, light-color fix |
+| `src/components/ProfileBannerCollection.tsx` | New — single banner + picker dropdown |
+| `src/lib/color-utils.ts` | Modified — added `isLightColor()` |
+| `src/app/(auth)/signup/page.tsx` | Modified — removed SchoolPicker |
+| `src/app/leagues/join/page.tsx` | Modified — added conditional SchoolPicker |
+| `src/app/api/leagues/join/route.ts` | Modified — handle favoriteSchoolId |
+| `src/app/leagues/create/page.tsx` | Modified — added conditional SchoolPicker |
+| `src/app/profile/page.tsx` | Modified — banner collection |
+| `src/app/settings/page.tsx` | Modified — upsert to new table |
+| `src/app/dashboard/page.tsx` | Modified — light-color fix for pie chart |
+
+---
+
 ## Future Phases
 
 *Post-launch and Year 2 features.*
 
 | Phase | Features | Notes | Timeline |
 |-------|----------|-------|----------|
-| **Phase 30** | Email/push notifications | Game updates, draft reminders, transaction confirmations. Uses `notification_preferences` schema from Phase 14.12. Extends Phase 25.5 in-app notifications with email delivery. **Blocked until Apr 21 DNS transfer.** | Apr-May 2026 |
-| **Phase 31** | Multi-sport architecture | Refactor architecture so college football patterns don't block other sports. Abstract week/season, rankings, game types, scoring rules, awards. Create sport config table and API adapters. | Year 2 |
-| **Phase 32** | Historical season caching | Archive past seasons, returning user experience. Extends Phase 25.6 with full multi-season data. | Post-Season 1 |
+| **Phase 30** ✅ | Favorite Teams & Banner Collection | Multi-sport favorite teams (`user_sport_favorites` table), 3D fabric banner with color toggle, banner picker on profile, SchoolPicker in league join/create flows, light-color detection for visibility. | Mar 2026 |
+| **Phase 31** | Historical season caching | Archive past seasons, returning user experience. Extends Phase 25.6 with full multi-season data. | Mar-Apr 2026 |
+| **Phase 32** | Multi-sport architecture | Refactor architecture so college football patterns don't block other sports. Abstract week/season, rankings, game types, scoring rules, awards. Create sport config table and API adapters. | Year 2 |
 | **Phase 33** | Premium features launch | Activate feature flags, build premium UI: pre-draft intelligence, live analytics, transaction intelligence, custom scoring templates, what-if simulator, power rankings, custom league themes, early draft access. Pro subscriptions ($4.99/mo or $29.99/yr). | Year 2 |
 | **Phase 34** | Payment integration (Stripe) | Entry fees, prize payouts, charity pooling, Pro subscription billing. **Requires gaming attorney consultation if adding paid entry leagues (NAICS reclassification risk).** | Year 2 |
-| **Phase 35** | Multi-sport launch (Hockey) | First sport after CFB using Phase 31 architecture. | Year 2 |
+| **Phase 35** | Multi-sport launch (Hockey) | First sport after CFB using Phase 32 architecture. | Year 2 |
 | **Phase 36** | Native mobile / PWA | Mobile-optimized experience | Year 2+ |
+| **Phase 37** | Email/push notifications | Game updates, draft reminders, transaction confirmations. Uses `notification_preferences` schema from Phase 14.12. Extends Phase 25.5 in-app notifications with email delivery. **Also add email delivery for**: commissioner nudge notifications (Phase 31.4) and pre-season reactivation reminders (Phase 31.5). **Blocked until DNS transfer to Cloudflare.** | Post-DNS transfer |
 
 ---
 
@@ -1740,4 +1796,4 @@ The platform is classified as recreation/entertainment, NOT gambling. This means
 
 ---
 
-*Last Updated: March 9, 2026 (Phase 28 COMPLETE, Phase 28.5 added — Invite Flow Fix & Account Deletion Safety)*
+*Last Updated: March 10, 2026 (Phases 28.5, 29, 30 COMPLETE)*

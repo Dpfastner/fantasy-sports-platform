@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { LeagueContextProvider } from '@/contexts/LeagueContext'
 import type { LeagueSummary, TeamSummary } from '@/contexts/LeagueContext'
+import { DormantRouteGuard } from '@/components/DormantRouteGuard'
 
 interface LayoutProps {
   children: React.ReactNode
@@ -26,7 +27,7 @@ export default async function LeagueLayout({ children, params }: LayoutProps) {
   ] = await Promise.all([
     supabase
       .from('leagues')
-      .select('id, name, sports(name, slug)')
+      .select('id, name, status, sports(name, slug)')
       .eq('id', leagueId)
       .single(),
     supabase
@@ -82,6 +83,8 @@ export default async function LeagueLayout({ children, params }: LayoutProps) {
   const userTeam = teams.find(t => t.userId === user.id) || null
   const isCommissioner = membership?.role === 'commissioner' || membership?.role === 'co_commissioner'
 
+  const isDormant = (currentLeague as Record<string, unknown>).status === 'dormant'
+
   const contextValue = {
     currentLeague: {
       id: leagueId,
@@ -92,10 +95,12 @@ export default async function LeagueLayout({ children, params }: LayoutProps) {
     teamsInLeague: teams,
     userTeam,
     isCommissioner,
+    isDormant,
   }
 
   return (
     <LeagueContextProvider value={contextValue}>
+      {isDormant && <DormantRouteGuard leagueId={leagueId} />}
       {children}
     </LeagueContextProvider>
   )

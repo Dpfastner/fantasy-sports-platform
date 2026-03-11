@@ -10,6 +10,7 @@ export type ActivityAction =
   // Leagues
   | 'league.created'
   | 'league.joined'
+  | 'league.reactivated'
   | 'league.settings_changed'
   // Draft
   | 'draft.started'

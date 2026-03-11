@@ -19,6 +19,7 @@ import { getEnvironment } from '@/lib/env'
 import { getLeagueYear } from '@/lib/league-helpers'
 import { buildShareUrl } from '@/lib/share'
 import { SITE_URL } from '@/lib/og/constants'
+import { DormantLeagueView } from '@/components/DormantLeagueView'
 
 // Force dynamic rendering to ensure fresh data from database
 export const dynamic = 'force-dynamic'
@@ -54,10 +55,12 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 interface LeagueData {
   id: string
   name: string
+  status: string | null
   description: string | null
   invite_code: string
   is_public: boolean
   max_teams: number
+  sport_id: string
   season_id: string
   sports: { name: string; slug: string } | null
   seasons: { name: string; year: number } | null
@@ -183,6 +186,40 @@ export default async function LeaguePage({ params }: PageProps) {
 
   const teams = teamsData as unknown as TeamData[] | null
 
+  // Dormant league — show simplified archive view
+  if (league.status === 'dormant') {
+    const { data: latestArchive } = await supabase
+      .from('league_seasons')
+      .select('id, season_year, champion_user_id, final_standings, archived_at')
+      .eq('league_id', id)
+      .order('season_year', { ascending: false })
+      .limit(1)
+      .single()
+
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-gradient-from to-gradient-to">
+        <Header userName={profile?.display_name} userEmail={user.email} userId={user.id} />
+        <LeagueNav leagueId={id} />
+        <main className="container mx-auto px-4 py-6">
+          <div className="mb-4">
+            <h1 className="text-2xl md:text-3xl font-bold text-text-primary">{league.name}</h1>
+          </div>
+          <DormantLeagueView
+            leagueId={id}
+            leagueName={league.name}
+            sportName={league.sports?.name || ''}
+            sportId={league.sport_id}
+            seasonName={league.seasons?.name || ''}
+            isCommissioner={isCommissioner}
+            latestArchive={latestArchive}
+            teams={(teams || []).filter(t => !t.is_deleted)}
+            currentSeasonYear={league.seasons?.year || new Date().getFullYear()}
+          />
+        </main>
+      </div>
+    )
+  }
+
   // Get user's team
   const userTeam = teams?.find(t => t.user_id === user.id)
 
@@ -203,6 +240,7 @@ export default async function LeaguePage({ params }: PageProps) {
       .from('fantasy_team_weekly_points')
       .select('*')
       .in('fantasy_team_id', teamIds)
+      .eq('season_id', league.season_id)
       .lte('week_number', currentWeek)
       .order('week_number', { ascending: true })
     weeklyPoints = (weeklyPointsData || []) as WeeklyPoints[]
@@ -323,6 +361,7 @@ export default async function LeaguePage({ params }: PageProps) {
       .from('weekly_double_picks')
       .select('*', { count: 'exact', head: true })
       .eq('fantasy_team_id', userTeam.id)
+      .eq('season_id', league.season_id)
     doublePicksUsed = count || 0
   }
 

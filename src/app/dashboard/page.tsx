@@ -32,6 +32,7 @@ export default async function DashboardPage() {
         id,
         name,
         sport_id,
+        status,
         seasons (
           year,
           name
@@ -53,18 +54,22 @@ export default async function DashboardPage() {
       id: string
       name: string
       sport_id: string
+      status: string | null
       seasons: { year: number; name: string } | null
       sports: { name: string; slug: string } | null
     } | null
   }
 
-  const leagues = (leagueMemberships as LeagueMembership[] | null)?.map(m => ({
+  const allLeagues = (leagueMemberships as LeagueMembership[] | null)?.map(m => ({
     ...m.leagues,
     role: m.role
   })).filter(l => l.id) || []
 
+  const leagues = allLeagues.filter(l => l.status !== 'dormant')
+  const dormantLeagues = allLeagues.filter(l => l.status === 'dormant')
+
   // Get user's teams for rank info
-  const leagueIds = leagues.map(l => l.id)
+  const leagueIds = allLeagues.map(l => l.id)
   let userTeamMap: Record<string, { rank: number; totalTeams: number }> = {}
 
   if (leagueIds.length > 0) {
@@ -265,6 +270,37 @@ export default async function DashboardPage() {
               </Link>
             ))}
           </div>
+        )}
+
+        {/* Dormant Leagues (Past Seasons) */}
+        {dormantLeagues.length > 0 && (
+          <details className="mt-6">
+            <summary className="cursor-pointer select-none text-text-secondary hover:text-text-primary transition-colors">
+              <span className="text-lg font-semibold">Past Season Leagues ({dormantLeagues.length})</span>
+            </summary>
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4 mt-4">
+              {dormantLeagues.map((league) => (
+                <Link
+                  key={league.id}
+                  href={`/leagues/${league.id}`}
+                  className="bg-surface/60 rounded-lg p-5 hover:bg-surface-subtle transition-all border border-border/50 opacity-75 hover:opacity-100"
+                >
+                  <div className="flex justify-between items-start mb-3">
+                    <h3 className="text-lg font-semibold text-text-secondary">
+                      {league.name}
+                    </h3>
+                    <span className="bg-surface-inset text-text-muted text-xs px-2 py-1 rounded font-medium">
+                      Dormant
+                    </span>
+                  </div>
+                  <div className="space-y-1 text-text-muted text-sm">
+                    <p>{league.sports?.name}</p>
+                    <p>{league.seasons?.name}</p>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </details>
         )}
 
         {/* Fan Zone Widget */}

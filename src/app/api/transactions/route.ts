@@ -231,6 +231,7 @@ export async function POST(request: NextRequest) {
         slot_number: slotNumber,
         start_week: weekNumber,
         end_week: null,
+        season_id: seasonId || null,
       })
 
     if (insertError) {
@@ -257,6 +258,7 @@ export async function POST(request: NextRequest) {
         dropped_school_id: droppedSchoolId || null,
         added_school_id: addedSchoolId,
         slot_number: slotNumber,
+        season_id: seasonId || null,
       })
 
     if (txError) {

@@ -6,6 +6,7 @@ import { calculateAllPoints } from '@/lib/points/calculator'
 import { areCronsEnabled, getEnvironment } from '@/lib/env'
 import { calculateCurrentWeek, WEEK_CHAMPIONSHIP } from '@/lib/constants/season'
 import { archiveLeagueSeason } from '@/lib/archive-season'
+import { createNotification } from '@/lib/notifications'
 
 // Verify the request is from Vercel Cron
 function verifyCronRequest(request: Request): boolean {
@@ -44,6 +45,7 @@ export async function GET(request: Request) {
       currentWeekGames: { success: false, synced: 0, error: null as string | null },
       failsafe: { checked: false, weeksRecalculated: [] as number[], error: null as string | null },
       autoArchive: { checked: false, archived: [] as string[], error: null as string | null },
+      preSeasonReminder: { checked: false, notified: 0, error: null as string | null },
     }
 
     // Get current season
@@ -290,6 +292,72 @@ export async function GET(request: Request) {
       }
     } catch (error) {
       results.autoArchive.error = String(error)
+    }
+
+    // PRE-SEASON REMINDER: Notify commissioners of dormant leagues
+    // when the next season for their sport starts within 30 days.
+    try {
+      // Find all dormant leagues
+      const { data: dormantLeagues } = await supabase
+        .from('leagues')
+        .select('id, name, sport_id')
+        .eq('status', 'dormant')
+
+      if (dormantLeagues && dormantLeagues.length > 0) {
+        // Get all upcoming seasons that start within 30 days
+        const thirtyDaysFromNow = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000)
+        const { data: upcomingSeasons } = await supabase
+          .from('seasons')
+          .select('id, sport_id, name, start_date')
+          .gt('start_date', now.toISOString().split('T')[0])
+          .lte('start_date', thirtyDaysFromNow.toISOString().split('T')[0])
+
+        if (upcomingSeasons && upcomingSeasons.length > 0) {
+          const seasonBySport = new Map<string, { name: string; start_date: string }>()
+          for (const s of upcomingSeasons) {
+            seasonBySport.set(s.sport_id, { name: s.name, start_date: s.start_date })
+          }
+
+          for (const league of dormantLeagues) {
+            const upcoming = seasonBySport.get(league.sport_id)
+            if (!upcoming) continue
+
+            // Check if we already sent a reminder for this league (avoid spamming daily)
+            const { data: existingNotification } = await supabase
+              .from('notifications')
+              .select('id')
+              .eq('league_id', league.id)
+              .eq('type', 'system')
+              .like('title', 'New Season Approaching%')
+              .limit(1)
+              .single()
+
+            if (existingNotification) continue
+
+            // Get commissioners
+            const { data: commissioners } = await supabase
+              .from('league_members')
+              .select('user_id')
+              .eq('league_id', league.id)
+              .in('role', ['commissioner', 'co_commissioner'])
+
+            for (const commish of commissioners || []) {
+              createNotification({
+                userId: commish.user_id,
+                leagueId: league.id,
+                type: 'system',
+                title: 'New Season Approaching',
+                body: `Your league "${league.name}" is dormant. The ${upcoming.name} season starts on ${new Date(upcoming.start_date + 'T00:00:00').toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}. Reactivate now to get your draft set up!`,
+                data: { leagueId: league.id },
+              })
+              results.preSeasonReminder.notified++
+            }
+          }
+        }
+      }
+      results.preSeasonReminder.checked = true
+    } catch (error) {
+      results.preSeasonReminder.error = String(error)
     }
 
     return NextResponse.json({

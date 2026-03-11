@@ -15,6 +15,7 @@ export type LeagueRole = 'commissioner' | 'co_commissioner' | 'member'
 export type UserRole = 'user' | 'admin'
 export type DraftOrderType = 'random' | 'manual'
 export type UserTier = 'free' | 'pro'
+export type LeagueStatus = 'active' | 'dormant'
 
 export interface Database {
   public: {
@@ -192,6 +193,7 @@ export interface Database {
           invite_code: string // Unique code for joining
           is_public: boolean
           max_teams: number
+          status: LeagueStatus
           created_by: string // User ID of commissioner
           created_at: string
           updated_at: string
@@ -205,6 +207,7 @@ export interface Database {
           invite_code?: string
           is_public?: boolean
           max_teams?: number
+          status?: LeagueStatus
           created_by: string
           created_at?: string
           updated_at?: string
@@ -218,6 +221,7 @@ export interface Database {
           invite_code?: string
           is_public?: boolean
           max_teams?: number
+          status?: LeagueStatus
           created_by?: string
           created_at?: string
           updated_at?: string
@@ -408,6 +412,7 @@ export interface Database {
           user_id: string
           role: LeagueRole
           has_paid: boolean
+          commissioner_nudged_at: string | null
           joined_at: string
           updated_at: string | null
         }
@@ -417,6 +422,7 @@ export interface Database {
           user_id: string
           role?: LeagueRole
           has_paid?: boolean
+          commissioner_nudged_at?: string | null
           joined_at?: string
           updated_at?: string | null
         }
@@ -426,6 +432,7 @@ export interface Database {
           user_id?: string
           role?: LeagueRole
           has_paid?: boolean
+          commissioner_nudged_at?: string | null
           joined_at?: string
           updated_at?: string | null
         }
@@ -502,6 +509,7 @@ export interface Database {
           slot_number: number
           start_week: number
           end_week: number | null // null = still active
+          season_id: string | null
           created_at: string
           updated_at: string | null
         }
@@ -512,6 +520,7 @@ export interface Database {
           slot_number: number
           start_week: number
           end_week?: number | null
+          season_id?: string | null
           created_at?: string
           updated_at?: string | null
         }
@@ -522,6 +531,7 @@ export interface Database {
           slot_number?: number
           start_week?: number
           end_week?: number | null
+          season_id?: string | null
           created_at?: string
           updated_at?: string | null
         }
@@ -536,6 +546,7 @@ export interface Database {
           dropped_school_id: string
           added_school_id: string
           slot_number: number
+          season_id: string | null
           created_at: string
           updated_at: string | null
         }
@@ -546,6 +557,7 @@ export interface Database {
           dropped_school_id: string
           added_school_id: string
           slot_number: number
+          season_id?: string | null
           created_at?: string
           updated_at?: string | null
         }
@@ -556,6 +568,7 @@ export interface Database {
           dropped_school_id?: string
           added_school_id?: string
           slot_number?: number
+          season_id?: string | null
           created_at?: string
           updated_at?: string | null
         }
@@ -568,6 +581,7 @@ export interface Database {
           fantasy_team_id: string
           week_number: number
           school_id: string
+          season_id: string | null
           picked_at: string | null
           points_earned: number | null
           bonus_points: number | null
@@ -578,6 +592,7 @@ export interface Database {
           fantasy_team_id: string
           week_number: number
           school_id: string
+          season_id?: string | null
           picked_at?: string | null
           points_earned?: number | null
           bonus_points?: number | null
@@ -588,6 +603,7 @@ export interface Database {
           fantasy_team_id?: string
           week_number?: number
           school_id?: string
+          season_id?: string | null
           picked_at?: string | null
           points_earned?: number | null
           bonus_points?: number | null
@@ -939,6 +955,7 @@ export interface Database {
           fantasy_team_id: string
           week_number: number
           points: number
+          season_id: string | null
           is_high_points_winner: boolean
           high_points_amount: number
           created_at: string
@@ -949,6 +966,7 @@ export interface Database {
           fantasy_team_id: string
           week_number: number
           points?: number
+          season_id?: string | null
           is_high_points_winner?: boolean
           high_points_amount?: number
           created_at?: string
@@ -959,6 +977,7 @@ export interface Database {
           fantasy_team_id?: string
           week_number?: number
           points?: number
+          season_id?: string | null
           is_high_points_winner?: boolean
           high_points_amount?: number
           created_at?: string
@@ -1694,6 +1713,7 @@ export interface Database {
         Row: {
           id: string
           league_id: string
+          season_id: string | null
           season_year: number
           final_standings: Json | null
           champion_user_id: string | null
@@ -1703,6 +1723,7 @@ export interface Database {
         Insert: {
           id?: string
           league_id: string
+          season_id?: string | null
           season_year: number
           final_standings?: Json | null
           champion_user_id?: string | null
@@ -1712,6 +1733,7 @@ export interface Database {
         Update: {
           id?: string
           league_id?: string
+          season_id?: string | null
           season_year?: number
           final_standings?: Json | null
           champion_user_id?: string | null

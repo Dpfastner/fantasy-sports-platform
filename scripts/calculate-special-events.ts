@@ -207,6 +207,7 @@ async function calculateSpecialEvents() {
             points: currentPoints + bowlPoints,
             is_high_points_winner: false,
             high_points_amount: 0,
+            season_id: league.season_id,
           }, { onConflict: 'fantasy_team_id,week_number' })
       }
 
@@ -228,6 +229,7 @@ async function calculateSpecialEvents() {
             points: currentPoints + cfpPoints,
             is_high_points_winner: false,
             high_points_amount: 0,
+            season_id: league.season_id,
           }, { onConflict: 'fantasy_team_id,week_number' })
       }
 
@@ -254,6 +256,7 @@ async function calculateSpecialEvents() {
             points: currentPoints + championshipPoints,
             is_high_points_winner: false,
             high_points_amount: 0,
+            season_id: league.season_id,
           }, { onConflict: 'fantasy_team_id,week_number' })
       }
 
@@ -267,6 +270,7 @@ async function calculateSpecialEvents() {
             points: heismanPoints,
             is_high_points_winner: false,
             high_points_amount: 0,
+            season_id: league.season_id,
           }, { onConflict: 'fantasy_team_id,week_number' })
       }
     }

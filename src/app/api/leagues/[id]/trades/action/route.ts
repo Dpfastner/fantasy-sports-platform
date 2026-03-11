@@ -184,7 +184,7 @@ export async function POST(
       // Get current week
       const { data: league } = await supabase
         .from('leagues')
-        .select('seasons(year)')
+        .select('season_id, seasons(year)')
         .eq('id', leagueId)
         .single()
       const year = (league?.seasons as { year: number } | { year: number }[] | null)
@@ -196,6 +196,7 @@ export async function POST(
         tradeId,
         leagueId,
         currentWeek,
+        seasonId: league?.season_id,
         dropSchoolIds: dropSchoolIds || undefined,
         acceptingTeamId: receiverTeam.id,
       })

@@ -389,6 +389,7 @@ async function calculateFantasyTeamWeeklyPoints(seasonId: string, weekNumber: nu
           points: totalPoints,
           is_high_points_winner: false,
           high_points_amount: 0,
+          season_id: seasonId,
         }, { onConflict: 'fantasy_team_id,week_number' })
     }
   }

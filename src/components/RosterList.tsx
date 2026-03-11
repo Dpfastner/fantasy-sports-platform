@@ -223,7 +223,8 @@ export function RosterList({
           .insert({
             fantasy_team_id: teamId,
             week_number: currentWeek,
-            school_id: schoolId
+            school_id: schoolId,
+            season_id: seasonId,
           })
         setPicksUsed(prev => prev + 1)
       }

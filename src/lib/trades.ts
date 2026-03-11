@@ -7,6 +7,7 @@ interface ExecuteTradeParams {
   tradeId: string
   leagueId: string
   currentWeek: number
+  seasonId?: string
   dropSchoolIds?: string[] // schools the accepting team drops to make room (uneven trades)
   acceptingTeamId?: string // the team accepting (needed to know who drops)
 }
@@ -31,7 +32,7 @@ interface DroppedSchoolRecord {
  * Records all dropped schools in the trade's dropped_schools JSONB for veto restoration.
  */
 export async function executeTrade(params: ExecuteTradeParams): Promise<{ success: boolean; error?: string }> {
-  const { tradeId, leagueId, currentWeek, dropSchoolIds, acceptingTeamId } = params
+  const { tradeId, leagueId, currentWeek, seasonId, dropSchoolIds, acceptingTeamId } = params
   const supabase = createAdminClient()
 
   // Fetch trade and items
@@ -97,6 +98,7 @@ export async function executeTrade(params: ExecuteTradeParams): Promise<{ succes
         school_id: item.school_id,
         slot_number: rosterPeriod.slot_number,
         start_week: currentWeek,
+        season_id: seasonId,
       })
 
     if (insertError) {

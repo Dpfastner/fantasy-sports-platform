@@ -67,11 +67,12 @@ export function DoublePointsPicker({
   const loadPicksAndDeadline = async () => {
     setLoading(true)
     try {
-      // Get all double picks for this team
+      // Get all double picks for this team (current season only)
       const { data: picks } = await supabase
         .from('weekly_double_picks')
         .select('*')
         .eq('fantasy_team_id', teamId)
+        .eq('season_id', seasonId)
         .order('week_number', { ascending: true })
 
       if (picks) {
@@ -147,7 +148,8 @@ export function DoublePointsPicker({
           .insert({
             fantasy_team_id: teamId,
             week_number: currentWeek,
-            school_id: selectedSchool
+            school_id: selectedSchool,
+            season_id: seasonId,
           })
 
         if (insertError) throw insertError

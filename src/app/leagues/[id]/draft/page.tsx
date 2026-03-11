@@ -73,6 +73,7 @@ export default function DraftRoomPage() {
   const [user, setUser] = useState<{ id: string } | null>(null)
   const [isCommissioner, setIsCommissioner] = useState(false)
   const [leagueName, setLeagueName] = useState('')
+  const [leagueSeasonId, setLeagueSeasonId] = useState<string | null>(null)
 
   // Draft state
   const [draft, setDraft] = useState<DraftState | null>(null)
@@ -251,7 +252,7 @@ export default function DraftRoomPage() {
         // Get league info
         const { data: league } = await supabase
           .from('leagues')
-          .select('name, created_by, sport_id')
+          .select('name, created_by, sport_id, season_id')
           .eq('id', leagueId)
           .single()
 
@@ -261,6 +262,7 @@ export default function DraftRoomPage() {
         }
 
         setLeagueName(league.name)
+        setLeagueSeasonId(league.season_id)
         setIsCommissioner(league.created_by === authUser.id)
 
         // Get member count
@@ -1021,7 +1023,8 @@ export default function DraftRoomPage() {
         fantasy_team_id: myTeam.id,
         school_id: schoolId,
         slot_number: draft.current_pick,
-        start_week: 1
+        start_week: 1,
+        season_id: leagueSeasonId,
       })
 
       if (rosterError) {

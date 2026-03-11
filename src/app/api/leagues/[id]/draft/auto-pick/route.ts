@@ -210,6 +210,7 @@ export async function POST(
         school_id: result.schoolId,
         slot_number: draft.current_pick,
         start_week: 1,
+        season_id: league.season_id,
       })
 
     // Advance to next pick
