@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { getGamesForWeek, getSeasonInfo, saveManualScores, clearManualOverrides } from './actions'
+import { getGamesForWeek, getSeasons, saveManualScores, clearManualOverrides } from './actions'
 
 interface GameRow {
   id: string
@@ -30,9 +30,14 @@ interface GameEdit {
   status: string
 }
 
+interface SeasonOption {
+  id: string
+  year: number
+}
+
 export default function AdminScoresPage() {
+  const [seasons, setSeasons] = useState<SeasonOption[]>([])
   const [seasonId, setSeasonId] = useState<string | null>(null)
-  const [seasonYear, setSeasonYear] = useState<number>(new Date().getFullYear())
   const [week, setWeek] = useState(1)
   const [games, setGames] = useState<GameRow[]>([])
   const [edits, setEdits] = useState<Map<string, GameEdit>>(new Map())
@@ -40,12 +45,16 @@ export default function AdminScoresPage() {
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
 
-  // Load season info on mount
+  // Load all seasons on mount, default to most recent
   useEffect(() => {
-    getSeasonInfo().then((result) => {
-      if (result.data) {
-        setSeasonId(result.data.id)
-        setSeasonYear(result.data.year)
+    getSeasons().then((result) => {
+      if (result.data && result.data.length > 0) {
+        const seasonList = result.data as SeasonOption[]
+        setSeasons(seasonList)
+        setSeasonId(seasonList[0].id) // most recent (ordered DESC)
+      } else {
+        setLoading(false)
+        setMessage({ type: 'error', text: result.error || 'No seasons found' })
       }
     })
   }, [])
@@ -123,6 +132,7 @@ export default function AdminScoresPage() {
     }
   }
 
+  const selectedSeason = seasons.find((s) => s.id === seasonId)
   const manualCount = games.filter((g) => g.is_manual_override).length
 
   return (
@@ -135,7 +145,17 @@ export default function AdminScoresPage() {
           <div className="flex flex-wrap items-end gap-4">
             <div>
               <label className="block text-text-muted text-sm mb-1">Season</label>
-              <span className="text-text-primary font-medium">{seasonYear}</span>
+              <select
+                value={seasonId || ''}
+                onChange={(e) => setSeasonId(e.target.value)}
+                className="px-3 py-2 bg-surface-subtle border border-border rounded-lg text-text-primary text-sm"
+              >
+                {seasons.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.year}
+                  </option>
+                ))}
+              </select>
             </div>
             <div>
               <label className="block text-text-muted text-sm mb-1">Week</label>
@@ -155,7 +175,7 @@ export default function AdminScoresPage() {
               <button
                 onClick={handleSave}
                 disabled={saving || edits.size === 0}
-                className="px-4 py-2 bg-brand text-brand-text rounded-lg text-sm font-medium hover:bg-brand-hover disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="px-4 py-2 bg-brand text-white rounded-lg text-sm font-medium hover:bg-brand-hover disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 {saving ? 'Saving...' : `Save & Recalculate (${edits.size})`}
               </button>
@@ -189,7 +209,9 @@ export default function AdminScoresPage() {
           {loading ? (
             <div className="p-8 text-center text-text-muted">Loading games...</div>
           ) : games.length === 0 ? (
-            <div className="p-8 text-center text-text-muted">No games found for Week {week}.</div>
+            <div className="p-8 text-center text-text-muted">
+              No games found for {selectedSeason?.year || ''} Week {week}.
+            </div>
           ) : (
             <div className="divide-y divide-border">
               {/* Header */}

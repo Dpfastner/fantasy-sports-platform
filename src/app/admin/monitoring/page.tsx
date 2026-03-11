@@ -78,7 +78,7 @@ export default function MonitoringPage() {
           <button
             onClick={handleTest}
             disabled={testing}
-            className="px-4 py-2 bg-brand text-brand-text rounded-lg text-sm font-medium hover:bg-brand-hover disabled:opacity-50 transition-colors"
+            className="px-4 py-2 bg-brand text-white rounded-lg text-sm font-medium hover:bg-brand-hover disabled:opacity-50 transition-colors"
           >
             {testing ? 'Testing...' : 'Test Now'}
           </button>

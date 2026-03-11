@@ -47,20 +47,18 @@ export async function getGamesForWeek(
   return { data: data || [] }
 }
 
-export async function getSeasonInfo(): Promise<{ data?: { id: string; year: number }; error?: string }> {
+export async function getSeasons(): Promise<{ data?: { id: string; year: number }[]; error?: string }> {
   const auth = await verifyAdmin()
   if ('error' in auth) return { error: auth.error }
 
   const supabase = createAdminClient()
-  const year = new Date().getFullYear()
   const { data, error } = await supabase
     .from('seasons')
     .select('id, year')
-    .eq('year', year)
-    .single()
+    .order('year', { ascending: false })
 
   if (error) return { error: error.message }
-  return { data }
+  return { data: data || [] }
 }
 
 export async function saveManualScores(
