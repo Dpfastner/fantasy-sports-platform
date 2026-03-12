@@ -23,6 +23,7 @@ interface Game {
   winnerId?: string | null
   period?: string | null
   clock?: string | null
+  startsAt?: string | null
 }
 
 interface Participant {
@@ -104,11 +105,11 @@ export function BracketGrid({
 
   return (
     <div className="overflow-x-auto pb-4">
-      <div className="flex items-start" style={{ minWidth: 900, height: totalHeight + 60 }}>
+      <div className="flex items-start" style={{ minWidth: 1000, height: totalHeight + 60 }}>
         {rounds.map((round, rIdx) => (
           <div key={round.round} className="flex items-start shrink-0">
             {/* Round column */}
-            <div className="relative" style={{ width: 210 }}>
+            <div className="relative" style={{ width: 230 }}>
               {/* Round header */}
               <div className="text-center mb-2">
                 <div className="text-xs font-semibold text-text-secondary">
@@ -145,6 +146,7 @@ export function BracketGrid({
                         score2={g?.participant2Score ?? null}
                         period={g?.period || null}
                         clock={g?.clock || null}
+                        startsAt={g?.startsAt || null}
                         roundPoints={scoringRules[round.round] || 0}
                         isLocked={isLocked}
                         onPick={onPick}

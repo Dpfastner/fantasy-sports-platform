@@ -19,6 +19,7 @@ interface BracketGameCardProps {
   score2: number | null
   period: string | null
   clock: string | null
+  startsAt: string | null
   roundPoints: number
   isLocked: boolean
   onPick: (gameId: string, participantId: string) => void
@@ -36,6 +37,7 @@ export function BracketGameCard({
   score2,
   period,
   clock,
+  startsAt,
   roundPoints,
   isLocked,
   onPick,
@@ -87,17 +89,22 @@ export function BracketGameCard({
         {!participant && <span className="w-4 shrink-0" />}
 
         {/* Logo */}
-        {participant?.logoUrl && (
+        {participant?.logoUrl ? (
           <img
             src={participant.logoUrl}
             alt=""
-            className="w-4 h-4 shrink-0 object-contain"
+            className={`${compact ? 'w-4 h-4' : 'w-5 h-5'} shrink-0 object-contain`}
           />
-        )}
+        ) : participant ? (
+          <span className={`${compact ? 'w-4 h-4' : 'w-5 h-5'} shrink-0`} />
+        ) : null}
 
-        {/* Name */}
+        {/* Name — full name on desktop, short name in compact/mobile */}
         <span className={`text-xs truncate flex-1 ${participant ? 'text-text-primary' : 'text-text-muted italic'}`}>
-          {participant?.shortName || participant?.name || 'TBD'}
+          {compact
+            ? (participant?.shortName || participant?.name || 'TBD')
+            : (participant?.name || 'TBD')
+          }
         </span>
 
         {/* Score (live/final) */}
@@ -120,7 +127,7 @@ export function BracketGameCard({
       className={`
         rounded-md border overflow-hidden
         ${isCorrect ? 'border-success/40' : isIncorrect ? 'border-danger/40' : 'border-border'}
-        ${compact ? 'w-[170px]' : 'w-[200px]'}
+        ${compact ? 'w-[170px]' : 'w-[220px]'}
         bg-surface
       `}
     >
@@ -136,6 +143,18 @@ export function BracketGameCard({
               {period} {clock || ''}
             </span>
           )}
+        </div>
+      )}
+
+      {/* Game date/time for scheduled games */}
+      {!isLive && !isFinal && startsAt && (
+        <div className="px-2 py-0.5 border-b border-border/50 text-center">
+          <span className="text-[10px] text-text-muted">
+            {new Date(startsAt).toLocaleString('en-US', {
+              month: 'short', day: 'numeric',
+              hour: 'numeric', minute: '2-digit',
+            })}
+          </span>
         </div>
       )}
 

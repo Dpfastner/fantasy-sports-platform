@@ -16,6 +16,7 @@ interface Game {
   winnerId?: string | null
   period?: string | null
   clock?: string | null
+  startsAt?: string | null
 }
 
 interface Participant {
@@ -97,6 +98,7 @@ export function BracketList({
                   score2={g?.participant2Score ?? null}
                   period={g?.period || null}
                   clock={g?.clock || null}
+                  startsAt={g?.startsAt || null}
                   roundPoints={scoringRules[round.round] || 0}
                   isLocked={isLocked}
                   onPick={onPick}
