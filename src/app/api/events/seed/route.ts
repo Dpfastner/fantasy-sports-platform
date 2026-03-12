@@ -19,6 +19,8 @@ export async function POST(request: Request) {
     switch (tournament) {
       case 'frozen-four-2026':
         return await seedFrozenFour(admin)
+      case 'frozen-four-2026-teams':
+        return await seedFrozenFourTeams(admin)
       case 'masters-2026':
         return await seedMasters(admin)
       case 'w-six-nations-2026':
@@ -124,6 +126,143 @@ async function seedFrozenFour(admin: ReturnType<typeof createAdminClient>) {
     id: tournament.id,
     message: 'Tournament shell created with 15 bracket games. Teams will be seeded after Selection Sunday (Mar 22).',
     games: games.length,
+  })
+}
+
+// ============================================
+// FROZEN FOUR 2026 — TEAMS
+// Seed projected 16 teams and assign to bracket games.
+// Can be re-run after Selection Sunday to update with actual teams.
+// ============================================
+
+async function seedFrozenFourTeams(admin: ReturnType<typeof createAdminClient>) {
+  const { data: tournament } = await admin
+    .from('event_tournaments')
+    .select('id')
+    .eq('slug', 'frozen-four-2026')
+    .single()
+
+  if (!tournament) {
+    return NextResponse.json({ error: 'Frozen Four tournament not found. Run frozen-four-2026 seed first.' }, { status: 400 })
+  }
+
+  // Delete existing participants (allow re-seeding with actual bracket)
+  await admin
+    .from('event_participants')
+    .delete()
+    .eq('tournament_id', tournament.id)
+
+  // Projected 16-team bracket (seeds based on PairWise rankings)
+  const teams = [
+    { name: 'Michigan State', short: 'MSU', seed: 1 },
+    { name: 'Michigan', short: 'MICH', seed: 2 },
+    { name: 'North Dakota', short: 'UND', seed: 3 },
+    { name: 'Western Michigan', short: 'WMU', seed: 4 },
+    { name: 'Penn State', short: 'PSU', seed: 5 },
+    { name: 'Providence', short: 'PROV', seed: 6 },
+    { name: 'Quinnipiac', short: 'QU', seed: 7 },
+    { name: 'Minnesota Duluth', short: 'UMD', seed: 8 },
+    { name: 'Denver', short: 'DU', seed: 9 },
+    { name: 'Cornell', short: 'COR', seed: 10 },
+    { name: 'Dartmouth', short: 'DART', seed: 11 },
+    { name: 'Boston College', short: 'BC', seed: 12 },
+    { name: 'Wisconsin', short: 'WIS', seed: 13 },
+    { name: 'Connecticut', short: 'CONN', seed: 14 },
+    { name: 'Augustana', short: 'AUG', seed: 15 },
+    { name: 'Bentley', short: 'BENT', seed: 16 },
+  ]
+
+  const participantRows = teams.map(t => ({
+    tournament_id: tournament.id,
+    name: t.name,
+    short_name: t.short,
+    seed: t.seed,
+    metadata: { projected: true },
+  }))
+
+  const { error: pErr } = await admin.from('event_participants').insert(participantRows)
+  if (pErr) throw pErr
+
+  // Fetch participant IDs
+  const { data: participants } = await admin
+    .from('event_participants')
+    .select('id, seed')
+    .eq('tournament_id', tournament.id)
+    .order('seed', { ascending: true })
+
+  if (!participants) throw new Error('Failed to fetch participants')
+
+  const seedToId: Record<number, string> = {}
+  for (const p of participants) {
+    if (p.seed != null) seedToId[p.seed] = p.id
+  }
+
+  // Assign teams to bracket games
+  // Standard bracket: 1v16, 8v9, 5v12, 4v13, 3v14, 6v11, 7v10, 2v15
+  const matchups = [
+    { game: 1, seed1: 1, seed2: 16 },  // Albany Regional
+    { game: 2, seed1: 8, seed2: 9 },
+    { game: 3, seed1: 5, seed2: 12 },  // Loveland Regional
+    { game: 4, seed1: 4, seed2: 13 },
+    { game: 5, seed1: 3, seed2: 14 },  // Sioux Falls Regional
+    { game: 6, seed1: 6, seed2: 11 },
+    { game: 7, seed1: 7, seed2: 10 },  // Worcester Regional
+    { game: 8, seed1: 2, seed2: 15 },
+  ]
+
+  // Get existing games
+  const { data: games } = await admin
+    .from('event_games')
+    .select('id, game_number')
+    .eq('tournament_id', tournament.id)
+    .order('game_number', { ascending: true })
+
+  if (!games) throw new Error('No games found')
+
+  const gameMap: Record<number, string> = {}
+  for (const g of games) {
+    gameMap[g.game_number] = g.id
+  }
+
+  // Update round 1 games with team assignments + start times
+  for (const m of matchups) {
+    const gameId = gameMap[m.game]
+    if (gameId) {
+      await admin
+        .from('event_games')
+        .update({
+          participant_1_id: seedToId[m.seed1],
+          participant_2_id: seedToId[m.seed2],
+          starts_at: '2026-03-27T18:00:00Z', // Regional games start Mar 27
+        })
+        .eq('id', gameId)
+    }
+  }
+
+  // Update config to mark teams as seeded
+  await admin
+    .from('event_tournaments')
+    .update({ config: {
+      regionals: [
+        { name: 'Albany Regional', city: 'Albany, NY', dates: '2026-03-26 to 2026-03-29' },
+        { name: 'Loveland Regional', city: 'Loveland, CO', dates: '2026-03-26 to 2026-03-29' },
+        { name: 'Sioux Falls Regional', city: 'Sioux Falls, SD', dates: '2026-03-26 to 2026-03-29' },
+        { name: 'Worcester Regional', city: 'Worcester, MA', dates: '2026-03-26 to 2026-03-29' },
+      ],
+      frozen_four_venue: 'T-Mobile Arena, Las Vegas, NV',
+      semifinal_date: '2026-04-09',
+      championship_date: '2026-04-11',
+      selection_date: '2026-03-22',
+      teams_seeded: true,
+    }})
+    .eq('id', tournament.id)
+
+  return NextResponse.json({
+    success: true,
+    tournament: 'frozen-four-2026-teams',
+    id: tournament.id,
+    participants: teams.length,
+    message: 'Projected 16 teams seeded and assigned to bracket games.',
   })
 }
 

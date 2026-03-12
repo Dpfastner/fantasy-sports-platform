@@ -1,4 +1,4 @@
-import { notFound } from 'next/navigation'
+import { notFound, redirect } from 'next/navigation'
 import Link from 'next/link'
 import { createClient, createAdminClient } from '@/lib/supabase/server'
 import { Header } from '@/components/Header'
@@ -97,10 +97,19 @@ export default async function PoolDetailPage({ params }: PageProps) {
     .eq('pool_id', poolId)
     .order('score', { ascending: false })
 
-  // Get current user's entry
-  const userEntry = user
+  // Get current user's entry — auto-join if creator without entry
+  let userEntry = user
     ? (entries || []).find(e => e.user_id === user.id)
     : null
+
+  if (user && !userEntry && pool.created_by === user.id) {
+    // Creator should always be a member — auto-fix if entry is missing
+    await admin
+      .from('event_entries')
+      .insert({ pool_id: poolId, user_id: user.id })
+
+    redirect(`/events/${slug}/pools/${poolId}`)
+  }
 
   // Get current user's picks
   let userPicks: Array<{

@@ -87,6 +87,17 @@ export function BracketPicker({
 
   const roundOrder = Object.keys(roundGroups)
 
+  const roundLabels: Record<string, string> = {
+    regional_quarterfinal: 'Regional Quarterfinals',
+    regional_final: 'Regional Finals',
+    semifinal: 'Frozen Four Semifinals',
+    championship: 'Championship',
+    round_1: 'Round 1',
+    round_2: 'Round 2',
+    round_3: 'Round 3',
+    round_4: 'Round 4',
+  }
+
   const isLocked = poolStatus !== 'open'
   const totalGames = games.length
   const pickedCount = Object.keys(picks).length
@@ -185,7 +196,7 @@ export function BracketPicker({
       <div className="space-y-6">
         {roundOrder.map((round) => (
           <div key={round}>
-            <h3 className="brand-h3 text-base text-text-primary mb-3">{round}</h3>
+            <h3 className="brand-h3 text-base text-text-primary mb-3">{roundLabels[round] || round.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}</h3>
             <div className="space-y-3">
               {roundGroups[round].map((game) => {
                 const p1 = getParticipantForSlot(game.participant1Id)
