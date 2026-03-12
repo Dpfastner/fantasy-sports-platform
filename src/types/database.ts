@@ -17,6 +17,15 @@ export type DraftOrderType = 'random' | 'manual'
 export type UserTier = 'free' | 'pro'
 export type LeagueStatus = 'active' | 'dormant'
 
+// Event game enums
+export type EventFormat = 'bracket' | 'pickem' | 'survivor'
+export type EventTournamentStatus = 'upcoming' | 'active' | 'completed' | 'cancelled'
+export type EventGameStatus = 'scheduled' | 'live' | 'completed' | 'cancelled' | 'postponed'
+export type EventPoolStatus = 'open' | 'locked' | 'scoring' | 'completed'
+export type EventTiebreaker = 'none' | 'championship_score' | 'first_match_score' | 'most_upsets' | 'random'
+export type EventWeekResolution = 'pending' | 'in_progress' | 'resolved'
+export type EventEliminationReason = 'loss' | 'draw' | 'missed_deadline' | 'manual'
+
 export interface Database {
   public: {
     Tables: {
@@ -1848,6 +1857,373 @@ export interface Database {
           created_at?: string
         }
       }
+
+      // ============================================
+      // EVENT GAME TABLES (brackets, pick'em, survivor)
+      // ============================================
+
+      event_tournaments: {
+        Row: {
+          id: string
+          sport: string
+          name: string
+          slug: string
+          format: EventFormat
+          status: EventTournamentStatus
+          bracket_size: number | null
+          total_weeks: number | null
+          description: string | null
+          rules_text: string | null
+          image_url: string | null
+          starts_at: string
+          ends_at: string | null
+          config: Record<string, unknown>
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          sport: string
+          name: string
+          slug: string
+          format: EventFormat
+          status?: EventTournamentStatus
+          bracket_size?: number | null
+          total_weeks?: number | null
+          description?: string | null
+          rules_text?: string | null
+          image_url?: string | null
+          starts_at: string
+          ends_at?: string | null
+          config?: Record<string, unknown>
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          sport?: string
+          name?: string
+          slug?: string
+          format?: EventFormat
+          status?: EventTournamentStatus
+          bracket_size?: number | null
+          total_weeks?: number | null
+          description?: string | null
+          rules_text?: string | null
+          image_url?: string | null
+          starts_at?: string
+          ends_at?: string | null
+          config?: Record<string, unknown>
+          created_at?: string
+          updated_at?: string
+        }
+      }
+
+      event_participants: {
+        Row: {
+          id: string
+          tournament_id: string
+          name: string
+          short_name: string | null
+          seed: number | null
+          logo_url: string | null
+          external_id: string | null
+          metadata: Record<string, unknown>
+          sort_order: number
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          tournament_id: string
+          name: string
+          short_name?: string | null
+          seed?: number | null
+          logo_url?: string | null
+          external_id?: string | null
+          metadata?: Record<string, unknown>
+          sort_order?: number
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          tournament_id?: string
+          name?: string
+          short_name?: string | null
+          seed?: number | null
+          logo_url?: string | null
+          external_id?: string | null
+          metadata?: Record<string, unknown>
+          sort_order?: number
+          created_at?: string
+        }
+      }
+
+      event_games: {
+        Row: {
+          id: string
+          tournament_id: string
+          game_number: number
+          round: string | null
+          week_number: number | null
+          participant_1_id: string | null
+          participant_2_id: string | null
+          participant_1_score: number | null
+          participant_2_score: number | null
+          winner_id: string | null
+          is_draw: boolean
+          status: EventGameStatus
+          starts_at: string | null
+          external_id: string | null
+          metadata: Record<string, unknown>
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          tournament_id: string
+          game_number: number
+          round?: string | null
+          week_number?: number | null
+          participant_1_id?: string | null
+          participant_2_id?: string | null
+          participant_1_score?: number | null
+          participant_2_score?: number | null
+          winner_id?: string | null
+          is_draw?: boolean
+          status?: EventGameStatus
+          starts_at?: string | null
+          external_id?: string | null
+          metadata?: Record<string, unknown>
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          tournament_id?: string
+          game_number?: number
+          round?: string | null
+          week_number?: number | null
+          participant_1_id?: string | null
+          participant_2_id?: string | null
+          participant_1_score?: number | null
+          participant_2_score?: number | null
+          winner_id?: string | null
+          is_draw?: boolean
+          status?: EventGameStatus
+          starts_at?: string | null
+          external_id?: string | null
+          metadata?: Record<string, unknown>
+          created_at?: string
+          updated_at?: string
+        }
+      }
+
+      event_pools: {
+        Row: {
+          id: string
+          tournament_id: string
+          league_id: string | null
+          name: string
+          created_by: string
+          visibility: 'public' | 'private'
+          invite_code: string | null
+          scoring_rules: Record<string, unknown>
+          tiebreaker: EventTiebreaker
+          deadline: string | null
+          max_entries: number | null
+          status: EventPoolStatus
+          linked_pool_id: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          tournament_id: string
+          league_id?: string | null
+          name: string
+          created_by: string
+          visibility?: 'public' | 'private'
+          invite_code?: string | null
+          scoring_rules?: Record<string, unknown>
+          tiebreaker?: EventTiebreaker
+          deadline?: string | null
+          max_entries?: number | null
+          status?: EventPoolStatus
+          linked_pool_id?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          tournament_id?: string
+          league_id?: string | null
+          name?: string
+          created_by?: string
+          visibility?: 'public' | 'private'
+          invite_code?: string | null
+          scoring_rules?: Record<string, unknown>
+          tiebreaker?: EventTiebreaker
+          deadline?: string | null
+          max_entries?: number | null
+          status?: EventPoolStatus
+          linked_pool_id?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+      }
+
+      event_pool_weeks: {
+        Row: {
+          id: string
+          pool_id: string
+          week_number: number
+          deadline: string
+          resolution_status: EventWeekResolution
+          resolved_at: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          pool_id: string
+          week_number: number
+          deadline: string
+          resolution_status?: EventWeekResolution
+          resolved_at?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          pool_id?: string
+          week_number?: number
+          deadline?: string
+          resolution_status?: EventWeekResolution
+          resolved_at?: string | null
+          created_at?: string
+        }
+      }
+
+      event_entries: {
+        Row: {
+          id: string
+          pool_id: string
+          user_id: string
+          display_name: string | null
+          total_points: number
+          is_active: boolean
+          eliminated_week: number | null
+          elimination_reason: EventEliminationReason | null
+          strikes_used: number
+          tiebreaker_prediction: Record<string, unknown> | null
+          tiebreaker_difference: number | null
+          submitted_at: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          pool_id: string
+          user_id: string
+          display_name?: string | null
+          total_points?: number
+          is_active?: boolean
+          eliminated_week?: number | null
+          elimination_reason?: EventEliminationReason | null
+          strikes_used?: number
+          tiebreaker_prediction?: Record<string, unknown> | null
+          tiebreaker_difference?: number | null
+          submitted_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          pool_id?: string
+          user_id?: string
+          display_name?: string | null
+          total_points?: number
+          is_active?: boolean
+          eliminated_week?: number | null
+          elimination_reason?: EventEliminationReason | null
+          strikes_used?: number
+          tiebreaker_prediction?: Record<string, unknown> | null
+          tiebreaker_difference?: number | null
+          submitted_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+      }
+
+      event_picks: {
+        Row: {
+          id: string
+          entry_id: string
+          game_id: string | null
+          week_number: number | null
+          participant_id: string
+          is_correct: boolean | null
+          points_earned: number
+          missed_deadline: boolean
+          picked_at: string
+          resolved_at: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          entry_id: string
+          game_id?: string | null
+          week_number?: number | null
+          participant_id: string
+          is_correct?: boolean | null
+          points_earned?: number
+          missed_deadline?: boolean
+          picked_at?: string
+          resolved_at?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          entry_id?: string
+          game_id?: string | null
+          week_number?: number | null
+          participant_id?: string
+          is_correct?: boolean | null
+          points_earned?: number
+          missed_deadline?: boolean
+          picked_at?: string
+          resolved_at?: string | null
+          created_at?: string
+        }
+      }
+
+      event_activity_log: {
+        Row: {
+          id: string
+          pool_id: string | null
+          tournament_id: string | null
+          user_id: string | null
+          action: string
+          details: Record<string, unknown>
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          pool_id?: string | null
+          tournament_id?: string | null
+          user_id?: string | null
+          action: string
+          details?: Record<string, unknown>
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          pool_id?: string | null
+          tournament_id?: string | null
+          user_id?: string | null
+          action?: string
+          details?: Record<string, unknown>
+          created_at?: string
+        }
+      }
     }
     Views: {
       [_ in never]: never
@@ -1914,6 +2290,16 @@ export type ProgramTrend = Tables<'program_trends'>
 export type LeagueAnnouncement = Tables<'league_announcements'>
 export type LeagueSeason = Tables<'league_seasons'>
 export type DraftMessage = Tables<'draft_messages'>
+
+// Event game types
+export type EventTournament = Tables<'event_tournaments'>
+export type EventParticipant = Tables<'event_participants'>
+export type EventGame = Tables<'event_games'>
+export type EventPool = Tables<'event_pools'>
+export type EventPoolWeek = Tables<'event_pool_weeks'>
+export type EventEntry = Tables<'event_entries'>
+export type EventPick = Tables<'event_picks'>
+export type EventActivityLog = Tables<'event_activity_log'>
 
 // Composite type for badge display (badge instance + joined definition)
 export interface UserBadgeWithDefinition {

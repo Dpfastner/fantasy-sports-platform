@@ -52,6 +52,15 @@ export type ActivityAction =
   | 'announcement.deleted'
   // Chat
   | 'chat.message_sent'
+  // Events
+  | 'event.tournament_viewed'
+  | 'event.pool_created'
+  | 'event.pool_joined'
+  | 'event.picks_submitted'
+  | 'event.picks_updated'
+  | 'event.bracket_completed'
+  | 'event.survivor_pick_made'
+  | 'event.leaderboard_viewed'
   // Other
   | 'invite_code.looked_up'
   | 'issue_report.submitted'

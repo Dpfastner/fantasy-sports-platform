@@ -1,7 +1,7 @@
 import * as Sentry from '@sentry/nextjs'
 import type { SupabaseClient } from '@supabase/supabase-js'
 
-interface ValidationResult {
+export interface ValidationResult {
   valid: boolean
   issues: string[]
 }

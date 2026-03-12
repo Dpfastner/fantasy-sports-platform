@@ -21,6 +21,10 @@ export type NotificationType =
   | 'trade_vetoed'
   | 'trade_expired'
   | 'trade_expiring'
+  | 'event_eliminated'
+  | 'event_survived'
+  | 'event_deadline'
+  | 'event_results'
   | 'system'
 
 /**
@@ -44,6 +48,10 @@ const TYPE_TO_PREF: Record<string, string> = {
   announcement_posted: 'inapp_announcements',
   chat_mention: 'inapp_chat_mentions',
   league_joined: 'inapp_league_activity',
+  event_eliminated: 'inapp_events',
+  event_survived: 'inapp_events',
+  event_deadline: 'inapp_events',
+  event_results: 'inapp_events',
 }
 
 /**
@@ -67,6 +75,10 @@ const TYPE_TO_PUSH_PREF: Record<string, string> = {
   announcement_posted: 'push_announcements',
   chat_mention: 'push_chat_mentions',
   league_joined: 'push_league_activity',
+  event_eliminated: 'push_events',
+  event_survived: 'push_events',
+  event_deadline: 'push_events',
+  event_results: 'push_events',
 }
 
 /**
@@ -104,6 +116,16 @@ function buildNotificationUrl(
       return `${base}/leagues/${lid}/team`
     case 'game_results':
       return `${base}/leagues/${lid}`
+    case 'event_eliminated':
+    case 'event_survived':
+    case 'event_results': {
+      const poolId = data?.poolId as string
+      return poolId ? `${base}/events/pools/${poolId}` : `${base}/events`
+    }
+    case 'event_deadline': {
+      const eventPoolId = data?.poolId as string
+      return eventPoolId ? `${base}/events/pools/${eventPoolId}` : `${base}/events`
+    }
     default:
       return `${base}/dashboard`
   }

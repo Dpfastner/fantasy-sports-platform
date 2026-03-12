@@ -2,7 +2,7 @@
 
 > **Platform Name**: Rivyls (rivyls.com)
 > **Current Sport**: College Football (base for multi-sport expansion)
-> **Last Updated**: March 11, 2026 (Phases 0-32 complete)
+> **Last Updated**: March 12, 2026 (Phases 0-32, 34 complete)
 > **Audit Date**: February 27, 2026 (full codebase audit of Phases 0-21)
 
 ---
@@ -44,8 +44,10 @@
     - [Phase 31: Historical Season Caching](#phase-31-historical-season-caching) ✅
 15. **COMPLETE — Pre-Launch Hardening**
     - [Phase 32: Pre-Launch Tasks](#phase-32-pre-launch-tasks) ✅
-16. **UPCOMING**
-    - [Future Phases 33-38](#future-phases)
+16. **COMPLETE — Browser Push Notifications**
+    - [Phase 34: Browser Push Notifications](#phase-34-browser-push-notifications) ✅
+17. **UPCOMING**
+    - [Future Phases 33, 35-39](#future-phases)
 
 ---
 
@@ -485,7 +487,8 @@ Phase 30: Favorite Teams & Banners       ████████████  C
 ```
 Phase 31: Historical Season Caching      ░░░░░░░░░░░░  Archive past seasons, returning users
 Phase 32: Multi-Sport Architecture       ░░░░░░░░░░░░  Year 2 expansion prep
-Future Phases 33-37                      ░░░░░░░░░░░░  Year 2+ features (incl. notifications post-DNS)
+Phase 34: Browser Push Notifications     ████████████  COMPLETE ✅
+Future Phases 33, 35-37                  ░░░░░░░░░░░░  Year 2+ features (incl. email post-DNS)
 ```
 
 ### Visual Build Order
@@ -544,10 +547,18 @@ Phase 29 (Mobile)            ████████████  COMPLETE ✅
 ━━━ FAN ENGAGEMENT (Complete) ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Phase 30 (Favorite Teams)    ████████████  COMPLETE ✅
 
-━━━ POST-LAUNCH / YEAR 2 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Phase 31 (Season Caching)    ░░░░░░░░░░░░
-Phase 32 (Multi-Sport Arch)  ░░░░░░░░░░░░
-Future Phases 33-37          ░░░░░░░░░░░░
+━━━ SEASON INFRASTRUCTURE (Complete) ━━━━━━━━━━━━━━━━━━━━━━━━━
+Phase 31 (Season Caching)    ████████████  COMPLETE ✅
+Phase 32 (Pre-Launch Tasks)  ████████████  COMPLETE ✅
+
+━━━ NOTIFICATIONS (Complete) ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Phase 34 (Browser Push)      ████████████  COMPLETE ✅
+
+━━━ UPCOMING ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Phase 33 (Email Notifs)      ░░░░░░░░░░░░  Blocked until DNS transfer (Apr 21)
+Phase 36 (Multi-Sport T0)    ░░░░░░░░░░░░  Event games: brackets, pick'em, survivor (Mar-Apr)
+Phase 37 (AI Support Agent)  ░░░░░░░░░░░░  Claude-powered help desk (Pre-launch)
+Future Phases 35, 38-39      ░░░░░░░░░░░░
 ```
 
 ### June Deadline Decision Framework
@@ -1747,11 +1758,12 @@ This breaks leagues mid-season. A team vanishing from the leaderboard with all h
 | Phase | Features | Notes | Timeline |
 |-------|----------|-------|----------|
 | **Phase 33** | Email Notifications | Transactional emails via Resend: draft reminders, trade proposals, weekly recaps, commissioner nudge delivery, pre-season reactivation reminders. Unsubscribe links on all non-transactional (CAN-SPAM). Extends Phase 25.5 in-app notifications + Phase 31.4/31.5 commissioner notifications. Uses `notification_preferences` schema from Phase 14.12. **Blocked until DNS transfer to Cloudflare (April 21, 2026).** | Post-Apr 21 |
-| **Phase 34** | Browser Push Notifications | Service worker + Web Push API. Real-time draft alerts, gameday scoring updates, trade activity. Extends in-app notifications (Phase 25.5) to work when user isn't on the site. *Note: In-app notifications already work via Supabase Realtime — this adds browser-level push.* | Pre-launch (Jul 2026) |
+| **Phase 34** ✅ | Browser Push Notifications | Service worker + Web Push API. VAPID auth, per-type push preferences (push_draft, push_game_results, etc.), auto-prompt on first login, dead subscription cleanup, fire-and-forget delivery integrated into createNotification/notifyLeagueMembers/notifyDraftPickThrottled. Settings UI with master toggle + 7 per-type toggles. Migrations: 043 (push_subscriptions), 044 (per-type prefs), 045 (default push_enabled=true). | ✅ Mar 12, 2026 |
 | **Phase 35** | Pro Tier + Stripe | **Additive features only** — do NOT gate existing features (per business strategy). AI Draft Assistant (populate `program_analytics`/`program_trends`), Season Projections, Transaction Intelligence, Live Game Insights, Waiver Wire Rankings. New game modes: H2H Weekly Matchups, Conference-Specific Leagues. Stripe subscription billing ($4.99/mo or $29.99/yr). Founding Commissioners get Pro free for life. | Year 2 |
-| **Phase 36** | Multi-Sport Architecture | Abstract scoring by sport. Sport config table + API adapters. College basketball as first expansion (Nov-Apr fills football off-season gap). Refactor week/season, rankings, game types, scoring rules. | Year 2 |
-| **Phase 37** | Ads Infrastructure | Non-intrusive ads on free tier (footer banners, interstitials between pages — NOT during drafts or live scoring). Pro users see no ads. Ad impression tracking for revenue reporting. | Year 2 |
-| **Phase 38** | Native Mobile / PWA | iOS/Android app. Native push notifications. | Year 2-3 |
+| **Phase 36** | Multi-Sport Architecture | **Tier 0 (Apr 2026)**: Port bracket engine (from hockey-bracket), pick'em engine (new), survivor engine (from rugby-survivor) to Rivyls/Supabase. Launch: Frozen Four bracket, Masters matchups, Women's Six Nations survivor, Men's Six Nations pick'em. **Tier 1 (Summer→Nov 2026)**: Full multi-sport season refactor. Add Men's/Women's CBB, NCAA Hockey, College Baseball, Women's Volleyball. **Tier 2 (Year 1)**: WNBA, MLS, Softball, Lacrosse, March Madness, annual events. **Tier 3 (Year 2+)**: NFL (Winner/Loser format), Premier League, Champions League, Liga MX, NBA/MLB/NHL (innovative formats). Full plan: `~/.claude/plans/structured-cooking-sketch.md` | Tier 0: Mar-Apr 2026, Tier 1: Summer 2026, Tier 2-3: Year 1-2 |
+| **Phase 37** | AI Support Agent | Claude-powered help desk: users submit tickets via in-app form, Claude triages and auto-responds to common questions (scoring rules, roster management, trade rules). For bugs/issues, Claude analyzes the problem and proposes fixes. Admin dashboard to review tickets, escalate, and approve Claude's suggested code changes. Reduces support burden before August launch. | Pre-launch (Jul 2026) |
+| **Phase 38** | Ads Infrastructure | Non-intrusive ads on free tier (footer banners, interstitials between pages — NOT during drafts or live scoring). Pro users see no ads. Ad impression tracking for revenue reporting. | Year 2 |
+| **Phase 39** | Native Mobile / PWA | iOS/Android app. Native push notifications. | Year 2-3 |
 
 ---
 

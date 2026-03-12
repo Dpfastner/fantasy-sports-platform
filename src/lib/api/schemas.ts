@@ -165,3 +165,48 @@ export const pushSubscribeSchema = z.object({
 export const pushUnsubscribeSchema = z.object({
   endpoint: z.string().url(),
 })
+
+// ── Event Games ───────────────────────────────────────────
+
+export const eventPoolCreateSchema = z.object({
+  tournamentId: uuidField,
+  name: z.string().min(2, 'Pool name too short').max(60, 'Pool name too long'),
+  visibility: z.enum(['public', 'private']).default('private'),
+  scoringRules: z.record(z.string(), z.number()).optional(),
+  tiebreaker: z.enum(['none', 'championship_score', 'first_match_score', 'most_upsets', 'random']).default('none'),
+  deadline: z.string().datetime().optional(),
+  maxEntries: z.number().int().min(2).max(1000).optional(),
+  leagueId: uuidField.optional(),
+})
+
+export const eventPoolJoinSchema = z.object({
+  inviteCode: z.string().min(1, 'Invite code is required'),
+  displayName: z.string().max(50).optional(),
+})
+
+export const eventBracketPickSchema = z.object({
+  entryId: uuidField,
+  picks: z.array(z.object({
+    gameId: uuidField,
+    participantId: uuidField,
+  })).min(1, 'Must submit at least one pick'),
+  tiebreakerPrediction: z.object({
+    team1_score: z.number().int().min(0).max(99),
+    team2_score: z.number().int().min(0).max(99),
+  }).optional(),
+})
+
+export const eventSurvivorPickSchema = z.object({
+  entryId: uuidField,
+  weekNumber: z.number().int().min(1).max(20),
+  participantId: uuidField,
+})
+
+export const eventPickemPickSchema = z.object({
+  entryId: uuidField,
+  picks: z.array(z.object({
+    gameId: uuidField,
+    participantId: uuidField,
+    confidence: z.number().int().min(1).max(20).optional(),
+  })).min(1, 'Must submit at least one pick'),
+})

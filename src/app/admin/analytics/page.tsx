@@ -34,6 +34,12 @@ export default async function AdminAnalyticsPage() {
     waitlistSourcesResult,
     recentActivityResult,
     vercelUsageResult,
+    // Event games metrics
+    eventTournamentsResult,
+    eventPoolsResult,
+    eventEntriesResult,
+    eventPicksResult,
+    eventRecentActivityResult,
   ] = await Promise.all([
     // Total users
     supabase.from('profiles').select('id', { count: 'exact', head: true }),
@@ -74,8 +80,21 @@ export default async function AdminAnalyticsPage() {
     // Vercel usage estimate (count tracked events this month)
     supabase.from('activity_log')
       .select('id', { count: 'exact', head: true })
-      .in('action', ['user.signup', 'league.created', 'draft.completed'])
+      .in('action', ['user.signup', 'league.created', 'draft.completed', 'event.pool_created', 'event.pool_joined', 'event.picks_submitted'])
       .gte('created_at', new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString()),
+    // Event games: tournaments
+    supabase.from('event_tournaments').select('id, name, slug, format, status, sport'),
+    // Event games: pools
+    supabase.from('event_pools').select('id, tournament_id, name, visibility, status, created_at', { count: 'exact' }),
+    // Event games: entries
+    supabase.from('event_entries').select('id', { count: 'exact', head: true }),
+    // Event games: picks
+    supabase.from('event_picks').select('id', { count: 'exact', head: true }),
+    // Event games: recent activity (last 15)
+    supabase.from('event_activity_log')
+      .select('action, created_at, user_id, pool_id, tournament_id, details')
+      .order('created_at', { ascending: false })
+      .limit(15),
   ])
 
   const totalUsers = usersResult.count || 0
@@ -89,6 +108,19 @@ export default async function AdminAnalyticsPage() {
   const waitlistConverted = waitlistConvertedResult.count || 0
   const referralCount = referralsResult.count || 0
   const vercelUsage = vercelUsageResult.count || 0
+
+  // Event games metrics
+  const eventTournaments = (eventTournamentsResult.data || []) as { id: string; name: string; slug: string; format: string; status: string; sport: string }[]
+  const eventPools = eventPoolsResult.count || 0
+  const eventEntries = eventEntriesResult.count || 0
+  const eventPicks = eventPicksResult.count || 0
+  const eventRecentActivity = (eventRecentActivityResult.data || []) as { action: string; created_at: string; user_id: string | null; pool_id: string | null; tournament_id: string | null; details: Record<string, unknown> }[]
+
+  // Count pools per tournament
+  const poolsByTournament: Record<string, number> = {}
+  for (const pool of (eventPoolsResult.data || []) as { tournament_id: string }[]) {
+    poolsByTournament[pool.tournament_id] = (poolsByTournament[pool.tournament_id] || 0) + 1
+  }
 
   // Deduplicate active users
   const activeUserIds = new Set((activeUsersResult.data || []).map((r: { user_id: string }) => r.user_id))
@@ -165,7 +197,72 @@ export default async function AdminAnalyticsPage() {
           </div>
         </section>
 
-        {/* Section 3: Growth */}
+        {/* Section 3: Event Games */}
+        <section className="mb-8">
+          <h2 className="text-xl font-semibold text-text-primary mb-4">Event Games</h2>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+            <StatCard label="Tournaments" value={eventTournaments.length} />
+            <StatCard label="Pools Created" value={eventPools} />
+            <StatCard label="Total Entries" value={eventEntries} />
+            <StatCard label="Total Picks" value={eventPicks} />
+          </div>
+
+          {eventTournaments.length > 0 && (
+            <div className="bg-surface rounded-lg overflow-hidden mb-4">
+              <table className="w-full">
+                <thead>
+                  <tr className="text-left text-text-secondary border-b border-border">
+                    <th className="px-4 py-3 font-medium">Tournament</th>
+                    <th className="px-4 py-3 font-medium">Sport</th>
+                    <th className="px-4 py-3 font-medium">Format</th>
+                    <th className="px-4 py-3 font-medium">Status</th>
+                    <th className="px-4 py-3 font-medium text-right">Pools</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {eventTournaments.map((t) => (
+                    <tr key={t.id} className="border-b border-border-subtle">
+                      <td className="px-4 py-3 text-text-primary">{t.name}</td>
+                      <td className="px-4 py-3 text-text-secondary text-sm capitalize">{t.sport}</td>
+                      <td className="px-4 py-3 text-text-secondary text-sm capitalize">{t.format}</td>
+                      <td className="px-4 py-3">
+                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                          t.status === 'active' ? 'bg-success/20 text-success-text' :
+                          t.status === 'upcoming' ? 'bg-brand/20 text-brand' :
+                          t.status === 'completed' ? 'bg-surface-inset text-text-muted' :
+                          'bg-danger/20 text-danger-text'
+                        }`}>
+                          {t.status}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-text-primary font-medium text-right">
+                        {poolsByTournament[t.id] || 0}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {eventRecentActivity.length > 0 && (
+            <div className="bg-surface rounded-lg overflow-hidden">
+              <h3 className="text-sm font-medium text-text-secondary px-4 py-3 border-b border-border">Recent Event Activity</h3>
+              <div className="divide-y divide-border-subtle">
+                {eventRecentActivity.map((entry, i) => (
+                  <div key={i} className="px-4 py-2 flex items-center justify-between">
+                    <span className="text-text-primary text-sm font-mono">{entry.action}</span>
+                    <span className="text-text-muted text-xs">
+                      {new Date(entry.created_at).toLocaleString()}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </section>
+
+        {/* Section 4: Growth (was 3) */}
         <section className="mb-8">
           <h2 className="text-xl font-semibold text-text-primary mb-4">Growth</h2>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
