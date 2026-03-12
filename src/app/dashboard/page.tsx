@@ -166,7 +166,7 @@ export default async function DashboardPage() {
   const admin = createAdminClient()
   const { data: userEventEntries } = await admin
     .from('event_entries')
-    .select('id, pool_id, score, rank, is_active, submitted_at')
+    .select('id, pool_id, total_points, is_active, submitted_at')
     .eq('user_id', user.id)
 
   interface EventPool {
@@ -231,8 +231,8 @@ export default async function DashboardPage() {
         tournamentId: p.tournament_id,
         tournament: t,
         entryCount: countMap[p.id] || 0,
-        userScore: entry?.score || 0,
-        userRank: entry?.rank || null,
+        userScore: Number(entry?.total_points) || 0,
+        userRank: null,
         isActive: entry?.is_active ?? true,
         submittedAt: entry?.submitted_at || null,
       }

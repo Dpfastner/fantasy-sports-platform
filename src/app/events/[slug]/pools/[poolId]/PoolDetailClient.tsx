@@ -11,6 +11,7 @@ import { PoolActivityFeed } from './PoolActivityFeed'
 import { PoolChat } from './PoolChat'
 import { PoolAnnouncements } from './PoolAnnouncements'
 import { ScheduleView } from './ScheduleView'
+import { ShareButton } from '@/components/ShareButton'
 
 interface Participant {
   id: string
@@ -142,7 +143,49 @@ export function PoolDetailClient({
   const [settingsVisibility, setSettingsVisibility] = useState(pool.visibility)
   const [settingsTiebreaker, setSettingsTiebreaker] = useState(pool.tiebreaker)
   const [settingsMaxEntries, setSettingsMaxEntries] = useState(pool.maxEntries?.toString() || '')
+  const [settingsScoringRules, setSettingsScoringRules] = useState<Record<string, number> | null>(
+    pool.scoringRules && typeof pool.scoringRules === 'object' && Object.keys(pool.scoringRules).length > 0
+      ? pool.scoringRules as Record<string, number>
+      : null
+  )
   const [isSavingSettings, setIsSavingSettings] = useState(false)
+
+  // Scoring presets for bracket format
+  const scoringPresets: Record<string, { label: string; description: string; rules: Record<string, number> }> = {
+    standard: {
+      label: 'Standard',
+      description: 'Balanced scoring across all rounds',
+      rules: { regional_quarterfinal: 1, regional_semifinal: 2, regional_final: 4, semifinal: 8, championship: 16 },
+    },
+    upset_heavy: {
+      label: 'Upset Heavy',
+      description: 'Early rounds worth more — rewards bold picks',
+      rules: { regional_quarterfinal: 3, regional_semifinal: 4, regional_final: 5, semifinal: 8, championship: 12 },
+    },
+    final_four_focus: {
+      label: 'Final Four Focus',
+      description: 'Late rounds heavily weighted',
+      rules: { regional_quarterfinal: 1, regional_semifinal: 1, regional_final: 2, semifinal: 12, championship: 24 },
+    },
+  }
+
+  const roundLabels: Record<string, string> = {
+    regional_quarterfinal: 'Quarterfinal',
+    regional_semifinal: 'Semifinal',
+    regional_final: 'Regional Final',
+    semifinal: 'Frozen Four',
+    championship: 'Championship',
+  }
+
+  const defaultScoringRules: Record<string, number> = {
+    regional_quarterfinal: 1, regional_semifinal: 2, regional_final: 4, semifinal: 8, championship: 16,
+  }
+
+  const activeScoringRules = settingsScoringRules || defaultScoringRules
+
+  const activePreset = Object.entries(scoringPresets).find(
+    ([, preset]) => JSON.stringify(preset.rules) === JSON.stringify(activeScoringRules)
+  )?.[0] || 'custom'
 
   const copyInviteCode = async () => {
     try {
@@ -166,6 +209,7 @@ export function PoolDetailClient({
           visibility: settingsVisibility,
           tiebreaker: settingsTiebreaker,
           maxEntries: settingsMaxEntries ? parseInt(settingsMaxEntries, 10) : null,
+          ...(tournament.format === 'bracket' ? { scoringRules: settingsScoringRules } : {}),
         }),
       })
 
@@ -220,7 +264,7 @@ export function PoolDetailClient({
             </p>
           </div>
 
-          {/* Invite Code */}
+          {/* Invite Code + Share */}
           <div className="flex items-center gap-2">
             <div className="bg-surface-inset rounded-md px-3 py-1.5 border border-border">
               <span className="text-xs text-text-muted mr-1">Code:</span>
@@ -232,6 +276,16 @@ export function PoolDetailClient({
             >
               {codeCopied ? 'Copied!' : 'Copy'}
             </button>
+            <ShareButton
+              shareData={{
+                title: `Join ${pool.name} on Rivyls`,
+                text: `Join my ${tournament.format} pool "${pool.name}" for ${tournament.name}! Use code: ${pool.inviteCode}`,
+                url: `https://rivyls.com/events/${tournament.slug}/pools/${pool.id}`,
+              }}
+              ogImageUrl={`https://rivyls.com/api/og/pool?poolId=${pool.id}`}
+              label="Share"
+              className="text-xs px-2 py-1.5 rounded-md border border-border text-text-muted hover:text-text-primary hover:border-brand/40 transition-colors flex items-center gap-1"
+            />
           </div>
         </div>
 
@@ -521,6 +575,74 @@ export function PoolDetailClient({
                 />
               </div>
 
+              {/* Scoring Rules (bracket only) */}
+              {tournament.format === 'bracket' && (
+                <div>
+                  <label className="block text-xs text-text-muted mb-2">Scoring Rules</label>
+
+                  {/* Preset buttons */}
+                  <div className="flex gap-2 mb-3">
+                    {Object.entries(scoringPresets).map(([key, preset]) => (
+                      <button
+                        key={key}
+                        type="button"
+                        onClick={() => setSettingsScoringRules({ ...preset.rules })}
+                        className={`flex-1 text-xs py-1.5 rounded-md border transition-colors ${
+                          activePreset === key
+                            ? 'border-brand bg-brand/10 text-brand'
+                            : 'border-border text-text-muted hover:text-text-secondary'
+                        }`}
+                      >
+                        {preset.label}
+                      </button>
+                    ))}
+                    <button
+                      type="button"
+                      onClick={() => setSettingsScoringRules(null)}
+                      className={`flex-1 text-xs py-1.5 rounded-md border transition-colors ${
+                        !settingsScoringRules
+                          ? 'border-brand bg-brand/10 text-brand'
+                          : 'border-border text-text-muted hover:text-text-secondary'
+                      }`}
+                    >
+                      Default
+                    </button>
+                  </div>
+
+                  {activePreset !== 'custom' && activePreset !== 'standard' && settingsScoringRules && (
+                    <p className="text-xs text-text-muted mb-2">
+                      {scoringPresets[activePreset]?.description}
+                    </p>
+                  )}
+
+                  {/* Per-round point values */}
+                  <div className="space-y-2 bg-surface-inset rounded-md p-3 border border-border">
+                    {Object.entries(roundLabels).map(([roundKey, label]) => (
+                      <div key={roundKey} className="flex items-center justify-between gap-3">
+                        <span className="text-xs text-text-secondary">{label}</span>
+                        <div className="flex items-center gap-1">
+                          <input
+                            type="number"
+                            min={0}
+                            max={100}
+                            value={activeScoringRules[roundKey] ?? 0}
+                            onChange={(e) => {
+                              const val = parseInt(e.target.value, 10) || 0
+                              setSettingsScoringRules((prev) => ({
+                                ...(prev || defaultScoringRules),
+                                [roundKey]: Math.max(0, Math.min(100, val)),
+                              }))
+                            }}
+                            className="w-16 bg-surface border border-border rounded px-2 py-1 text-xs text-text-primary text-center focus:outline-none focus:ring-2 focus:ring-brand/50"
+                          />
+                          <span className="text-xs text-text-muted">pts</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               <button
                 onClick={handleSaveSettings}
                 disabled={isSavingSettings || !settingsName.trim()}
@@ -535,9 +657,9 @@ export function PoolDetailClient({
           <div className="bg-surface rounded-lg border border-border p-5">
             <h3 className="brand-h3 text-base text-text-primary mb-3">Invite Members</h3>
             <p className="text-text-muted text-sm mb-3">
-              Share this code with friends to invite them to your pool.
+              Share this code or link with friends to invite them to your pool.
             </p>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 mb-3">
               <div className="flex-1 bg-surface-inset border border-border rounded-md px-4 py-2.5 text-center">
                 <span className="font-mono text-lg text-text-primary tracking-widest">{pool.inviteCode}</span>
               </div>
@@ -547,6 +669,16 @@ export function PoolDetailClient({
               >
                 {codeCopied ? 'Copied!' : 'Copy Code'}
               </button>
+            </div>
+            <div className="flex items-center gap-2">
+              <ShareButton
+                shareData={{
+                  title: `Join ${pool.name} on Rivyls`,
+                  text: `Join my ${tournament.format} pool "${pool.name}" for ${tournament.name}! Use code: ${pool.inviteCode}`,
+                  url: `https://rivyls.com/events/${tournament.slug}/pools/${pool.id}`,
+                }}
+                ogImageUrl={`https://rivyls.com/api/og/pool?poolId=${pool.id}`}
+              />
             </div>
           </div>
 

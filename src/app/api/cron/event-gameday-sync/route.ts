@@ -513,7 +513,7 @@ async function scoreBracketPicks(admin: ReturnType<typeof createAdminClient>, to
 
       await admin
         .from('event_entries')
-        .update({ score, updated_at: new Date().toISOString() })
+        .update({ total_points: score, updated_at: new Date().toISOString() })
         .eq('id', entry.id)
     }
 
@@ -568,7 +568,7 @@ async function scoreSurvivorPicks(
 
       const { data: entries } = await admin
         .from('event_entries')
-        .select('id, user_id, score, is_active')
+        .select('id, user_id, total_points, is_active')
         .eq('pool_id', pool.id)
         .eq('is_active', true)
 
@@ -617,7 +617,7 @@ async function scoreSurvivorPicks(
           await admin
             .from('event_entries')
             .update({
-              score: (entry.score || 0) + 1,
+              total_points: (Number(entry.total_points) || 0) + 1,
               updated_at: new Date().toISOString(),
             })
             .eq('id', entry.id)
@@ -688,7 +688,7 @@ async function scorePickemPicks(admin: ReturnType<typeof createAdminClient>, tou
 
       await admin
         .from('event_entries')
-        .update({ score, updated_at: new Date().toISOString() })
+        .update({ total_points: score, updated_at: new Date().toISOString() })
         .eq('id', entry.id)
     }
 
@@ -696,25 +696,7 @@ async function scorePickemPicks(admin: ReturnType<typeof createAdminClient>, tou
   }
 }
 
-async function updatePoolRanks(admin: ReturnType<typeof createAdminClient>, poolId: string) {
-  const { data: entries } = await admin
-    .from('event_entries')
-    .select('id, score, is_active')
-    .eq('pool_id', poolId)
-    .order('score', { ascending: false })
-
-  if (!entries?.length) return
-
-  let rank = 0
-  let prevScore = -1
-  for (let i = 0; i < entries.length; i++) {
-    if (entries[i].score !== prevScore) {
-      rank = i + 1
-      prevScore = entries[i].score
-    }
-    await admin
-      .from('event_entries')
-      .update({ rank })
-      .eq('id', entries[i].id)
-  }
+// Rank is computed at read time from total_points ordering — no separate column needed
+async function updatePoolRanks(_admin: ReturnType<typeof createAdminClient>, _poolId: string) {
+  // no-op: rank is derived from total_points sort order on the client
 }

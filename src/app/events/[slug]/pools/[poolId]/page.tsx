@@ -13,15 +13,31 @@ export async function generateMetadata({ params }: PageProps) {
   const admin = createAdminClient()
   const { data: pool } = await admin
     .from('event_pools')
-    .select('name, event_tournaments(name)')
+    .select('name, event_tournaments(name, format)')
     .eq('id', poolId)
     .single()
 
   if (!pool) return { title: 'Pool Not Found — Rivyls' }
 
-  const tournament = pool.event_tournaments as unknown as { name: string }
+  const tournament = pool.event_tournaments as unknown as { name: string; format: string }
+  const title = `${pool.name} — ${tournament.name} — Rivyls`
+  const description = `Join the ${tournament.format} pool "${pool.name}" for ${tournament.name} on Rivyls!`
+  const ogImageUrl = `https://rivyls.com/api/og/pool?poolId=${poolId}`
+
   return {
-    title: `${pool.name} — ${tournament.name} — Rivyls`,
+    title,
+    description,
+    openGraph: {
+      title,
+      description,
+      images: [{ url: ogImageUrl, width: 1200, height: 630 }],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title,
+      description,
+      images: [ogImageUrl],
+    },
   }
 }
 
@@ -93,9 +109,9 @@ export default async function PoolDetailPage({ params }: PageProps) {
   // Get entries (members)
   const { data: entries } = await admin
     .from('event_entries')
-    .select('id, user_id, display_name, is_active, submitted_at, score, rank, tiebreaker_prediction, profiles(display_name, email)')
+    .select('id, user_id, display_name, is_active, submitted_at, total_points, tiebreaker_prediction, profiles(display_name, email)')
     .eq('pool_id', poolId)
-    .order('score', { ascending: false })
+    .order('total_points', { ascending: false })
 
   // Get current user's entry — auto-join if creator without entry
   let userEntry = user
@@ -144,8 +160,8 @@ export default async function PoolDetailPage({ params }: PageProps) {
     poolWeeks = data || []
   }
 
-  // Format entries for client
-  const members = (entries || []).map(e => {
+  // Format entries for client (compute rank from sorted total_points)
+  const members = (entries || []).map((e, idx) => {
     const p = e.profiles as unknown as { display_name: string | null; email: string } | null
     return {
       id: e.id,
@@ -153,8 +169,8 @@ export default async function PoolDetailPage({ params }: PageProps) {
       displayName: e.display_name || p?.display_name || p?.email?.split('@')[0] || 'Anonymous',
       isActive: e.is_active,
       submittedAt: e.submitted_at,
-      score: e.score,
-      rank: e.rank,
+      score: Number(e.total_points) || 0,
+      rank: idx + 1,
     }
   })
 
@@ -229,8 +245,8 @@ export default async function PoolDetailPage({ params }: PageProps) {
             id: userEntry.id,
             isActive: userEntry.is_active,
             submittedAt: userEntry.submitted_at,
-            score: userEntry.score,
-            rank: userEntry.rank,
+            score: Number(userEntry.total_points) || 0,
+            rank: members.findIndex(m => m.userId === userEntry!.user_id) + 1 || null,
             tiebreakerPrediction: userEntry.tiebreaker_prediction as { team1_score: number; team2_score: number } | null,
           } : null}
           userPicks={userPicks.map(p => ({
