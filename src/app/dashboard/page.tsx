@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
-import { createClient } from '@/lib/supabase/server'
+import { createClient, createAdminClient } from '@/lib/supabase/server'
 import { Header } from '@/components/Header'
 import { FanZoneWidget } from '@/components/FanZoneWidget'
 import { getCurrentWeek } from '@/lib/week'
@@ -162,6 +162,67 @@ export default async function DashboardPage() {
     }
   }
 
+  // Event pools the user is in
+  const admin = createAdminClient()
+  const { data: userEventEntries } = await admin
+    .from('event_entries')
+    .select('id, pool_id, score, rank, is_active, submitted_at')
+    .eq('user_id', user.id)
+
+  interface EventPool {
+    id: string
+    name: string
+    status: string
+    tournament: {
+      name: string
+      slug: string
+      sport: string
+      format: string
+      status: string
+    }
+    entryCount: number
+    userScore: number
+    userRank: number | null
+    isActive: boolean
+    submittedAt: string | null
+  }
+
+  let eventPools: EventPool[] = []
+  if (userEventEntries?.length) {
+    const poolIds = userEventEntries.map(e => e.pool_id)
+    const { data: pools } = await admin
+      .from('event_pools')
+      .select('id, name, status, event_tournaments(name, slug, sport, format, status)')
+      .in('id', poolIds)
+
+    // Get entry counts per pool
+    const { data: allEntries } = await admin
+      .from('event_entries')
+      .select('pool_id')
+      .in('pool_id', poolIds)
+
+    const countMap: Record<string, number> = {}
+    for (const e of allEntries || []) {
+      countMap[e.pool_id] = (countMap[e.pool_id] || 0) + 1
+    }
+
+    eventPools = (pools || []).map(p => {
+      const t = p.event_tournaments as unknown as { name: string; slug: string; sport: string; format: string; status: string }
+      const entry = userEventEntries.find(e => e.pool_id === p.id)
+      return {
+        id: p.id,
+        name: p.name,
+        status: p.status,
+        tournament: t,
+        entryCount: countMap[p.id] || 0,
+        userScore: entry?.score || 0,
+        userRank: entry?.rank || null,
+        isActive: entry?.is_active ?? true,
+        submittedAt: entry?.submitted_at || null,
+      }
+    })
+  }
+
   const referralUrl = `https://rivyls.com/welcome?ref=${user.id}`
 
   return (
@@ -269,6 +330,78 @@ export default async function DashboardPage() {
                 </div>
               </Link>
             ))}
+          </div>
+        )}
+
+        {/* Event Pools */}
+        {eventPools.length > 0 && (
+          <div className="mt-8">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-2xl font-bold text-text-primary">My Events</h2>
+              <Link
+                href="/events"
+                className="text-sm text-text-muted hover:text-text-secondary transition-colors"
+              >
+                Browse Events &rarr;
+              </Link>
+            </div>
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {eventPools.map((pool) => {
+                const sportIcon: Record<string, string> = {
+                  hockey: '\uD83C\uDFD2', golf: '\u26F3', rugby: '\uD83C\uDFC9',
+                  football: '\uD83C\uDFC8', basketball: '\uD83C\uDFC0',
+                }
+                const formatLabel: Record<string, string> = {
+                  bracket: 'Bracket', pickem: "Pick'em", survivor: 'Survivor',
+                }
+                const icon = sportIcon[pool.tournament.sport] || '\uD83C\uDFC6'
+                return (
+                  <Link
+                    key={pool.id}
+                    href={`/events/${pool.tournament.slug}/pools/${pool.id}`}
+                    className="bg-surface rounded-lg p-5 hover:bg-surface-subtle transition-all border border-border hover:border-brand/40 hover:shadow-md"
+                  >
+                    <div className="flex justify-between items-start mb-3">
+                      <div>
+                        <h3 className="text-lg font-semibold text-text-primary">{pool.name}</h3>
+                        <p className="text-text-muted text-sm">{pool.tournament.name}</p>
+                      </div>
+                      <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${
+                        pool.status === 'open' ? 'bg-success/20 text-success-text' :
+                        pool.status === 'locked' ? 'bg-warning/20 text-warning-text' :
+                        'bg-surface-inset text-text-muted'
+                      }`}>
+                        {pool.status}
+                      </span>
+                    </div>
+                    <div className="space-y-1 text-text-secondary text-sm">
+                      <p className="flex items-center gap-2">
+                        <span>{icon}</span>
+                        <span>{formatLabel[pool.tournament.format] || pool.tournament.format}</span>
+                      </p>
+                      <p className="flex items-center gap-2">
+                        <span>👥</span>
+                        <span>{pool.entryCount} member{pool.entryCount !== 1 ? 's' : ''}</span>
+                      </p>
+                      {pool.userRank && pool.entryCount > 1 && (
+                        <p className="flex items-center gap-2">
+                          <span>🏆</span>
+                          <span>
+                            {pool.userRank === 1 ? '1st' : pool.userRank === 2 ? '2nd' : pool.userRank === 3 ? '3rd' : `${pool.userRank}th`} of {pool.entryCount}
+                          </span>
+                        </p>
+                      )}
+                      {!pool.submittedAt && pool.status === 'open' && (
+                        <p className="text-brand text-xs font-medium mt-1">Picks needed!</p>
+                      )}
+                      {!pool.isActive && pool.tournament.format === 'survivor' && (
+                        <p className="text-danger-text text-xs">Eliminated</p>
+                      )}
+                    </div>
+                  </Link>
+                )
+              })}
+            </div>
           </div>
         )}
 
