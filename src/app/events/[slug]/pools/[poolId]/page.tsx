@@ -83,10 +83,10 @@ export default async function PoolDetailPage({ params }: PageProps) {
     .eq('tournament_id', tournament.id)
     .order('seed', { ascending: true })
 
-  // Get games
+  // Get games (include live score data)
   const { data: games } = await admin
     .from('event_games')
-    .select('id, round, game_number, participant_1_id, participant_2_id, starts_at, status, result')
+    .select('id, round, game_number, participant_1_id, participant_2_id, participant_1_score, participant_2_score, starts_at, status, result, period, clock, live_status, winner_id')
     .eq('tournament_id', tournament.id)
     .order('game_number', { ascending: true })
 
@@ -214,9 +214,15 @@ export default async function PoolDetailPage({ params }: PageProps) {
             gameNumber: g.game_number,
             participant1Id: g.participant_1_id,
             participant2Id: g.participant_2_id,
+            participant1Score: g.participant_1_score,
+            participant2Score: g.participant_2_score,
             startsAt: g.starts_at,
             status: g.status,
             result: g.result as Record<string, unknown> | null,
+            period: g.period,
+            clock: g.clock,
+            liveStatus: g.live_status,
+            winnerId: g.winner_id,
           }))}
           members={members}
           userEntry={userEntry ? {
@@ -236,6 +242,8 @@ export default async function PoolDetailPage({ params }: PageProps) {
           poolWeeks={poolWeeks}
           isLoggedIn={!!user}
           isCreator={!!user && pool.created_by === user.id}
+          userId={user?.id || null}
+          rulesText={tournament.rules_text || null}
         />
       </main>
     </div>

@@ -298,6 +298,51 @@ export async function GET(request: Request) {
       }
     }
 
+    // ── Failsafe: Re-score games completed in last 2 days ──
+    // Ported from league daily-sync pattern: catch any scoring that was missed
+    const twoDaysAgo = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString()
+    const { data: recentlyCompleted } = await admin
+      .from('event_games')
+      .select('tournament_id')
+      .in('status', ['final', 'completed'])
+      .gte('updated_at', twoDaysAgo)
+
+    if (recentlyCompleted?.length) {
+      const failsafeTournamentIds = [...new Set(recentlyCompleted.map(g => g.tournament_id))]
+      for (const tid of failsafeTournamentIds) {
+        const tournament = tournaments?.find(t => t.id === tid)
+        if (!tournament) continue
+        try {
+          if (tournament.format === 'bracket') await scoreBracketPicks(admin, tid)
+          else if (tournament.format === 'pickem') await scorePickemPicks(admin, tid)
+          // Survivor handled by its own weekly resolution
+          results[`failsafe_${tid}`] = { re_scored: true }
+        } catch (e) {
+          results[`failsafe_${tid}`] = { error: String(e) }
+        }
+      }
+    }
+
+    // ── Game time sync: Update starts_at from ESPN if changed ──
+    for (const tournament of (tournaments || [])) {
+      try {
+        if (tournament.sport === 'hockey') {
+          const espnGames = await fetchHockeyTournamentGames(undefined, admin)
+          for (const eg of espnGames) {
+            if (!eg.date) continue
+            await admin
+              .from('event_games')
+              .update({ starts_at: eg.date })
+              .eq('tournament_id', tournament.id)
+              .eq('external_id', eg.espnEventId)
+              .neq('starts_at', eg.date)
+          }
+        }
+      } catch {
+        // Non-critical, don't fail the cron
+      }
+    }
+
     // Check if any tournaments should transition status
     await updateTournamentStatuses(admin)
 

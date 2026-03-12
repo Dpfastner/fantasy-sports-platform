@@ -7,6 +7,10 @@ import { BracketPicker } from './BracketPicker'
 import { SurvivorPicker } from './SurvivorPicker'
 import { PickemPicker } from './PickemPicker'
 import { Leaderboard } from './Leaderboard'
+import { PoolActivityFeed } from './PoolActivityFeed'
+import { PoolChat } from './PoolChat'
+import { PoolAnnouncements } from './PoolAnnouncements'
+import { ScheduleView } from './ScheduleView'
 
 interface Participant {
   id: string
@@ -22,9 +26,15 @@ interface Game {
   gameNumber: number
   participant1Id: string | null
   participant2Id: string | null
+  participant1Score?: number | null
+  participant2Score?: number | null
   startsAt: string
   status: string
   result: Record<string, unknown> | null
+  period?: string | null
+  clock?: string | null
+  liveStatus?: string | null
+  winnerId?: string | null
 }
 
 interface Member {
@@ -93,9 +103,11 @@ interface PoolDetailClientProps {
   poolWeeks: PoolWeek[]
   isLoggedIn: boolean
   isCreator: boolean
+  userId: string | null
+  rulesText: string | null
 }
 
-type Tab = 'picks' | 'leaderboard' | 'members' | 'settings'
+type Tab = 'picks' | 'schedule' | 'leaderboard' | 'chat' | 'activity' | 'members' | 'settings'
 
 const tiebreakerLabels: Record<string, string> = {
   none: 'None',
@@ -116,8 +128,11 @@ export function PoolDetailClient({
   poolWeeks,
   isLoggedIn,
   isCreator,
+  userId,
+  rulesText,
 }: PoolDetailClientProps) {
   const [activeTab, setActiveTab] = useState<Tab>(userEntry ? 'picks' : 'leaderboard')
+  const [showRules, setShowRules] = useState(false)
   const [codeCopied, setCodeCopied] = useState(false)
   const { addToast } = useToast()
   const router = useRouter()
@@ -170,9 +185,12 @@ export function PoolDetailClient({
     }
   }
 
-  const tabs: { key: Tab; label: string }[] = [
-    { key: 'picks', label: tournament.format === 'bracket' ? 'My Bracket' : 'My Picks' },
+  const tabs: { key: Tab; label: string; requiresMember?: boolean }[] = [
+    { key: 'picks', label: tournament.format === 'bracket' ? 'My Bracket' : 'My Picks', requiresMember: true },
+    { key: 'schedule', label: 'Schedule' },
     { key: 'leaderboard', label: 'Leaderboard' },
+    { key: 'chat', label: 'Chat', requiresMember: true },
+    { key: 'activity', label: 'Activity' },
     { key: 'members', label: `Members (${members.length})` },
     ...(isCreator ? [{ key: 'settings' as Tab, label: 'Settings' }] : []),
   ]
@@ -236,6 +254,9 @@ export function PoolDetailClient({
         )}
       </div>
 
+      {/* Announcements (always visible at top) */}
+      <PoolAnnouncements poolId={pool.id} isCreator={isCreator} />
+
       {/* Not a member notice */}
       {isLoggedIn && !userEntry && pool.status === 'open' && (
         <div className="bg-brand/5 border border-brand/20 rounded-lg p-4 mb-6 text-center">
@@ -244,11 +265,52 @@ export function PoolDetailClient({
         </div>
       )}
 
+      {/* Start Your Bracket CTA — shown when member hasn't submitted picks */}
+      {userEntry && !userEntry.submittedAt && pool.status === 'open' && activeTab !== 'picks' && (
+        <div className="bg-brand/5 border border-brand/20 rounded-lg p-5 mb-6 text-center">
+          <h3 className="brand-h3 text-base text-text-primary mb-1">
+            {tournament.format === 'bracket' ? 'Fill out your bracket!' : 'Make your picks!'}
+          </h3>
+          <p className="text-text-muted text-sm mb-3">
+            {pool.deadline
+              ? `Picks lock ${new Date(pool.deadline).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}`
+              : `Picks lock at first game`
+            }
+          </p>
+          <button
+            onClick={() => setActiveTab('picks')}
+            className="px-6 py-2.5 text-sm font-semibold rounded-lg bg-brand hover:bg-brand-hover text-text-primary transition-colors"
+          >
+            {tournament.format === 'bracket' ? 'Start Your Bracket' : 'Make Your Picks'}
+          </button>
+        </div>
+      )}
+
+      {/* Rules (collapsible) */}
+      {rulesText && (
+        <div className="mb-6">
+          <button
+            onClick={() => setShowRules(!showRules)}
+            className="flex items-center gap-2 text-sm text-text-muted hover:text-text-secondary transition-colors"
+          >
+            <svg className={`w-3.5 h-3.5 transition-transform ${showRules ? 'rotate-90' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
+            Tournament Rules
+          </button>
+          {showRules && (
+            <div className="mt-2 bg-surface rounded-lg border border-border p-4 text-sm text-text-secondary whitespace-pre-wrap">
+              {rulesText}
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Tabs */}
       <div className="flex gap-1 border-b border-border mb-6 overflow-x-auto">
         {tabs.map((tab) => {
-          // Hide picks tab if not a member
-          if (tab.key === 'picks' && !userEntry) return null
+          // Hide member-only tabs if not a member
+          if (tab.requiresMember && !userEntry) return null
           return (
             <button
               key={tab.key}
@@ -310,12 +372,28 @@ export function PoolDetailClient({
         </div>
       )}
 
+      {activeTab === 'schedule' && (
+        <ScheduleView
+          games={games}
+          participants={participants}
+          format={tournament.format}
+        />
+      )}
+
       {activeTab === 'leaderboard' && (
         <Leaderboard
           members={members}
           format={tournament.format}
           poolStatus={pool.status}
         />
+      )}
+
+      {activeTab === 'chat' && userEntry && (
+        <PoolChat poolId={pool.id} userId={userId} />
+      )}
+
+      {activeTab === 'activity' && (
+        <PoolActivityFeed poolId={pool.id} tournamentId={tournament.id} />
       )}
 
       {activeTab === 'members' && (
@@ -334,11 +412,33 @@ export function PoolDetailClient({
                   )}
                 </div>
               </div>
-              <div className="text-right">
+              <div className="flex items-center gap-3">
                 {member.submittedAt ? (
                   <span className="text-xs text-success-text">Picks in</span>
                 ) : (
                   <span className="text-xs text-text-muted">No picks yet</span>
+                )}
+                {isCreator && member.userId !== userId && (
+                  <button
+                    onClick={async () => {
+                      if (!confirm(`Remove ${member.displayName} from the pool?`)) return
+                      try {
+                        const res = await fetch(`/api/events/pools/${pool.id}/members/${member.id}`, { method: 'DELETE' })
+                        if (res.ok) {
+                          addToast('Member removed', 'success')
+                          router.refresh()
+                        } else {
+                          const data = await res.json()
+                          addToast(data.error || 'Failed to remove', 'error')
+                        }
+                      } catch {
+                        addToast('Something went wrong', 'error')
+                      }
+                    }}
+                    className="text-[10px] text-text-muted hover:text-danger-text transition-colors"
+                  >
+                    Remove
+                  </button>
                 )}
               </div>
             </div>

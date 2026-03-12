@@ -381,6 +381,8 @@ export interface ESPNHockeyGame {
   isComplete: boolean
   winnerTeamId: string | null
   isOvertime: boolean
+  period: string | null
+  clock: string | null
 }
 
 /**
@@ -430,8 +432,18 @@ export async function fetchHockeyTournamentGames(
         winnerTeamId = homeScore > awayScore ? String(homeTeam.id) : String(awayTeam.id)
       }
 
-      const period = (statusObj.period as number) || 0
-      const isOvertime = period > 3
+      const periodNum = (statusObj.period as number) || 0
+      const isOvertime = periodNum > 3
+      const displayClock = (statusObj.displayClock as string) || null
+
+      // Map period number to display text
+      let periodText: string | null = null
+      if (isLive || isComplete) {
+        if (periodNum === 1) periodText = '1st'
+        else if (periodNum === 2) periodText = '2nd'
+        else if (periodNum === 3) periodText = '3rd'
+        else if (periodNum > 3) periodText = 'OT'
+      }
 
       games.push({
         espnEventId: String(event.id),
@@ -449,6 +461,8 @@ export async function fetchHockeyTournamentGames(
         isComplete,
         winnerTeamId,
         isOvertime,
+        period: periodText,
+        clock: isLive ? displayClock : null,
       })
     }
   } catch (err) {
@@ -604,6 +618,9 @@ export async function syncGameResults(
     status: 'scheduled' | 'live' | 'completed'
     winnerId: string | null
     isDraw: boolean
+    period?: string | null
+    clock?: string | null
+    liveStatus?: string | null
   }[]
 ): Promise<number> {
   let updated = 0
@@ -638,6 +655,9 @@ export async function syncGameResults(
         status: result.status,
         winner_id: winnerId,
         is_draw: result.isDraw,
+        period: result.period || null,
+        clock: result.clock || null,
+        live_status: result.liveStatus || null,
         updated_at: new Date().toISOString(),
       })
       .eq('id', game.id)
