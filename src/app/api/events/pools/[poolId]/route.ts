@@ -57,7 +57,7 @@ export async function PATCH(
     if (parsed.data.tiebreaker !== undefined) updates.tiebreaker = parsed.data.tiebreaker
     if (parsed.data.maxEntries !== undefined) updates.max_entries = parsed.data.maxEntries
     if (parsed.data.maxEntriesPerUser !== undefined) updates.max_entries_per_user = parsed.data.maxEntriesPerUser
-    if (parsed.data.scoringRules !== undefined) updates.scoring_rules = parsed.data.scoringRules
+    if (parsed.data.scoringRules !== undefined) updates.scoring_rules = parsed.data.scoringRules ?? {}
 
     if (Object.keys(updates).length === 0) {
       return NextResponse.json({ error: 'No changes provided' }, { status: 400 })

@@ -5,7 +5,7 @@ import { fetchHockeyTeams } from '@/lib/events/espn-adapters'
 
 // POST /api/events/seed
 // One-time admin endpoint to seed tournament data.
-// Body: { tournament: 'frozen-four-2026' | 'masters-2026' | 'w-six-nations-2026' }
+// Body: { tournament: 'frozen-four-2026' | 'masters-2026' | 'w-six-nations-2026' | 'm-six-nations-2026' }
 // Auth: CRON_SECRET (admin only)
 export async function POST(request: Request) {
   const authHeader = request.headers.get('authorization')
@@ -26,6 +26,8 @@ export async function POST(request: Request) {
         return await seedMasters(admin)
       case 'w-six-nations-2026':
         return await seedWSixNations(admin)
+      case 'm-six-nations-2026':
+        return await seedMSixNations(admin)
       case 'sync-hockey-logos':
         return await syncHockeyLogos(admin)
       case 'frozen-four-2026-schedule':
@@ -296,10 +298,10 @@ async function seedMasters(admin: ReturnType<typeof createAdminClient>) {
       sport: 'golf',
       name: 'The Masters 2026',
       slug,
-      format: 'pickem',
+      format: 'multi',
       status: 'upcoming',
-      description: 'The 90th Masters Tournament at Augusta National. Pick winners in head-to-head golfer matchups each round.',
-      rules_text: `## How to Play\n\n1. **Pick matchup winners** — we create head-to-head pairings. Pick who finishes with the lower score.\n2. **New matchups each round** — picks refresh for rounds 1-4.\n3. **Confidence points** — assign higher confidence to picks you're more sure about.\n\n### Scoring\n- Correct pick: 1 pt × confidence\n- Upset bonus: +2 pts if you correctly pick the higher-ranked golfer to lose\n\n### Tiebreaker\nPredict the winning score (strokes relative to par).`,
+      description: 'The 90th Masters Tournament at Augusta National. Create Pick\'em or Roster pools.',
+      rules_text: `## Pick'em Format\n1. **Pick matchup winners** each round.\n2. **Scoring**: 1 pt per correct pick + upset bonus.\n\n## Roster Format\n1. **Draft 7 golfers** — 2 from Tier A (OWGR 1–15), 2 from Tier B (16–30), 3 from Tier C (31+).\n2. **Scoring**: Aggregate score-to-par from your best 5 of 7 picks. Lowest wins.\n3. **Cut penalty**: Cut golfers get the field's highest score + 1 per missed round.\n4. **Rosters lock** at first tee time.`,
       starts_at: '2026-04-09T00:00:00Z',
       ends_at: '2026-04-12T23:59:00Z',
       config: {
@@ -307,12 +309,26 @@ async function seedMasters(admin: ReturnType<typeof createAdminClient>) {
         city: 'Augusta, GA',
         rounds: 4,
         cut_after_round: 2,
+        allowed_game_types: ['pickem', 'roster'],
+        roster_tiers: {
+          A: { count: 2, owgr_min: 1, owgr_max: 15 },
+          B: { count: 2, owgr_min: 16, owgr_max: 30 },
+          C: { count: 3, owgr_min: 31 },
+        },
       },
     })
     .select('id')
     .single()
 
   if (tErr) throw tErr
+
+  // Compute tier from OWGR: A = 1-15, B = 16-30, C = 31+
+  const getTier = (owgr?: number) => {
+    if (!owgr) return 'C' // past champions without OWGR go to Tier C
+    if (owgr <= 15) return 'A'
+    if (owgr <= 30) return 'B'
+    return 'C'
+  }
 
   const golfers = [
     { name: 'Scottie Scheffler', seed: 1, meta: { owgr: 1, note: '2024 Masters champion' } },
@@ -355,7 +371,10 @@ async function seedMasters(admin: ReturnType<typeof createAdminClient>) {
     { name: 'Adam Scott', seed: 38, meta: { owgr: 50, note: '2013 Masters champion' } },
     { name: 'Brooks Koepka', seed: 39, meta: { note: 'Past major winner' } },
     { name: 'Phil Mickelson', seed: 40, meta: { note: '3x Masters champion' } },
-  ]
+  ].map(g => ({
+    ...g,
+    meta: { ...g.meta, tier: getTier(g.meta.owgr as number | undefined) },
+  }))
 
   const participantRows = golfers.map(g => ({
     tournament_id: tournament.id,
@@ -705,5 +724,127 @@ async function syncHockeyLogos(admin: ReturnType<typeof createAdminClient>) {
     logosMatched: matched,
     espnTeamsAvailable: espnTeams.length,
     matchDetails,
+  })
+}
+
+// ============================================
+// MEN'S SIX NATIONS 2026 — PICK'EM
+// 6 teams, 5 rounds, 15 games. Predict every match result.
+// Tournament already completed (Feb 1 – Mar 15, 2026) — seeded for demo/testing.
+// ============================================
+
+async function seedMSixNations(admin: ReturnType<typeof createAdminClient>) {
+  const slug = 'm-six-nations-2026'
+
+  const { data: existing } = await admin
+    .from('event_tournaments')
+    .select('id')
+    .eq('slug', slug)
+    .maybeSingle()
+
+  if (existing) {
+    return NextResponse.json({ message: "Men's Six Nations 2026 already seeded", id: existing.id })
+  }
+
+  const { data: tournament, error: tErr } = await admin
+    .from('event_tournaments')
+    .insert({
+      sport: 'rugby',
+      name: "Men's Six Nations 2026",
+      slug,
+      format: 'pickem',
+      status: 'upcoming',
+      description: "Guinness Men's Six Nations 2026. Pick the winner of every match across 5 rounds. Earn bonus points for correctly predicting upsets.",
+      rules_text: `## How to Play\n\n1. **Pick the winner of each match** before the round deadline.\n2. Earn **1 point** for each correct pick.\n3. Earn **2 bonus points** for correctly picking an upset (lower-seeded team wins).\n4. The player with the most points at the end of the tournament wins.\n\n### Deadlines\n- Picks lock 1 minute before the first kickoff of each round.\n- You can change your picks any time before the deadline.`,
+      starts_at: '2026-02-01T00:00:00Z',
+      ends_at: '2026-03-15T23:59:00Z',
+      config: {
+        scoring: { correct_pick: 1, upset_bonus: 2 },
+      },
+    })
+    .select('id')
+    .single()
+
+  if (tErr) throw tErr
+
+  // Seed 6 teams (same as Women's, same ESPN IDs)
+  const teams = [
+    { name: 'England', code: 'ENG', seed: 1 },
+    { name: 'France', code: 'FRA', seed: 2 },
+    { name: 'Ireland', code: 'IRL', seed: 3 },
+    { name: 'Scotland', code: 'SCO', seed: 4 },
+    { name: 'Wales', code: 'WAL', seed: 5 },
+    { name: 'Italy', code: 'ITA', seed: 6 },
+  ]
+
+  const participantRows = teams.map(t => ({
+    tournament_id: tournament.id,
+    name: t.name,
+    short_name: t.code,
+    seed: t.seed,
+    metadata: { code: t.code },
+  }))
+
+  const { error: pErr } = await admin.from('event_participants').insert(participantRows)
+  if (pErr) throw pErr
+
+  // Fetch participant IDs for game creation
+  const { data: participants } = await admin
+    .from('event_participants')
+    .select('id, short_name')
+    .eq('tournament_id', tournament.id)
+
+  if (!participants) throw new Error('Failed to fetch participants')
+
+  const codeToId: Record<string, string> = {}
+  for (const p of participants) {
+    if (p.short_name) codeToId[p.short_name] = p.id
+  }
+
+  // Full fixture schedule (all times UTC)
+  // Note: Pick'em uses round labels but no week_number (no elimination tracking)
+  const fixtures = [
+    // Round 1 — Sat Feb 1
+    { round: 'round_1', num: 1, home: 'FRA', away: 'WAL', at: '2026-02-01T14:15:00Z', venue: 'Stade de France, Paris' },
+    { round: 'round_1', num: 2, home: 'SCO', away: 'ITA', at: '2026-02-01T16:15:00Z', venue: 'Scottish Gas Murrayfield' },
+    { round: 'round_1', num: 3, home: 'IRL', away: 'ENG', at: '2026-02-01T17:45:00Z', venue: 'Aviva Stadium, Dublin' },
+    // Round 2 — Sat Feb 8
+    { round: 'round_2', num: 4, home: 'ITA', away: 'WAL', at: '2026-02-08T14:15:00Z', venue: 'Stadio Olimpico, Rome' },
+    { round: 'round_2', num: 5, home: 'ENG', away: 'FRA', at: '2026-02-08T16:45:00Z', venue: 'Allianz Stadium, Twickenham' },
+    { round: 'round_2', num: 6, home: 'SCO', away: 'IRL', at: '2026-02-08T17:00:00Z', venue: 'Scottish Gas Murrayfield' },
+    // Round 3 — Sat Feb 22
+    { round: 'round_3', num: 7, home: 'ITA', away: 'IRL', at: '2026-02-22T14:15:00Z', venue: 'Stadio Olimpico, Rome' },
+    { round: 'round_3', num: 8, home: 'WAL', away: 'ENG', at: '2026-02-22T16:45:00Z', venue: 'Principality Stadium, Cardiff' },
+    { round: 'round_3', num: 9, home: 'FRA', away: 'SCO', at: '2026-02-22T21:00:00Z', venue: 'Stade de France, Paris' },
+    // Round 4 — Sat Mar 8
+    { round: 'round_4', num: 10, home: 'IRL', away: 'FRA', at: '2026-03-08T14:15:00Z', venue: 'Aviva Stadium, Dublin' },
+    { round: 'round_4', num: 11, home: 'WAL', away: 'SCO', at: '2026-03-08T16:45:00Z', venue: 'Principality Stadium, Cardiff' },
+    { round: 'round_4', num: 12, home: 'ENG', away: 'ITA', at: '2026-03-08T17:00:00Z', venue: 'Allianz Stadium, Twickenham' },
+    // Round 5 — Sat Mar 15 (Super Saturday)
+    { round: 'round_5', num: 13, home: 'SCO', away: 'ENG', at: '2026-03-15T14:15:00Z', venue: 'Scottish Gas Murrayfield' },
+    { round: 'round_5', num: 14, home: 'FRA', away: 'ITA', at: '2026-03-15T16:45:00Z', venue: 'Stade de France, Paris' },
+    { round: 'round_5', num: 15, home: 'WAL', away: 'IRL', at: '2026-03-15T21:00:00Z', venue: 'Principality Stadium, Cardiff' },
+  ]
+
+  const gameRows = fixtures.map(f => ({
+    tournament_id: tournament.id,
+    game_number: f.num,
+    round: f.round,
+    participant_1_id: codeToId[f.home],
+    participant_2_id: codeToId[f.away],
+    starts_at: f.at,
+    status: 'scheduled' as const,
+    metadata: { venue: f.venue },
+  }))
+
+  const { error: gErr } = await admin.from('event_games').insert(gameRows)
+  if (gErr) throw gErr
+
+  return NextResponse.json({
+    success: true,
+    tournament: 'm-six-nations-2026',
+    id: tournament.id,
+    participants: teams.length,
+    games: fixtures.length,
   })
 }

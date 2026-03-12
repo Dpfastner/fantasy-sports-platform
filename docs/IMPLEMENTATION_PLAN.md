@@ -2,7 +2,7 @@
 
 > **Platform Name**: Rivyls (rivyls.com)
 > **Current Sport**: College Football (base for multi-sport expansion)
-> **Last Updated**: March 12, 2026 (Phases 0-32, 34, 36a-b complete)
+> **Last Updated**: March 12, 2026 (Phases 0-32, 34, 36a-b, 37-39 complete)
 > **Audit Date**: February 27, 2026 (full codebase audit of Phases 0-21)
 
 ---
@@ -49,8 +49,11 @@
 17. **COMPLETE — Event System**
     - Phase 36a: Event System Core (Tier 0) ✅
     - Phase 36b: Event Pool Feature Parity ✅
+    - Phase 37: Bracket Polish ✅
+    - Phase 38: Multi-Entry Per User ✅
+    - Phase 39: Event Polish — Toggle Styling, Legal/Help Audit ✅
 18. **UPCOMING**
-    - [Future Phases 33, 35-39](#future-phases)
+    - [Future Phases 33, 35, 36c-d, 40+](#future-phases)
 
 ---
 
@@ -491,7 +494,7 @@ Phase 30: Favorite Teams & Banners       ████████████  C
 Phase 31: Historical Season Caching      ░░░░░░░░░░░░  Archive past seasons, returning users
 Phase 32: Multi-Sport Architecture       ░░░░░░░░░░░░  Year 2 expansion prep
 Phase 34: Browser Push Notifications     ████████████  COMPLETE ✅
-Future Phases 33, 35-37                  ░░░░░░░░░░░░  Year 2+ features (incl. email post-DNS)
+Future Phases 33, 35, 40+                ░░░░░░░░░░░░  Year 2+ features (incl. email post-DNS)
 ```
 
 ### Visual Build Order
@@ -557,11 +560,17 @@ Phase 32 (Pre-Launch Tasks)  ████████████  COMPLETE ✅
 ━━━ NOTIFICATIONS (Complete) ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Phase 34 (Browser Push)      ████████████  COMPLETE ✅
 
+━━━ EVENT SYSTEM (Complete) ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Phase 36a (Event Core)       ████████████  COMPLETE ✅
+Phase 36b (Pool Parity)      ████████████  COMPLETE ✅
+Phase 37 (Bracket Polish)    ████████████  COMPLETE ✅
+Phase 38 (Multi-Entry)       ████████████  COMPLETE ✅
+Phase 39 (Event Polish)      ████████████  COMPLETE ✅
+
 ━━━ UPCOMING ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Phase 33 (Email Notifs)      ░░░░░░░░░░░░  Blocked until DNS transfer (Apr 21)
-Phase 36 (Multi-Sport T0)    ░░░░░░░░░░░░  Event games: brackets, pick'em, survivor (Mar-Apr)
-Phase 37 (AI Support Agent)  ░░░░░░░░░░░░  Claude-powered help desk (Pre-launch)
-Future Phases 35, 38-39      ░░░░░░░░░░░░
+Phase 36c (More Sports)      ░░░░░░░░░░░░  Masters, Six Nations, member mgmt
+Future Phases 35, 36d, 40+   ░░░░░░░░░░░░
 ```
 
 ### June Deadline Decision Framework
@@ -1767,9 +1776,12 @@ This breaks leagues mid-season. A team vanishing from the leaderboard with all h
 | **Phase 36b** ✅ | Event Pool Feature Parity | **Live scores**: `event-gameday-sync` cron (GitHub Actions, every 10min, smart windowing 30min before→4hr after games). Period/clock/live_status columns on `event_games`. **Pool detail parity**: Activity feed, chat + reactions, announcements (creator-only), schedule view with live scores, scoring breakdown on all 3 picker formats, rules display. **Scoring customization**: Per-round point values with presets (Standard, Upset Heavy, Final Four Focus). **Share/invite**: ShareButton with social sharing (X, Facebook, WhatsApp, Instagram, TikTok), OG image generation (`/api/og/pool`), OpenGraph + Twitter Card metadata. **Dashboard**: Live game badges on event cards, "Events" in header nav. **Notifications**: Pool joined, deadline reminders (24hr), results posted, elimination/survived, tournament starting — all wired into existing `createNotification`/`notifyPoolMembers` with preference checking. **DB fix**: Code referenced nonexistent `score`/`rank` columns on `event_entries` — fixed to use `total_points` (rank computed at read time). | ✅ Mar 12, 2026 |
 | **Phase 36c** | Event System Remaining | **Member management**: Remove member API, entry fee/prize display columns. **Additional sports**: Masters Tournament (golf pick'em/matchups), Women's Six Nations (survivor), Men's Six Nations (pick'em). **Polish**: Unsaved changes detection on settings, "Start Your Bracket" hero CTA for new members. Full plan: `~/.claude/plans/structured-cooking-sketch.md` | Tier 0: Mar-Apr 2026 |
 | **Phase 36d** | Multi-Sport Season Engine (Tier 1) | Full multi-sport season refactor. Add Men's/Women's CBB, NCAA Hockey, College Baseball, Women's Volleyball. **Tier 2 (Year 1)**: WNBA, MLS, Softball, Lacrosse, March Madness, annual events. **Tier 3 (Year 2+)**: NFL (Winner/Loser format), Premier League, Champions League, Liga MX, NBA/MLB/NHL (innovative formats). | Tier 1: Summer 2026, Tier 2-3: Year 1-2 |
-| **Phase 37** | AI Support Agent | Claude-powered help desk: users submit tickets via in-app form, Claude triages and auto-responds to common questions (scoring rules, roster management, trade rules). For bugs/issues, Claude analyzes the problem and proposes fixes. Admin dashboard to review tickets, escalate, and approve Claude's suggested code changes. Reduces support burden before August launch. | Pre-launch (Jul 2026) |
-| **Phase 38** | Ads Infrastructure | Non-intrusive ads on free tier (footer banners, interstitials between pages — NOT during drafts or live scoring). Pro users see no ads. Ad impression tracking for revenue reporting. | Year 2 |
-| **Phase 39** | Native Mobile / PWA | iOS/Android app. Native push notifications. | Year 2-3 |
+| **Phase 37** ✅ | Bracket Polish | Tiebreaker validation (championship_score requires championship game exists), named brackets with display_name on entries, profile links from leaderboard, live bracket view with real-time game scores, champion display fix (gameMap lookup instead of BracketGame.winnerId), later round date display. Migration: 049_named_brackets.sql. | ✅ Mar 12, 2026 |
+| **Phase 38** ✅ | Multi-Entry Per User | Allow multiple bracket entries per pool (pool setting `max_entries_per_user`, default 1). Dropped unique constraint on `event_entries(pool_id, user_id)`. Entry selector UI with pill buttons + "+ Add Entry". Count-based join validation. Server page returns `userEntries[]` array with `userPicksByEntry` record. Settings tab includes entries-per-user select (1/3/5/10). New API: `POST /api/events/pools/[poolId]/entries`. Migration: 050_multi_entry.sql. | ✅ Mar 12, 2026 |
+| **Phase 39** ✅ | Event Polish — Toggle Styling, Legal/Help Audit | Schedule/Bracket toggle restyled to match league toggle (full-width, `flex-1 py-3 px-4 text-sm`, `bg-brand`/`bg-accent` active states). Terms of Service updated: Section 4 now covers prediction-based games (bracket, pick'em, survivor), multi-sport, free-to-play status. Help Center: added "Events & Prediction Games" FAQ category (6 Q&As). | ✅ Mar 12, 2026 |
+| **Phase 40** | AI Support Agent | Claude-powered help desk: users submit tickets via in-app form, Claude triages and auto-responds to common questions. Admin dashboard to review tickets, escalate, and approve Claude's suggested code changes. | Pre-launch (Jul 2026) |
+| **Phase 41** | Ads Infrastructure | Non-intrusive ads on free tier (footer banners, interstitials between pages — NOT during drafts or live scoring). Pro users see no ads. Ad impression tracking for revenue reporting. | Year 2 |
+| **Phase 42** | Native Mobile / PWA | iOS/Android app. Native push notifications. | Year 2-3 |
 
 ---
 

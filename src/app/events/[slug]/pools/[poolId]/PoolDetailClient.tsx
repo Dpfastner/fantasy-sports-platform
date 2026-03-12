@@ -1,12 +1,13 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useToast } from '@/components/Toast'
 import { BracketPicker } from './BracketPicker'
 import { SurvivorPicker } from './SurvivorPicker'
 import { PickemPicker } from './PickemPicker'
+import { RosterPicker } from './RosterPicker'
 import { Leaderboard } from './Leaderboard'
 import { PoolActivityFeed } from './PoolActivityFeed'
 import { PoolChat } from './PoolChat'
@@ -20,6 +21,7 @@ interface Participant {
   shortName: string | null
   seed: number | null
   logoUrl: string | null
+  metadata?: Record<string, unknown>
 }
 
 interface Game {
@@ -89,6 +91,7 @@ interface PoolDetailClientProps {
     scoringRules: Record<string, unknown>
     deadline: string | null
     maxEntriesPerUser: number
+    gameType: string | null
   }
   tournament: {
     id: string
@@ -145,6 +148,9 @@ export function PoolDetailClient({
   const { addToast } = useToast()
   const router = useRouter()
 
+  // Effective format: pool.gameType takes precedence over tournament.format for multi-format tournaments
+  const effectiveFormat = pool.gameType || tournament.format
+
   // Multi-entry state
   const [activeEntryIndex, setActiveEntryIndex] = useState(0)
   const activeEntry = userEntries[activeEntryIndex] ?? null
@@ -158,12 +164,40 @@ export function PoolDetailClient({
   const [settingsTiebreaker, setSettingsTiebreaker] = useState(pool.tiebreaker)
   const [settingsMaxEntries, setSettingsMaxEntries] = useState(pool.maxEntries?.toString() || '')
   const [settingsMaxEntriesPerUser, setSettingsMaxEntriesPerUser] = useState(pool.maxEntriesPerUser.toString())
-  const [settingsScoringRules, setSettingsScoringRules] = useState<Record<string, number> | null>(
+  const [settingsScoringRules, setSettingsScoringRules] = useState<Record<string, number>>(
     pool.scoringRules && typeof pool.scoringRules === 'object' && Object.keys(pool.scoringRules).length > 0
       ? pool.scoringRules as Record<string, number>
-      : null
+      : { regional_quarterfinal: 2, regional_final: 4, semifinal: 8, championship: 16 }
   )
   const [isSavingSettings, setIsSavingSettings] = useState(false)
+
+  // Unsaved changes detection
+  const initialScoringRules = pool.scoringRules && typeof pool.scoringRules === 'object' && Object.keys(pool.scoringRules).length > 0
+    ? pool.scoringRules
+    : { regional_quarterfinal: 2, regional_final: 4, semifinal: 8, championship: 16 }
+
+  const hasUnsavedChanges = activeTab === 'settings' && (
+    settingsName !== pool.name ||
+    settingsVisibility !== pool.visibility ||
+    settingsTiebreaker !== pool.tiebreaker ||
+    settingsMaxEntries !== (pool.maxEntries?.toString() || '') ||
+    settingsMaxEntriesPerUser !== pool.maxEntriesPerUser.toString() ||
+    JSON.stringify(settingsScoringRules) !== JSON.stringify(initialScoringRules)
+  )
+
+  useEffect(() => {
+    if (!hasUnsavedChanges) return
+    const handler = (e: BeforeUnloadEvent) => { e.preventDefault() }
+    window.addEventListener('beforeunload', handler)
+    return () => window.removeEventListener('beforeunload', handler)
+  }, [hasUnsavedChanges])
+
+  const handleTabChange = useCallback((tab: Tab) => {
+    if (activeTab === 'settings' && hasUnsavedChanges) {
+      if (!window.confirm('You have unsaved settings changes. Discard them?')) return
+    }
+    setActiveTab(tab)
+  }, [activeTab, hasUnsavedChanges])
 
   // Scoring presets for bracket format
   const scoringPresets: Record<string, { label: string; description: string; rules: Record<string, number> }> = {
@@ -191,11 +225,7 @@ export function PoolDetailClient({
     championship: 'Championship',
   }
 
-  const defaultScoringRules: Record<string, number> = {
-    regional_quarterfinal: 2, regional_final: 4, semifinal: 8, championship: 16,
-  }
-
-  const activeScoringRules = settingsScoringRules || defaultScoringRules
+  const activeScoringRules = settingsScoringRules
 
   const activePreset = Object.entries(scoringPresets).find(
     ([, preset]) => JSON.stringify(preset.rules) === JSON.stringify(activeScoringRules)
@@ -243,7 +273,7 @@ export function PoolDetailClient({
           tiebreaker: settingsTiebreaker,
           maxEntries: settingsMaxEntries ? parseInt(settingsMaxEntries, 10) : null,
           maxEntriesPerUser: parseInt(settingsMaxEntriesPerUser, 10) || 1,
-          ...(tournament.format === 'bracket' ? { scoringRules: settingsScoringRules } : {}),
+          ...(effectiveFormat === 'bracket' ? { scoringRules: settingsScoringRules ?? {} } : {}),
         }),
       })
 
@@ -265,10 +295,11 @@ export function PoolDetailClient({
 
   const tabs: { key: Tab; label: string; requiresMember?: boolean }[] = [
     { key: 'overview', label: 'Overview' },
-    { key: 'picks', label: tournament.format === 'bracket'
+    { key: 'picks', label: effectiveFormat === 'bracket'
       ? (userEntries.length > 1 ? `My Brackets (${userEntries.length})` : 'My Bracket')
+      : effectiveFormat === 'roster' ? 'My Roster'
       : 'My Picks', requiresMember: true },
-    { key: 'schedule', label: 'Schedule' },
+    { key: 'schedule', label: effectiveFormat === 'roster' ? 'Leaderboard' : 'Schedule' },
     { key: 'members', label: `Members (${members.length})` },
     ...(isCreator ? [{ key: 'settings' as Tab, label: 'Settings' }] : []),
   ]
@@ -321,7 +352,7 @@ export function PoolDetailClient({
             <ShareButton
               shareData={{
                 title: `Join ${pool.name} on Rivyls`,
-                text: `Join my ${tournament.format} pool "${pool.name}" for ${tournament.name}! Use code: ${pool.inviteCode}`,
+                text: `Join my ${effectiveFormat} pool "${pool.name}" for ${tournament.name}! Use code: ${pool.inviteCode}`,
                 url: `https://rivyls.com/events/${tournament.slug}/pools/${pool.id}`,
               }}
               ogImageUrl={`https://rivyls.com/api/og/pool?poolId=${pool.id}`}
@@ -362,19 +393,21 @@ export function PoolDetailClient({
       {activeEntry && !activeEntry.submittedAt && pool.status === 'open' && activeTab !== 'picks' && (
         <div className="bg-brand/5 border border-brand/20 rounded-lg p-5 mb-6 text-center">
           <h3 className="brand-h3 text-base text-text-primary mb-1">
-            {tournament.format === 'bracket' ? 'Fill out your bracket!' : 'Make your picks!'}
+            {effectiveFormat === 'bracket' ? 'Fill out your bracket!' :
+             effectiveFormat === 'roster' ? 'Build your roster!' : 'Make your picks!'}
           </h3>
           <p className="text-text-muted text-sm mb-3">
             {pool.deadline
-              ? `Picks lock ${new Date(pool.deadline).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}`
-              : `Picks lock at first game`
+              ? `${effectiveFormat === 'roster' ? 'Rosters' : 'Picks'} lock ${new Date(pool.deadline).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}`
+              : `${effectiveFormat === 'roster' ? 'Rosters' : 'Picks'} lock at first tee time`
             }
           </p>
           <button
             onClick={() => setActiveTab('picks')}
             className="px-6 py-2.5 text-sm font-semibold rounded-lg bg-brand hover:bg-brand-hover text-text-primary transition-colors"
           >
-            {tournament.format === 'bracket' ? 'Start Your Bracket' : 'Make Your Picks'}
+            {effectiveFormat === 'bracket' ? 'Start Your Bracket' :
+             effectiveFormat === 'roster' ? 'Build Your Roster' : 'Make Your Picks'}
           </button>
         </div>
       )}
@@ -407,7 +440,7 @@ export function PoolDetailClient({
           return (
             <button
               key={tab.key}
-              onClick={() => setActiveTab(tab.key)}
+              onClick={() => handleTabChange(tab.key)}
               className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
                 activeTab === tab.key
                   ? 'border-brand text-brand'
@@ -426,7 +459,7 @@ export function PoolDetailClient({
           {/* Leaderboard */}
           <Leaderboard
             members={members}
-            format={tournament.format}
+            format={effectiveFormat}
             poolStatus={pool.status}
           />
 
@@ -472,7 +505,7 @@ export function PoolDetailClient({
             </div>
           )}
 
-          {tournament.format === 'bracket' && (
+          {effectiveFormat === 'bracket' && (
             <BracketPicker
               entryId={activeEntry.id}
               tournamentId={tournament.id}
@@ -487,7 +520,7 @@ export function PoolDetailClient({
               scoringRules={pool.scoringRules}
             />
           )}
-          {tournament.format === 'survivor' && (
+          {effectiveFormat === 'survivor' && (
             <SurvivorPicker
               entryId={activeEntry.id}
               tournamentId={tournament.id}
@@ -500,7 +533,7 @@ export function PoolDetailClient({
               games={games}
             />
           )}
-          {tournament.format === 'pickem' && (
+          {effectiveFormat === 'pickem' && (
             <PickemPicker
               entryId={activeEntry.id}
               tournamentId={tournament.id}
@@ -512,16 +545,85 @@ export function PoolDetailClient({
               submittedAt={activeEntry.submittedAt}
             />
           )}
+          {effectiveFormat === 'roster' && (
+            <RosterPicker
+              entryId={activeEntry.id}
+              tournamentId={tournament.id}
+              poolId={pool.id}
+              poolStatus={pool.status}
+              participants={participants}
+              existingPicks={activeEntryPicks}
+              submittedAt={activeEntry.submittedAt}
+              scoringRules={pool.scoringRules}
+              deadline={pool.deadline}
+            />
+          )}
         </div>
       )}
 
       {activeTab === 'schedule' && (
-        <ScheduleView
-          games={games}
-          participants={participants}
-          format={tournament.format}
-          tournamentId={tournament.id}
-        />
+        effectiveFormat === 'roster' ? (
+          <div className="bg-surface rounded-lg border border-border overflow-hidden">
+            <div className="grid grid-cols-[2rem_1fr_3rem_3rem_3rem_3rem_4rem] gap-1 px-3 py-2 bg-surface-inset border-b border-border text-xs text-text-muted uppercase tracking-wide">
+              <span className="text-right">#</span>
+              <span>Golfer</span>
+              <span className="text-center">R1</span>
+              <span className="text-center">R2</span>
+              <span className="text-center">R3</span>
+              <span className="text-center">R4</span>
+              <span className="text-right">Score</span>
+            </div>
+            {[...participants]
+              .filter(p => p.metadata?.score_to_par != null || p.metadata?.status === 'active')
+              .sort((a, b) => {
+                const aScore = (a.metadata?.score_to_par as number) ?? 999
+                const bScore = (b.metadata?.score_to_par as number) ?? 999
+                return aScore - bScore
+              })
+              .map((p, i) => {
+                const meta = (p.metadata || {}) as Record<string, unknown>
+                const isCut = String(meta.status || '') === 'cut'
+                const scoreToPar = meta.score_to_par as number | null
+                return (
+                  <div
+                    key={p.id}
+                    className={`grid grid-cols-[2rem_1fr_3rem_3rem_3rem_3rem_4rem] gap-1 px-3 py-2 border-b border-border-subtle last:border-0 text-sm ${isCut ? 'opacity-50' : ''}`}
+                  >
+                    <span className="text-right text-text-muted">{i + 1}</span>
+                    <div className="flex items-center gap-1 min-w-0">
+                      <span className="text-text-primary truncate">{p.name}</span>
+                      {isCut && <span className="text-xs text-danger-text shrink-0">CUT</span>}
+                    </div>
+                    <span className="text-center text-text-secondary">{meta.r1 != null ? String(meta.r1) : '—'}</span>
+                    <span className="text-center text-text-secondary">{meta.r2 != null ? String(meta.r2) : '—'}</span>
+                    <span className="text-center text-text-secondary">{meta.r3 != null ? String(meta.r3) : '—'}</span>
+                    <span className="text-center text-text-secondary">{meta.r4 != null ? String(meta.r4) : '—'}</span>
+                    <span className={`text-right font-medium ${
+                      scoreToPar != null && scoreToPar < 0 ? 'text-success-text' :
+                      scoreToPar != null && scoreToPar > 0 ? 'text-danger-text' :
+                      'text-text-primary'
+                    }`}>
+                      {scoreToPar != null
+                        ? scoreToPar === 0 ? 'E' : scoreToPar > 0 ? `+${scoreToPar}` : String(scoreToPar)
+                        : '—'}
+                    </span>
+                  </div>
+                )
+              })}
+            {participants.every(p => p.metadata?.score_to_par == null) && (
+              <div className="p-6 text-center text-text-muted text-sm">
+                No scores yet. Leaderboard will update when the tournament begins.
+              </div>
+            )}
+          </div>
+        ) : (
+          <ScheduleView
+            games={games}
+            participants={participants}
+            format={effectiveFormat}
+            tournamentId={tournament.id}
+          />
+        )
       )}
 
       {activeTab === 'members' && (
@@ -661,11 +763,11 @@ export function PoolDetailClient({
                   <option value="5">Up to 5</option>
                   <option value="10">Up to 10</option>
                 </select>
-                <p className="text-xs text-text-muted mt-1">How many brackets each user can submit</p>
+                <p className="text-xs text-text-muted mt-1">How many entries each user can submit</p>
               </div>
 
               {/* Scoring Rules (bracket only) */}
-              {tournament.format === 'bracket' && (
+              {effectiveFormat === 'bracket' && (
                 <div>
                   <label className="block text-xs text-text-muted mb-2">Scoring Rules</label>
 
@@ -685,20 +787,13 @@ export function PoolDetailClient({
                         {preset.label}
                       </button>
                     ))}
-                    <button
-                      type="button"
-                      onClick={() => setSettingsScoringRules(null)}
-                      className={`flex-1 text-xs py-1.5 rounded-md border transition-colors ${
-                        !settingsScoringRules
-                          ? 'border-brand bg-brand/10 text-brand'
-                          : 'border-border text-text-muted hover:text-text-secondary'
-                      }`}
-                    >
-                      Default
-                    </button>
                   </div>
 
-                  {activePreset !== 'custom' && activePreset !== 'standard' && settingsScoringRules && (
+                  {activePreset === 'custom' ? (
+                    <p className="text-xs text-text-muted mb-2">
+                      Custom scoring — adjust individual round values below.
+                    </p>
+                  ) : activePreset !== 'standard' && (
                     <p className="text-xs text-text-muted mb-2">
                       {scoringPresets[activePreset]?.description}
                     </p>
@@ -718,7 +813,7 @@ export function PoolDetailClient({
                             onChange={(e) => {
                               const val = parseInt(e.target.value, 10) || 0
                               setSettingsScoringRules((prev) => ({
-                                ...(prev || defaultScoringRules),
+                                ...prev,
                                 [roundKey]: Math.max(0, Math.min(100, val)),
                               }))
                             }}
@@ -763,7 +858,7 @@ export function PoolDetailClient({
               <ShareButton
                 shareData={{
                   title: `Join ${pool.name} on Rivyls`,
-                  text: `Join my ${tournament.format} pool "${pool.name}" for ${tournament.name}! Use code: ${pool.inviteCode}`,
+                  text: `Join my ${effectiveFormat} pool "${pool.name}" for ${tournament.name}! Use code: ${pool.inviteCode}`,
                   url: `https://rivyls.com/events/${tournament.slug}/pools/${pool.id}`,
                 }}
                 ogImageUrl={`https://rivyls.com/api/og/pool?poolId=${pool.id}`}
@@ -777,7 +872,7 @@ export function PoolDetailClient({
             <div className="space-y-2 text-sm">
               <div className="flex justify-between">
                 <span className="text-text-muted">Format</span>
-                <span className="text-text-secondary capitalize">{tournament.format}</span>
+                <span className="text-text-secondary capitalize">{effectiveFormat}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-text-muted">Status</span>
