@@ -17,7 +17,8 @@ interface Pool {
   max_entries: number | null
   max_entries_per_user: number
   invite_code: string
-  scoring_rules: Record<string, number>
+  scoring_rules: Record<string, unknown>
+  game_type: string | null
   created_at: string
   entry_count: number
   is_member: boolean
@@ -27,6 +28,7 @@ interface EventPoolsClientProps {
   tournamentId: string
   tournamentSlug: string
   tournamentFormat: string
+  allowedGameTypes?: string[]
   pools: Pool[]
   isLoggedIn: boolean
 }
@@ -35,6 +37,8 @@ const formatLabel: Record<string, string> = {
   bracket: 'Bracket',
   pickem: "Pick'em",
   survivor: 'Survivor',
+  roster: 'Roster',
+  multi: 'Multi-format',
 }
 
 const tiebreakerLabels: Record<string, string> = {
@@ -49,6 +53,7 @@ export function EventPoolsClient({
   tournamentId,
   tournamentSlug,
   tournamentFormat,
+  allowedGameTypes,
   pools: initialPools,
   isLoggedIn,
 }: EventPoolsClientProps) {
@@ -59,12 +64,19 @@ export function EventPoolsClient({
   const { addToast } = useToast()
   const router = useRouter()
 
+  const isMultiFormat = tournamentFormat === 'multi' && allowedGameTypes && allowedGameTypes.length > 1
+
   // Create form state
   const [name, setName] = useState('')
+  const [gameType, setGameType] = useState(allowedGameTypes?.[0] || tournamentFormat)
   const [visibility, setVisibility] = useState<'public' | 'private'>('private')
   const [tiebreaker, setTiebreaker] = useState('none')
   const [maxEntries, setMaxEntries] = useState('')
   const [maxEntriesPerUser, setMaxEntriesPerUser] = useState('1')
+
+  // Roster draft mode state (only shown when gameType is 'roster')
+  const [draftMode, setDraftMode] = useState<'open' | 'limited' | 'snake_draft' | 'linear_draft'>('open')
+  const [selectionCap, setSelectionCap] = useState('3')
 
   // Join form state
   const [inviteCode, setInviteCode] = useState('')
@@ -87,6 +99,13 @@ export function EventPoolsClient({
           tiebreaker,
           maxEntries: maxEntries ? parseInt(maxEntries, 10) : undefined,
           maxEntriesPerUser: parseInt(maxEntriesPerUser, 10) || 1,
+          ...(isMultiFormat ? { gameType } : {}),
+          ...((isMultiFormat ? gameType : tournamentFormat) === 'roster' ? {
+            scoringRules: {
+              draft_mode: draftMode,
+              ...(draftMode === 'limited' ? { selection_cap: parseInt(selectionCap, 10) || 3 } : {}),
+            },
+          } : {}),
         }),
       })
 
@@ -97,8 +116,9 @@ export function EventPoolsClient({
       }
 
       addToast(`Pool created! Invite code: ${data.inviteCode}`, 'success')
-      track('event_pool_created', { format: tournamentFormat })
-      trackEventActivity('pool.created', data.poolId, tournamentId, { name: name.trim(), format: tournamentFormat })
+      const effectiveFormat = isMultiFormat ? gameType : tournamentFormat
+      track('event_pool_created', { format: effectiveFormat })
+      trackEventActivity('pool.created', data.poolId, tournamentId, { name: name.trim(), format: effectiveFormat })
 
       // Navigate to the new pool
       router.push(`/events/${tournamentSlug}/pools/${data.poolId}`)
@@ -212,6 +232,74 @@ export function EventPoolsClient({
               />
             </div>
 
+            {/* Game Type (multi-format tournaments only) */}
+            {isMultiFormat && (
+              <div>
+                <label className="block text-xs text-text-muted mb-1">Game Type</label>
+                <div className="flex gap-2">
+                  {allowedGameTypes!.map((gt) => (
+                    <button
+                      key={gt}
+                      type="button"
+                      onClick={() => setGameType(gt)}
+                      className={`flex-1 text-sm py-1.5 rounded-md border transition-colors ${
+                        gameType === gt
+                          ? 'border-brand bg-brand/10 text-brand'
+                          : 'border-border text-text-muted hover:text-text-secondary'
+                      }`}
+                    >
+                      {formatLabel[gt] || gt}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Draft Mode (roster only) */}
+            {((isMultiFormat ? gameType : tournamentFormat) === 'roster') && (
+              <div>
+                <label className="block text-xs text-text-muted mb-1">Draft Mode</label>
+                <div className="grid grid-cols-2 gap-2">
+                  {([
+                    { value: 'open', label: 'Open Pick', desc: 'Everyone picks independently' },
+                    { value: 'limited', label: 'Limited Pick', desc: 'Shared picks with selection cap' },
+                    { value: 'snake_draft', label: 'Snake Draft', desc: 'Turn-based, reverses each round' },
+                    { value: 'linear_draft', label: 'Linear Draft', desc: 'Turn-based, same order each round' },
+                  ] as const).map((opt) => (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      onClick={() => setDraftMode(opt.value)}
+                      className={`text-left text-xs py-2 px-3 rounded-md border transition-colors ${
+                        draftMode === opt.value
+                          ? 'border-brand bg-brand/10 text-brand'
+                          : 'border-border text-text-muted hover:text-text-secondary'
+                      }`}
+                    >
+                      <span className="block font-medium">{opt.label}</span>
+                      <span className="block text-[10px] mt-0.5 opacity-70">{opt.desc}</span>
+                    </button>
+                  ))}
+                </div>
+
+                {/* Selection cap (limited mode only) */}
+                {draftMode === 'limited' && (
+                  <div className="mt-2">
+                    <label className="block text-[10px] text-text-muted mb-1">Max times a golfer can be picked across all rosters</label>
+                    <select
+                      value={selectionCap}
+                      onChange={(e) => setSelectionCap(e.target.value)}
+                      className="w-full bg-surface-inset border border-border rounded-md px-3 py-2 text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-brand/50"
+                    >
+                      {[2, 3, 4, 5, 6, 8, 10].map(n => (
+                        <option key={n} value={String(n)}>{n} entries</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* Visibility + Tiebreaker row */}
             <div className="grid sm:grid-cols-2 gap-3">
               <div>
@@ -283,7 +371,7 @@ export function EventPoolsClient({
                 <option value="5">Up to 5</option>
                 <option value="10">Up to 10</option>
               </select>
-              <p className="text-xs text-text-muted mt-1">How many brackets each user can submit</p>
+              <p className="text-xs text-text-muted mt-1">How many entries each user can submit</p>
             </div>
 
             {/* Actions */}
@@ -340,6 +428,11 @@ export function EventPoolsClient({
                     {pool.is_member && (
                       <span className="shrink-0 text-xs font-medium px-1.5 py-0.5 rounded-full bg-success/20 text-success-text">
                         Joined
+                      </span>
+                    )}
+                    {pool.game_type && isMultiFormat && (
+                      <span className="shrink-0 text-xs font-medium px-1.5 py-0.5 rounded-full bg-brand/10 text-brand">
+                        {formatLabel[pool.game_type] || pool.game_type}
                       </span>
                     )}
                     {pool.visibility === 'private' && (

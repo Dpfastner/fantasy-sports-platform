@@ -69,7 +69,7 @@ export async function GET(request: Request) {
 
     let query = admin
       .from('event_pools')
-      .select('id, name, created_by, visibility, status, tiebreaker, max_entries, created_at, invite_code, scoring_rules')
+      .select('id, name, created_by, visibility, status, tiebreaker, max_entries, game_type, created_at, invite_code, scoring_rules')
       .eq('tournament_id', tournamentId)
       .order('created_at', { ascending: false })
 
@@ -250,13 +250,13 @@ export async function POST(request: Request) {
     const validation = validateBody(eventPoolCreateSchema, rawBody)
     if (!validation.success) return validation.response
 
-    const { tournamentId, name, visibility, scoringRules, tiebreaker, deadline, maxEntries, maxEntriesPerUser, leagueId } = validation.data
+    const { tournamentId, name, visibility, gameType, scoringRules, tiebreaker, deadline, maxEntries, maxEntriesPerUser, leagueId } = validation.data
     const admin = createAdminClient()
 
     // Verify tournament exists and is upcoming/active
     const { data: tournament, error: tournamentError } = await admin
       .from('event_tournaments')
-      .select('id, format, status')
+      .select('id, format, status, config')
       .eq('id', tournamentId)
       .single()
 
@@ -266,6 +266,25 @@ export async function POST(request: Request) {
 
     if (tournament.status === 'completed' || tournament.status === 'cancelled') {
       return NextResponse.json({ error: 'This tournament is no longer accepting pools' }, { status: 409 })
+    }
+
+    // Determine game_type for this pool
+    let resolvedGameType: string
+    const config = (tournament.config || {}) as Record<string, unknown>
+    const allowedGameTypes = config.allowed_game_types as string[] | undefined
+
+    if (tournament.format === 'multi') {
+      // Multi-format tournament: gameType is required
+      if (!gameType) {
+        return NextResponse.json({ error: 'gameType is required for this tournament' }, { status: 400 })
+      }
+      if (allowedGameTypes && !allowedGameTypes.includes(gameType)) {
+        return NextResponse.json({ error: `Invalid game type. Allowed: ${allowedGameTypes.join(', ')}` }, { status: 400 })
+      }
+      resolvedGameType = gameType
+    } else {
+      // Single-format tournament: use the tournament's format (ignore any gameType in body)
+      resolvedGameType = tournament.format
     }
 
     // Generate invite code
@@ -282,6 +301,7 @@ export async function POST(request: Request) {
         created_by: user.id,
         visibility,
         invite_code: inviteCode,
+        game_type: resolvedGameType,
         scoring_rules: scoringRules || {},
         tiebreaker,
         deadline: deadline || null,
@@ -303,7 +323,7 @@ export async function POST(request: Request) {
     })
 
     // If survivor format, create pool_weeks from tournament config
-    if (tournament.format === 'survivor') {
+    if (resolvedGameType === 'survivor') {
       const { data: tournamentFull } = await admin
         .from('event_tournaments')
         .select('total_weeks, config')
@@ -327,15 +347,24 @@ export async function POST(request: Request) {
       }
     }
 
+    // Create draft state row for snake/linear draft pools
+    const draftMode = (scoringRules as Record<string, unknown>)?.draft_mode as string | undefined
+    if (draftMode === 'snake_draft' || draftMode === 'linear_draft') {
+      await admin.from('event_pool_drafts').insert({
+        pool_id: pool.id,
+        status: 'not_started',
+      })
+    }
+
     // Log activity
     await admin.from('event_activity_log').insert({
       pool_id: pool.id,
       tournament_id: tournamentId,
       user_id: user.id,
       action: 'pool.created',
-      details: { name: name.trim(), format: tournament.format, visibility },
+      details: { name: name.trim(), gameType: resolvedGameType, visibility, draftMode: draftMode || 'open' },
     })
-    logActivity({ userId: user.id, action: 'event.pool_created', details: { poolId: pool.id, tournamentId, format: tournament.format } })
+    logActivity({ userId: user.id, action: 'event.pool_created', details: { poolId: pool.id, tournamentId, gameType: resolvedGameType } })
 
     return NextResponse.json({
       success: true,

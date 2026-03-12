@@ -111,7 +111,7 @@ export default async function PoolDetailPage({ params }: PageProps) {
     .from('event_entries')
     .select('id, user_id, display_name, is_active, submitted_at, total_points, tiebreaker_prediction, profiles(display_name, email)')
     .eq('pool_id', poolId)
-    .order('total_points', { ascending: false })
+    .order('total_points', { ascending: pool.game_type === 'roster' })
 
   // Get current user's entries — auto-join if creator without entry
   const userEntries = user
@@ -155,7 +155,7 @@ export default async function PoolDetailPage({ params }: PageProps) {
     deadline: string
     resolution_status: string
   }> = []
-  if (tournament.format === 'survivor') {
+  if (pool.game_type === 'survivor' || (tournament.format === 'survivor' && !pool.game_type)) {
     const { data } = await admin
       .from('event_pool_weeks')
       .select('id, week_number, deadline, resolution_status')
@@ -166,7 +166,7 @@ export default async function PoolDetailPage({ params }: PageProps) {
 
   // For bracket format, fetch all picks to compute leaderboard stats
   let allEntryPicks: Record<string, Array<{ game_id: string; participant_id: string; is_correct: boolean | null; points_earned: number | null }>> = {}
-  if (tournament.format === 'bracket' && entries?.length) {
+  if ((pool.game_type === 'bracket' || (tournament.format === 'bracket' && !pool.game_type)) && entries?.length) {
     const entryIds = entries.map(e => e.id)
     const { data: allPicks } = await admin
       .from('event_picks')
@@ -177,6 +177,24 @@ export default async function PoolDetailPage({ params }: PageProps) {
       for (const pick of allPicks) {
         if (!allEntryPicks[pick.entry_id]) allEntryPicks[pick.entry_id] = []
         allEntryPicks[pick.entry_id].push(pick)
+      }
+    }
+  }
+
+  // For limited-mode roster pools, compute selection counts per participant
+  let rosterSelectionCounts: Record<string, number> = {}
+  const poolScoringRules = (pool.scoring_rules || {}) as Record<string, unknown>
+  if (poolScoringRules.draft_mode === 'limited' && poolScoringRules.selection_cap) {
+    const { data: allRosterPicks } = await admin
+      .from('event_picks')
+      .select('participant_id, entry_id')
+      .in('entry_id', (entries || []).map(e => e.id))
+      .is('game_id', null)
+      .is('week_number', null)
+
+    if (allRosterPicks) {
+      for (const pick of allRosterPicks) {
+        rosterSelectionCounts[pick.participant_id] = (rosterSelectionCounts[pick.participant_id] || 0) + 1
       }
     }
   }
@@ -199,7 +217,8 @@ export default async function PoolDetailPage({ params }: PageProps) {
     let maxPossible = Number(e.total_points) || 0
     const entryPicks = allEntryPicks[e.id] || []
 
-    if (tournament.format === 'bracket') {
+    const effectiveFormat = pool.game_type || tournament.format
+    if (effectiveFormat === 'bracket') {
       for (const pick of entryPicks) {
         if (!pick.game_id) continue
         const game = gameById[pick.game_id]
@@ -267,6 +286,7 @@ export default async function PoolDetailPage({ params }: PageProps) {
             scoringRules: pool.scoring_rules,
             deadline: pool.deadline,
             maxEntriesPerUser: pool.max_entries_per_user ?? 1,
+            gameType: pool.game_type,
           }}
           tournament={{
             id: tournament.id,
@@ -287,6 +307,7 @@ export default async function PoolDetailPage({ params }: PageProps) {
             shortName: p.short_name,
             seed: p.seed,
             logoUrl: p.logo_url,
+            ...(pool.game_type === 'roster' || tournament.format === 'multi' ? { metadata: p.metadata as Record<string, unknown> } : {}),
           }))}
           games={(games || []).map(g => ({
             id: g.id,
@@ -330,6 +351,7 @@ export default async function PoolDetailPage({ params }: PageProps) {
           isCreator={!!user && pool.created_by === user.id}
           userId={user?.id || null}
           rulesText={tournament.rules_text || null}
+          rosterSelectionCounts={Object.keys(rosterSelectionCounts).length > 0 ? rosterSelectionCounts : undefined}
         />
       </main>
     </div>

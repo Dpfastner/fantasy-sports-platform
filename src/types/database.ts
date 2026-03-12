@@ -18,7 +18,8 @@ export type UserTier = 'free' | 'pro'
 export type LeagueStatus = 'active' | 'dormant'
 
 // Event game enums
-export type EventFormat = 'bracket' | 'pickem' | 'survivor'
+export type EventFormat = 'bracket' | 'pickem' | 'survivor' | 'roster' | 'multi'
+export type EventGameType = 'bracket' | 'pickem' | 'survivor' | 'roster'
 export type EventTournamentStatus = 'upcoming' | 'active' | 'completed' | 'cancelled'
 export type EventGameStatus = 'scheduled' | 'live' | 'completed' | 'cancelled' | 'postponed'
 export type EventPoolStatus = 'open' | 'locked' | 'scoring' | 'completed'
@@ -2032,6 +2033,7 @@ export interface Database {
           deadline: string | null
           max_entries: number | null
           status: EventPoolStatus
+          game_type: EventGameType
           linked_pool_id: string | null
           created_at: string
           updated_at: string
@@ -2049,6 +2051,7 @@ export interface Database {
           deadline?: string | null
           max_entries?: number | null
           status?: EventPoolStatus
+          game_type: EventGameType
           linked_pool_id?: string | null
           created_at?: string
           updated_at?: string
@@ -2066,6 +2069,7 @@ export interface Database {
           deadline?: string | null
           max_entries?: number | null
           status?: EventPoolStatus
+          game_type?: EventGameType
           linked_pool_id?: string | null
           created_at?: string
           updated_at?: string
@@ -2300,6 +2304,32 @@ export type EventPoolWeek = Tables<'event_pool_weeks'>
 export type EventEntry = Tables<'event_entries'>
 export type EventPick = Tables<'event_picks'>
 export type EventActivityLog = Tables<'event_activity_log'>
+
+// Event draft types (for snake/linear roster drafts)
+export interface EventPoolDraft {
+  id: string
+  pool_id: string
+  status: 'not_started' | 'in_progress' | 'paused' | 'completed'
+  current_round: number
+  current_pick: number
+  current_entry_id: string | null
+  pick_deadline: string | null
+  started_at: string | null
+  completed_at: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface EventPoolDraftOrder {
+  id: string
+  draft_id: string
+  entry_id: string
+  round: number
+  pick_number: number
+  position_in_round: number
+  created_at: string
+  updated_at: string | null
+}
 
 // Composite type for badge display (badge instance + joined definition)
 export interface UserBadgeWithDefinition {

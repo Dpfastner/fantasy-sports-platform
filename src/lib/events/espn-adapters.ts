@@ -532,8 +532,19 @@ export interface ESPNGolfer {
   position: number | null
   score: string | null
   totalStrokes: number | null
+  roundScores: (number | null)[]    // individual round scores [r1, r2, r3, r4]
+  scoreToPar: number | null         // parsed from score display value
   status: 'active' | 'cut' | 'wd' | 'dq'
   imageUrl: string | null
+}
+
+/** Parse ESPN score display value to numeric score-to-par. "E" → 0, "-5" → -5, "+3" → 3 */
+function parseScoreToPar(display: string | null): number | null {
+  if (!display) return null
+  const trimmed = display.trim()
+  if (trimmed === 'E' || trimmed === 'Even') return 0
+  const num = parseInt(trimmed, 10)
+  return isNaN(num) ? null : num
 }
 
 /**
@@ -582,6 +593,10 @@ export async function fetchGolfLeaderboard(
             totalStrokes: linescores
               ? linescores.reduce((sum, ls) => sum + (ls.value || 0), 0)
               : null,
+            roundScores: linescores
+              ? linescores.map(ls => ls.value ?? null)
+              : [],
+            scoreToPar: parseScoreToPar((scoreObj.displayValue as string) || null),
             status: statusName.includes('CUT') ? 'cut'
               : statusName.includes('WD') ? 'wd'
               : statusName.includes('DQ') ? 'dq'

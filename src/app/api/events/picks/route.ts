@@ -6,7 +6,9 @@ import {
   eventBracketPickSchema,
   eventSurvivorPickSchema,
   eventPickemPickSchema,
+  eventRosterPickSchema,
 } from '@/lib/api/schemas'
+import { validateRosterCompleteness, getDraftMode, type RosterScoringRules, DEFAULT_ROSTER_SCORING } from '@/lib/events/shared'
 import { createRateLimiter, getClientIp } from '@/lib/api/rate-limit'
 import { logActivity } from '@/lib/activity'
 
@@ -95,8 +97,8 @@ export async function POST(request: Request) {
       .from('event_entries')
       .select(`
         id, user_id, pool_id, is_active,
-        event_pools(id, tournament_id, status, deadline, scoring_rules, tiebreaker,
-          event_tournaments(id, format, status, bracket_size)
+        event_pools(id, tournament_id, game_type, status, deadline, scoring_rules, tiebreaker,
+          event_tournaments(id, format, status, bracket_size, config)
         )
       `)
       .eq('id', entryId)
@@ -117,6 +119,7 @@ export async function POST(request: Request) {
     const pool = entry.event_pools as unknown as {
       id: string
       tournament_id: string
+      game_type: string
       status: string
       deadline: string | null
       scoring_rules: Record<string, unknown>
@@ -126,6 +129,7 @@ export async function POST(request: Request) {
         format: string
         status: string
         bracket_size: number | null
+        config: Record<string, unknown>
       }
     }
 
@@ -133,17 +137,20 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'This pool is locked' }, { status: 409 })
     }
 
-    const format = pool.event_tournaments.format
+    // Use pool.game_type (per-pool) instead of tournament.format
+    const gameType = pool.game_type
 
-    if (format === 'bracket') {
+    if (gameType === 'bracket') {
       return handleBracketPicks(rawBody, entry, pool, admin, user.id)
-    } else if (format === 'survivor') {
+    } else if (gameType === 'survivor') {
       return handleSurvivorPick(rawBody, entry, pool, admin, user.id)
-    } else if (format === 'pickem') {
+    } else if (gameType === 'pickem') {
       return handlePickemPicks(rawBody, entry, pool, admin, user.id)
+    } else if (gameType === 'roster') {
+      return handleRosterPicks(rawBody, entry, pool, admin, user.id)
     }
 
-    return NextResponse.json({ error: `Unknown format: ${format}` }, { status: 400 })
+    return NextResponse.json({ error: `Unknown game type: ${gameType}` }, { status: 400 })
   } catch (err) {
     console.error('Pick submission error:', err)
     Sentry.captureException(err, { tags: { route: 'events/picks', action: 'submit' } })
@@ -440,6 +447,174 @@ async function handlePickemPicks(
     details: { pick_count: picks.length },
   })
   logActivity({ userId, action: 'event.picks_submitted', details: { poolId: pool.id, tournamentId: pool.tournament_id, pickCount: picks.length } })
+
+  return NextResponse.json({ success: true, pickCount: picks.length })
+}
+
+// ── ROSTER PICKS ──
+
+async function handleRosterPicks(
+  rawBody: unknown,
+  entry: { id: string },
+  pool: {
+    id: string
+    tournament_id: string
+    deadline: string | null
+    scoring_rules: Record<string, unknown>
+    event_tournaments: { config: Record<string, unknown> }
+  },
+  admin: ReturnType<typeof createAdminClient>,
+  userId: string
+) {
+  const validation = validateBody(eventRosterPickSchema, rawBody)
+  if (!validation.success) return validation.response
+
+  const { picks } = validation.data
+
+  // Enforce deadline
+  if (pool.deadline && new Date(pool.deadline) < new Date()) {
+    return NextResponse.json({ error: 'The deadline has passed. Rosters are locked.' }, { status: 409 })
+  }
+
+  // Load tournament participants with metadata
+  const { data: participants } = await admin
+    .from('event_participants')
+    .select('id, name, seed, metadata')
+    .eq('tournament_id', pool.tournament_id)
+
+  if (!participants?.length) {
+    return NextResponse.json({ error: 'No participants found for this tournament' }, { status: 500 })
+  }
+
+  // Determine scoring rules: pool-level > tournament config > defaults
+  const poolRules = pool.scoring_rules as Partial<RosterScoringRules> | null
+  const tournamentConfig = pool.event_tournaments.config || {}
+  const rosterTiers = (tournamentConfig.roster_tiers || poolRules?.tiers || DEFAULT_ROSTER_SCORING.tiers) as RosterScoringRules['tiers']
+
+  const rules: RosterScoringRules = {
+    roster_size: (poolRules?.roster_size as number) || DEFAULT_ROSTER_SCORING.roster_size,
+    count_best: (poolRules?.count_best as number) || DEFAULT_ROSTER_SCORING.count_best,
+    tiers: rosterTiers,
+    cut_penalty: (poolRules?.cut_penalty as RosterScoringRules['cut_penalty']) || DEFAULT_ROSTER_SCORING.cut_penalty,
+    cut_penalty_fixed: poolRules?.cut_penalty_fixed,
+  }
+
+  // Validate pick count matches roster_size
+  if (picks.length !== rules.roster_size) {
+    return NextResponse.json({
+      error: `You must pick exactly ${rules.roster_size} golfers (got ${picks.length})`,
+    }, { status: 400 })
+  }
+
+  // Validate all participants exist in tournament
+  const participantIds = new Set(participants.map(p => p.id))
+  for (const pick of picks) {
+    if (!participantIds.has(pick.participantId)) {
+      return NextResponse.json({ error: `Invalid golfer selection: ${pick.participantId}` }, { status: 400 })
+    }
+  }
+
+  // Validate tier constraints
+  const { isValid, errors } = validateRosterCompleteness(
+    picks.map(p => p.participantId),
+    participants as unknown as Parameters<typeof validateRosterCompleteness>[1],
+    rules
+  )
+
+  if (!isValid) {
+    return NextResponse.json({ error: errors.join('; ') }, { status: 400 })
+  }
+
+  // Enforce selection cap for limited mode
+  const draftMode = getDraftMode(pool.scoring_rules)
+  const selectionCap = (pool.scoring_rules as Partial<RosterScoringRules>)?.selection_cap
+
+  if (draftMode === 'limited' && selectionCap && selectionCap > 0) {
+    // Count existing picks per participant across all OTHER entries in this pool
+    const { data: allPoolEntries } = await admin
+      .from('event_entries')
+      .select('id')
+      .eq('pool_id', pool.id)
+      .neq('id', entry.id)
+
+    if (allPoolEntries?.length) {
+      const otherEntryIds = allPoolEntries.map(e => e.id)
+      const { data: otherPicks } = await admin
+        .from('event_picks')
+        .select('participant_id')
+        .in('entry_id', otherEntryIds)
+        .is('game_id', null)
+        .is('week_number', null)
+
+      // Build count map
+      const selectionCounts: Record<string, number> = {}
+      for (const p of (otherPicks || [])) {
+        selectionCounts[p.participant_id] = (selectionCounts[p.participant_id] || 0) + 1
+      }
+
+      // Check if any of the user's picks would exceed the cap
+      const overCap = picks.filter(p => (selectionCounts[p.participantId] || 0) >= selectionCap)
+      if (overCap.length > 0) {
+        const names = overCap.map(p => {
+          const participant = participants.find(pt => pt.id === p.participantId)
+          return participant?.name || p.participantId
+        })
+        return NextResponse.json({
+          error: `Selection cap reached (max ${selectionCap} per golfer): ${names.join(', ')}`,
+        }, { status: 409 })
+      }
+    }
+  }
+
+  // Reject open picks for snake/linear draft pools (must use draft API)
+  if (draftMode === 'snake_draft' || draftMode === 'linear_draft') {
+    return NextResponse.json({
+      error: 'This pool uses a live draft. Picks must be submitted through the draft room.',
+    }, { status: 400 })
+  }
+
+  // Replace-all: delete existing picks for this entry
+  await admin
+    .from('event_picks')
+    .delete()
+    .eq('entry_id', entry.id)
+    .is('game_id', null)
+    .is('week_number', null)
+
+  // Insert new roster picks
+  const pickRows = picks.map(p => ({
+    entry_id: entry.id,
+    participant_id: p.participantId,
+    picked_at: new Date().toISOString(),
+  }))
+
+  const { error: insertError } = await admin
+    .from('event_picks')
+    .insert(pickRows)
+
+  if (insertError) {
+    console.error('Roster pick insert failed:', insertError)
+    return NextResponse.json({ error: 'Failed to save roster' }, { status: 500 })
+  }
+
+  // Update submitted_at
+  await admin
+    .from('event_entries')
+    .update({
+      submitted_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', entry.id)
+
+  // Log activity
+  await admin.from('event_activity_log').insert({
+    pool_id: pool.id,
+    tournament_id: pool.tournament_id,
+    user_id: userId,
+    action: 'roster.submitted',
+    details: { pick_count: picks.length },
+  })
+  logActivity({ userId, action: 'event.picks_submitted', details: { poolId: pool.id, tournamentId: pool.tournament_id, pickCount: picks.length, gameType: 'roster' } })
 
   return NextResponse.json({ success: true, pickCount: picks.length })
 }

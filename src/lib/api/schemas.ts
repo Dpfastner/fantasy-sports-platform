@@ -172,7 +172,8 @@ export const eventPoolCreateSchema = z.object({
   tournamentId: uuidField,
   name: z.string().min(2, 'Pool name too short').max(60, 'Pool name too long'),
   visibility: z.enum(['public', 'private']).default('private'),
-  scoringRules: z.record(z.string(), z.number()).optional(),
+  gameType: z.enum(['bracket', 'pickem', 'survivor', 'roster']).optional(),
+  scoringRules: z.record(z.string(), z.unknown()).optional(),
   tiebreaker: z.enum(['none', 'championship_score', 'first_match_score', 'most_upsets', 'random']).default('none'),
   deadline: z.string().datetime().optional(),
   maxEntries: z.number().int().min(2).max(1000).optional(),
@@ -210,4 +211,17 @@ export const eventPickemPickSchema = z.object({
     participantId: uuidField,
     confidence: z.number().int().min(1).max(20).optional(),
   })).min(1, 'Must submit at least one pick'),
+})
+
+export const eventRosterPickSchema = z.object({
+  entryId: uuidField,
+  picks: z.array(z.object({
+    participantId: uuidField,
+  })).min(1, 'Must submit at least one pick'),
+})
+
+export const eventRosterDraftPickSchema = z.object({
+  entryId: uuidField,
+  participantId: uuidField,
+  pickNumber: z.number().int().min(1),
 })

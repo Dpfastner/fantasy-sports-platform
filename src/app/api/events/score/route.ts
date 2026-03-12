@@ -6,13 +6,16 @@ import {
   scoreBracketEntry,
   scorePickemEntry,
   evaluateSurvivorWeek,
+  scoreRosterEntry,
   resolveTiebreaker,
   type BracketScoringRules,
   type PickemScoringRules,
   type SurvivorScoringRules,
+  type RosterScoringRules,
   DEFAULT_BRACKET_SCORING,
   DEFAULT_PICKEM_SCORING,
   DEFAULT_SURVIVOR_SCORING,
+  DEFAULT_ROSTER_SCORING,
 } from '@/lib/events/shared'
 import type { EventGame, EventParticipant, EventPick } from '@/types/database'
 
@@ -45,22 +48,6 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Tournament not found' }, { status: 404 })
     }
 
-    // Get all completed games
-    let gamesQuery = admin
-      .from('event_games')
-      .select('*')
-      .eq('tournament_id', tournamentId)
-      .eq('status', 'completed')
-
-    if (weekNumber != null) {
-      gamesQuery = gamesQuery.eq('week_number', weekNumber)
-    }
-
-    const { data: completedGames } = await gamesQuery
-    if (!completedGames?.length) {
-      return NextResponse.json({ message: 'No completed games to score' })
-    }
-
     // Get participants
     const { data: participants } = await admin
       .from('event_participants')
@@ -81,15 +68,49 @@ export async function POST(request: Request) {
       return NextResponse.json({ message: 'No pools to score' })
     }
 
+    // Get completed games (not needed for roster pools, but used by others)
+    let completedGames: EventGame[] = []
+    const hasGameBasedPools = pools.some(p => p.game_type !== 'roster')
+
+    if (hasGameBasedPools) {
+      let gamesQuery = admin
+        .from('event_games')
+        .select('*')
+        .eq('tournament_id', tournamentId)
+        .eq('status', 'completed')
+
+      if (weekNumber != null) {
+        gamesQuery = gamesQuery.eq('week_number', weekNumber)
+      }
+
+      const { data: games } = await gamesQuery
+      completedGames = games || []
+
+      if (!completedGames.length && !pools.some(p => p.game_type === 'roster')) {
+        return NextResponse.json({ message: 'No completed games to score' })
+      }
+    }
+
     let totalUpdated = 0
 
     for (const pool of pools) {
-      if (tournament.format === 'bracket') {
-        totalUpdated += await scoreBracketPool(admin, pool, completedGames, participants)
-      } else if (tournament.format === 'pickem') {
-        totalUpdated += await scorePickemPool(admin, pool, completedGames, participants)
-      } else if (tournament.format === 'survivor') {
-        totalUpdated += await scoreSurvivorPool(admin, pool, completedGames, participants, weekNumber)
+      // Use pool.game_type for dispatch (supports multi-format tournaments)
+      const gameType = pool.game_type as string
+
+      if (gameType === 'bracket') {
+        if (completedGames.length) {
+          totalUpdated += await scoreBracketPool(admin, pool, completedGames, participants)
+        }
+      } else if (gameType === 'pickem') {
+        if (completedGames.length) {
+          totalUpdated += await scorePickemPool(admin, pool, completedGames, participants)
+        }
+      } else if (gameType === 'survivor') {
+        if (completedGames.length) {
+          totalUpdated += await scoreSurvivorPool(admin, pool, completedGames, participants, weekNumber)
+        }
+      } else if (gameType === 'roster') {
+        totalUpdated += await scoreRosterPool(admin, pool, participants)
       }
     }
 
@@ -407,6 +428,78 @@ async function scoreSurvivorPool(
         resolved_at: new Date().toISOString(),
       })
       .eq('id', week.id)
+  }
+
+  return updated
+}
+
+// ── ROSTER SCORING ──
+// Scores based on participant metadata (score_to_par, status) — no games needed.
+
+async function scoreRosterPool(
+  admin: ReturnType<typeof createAdminClient>,
+  pool: Record<string, unknown>,
+  participants: EventParticipant[]
+): Promise<number> {
+  const poolId = pool.id as string
+  const poolRules = (pool.scoring_rules || {}) as Partial<RosterScoringRules>
+
+  const rules: RosterScoringRules = {
+    roster_size: poolRules.roster_size || DEFAULT_ROSTER_SCORING.roster_size,
+    count_best: poolRules.count_best || DEFAULT_ROSTER_SCORING.count_best,
+    tiers: poolRules.tiers || DEFAULT_ROSTER_SCORING.tiers,
+    cut_penalty: poolRules.cut_penalty || DEFAULT_ROSTER_SCORING.cut_penalty,
+    cut_penalty_fixed: poolRules.cut_penalty_fixed,
+  }
+
+  // Get all entries for this pool
+  const { data: entries } = await admin
+    .from('event_entries')
+    .select('id')
+    .eq('pool_id', poolId)
+
+  if (!entries?.length) return 0
+
+  let updated = 0
+
+  for (const entry of entries) {
+    // Get roster picks for this entry (game_id IS NULL and week_number IS NULL)
+    const { data: picks } = await admin
+      .from('event_picks')
+      .select('*')
+      .eq('entry_id', entry.id)
+      .is('game_id', null)
+      .is('week_number', null)
+
+    if (!picks?.length) continue
+
+    const { totalPoints, results } = scoreRosterEntry(picks, participants, rules)
+
+    // Update individual pick points_earned (each golfer's contribution)
+    for (const result of results) {
+      if (result.adjustedScore != null) {
+        await admin
+          .from('event_picks')
+          .update({
+            points_earned: result.adjustedScore,
+            resolved_at: new Date().toISOString(),
+          })
+          .eq('entry_id', entry.id)
+          .eq('participant_id', result.participantId)
+          .is('game_id', null)
+      }
+    }
+
+    // Update entry total (null totalPoints means no scores yet — keep as 0)
+    await admin
+      .from('event_entries')
+      .update({
+        total_points: totalPoints ?? 0,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', entry.id)
+
+    updated++
   }
 
   return updated

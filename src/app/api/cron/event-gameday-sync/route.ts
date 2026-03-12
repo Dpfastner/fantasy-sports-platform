@@ -27,6 +27,11 @@ import {
   type ESPNHockeyGame,
   type ESPNRugbyMatch,
 } from '@/lib/events/espn-adapters'
+import {
+  scoreRosterEntry,
+  type RosterScoringRules,
+  DEFAULT_ROSTER_SCORING,
+} from '@/lib/events/shared'
 
 function verifyCronRequest(request: Request): boolean {
   const authHeader = request.headers.get('authorization')
@@ -78,21 +83,33 @@ export async function GET(request: Request) {
       ...(liveGames || []),
     ]
 
-    if (allRelevantGames.length === 0) {
+    // ── Step 1b: Find roster/multi tournaments active today (no games needed) ──
+    const { data: rosterTournaments } = await admin
+      .from('event_tournaments')
+      .select('id, sport, format, status, config')
+      .in('format', ['roster', 'multi'])
+      .in('status', ['active', 'upcoming'])
+      .lte('starts_at', now.toISOString())
+      .gte('ends_at', now.toISOString())
+
+    const hasGames = allRelevantGames.length > 0
+    const hasRosterTournaments = (rosterTournaments?.length || 0) > 0
+
+    if (!hasGames && !hasRosterTournaments) {
       return NextResponse.json({
         success: true,
         skipped: true,
-        reason: 'No event games scheduled for today',
+        reason: 'No event games scheduled for today and no active roster tournaments',
         timestamp: now.toISOString(),
       })
     }
 
-    // All games done for today?
+    // All games done for today? (still proceed if roster tournaments are active)
     const hasActiveGames = allRelevantGames.some(
       g => g.status === 'live' || g.status === 'scheduled'
     )
 
-    if (!hasActiveGames) {
+    if (!hasActiveGames && !hasRosterTournaments) {
       return NextResponse.json({
         success: true,
         skipped: true,
@@ -101,14 +118,15 @@ export async function GET(request: Request) {
       })
     }
 
-    // ── Step 2: Smart windowing ──
+    // ── Step 2: Smart windowing (only for game-based tournaments) ──
     const hasCarryoverLive = (liveGames?.length || 0) > 0
     const scheduledTimes = (todaysGames || [])
       .filter(g => g.starts_at)
       .map(g => new Date(g.starts_at).getTime())
       .sort((a, b) => a - b)
 
-    if (scheduledTimes.length > 0 && !hasCarryoverLive) {
+    // Skip windowing check if roster tournaments are active (they always need syncing)
+    if (scheduledTimes.length > 0 && !hasCarryoverLive && !hasRosterTournaments) {
       const firstGameMs = scheduledTimes[0]
       const lastGameMs = scheduledTimes[scheduledTimes.length - 1]
       const windowStartMs = firstGameMs - 30 * 60 * 1000  // 30 min before first game
@@ -127,18 +145,31 @@ export async function GET(request: Request) {
     }
 
     // ── Step 3: Get tournaments to sync ──
-    const tournamentIds = [...new Set(allRelevantGames.map(g => g.tournament_id))]
-    const { data: tournaments } = await admin
-      .from('event_tournaments')
-      .select('id, sport, format, status, config')
-      .in('id', tournamentIds)
-      .in('status', ['active', 'upcoming'])
+    const gameTournamentIds = [...new Set(allRelevantGames.map(g => g.tournament_id))]
+    let tournaments: { id: string; sport: string; format: string; status: string; config: unknown }[] = []
 
-    if (!tournaments?.length) {
+    if (gameTournamentIds.length > 0) {
+      const { data: gameTournaments } = await admin
+        .from('event_tournaments')
+        .select('id, sport, format, status, config')
+        .in('id', gameTournamentIds)
+        .in('status', ['active', 'upcoming'])
+      if (gameTournaments?.length) tournaments.push(...gameTournaments)
+    }
+
+    // Merge roster tournaments (deduplicate by ID)
+    if (rosterTournaments?.length) {
+      const existingIds = new Set(tournaments.map(t => t.id))
+      for (const rt of rosterTournaments) {
+        if (!existingIds.has(rt.id)) tournaments.push(rt)
+      }
+    }
+
+    if (!tournaments.length) {
       return NextResponse.json({
         success: true,
         skipped: true,
-        reason: 'No active tournaments with today\'s games',
+        reason: 'No active tournaments to sync',
         timestamp: now.toISOString(),
       })
     }
@@ -316,20 +347,50 @@ export async function GET(request: Request) {
           const espnTournamentId = config.espn_tournament_id as string | undefined
           const golfers = await fetchGolfLeaderboard(espnTournamentId, admin)
 
-          // Get our games (matchups) for this tournament
+          // Get participants with external IDs
+          const { data: participants } = await admin
+            .from('event_participants')
+            .select('id, external_id, metadata')
+            .eq('tournament_id', tournamentId)
+
+          const golferById = new Map(golfers.map(g => [g.espnPlayerId, g]))
+
+          // ── Update participant metadata with live scores (for roster pools) ──
+          let participantsUpdated = 0
+          for (const participant of participants || []) {
+            if (!participant.external_id) continue
+            const golfer = golferById.get(participant.external_id)
+            if (!golfer) continue
+
+            const existingMeta = (participant.metadata || {}) as Record<string, unknown>
+            const updatedMeta = {
+              ...existingMeta,
+              r1: golfer.roundScores?.[0] ?? existingMeta.r1 ?? null,
+              r2: golfer.roundScores?.[1] ?? existingMeta.r2 ?? null,
+              r3: golfer.roundScores?.[2] ?? existingMeta.r3 ?? null,
+              r4: golfer.roundScores?.[3] ?? existingMeta.r4 ?? null,
+              total_strokes: golfer.roundScores
+                ? golfer.roundScores.filter((s): s is number => s !== null).reduce((a, b) => a + b, 0) || null
+                : existingMeta.total_strokes,
+              score_to_par: golfer.scoreToPar ?? existingMeta.score_to_par ?? null,
+              status: golfer.status || existingMeta.status || 'active',
+              position: golfer.position || existingMeta.position || null,
+              score_display: golfer.score || existingMeta.score_display || null,
+            }
+
+            const { error } = await admin
+              .from('event_participants')
+              .update({ metadata: updatedMeta, updated_at: now.toISOString() })
+              .eq('id', participant.id)
+
+            if (!error) participantsUpdated++
+          }
+
+          // ── Update pick'em matchup games (if any exist) ──
           const { data: ourGames } = await admin
             .from('event_games')
             .select('id, participant_1_id, participant_2_id, status')
             .eq('tournament_id', tournamentId)
-
-          // Get participants with external IDs
-          const { data: participants } = await admin
-            .from('event_participants')
-            .select('id, external_id')
-            .eq('tournament_id', tournamentId)
-
-          const golferById = new Map(golfers.map(g => [g.espnPlayerId, g]))
-          const participantByExternal = new Map(participants?.map(p => [p.external_id, p]) || [])
 
           let updated = 0
           let completed = 0
@@ -371,13 +432,33 @@ export async function GET(request: Request) {
             if (!error) updated++
           }
 
+          // ── Score roster pools after participant metadata sync ──
+          if (participantsUpdated > 0) {
+            const { data: rosterPools } = await admin
+              .from('event_pools')
+              .select('id, scoring_rules')
+              .eq('tournament_id', tournamentId)
+              .eq('game_type', 'roster')
+
+            for (const pool of rosterPools || []) {
+              try {
+                await scoreRosterPoolLive(admin, pool, tournamentId)
+              } catch (err) {
+                console.error(`[event-gameday-sync] Roster scoring error for pool ${pool.id}:`, err)
+                Sentry.captureException(err, { tags: { cron: 'event-gameday-sync', action: 'roster_scoring', poolId: pool.id } })
+              }
+            }
+          }
+
           totalUpdated += updated
           totalCompleted += completed
 
           results[`golf_${tournamentId}`] = {
             golfers_fetched: golfers.length,
+            participants_updated: participantsUpdated,
             games_updated: updated,
             completed,
+            roster_pools_scored: (await admin.from('event_pools').select('id', { count: 'exact', head: true }).eq('tournament_id', tournamentId).eq('game_type', 'roster')).count || 0,
           }
         }
       } catch (err) {
@@ -401,6 +482,18 @@ export async function GET(request: Request) {
           await scoreSurvivorPicks(admin, tournamentId, weekDeadlines)
         } else if (format === 'pickem') {
           await scorePickemPicks(admin, tournamentId)
+        } else if (format === 'multi') {
+          // Multi-format tournaments: score each pool type separately based on game_type
+          const { data: multiPools } = await admin
+            .from('event_pools')
+            .select('id, game_type, scoring_rules')
+            .eq('tournament_id', tournamentId)
+
+          for (const mp of multiPools || []) {
+            if (mp.game_type === 'bracket') await scoreBracketPicks(admin, tournamentId)
+            else if (mp.game_type === 'pickem') await scorePickemPicks(admin, tournamentId)
+            // roster pools are scored inline during golf sync (above)
+          }
         }
         results[`scoring_${tournamentId}`] = { triggered: true, format }
 
@@ -698,4 +791,67 @@ async function scorePickemPicks(admin: ReturnType<typeof createAdminClient>, tou
 // Rank is computed at read time from total_points ordering — no separate column needed
 async function updatePoolRanks(_admin: ReturnType<typeof createAdminClient>, _poolId: string) {
   // no-op: rank is derived from total_points sort order on the client
+}
+
+/** Score all entries in a roster pool using live participant metadata */
+async function scoreRosterPoolLive(
+  admin: ReturnType<typeof createAdminClient>,
+  pool: { id: string; scoring_rules: unknown },
+  tournamentId: string
+) {
+  const rules = (pool.scoring_rules && typeof pool.scoring_rules === 'object' && 'roster_size' in (pool.scoring_rules as Record<string, unknown>))
+    ? pool.scoring_rules as RosterScoringRules
+    : DEFAULT_ROSTER_SCORING
+
+  // Get all participants with current metadata
+  const { data: participants } = await admin
+    .from('event_participants')
+    .select('id, name, metadata')
+    .eq('tournament_id', tournamentId)
+
+  if (!participants?.length) return
+
+  // Get all entries for this pool
+  const { data: entries } = await admin
+    .from('event_entries')
+    .select('id')
+    .eq('pool_id', pool.id)
+
+  if (!entries?.length) return
+
+  for (const entry of entries) {
+    const { data: picks } = await admin
+      .from('event_picks')
+      .select('id, participant_id')
+      .eq('entry_id', entry.id)
+      .is('game_id', null)
+      .is('week_number', null)
+
+    if (!picks?.length) continue
+
+    // Cast to expected types — scoreRosterEntry only uses participant_id from picks
+    // and id/name/metadata from participants
+    const result = scoreRosterEntry(
+      picks as unknown as Parameters<typeof scoreRosterEntry>[0],
+      participants as unknown as Parameters<typeof scoreRosterEntry>[1],
+      rules
+    )
+
+    // Update individual pick points
+    for (const pickResult of result.results) {
+      const pick = picks.find(p => p.participant_id === pickResult.participantId)
+      if (pick) {
+        await admin
+          .from('event_picks')
+          .update({ points_earned: pickResult.scoreToPar ?? 0 })
+          .eq('id', pick.id)
+      }
+    }
+
+    // Update entry total
+    await admin
+      .from('event_entries')
+      .update({ total_points: result.totalPoints, updated_at: new Date().toISOString() })
+      .eq('id', entry.id)
+  }
 }

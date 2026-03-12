@@ -61,6 +61,8 @@ export type ActivityAction =
   | 'event.bracket_completed'
   | 'event.survivor_pick_made'
   | 'event.leaderboard_viewed'
+  | 'event.draft_started'
+  | 'event.draft_pick'
   // Other
   | 'invite_code.looked_up'
   | 'issue_report.submitted'

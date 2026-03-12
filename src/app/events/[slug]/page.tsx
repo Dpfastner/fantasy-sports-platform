@@ -62,7 +62,7 @@ export default async function EventDetailPage({ params }: PageProps) {
   const admin = createAdminClient()
   const { data: allPools } = await admin
     .from('event_pools')
-    .select('id, name, created_by, visibility, status, tiebreaker, max_entries, max_entries_per_user, invite_code, scoring_rules, created_at')
+    .select('id, name, created_by, visibility, status, tiebreaker, max_entries, max_entries_per_user, invite_code, scoring_rules, game_type, created_at')
     .eq('tournament_id', tournament.id)
     .order('created_at', { ascending: false })
 
@@ -108,7 +108,12 @@ export default async function EventDetailPage({ params }: PageProps) {
     bracket: 'Bracket Prediction',
     pickem: "Pick'em",
     survivor: 'Survivor League',
+    roster: 'Roster Pool',
+    multi: 'Multi-format',
   }
+
+  const config = (tournament.config || {}) as Record<string, unknown>
+  const allowedGameTypes = config.allowed_game_types as string[] | undefined
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gradient-from to-gradient-to">
@@ -163,6 +168,7 @@ export default async function EventDetailPage({ params }: PageProps) {
               tournamentId={tournament.id}
               tournamentSlug={tournament.slug}
               tournamentFormat={tournament.format}
+              allowedGameTypes={allowedGameTypes}
               pools={pools}
               isLoggedIn={!!user}
             />
@@ -192,7 +198,8 @@ export default async function EventDetailPage({ params }: PageProps) {
               <div className="bg-surface rounded-lg border border-border p-5">
                 <h3 className="brand-h3 text-lg text-text-primary mb-3">
                   {tournament.format === 'bracket' ? 'Teams' :
-                   tournament.format === 'survivor' ? 'Teams' : 'Participants'}
+                   tournament.format === 'survivor' ? 'Teams' :
+                   tournament.sport === 'golf' ? 'Field' : 'Participants'}
                   <span className="text-text-muted font-normal text-sm ml-2">({participants.length})</span>
                 </h3>
                 <div className="space-y-1.5 max-h-80 overflow-y-auto">
