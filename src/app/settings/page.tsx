@@ -154,6 +154,7 @@ export default function SettingsPage() {
       setErrorMessage(message)
       setSuccessMessage('')
     }
+    window.scrollTo({ top: 0, behavior: 'smooth' })
     setTimeout(() => {
       setSuccessMessage('')
       setErrorMessage('')
