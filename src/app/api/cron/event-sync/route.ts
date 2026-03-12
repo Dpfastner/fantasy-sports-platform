@@ -594,6 +594,31 @@ async function updateTournamentStatuses(admin: ReturnType<typeof createAdminClie
     .eq('status', 'upcoming')
     .lte('starts_at', now.toISOString())
 
+  // Auto-lock pools when first game starts (or pool deadline passes)
+  // For bracket/pickem: lock when tournament starts_at arrives
+  // For survivor: individual week deadlines handle locking per-week (pool stays open)
+  const { data: openPools } = await admin
+    .from('event_pools')
+    .select('id, tournament_id, deadline, event_tournaments(starts_at, format)')
+    .eq('status', 'open')
+
+  for (const pool of openPools || []) {
+    const tournament = pool.event_tournaments as unknown as { starts_at: string; format: string }
+    if (!tournament) continue
+
+    // Survivor pools don't auto-lock — they use per-week deadlines
+    if (tournament.format === 'survivor') continue
+
+    // Lock if pool-specific deadline has passed, OR tournament first game has started
+    const lockTime = pool.deadline || tournament.starts_at
+    if (new Date(lockTime) <= now) {
+      await admin
+        .from('event_pools')
+        .update({ status: 'locked' })
+        .eq('id', pool.id)
+    }
+  }
+
   // Active → completed (if ends_at has passed AND all games are final)
   const { data: activeTournaments } = await admin
     .from('event_tournaments')

@@ -97,27 +97,8 @@ export function EventPoolsClient({
       track('event_pool_created', { format: tournamentFormat })
       trackEventActivity('pool.created', data.poolId, tournamentId, { name: name.trim(), format: tournamentFormat })
 
-      // Add to local state
-      setPools(prev => [{
-        id: data.poolId,
-        name: name.trim(),
-        created_by: '',
-        visibility,
-        status: 'open',
-        tiebreaker,
-        max_entries: maxEntries ? parseInt(maxEntries, 10) : null,
-        invite_code: data.inviteCode,
-        scoring_rules: {},
-        created_at: new Date().toISOString(),
-        entry_count: 1,
-        is_member: true,
-      }, ...prev])
-
-      setShowCreate(false)
-      setName('')
-      setVisibility('private')
-      setTiebreaker('none')
-      setMaxEntries('')
+      // Navigate to the new pool
+      router.push(`/events/${tournamentSlug}/pools/${data.poolId}`)
     } catch {
       addToast('Something went wrong', 'error')
     } finally {
@@ -177,7 +158,7 @@ export function EventPoolsClient({
             </button>
             <button
               onClick={() => { setShowCreate(!showCreate); setShowJoin(false) }}
-              className="text-sm px-3 py-1.5 rounded-md bg-brand text-brand-text hover:bg-brand-hover transition-colors font-medium"
+              className="text-sm px-3 py-1.5 rounded-md bg-brand text-text-primary hover:bg-brand-hover transition-colors font-medium"
             >
               Create Pool
             </button>
@@ -202,7 +183,7 @@ export function EventPoolsClient({
             <button
               onClick={handleJoin}
               disabled={isSubmitting || !inviteCode.trim()}
-              className="px-4 py-2 text-sm font-medium rounded-md bg-brand text-brand-text hover:bg-brand-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-4 py-2 text-sm font-medium rounded-md bg-brand text-text-primary hover:bg-brand-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isSubmitting ? 'Joining...' : 'Join'}
             </button>
@@ -297,7 +278,7 @@ export function EventPoolsClient({
               <button
                 onClick={handleCreate}
                 disabled={isSubmitting || !name.trim()}
-                className="px-4 py-1.5 text-sm font-medium rounded-md bg-brand text-brand-text hover:bg-brand-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-4 py-1.5 text-sm font-medium rounded-md bg-brand text-text-primary hover:bg-brand-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isSubmitting ? 'Creating...' : 'Create Pool'}
               </button>
@@ -312,7 +293,7 @@ export function EventPoolsClient({
           <p className="text-text-secondary mb-3">Sign in to create or join pools</p>
           <Link
             href={`/login?next=/events/${tournamentSlug}`}
-            className="inline-block px-4 py-2 text-sm font-medium rounded-md bg-brand text-brand-text hover:bg-brand-hover transition-colors"
+            className="inline-block px-4 py-2 text-sm font-medium rounded-md bg-brand text-text-primary hover:bg-brand-hover transition-colors"
           >
             Sign In
           </Link>

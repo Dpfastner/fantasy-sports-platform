@@ -226,6 +226,7 @@ export default async function PoolDetailPage({ params }: PageProps) {
           }))}
           poolWeeks={poolWeeks}
           isLoggedIn={!!user}
+          isCreator={!!user && pool.created_by === user.id}
         />
       </main>
     </div>

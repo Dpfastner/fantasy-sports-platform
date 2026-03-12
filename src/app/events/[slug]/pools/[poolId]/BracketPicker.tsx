@@ -168,7 +168,7 @@ export function BracketPicker({
           <button
             onClick={handleSubmit}
             disabled={isSubmitting || pickedCount === 0}
-            className="px-4 py-2 text-sm font-medium rounded-md bg-brand text-brand-text hover:bg-brand-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="px-4 py-2 text-sm font-medium rounded-md bg-brand text-text-primary hover:bg-brand-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isSubmitting ? 'Saving...' : submittedAt ? 'Update Bracket' : 'Submit Bracket'}
           </button>
@@ -299,7 +299,7 @@ export function BracketPicker({
           <button
             onClick={handleSubmit}
             disabled={isSubmitting}
-            className="w-full py-3 text-sm font-medium rounded-lg bg-brand text-brand-text hover:bg-brand-hover transition-colors shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full py-3 text-sm font-medium rounded-lg bg-brand text-text-primary hover:bg-brand-hover transition-colors shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isSubmitting ? 'Saving...' : `${submittedAt ? 'Update' : 'Submit'} Bracket (${pickedCount}/${totalGames})`}
           </button>

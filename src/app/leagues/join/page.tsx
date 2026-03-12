@@ -30,6 +30,9 @@ function JoinLeagueForm() {
   const [favoriteSchoolId, setFavoriteSchoolId] = useState<string | null>(null)
   const [hasExistingFavorite, setHasExistingFavorite] = useState(false)
   const [joinSuccess, setJoinSuccess] = useState<{ leagueId: string; leagueName: string } | null>(null)
+  const [joinMode, setJoinMode] = useState<'code' | 'browse'>('code')
+  const [openEvents, setOpenEvents] = useState<{ id: string; name: string; slug: string; sport: string; format: string; status: string; poolCount: number; startsAt: string }[]>([])
+  const [eventsLoaded, setEventsLoaded] = useState(false)
   const router = useRouter()
   const searchParams = useSearchParams()
   const supabase = createClient()
@@ -46,6 +49,47 @@ function JoinLeagueForm() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams])
+
+  // Load open events when browsing
+  useEffect(() => {
+    if (joinMode === 'browse' && !eventsLoaded) {
+      async function loadEvents() {
+        const { data: tournaments } = await supabase
+          .from('event_tournaments')
+          .select('id, name, slug, sport, format, status, starts_at')
+          .in('status', ['upcoming', 'active'])
+          .order('starts_at', { ascending: true })
+
+        if (tournaments?.length) {
+          const tIds = tournaments.map(t => t.id)
+          const { data: pools } = await supabase
+            .from('event_pools')
+            .select('tournament_id')
+            .in('tournament_id', tIds)
+            .eq('visibility', 'public')
+
+          const countMap: Record<string, number> = {}
+          for (const p of pools || []) {
+            countMap[p.tournament_id] = (countMap[p.tournament_id] || 0) + 1
+          }
+
+          setOpenEvents(tournaments.map(t => ({
+            id: t.id,
+            name: t.name,
+            slug: t.slug,
+            sport: t.sport,
+            format: t.format,
+            status: t.status,
+            poolCount: countMap[t.id] || 0,
+            startsAt: t.starts_at,
+          })))
+        }
+        setEventsLoaded(true)
+      }
+      loadEvents()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [joinMode])
 
   const lookupLeague = async (code: string) => {
     setError(null)
@@ -224,26 +268,107 @@ function JoinLeagueForm() {
             </Link>
           </div>
 
-          <h1 className="text-3xl font-bold text-text-primary mb-2">Join a League</h1>
+          <h1 className="text-3xl font-bold text-text-primary mb-2">Join</h1>
+          <p className="text-text-secondary mb-6">Join a league with an invite code or browse open events.</p>
 
-          {/* Step indicator */}
-          <div className="flex items-center gap-2 mb-8">
-            <div className={`flex items-center gap-1.5 text-sm ${!leaguePreview ? 'text-brand-text font-semibold' : 'text-text-muted'}`}>
-              <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${!leaguePreview ? 'bg-brand text-text-primary' : 'bg-success text-text-primary'}`}>
-                {leaguePreview ? '\u2713' : '1'}
-              </span>
-              Find League
-            </div>
-            <div className="w-8 h-px bg-border" />
-            <div className={`flex items-center gap-1.5 text-sm ${leaguePreview ? 'text-brand-text font-semibold' : 'text-text-muted'}`}>
-              <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${leaguePreview ? 'bg-brand text-text-primary' : 'bg-surface-subtle text-text-muted'}`}>
-                2
-              </span>
-              Join &amp; Name Team
-            </div>
+          {/* Mode toggle */}
+          <div className="flex gap-1 border-b border-border mb-6">
+            <button
+              onClick={() => setJoinMode('code')}
+              className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
+                joinMode === 'code' ? 'border-brand text-brand' : 'border-transparent text-text-muted hover:text-text-secondary'
+              }`}
+            >
+              Invite Code
+            </button>
+            <button
+              onClick={() => setJoinMode('browse')}
+              className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
+                joinMode === 'browse' ? 'border-brand text-brand' : 'border-transparent text-text-muted hover:text-text-secondary'
+              }`}
+            >
+              Browse Events
+            </button>
           </div>
 
-          <div className="bg-surface rounded-lg p-8">
+          {joinMode === 'browse' && (
+            <div className="mb-8">
+              {!eventsLoaded ? (
+                <div className="bg-surface rounded-lg p-8 text-center text-text-muted">Loading events...</div>
+              ) : openEvents.length === 0 ? (
+                <div className="bg-surface rounded-lg p-8 text-center">
+                  <p className="text-text-secondary">No open events right now</p>
+                  <p className="text-text-muted text-sm mt-1">Check back soon for upcoming tournaments.</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {openEvents.map((event) => {
+                    const sportIcon: Record<string, string> = {
+                      hockey: '\uD83C\uDFD2', golf: '\u26F3', rugby: '\uD83C\uDFC9',
+                      football: '\uD83C\uDFC8', basketball: '\uD83C\uDFC0',
+                    }
+                    const formatLabel: Record<string, string> = {
+                      bracket: 'Bracket', pickem: "Pick'em", survivor: 'Survivor',
+                    }
+                    return (
+                      <Link
+                        key={event.id}
+                        href={`/events/${event.slug}`}
+                        className="block bg-surface rounded-lg border border-border hover:border-brand/40 hover:shadow-md transition-all p-4"
+                      >
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <div className="flex items-center gap-2 mb-1">
+                              <span className="text-lg">{sportIcon[event.sport] || '\uD83C\uDFC6'}</span>
+                              <h3 className="text-text-primary font-medium">{event.name}</h3>
+                            </div>
+                            <div className="flex items-center gap-3 text-sm text-text-muted">
+                              <span>{formatLabel[event.format] || event.format}</span>
+                              <span>{event.poolCount} pool{event.poolCount !== 1 ? 's' : ''}</span>
+                              <span>{new Date(event.startsAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
+                            </div>
+                          </div>
+                          <svg className="w-5 h-5 text-text-muted shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                          </svg>
+                        </div>
+                      </Link>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
+          )}
+
+          {joinMode === 'code' && !leaguePreview && (
+            <div className="flex items-center gap-2 mb-6">
+              <div className={`flex items-center gap-1.5 text-sm text-brand-text font-semibold`}>
+                <span className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold bg-brand text-text-primary">1</span>
+                Find League
+              </div>
+              <div className="w-8 h-px bg-border" />
+              <div className="flex items-center gap-1.5 text-sm text-text-muted">
+                <span className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold bg-surface-subtle text-text-muted">2</span>
+                Join &amp; Name Team
+              </div>
+            </div>
+          )}
+
+          {joinMode === 'code' && leaguePreview && (
+            <div className="flex items-center gap-2 mb-6">
+              <div className="flex items-center gap-1.5 text-sm text-text-muted">
+                <span className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold bg-success text-text-primary">{'\u2713'}</span>
+                Find League
+              </div>
+              <div className="w-8 h-px bg-border" />
+              <div className="flex items-center gap-1.5 text-sm text-brand-text font-semibold">
+                <span className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold bg-brand text-text-primary">2</span>
+                Join &amp; Name Team
+              </div>
+            </div>
+          )}
+
+          {joinMode === 'code' && <div className="bg-surface rounded-lg p-8">
             {error && (
               <div className="bg-danger/10 border border-danger text-danger px-4 py-3 rounded-lg mb-6">
                 {error}
@@ -373,7 +498,7 @@ function JoinLeagueForm() {
                 </div>
               </form>
             )}
-          </div>
+          </div>}
         </div>
       </main>
     </div>

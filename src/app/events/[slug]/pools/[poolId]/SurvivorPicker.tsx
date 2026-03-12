@@ -269,7 +269,7 @@ export function SurvivorPicker({
         <button
           onClick={handleSubmit}
           disabled={isSubmitting || !selectedParticipant}
-          className="w-full py-3 text-sm font-medium rounded-lg bg-brand text-brand-text hover:bg-brand-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-full py-3 text-sm font-medium rounded-lg bg-brand text-text-primary hover:bg-brand-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {isSubmitting
             ? 'Saving...'

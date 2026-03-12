@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { useToast } from '@/components/Toast'
 import { BracketPicker } from './BracketPicker'
 import { SurvivorPicker } from './SurvivorPicker'
@@ -91,9 +92,18 @@ interface PoolDetailClientProps {
   userPicks: UserPick[]
   poolWeeks: PoolWeek[]
   isLoggedIn: boolean
+  isCreator: boolean
 }
 
-type Tab = 'picks' | 'leaderboard' | 'members'
+type Tab = 'picks' | 'leaderboard' | 'members' | 'settings'
+
+const tiebreakerLabels: Record<string, string> = {
+  none: 'None',
+  championship_score: 'Championship score',
+  first_match_score: 'First match score',
+  most_upsets: 'Most upsets',
+  random: 'Random',
+}
 
 export function PoolDetailClient({
   pool,
@@ -105,10 +115,19 @@ export function PoolDetailClient({
   userPicks,
   poolWeeks,
   isLoggedIn,
+  isCreator,
 }: PoolDetailClientProps) {
   const [activeTab, setActiveTab] = useState<Tab>(userEntry ? 'picks' : 'leaderboard')
   const [codeCopied, setCodeCopied] = useState(false)
   const { addToast } = useToast()
+  const router = useRouter()
+
+  // Settings state
+  const [settingsName, setSettingsName] = useState(pool.name)
+  const [settingsVisibility, setSettingsVisibility] = useState(pool.visibility)
+  const [settingsTiebreaker, setSettingsTiebreaker] = useState(pool.tiebreaker)
+  const [settingsMaxEntries, setSettingsMaxEntries] = useState(pool.maxEntries?.toString() || '')
+  const [isSavingSettings, setIsSavingSettings] = useState(false)
 
   const copyInviteCode = async () => {
     try {
@@ -121,10 +140,41 @@ export function PoolDetailClient({
     }
   }
 
+  const handleSaveSettings = async () => {
+    setIsSavingSettings(true)
+    try {
+      const res = await fetch(`/api/events/pools/${pool.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: settingsName.trim(),
+          visibility: settingsVisibility,
+          tiebreaker: settingsTiebreaker,
+          maxEntries: settingsMaxEntries ? parseInt(settingsMaxEntries, 10) : null,
+        }),
+      })
+
+      const data = await res.json()
+      if (!res.ok) {
+        addToast(data.error || 'Failed to save settings', 'error')
+        return
+      }
+
+      addToast('Settings saved', 'success')
+      router.refresh()
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+    } catch {
+      addToast('Something went wrong', 'error')
+    } finally {
+      setIsSavingSettings(false)
+    }
+  }
+
   const tabs: { key: Tab; label: string }[] = [
-    { key: 'picks', label: tournament.format === 'bracket' ? 'My Bracket' : tournament.format === 'survivor' ? 'My Picks' : 'My Picks' },
+    { key: 'picks', label: tournament.format === 'bracket' ? 'My Bracket' : 'My Picks' },
     { key: 'leaderboard', label: 'Leaderboard' },
     { key: 'members', label: `Members (${members.length})` },
+    ...(isCreator ? [{ key: 'settings' as Tab, label: 'Settings' }] : []),
   ]
 
   return (
@@ -142,6 +192,9 @@ export function PoolDetailClient({
               }`}>
                 {pool.status}
               </span>
+              {isCreator && (
+                <span className="text-xs px-1.5 py-0.5 rounded bg-warning/20 text-warning-text">Creator</span>
+              )}
             </div>
             <p className="text-text-muted text-sm">
               {tournament.name} &middot; {members.length} member{members.length !== 1 ? 's' : ''}
@@ -173,6 +226,14 @@ export function PoolDetailClient({
             })}
           </div>
         )}
+        {!pool.deadline && (
+          <div className="mt-3 text-xs text-text-muted">
+            Locks at first game: {new Date(tournament.startsAt).toLocaleString('en-US', {
+              month: 'short', day: 'numeric', year: 'numeric',
+              hour: 'numeric', minute: '2-digit', timeZoneName: 'short',
+            })}
+          </div>
+        )}
       </div>
 
       {/* Not a member notice */}
@@ -184,7 +245,7 @@ export function PoolDetailClient({
       )}
 
       {/* Tabs */}
-      <div className="flex gap-1 border-b border-border mb-6">
+      <div className="flex gap-1 border-b border-border mb-6 overflow-x-auto">
         {tabs.map((tab) => {
           // Hide picks tab if not a member
           if (tab.key === 'picks' && !userEntry) return null
@@ -192,7 +253,7 @@ export function PoolDetailClient({
             <button
               key={tab.key}
               onClick={() => setActiveTab(tab.key)}
-              className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
+              className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
                 activeTab === tab.key
                   ? 'border-brand text-brand'
                   : 'border-transparent text-text-muted hover:text-text-secondary'
@@ -282,6 +343,142 @@ export function PoolDetailClient({
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {activeTab === 'settings' && isCreator && (
+        <div className="space-y-6">
+          <div className="bg-surface rounded-lg border border-border p-5">
+            <h3 className="brand-h3 text-base text-text-primary mb-4">Pool Settings</h3>
+            <div className="space-y-4">
+              {/* Pool Name */}
+              <div>
+                <label className="block text-xs text-text-muted mb-1">Pool Name</label>
+                <input
+                  type="text"
+                  value={settingsName}
+                  onChange={(e) => setSettingsName(e.target.value)}
+                  maxLength={60}
+                  className="w-full bg-surface-inset border border-border rounded-md px-3 py-2 text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-brand/50"
+                />
+              </div>
+
+              {/* Visibility */}
+              <div>
+                <label className="block text-xs text-text-muted mb-1">Visibility</label>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setSettingsVisibility('private')}
+                    className={`flex-1 text-sm py-1.5 rounded-md border transition-colors ${
+                      settingsVisibility === 'private'
+                        ? 'border-brand bg-brand/10 text-brand'
+                        : 'border-border text-text-muted hover:text-text-secondary'
+                    }`}
+                  >
+                    Private
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSettingsVisibility('public')}
+                    className={`flex-1 text-sm py-1.5 rounded-md border transition-colors ${
+                      settingsVisibility === 'public'
+                        ? 'border-brand bg-brand/10 text-brand'
+                        : 'border-border text-text-muted hover:text-text-secondary'
+                    }`}
+                  >
+                    Public
+                  </button>
+                </div>
+              </div>
+
+              {/* Tiebreaker */}
+              <div>
+                <label className="block text-xs text-text-muted mb-1">Tiebreaker</label>
+                <select
+                  value={settingsTiebreaker}
+                  onChange={(e) => setSettingsTiebreaker(e.target.value)}
+                  className="w-full bg-surface-inset border border-border rounded-md px-3 py-2 text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-brand/50"
+                >
+                  {Object.entries(tiebreakerLabels).map(([val, label]) => (
+                    <option key={val} value={val}>{label}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Max Entries */}
+              <div>
+                <label className="block text-xs text-text-muted mb-1">Max Entries</label>
+                <input
+                  type="number"
+                  value={settingsMaxEntries}
+                  onChange={(e) => setSettingsMaxEntries(e.target.value)}
+                  placeholder="Unlimited"
+                  min={2}
+                  max={1000}
+                  className="w-full bg-surface-inset border border-border rounded-md px-3 py-2 text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-brand/50"
+                />
+              </div>
+
+              <button
+                onClick={handleSaveSettings}
+                disabled={isSavingSettings || !settingsName.trim()}
+                className="w-full py-2.5 text-sm font-semibold rounded-lg bg-brand hover:bg-brand-hover text-text-primary transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isSavingSettings ? 'Saving...' : 'Save Settings'}
+              </button>
+            </div>
+          </div>
+
+          {/* Share / Invite */}
+          <div className="bg-surface rounded-lg border border-border p-5">
+            <h3 className="brand-h3 text-base text-text-primary mb-3">Invite Members</h3>
+            <p className="text-text-muted text-sm mb-3">
+              Share this code with friends to invite them to your pool.
+            </p>
+            <div className="flex items-center gap-2">
+              <div className="flex-1 bg-surface-inset border border-border rounded-md px-4 py-2.5 text-center">
+                <span className="font-mono text-lg text-text-primary tracking-widest">{pool.inviteCode}</span>
+              </div>
+              <button
+                onClick={copyInviteCode}
+                className="px-4 py-2.5 text-sm font-medium rounded-md bg-brand hover:bg-brand-hover text-text-primary transition-colors"
+              >
+                {codeCopied ? 'Copied!' : 'Copy Code'}
+              </button>
+            </div>
+          </div>
+
+          {/* Pool Info */}
+          <div className="bg-surface rounded-lg border border-border p-5">
+            <h3 className="brand-h3 text-base text-text-primary mb-3">Pool Info</h3>
+            <div className="space-y-2 text-sm">
+              <div className="flex justify-between">
+                <span className="text-text-muted">Format</span>
+                <span className="text-text-secondary capitalize">{tournament.format}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-text-muted">Status</span>
+                <span className="text-text-secondary capitalize">{pool.status}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-text-muted">Members</span>
+                <span className="text-text-secondary">{members.length}{pool.maxEntries ? ` / ${pool.maxEntries}` : ''}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-text-muted">Tiebreaker</span>
+                <span className="text-text-secondary">{tiebreakerLabels[pool.tiebreaker] || pool.tiebreaker}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-text-muted">Lock Time</span>
+                <span className="text-text-secondary">
+                  {new Date(pool.deadline || tournament.startsAt).toLocaleString('en-US', {
+                    month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit',
+                  })}
+                </span>
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </div>
