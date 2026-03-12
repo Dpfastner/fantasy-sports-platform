@@ -1,13 +1,24 @@
 import webpush from 'web-push'
 import { createAdminClient } from '@/lib/supabase/server'
 
-// Configure VAPID once at module level
+// Configure VAPID lazily — defer so invalid/missing keys don't crash at build time
 const VAPID_PUBLIC = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY
 const VAPID_PRIVATE = process.env.VAPID_PRIVATE_KEY
 const VAPID_SUBJECT = process.env.VAPID_SUBJECT || 'mailto:support@rivyls.com'
 
-if (VAPID_PUBLIC && VAPID_PRIVATE) {
-  webpush.setVapidDetails(VAPID_SUBJECT, VAPID_PUBLIC, VAPID_PRIVATE)
+let vapidConfigured = false
+
+function ensureVapid(): boolean {
+  if (vapidConfigured) return true
+  if (!VAPID_PUBLIC || !VAPID_PRIVATE) return false
+  try {
+    webpush.setVapidDetails(VAPID_SUBJECT, VAPID_PUBLIC, VAPID_PRIVATE)
+    vapidConfigured = true
+    return true
+  } catch (err) {
+    console.error('[push] VAPID configuration failed:', err)
+    return false
+  }
 }
 
 interface PushPayload {
@@ -23,7 +34,7 @@ interface PushPayload {
  * Fire-and-forget. Cleans up expired/invalid subscriptions automatically.
  */
 export async function sendPushToUser(userId: string, payload: PushPayload): Promise<void> {
-  if (!VAPID_PUBLIC || !VAPID_PRIVATE) return
+  if (!ensureVapid()) return
 
   const supabase = createAdminClient()
 
