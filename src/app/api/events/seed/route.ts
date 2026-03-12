@@ -628,16 +628,28 @@ function matchEspnTeam(
     if (found) return found
   }
 
-  // Exact word-boundary match: ESPN name starts with our name
-  // e.g. "Michigan State" matches "Michigan State Spartans" but NOT "Western Michigan Broncos"
-  const exactStart = espnTeams.find(t => t.name.toLowerCase().startsWith(pLower + ' ') || t.name.toLowerCase() === pLower)
-  if (exactStart) return exactStart
+  // Find ALL ESPN teams whose name starts with our participant name.
+  // Then pick the SHORTEST one — "Michigan Wolverines" beats "Michigan State Spartans"
+  // because it's the closest match to "Michigan".
+  const startMatches = espnTeams.filter(t =>
+    t.name.toLowerCase().startsWith(pLower + ' ') || t.name.toLowerCase() === pLower
+  )
+  if (startMatches.length > 0) {
+    startMatches.sort((a, b) => a.name.length - b.name.length)
+    return startMatches[0]
+  }
 
-  // Fallback: substring match
-  return espnTeams.find(t =>
+  // Fallback: substring match (but prefer shorter names)
+  const subMatches = espnTeams.filter(t =>
     t.name.toLowerCase().includes(pLower) ||
     pLower.includes(t.name.toLowerCase())
   )
+  if (subMatches.length > 0) {
+    subMatches.sort((a, b) => a.name.length - b.name.length)
+    return subMatches[0]
+  }
+
+  return undefined
 }
 
 async function syncHockeyLogos(admin: ReturnType<typeof createAdminClient>) {
