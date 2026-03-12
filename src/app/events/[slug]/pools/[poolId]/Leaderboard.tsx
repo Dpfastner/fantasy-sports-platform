@@ -7,6 +7,7 @@ interface Member {
   isActive: boolean
   submittedAt: string | null
   score: number
+  maxPossible: number
   rank: number | null
 }
 
@@ -17,10 +18,11 @@ interface LeaderboardProps {
 }
 
 export function Leaderboard({ members, format, poolStatus }: LeaderboardProps) {
-  // Sort: active first, then by score descending, then by submission time
+  // Sort: active first, then by score descending, then by max possible, then by submission time
   const sorted = [...members].sort((a, b) => {
     if (a.isActive !== b.isActive) return a.isActive ? -1 : 1
     if (a.score !== b.score) return b.score - a.score
+    if (a.maxPossible !== b.maxPossible) return b.maxPossible - a.maxPossible
     if (a.submittedAt && b.submittedAt) {
       return new Date(a.submittedAt).getTime() - new Date(b.submittedAt).getTime()
     }
@@ -28,6 +30,7 @@ export function Leaderboard({ members, format, poolStatus }: LeaderboardProps) {
   })
 
   const showScores = poolStatus === 'locked' || poolStatus === 'completed' || sorted.some(m => m.score > 0)
+  const showMaxPossible = showScores && sorted.some(m => m.maxPossible !== m.score)
 
   return (
     <div>
@@ -38,10 +41,15 @@ export function Leaderboard({ members, format, poolStatus }: LeaderboardProps) {
       ) : (
         <div className="bg-surface rounded-lg border border-border overflow-hidden">
           {/* Header */}
-          <div className="grid grid-cols-[2rem_1fr_4rem_5rem] sm:grid-cols-[2.5rem_1fr_5rem_6rem] gap-2 px-3 py-2 bg-surface-inset border-b border-border text-xs text-text-muted uppercase tracking-wide">
+          <div className={`grid gap-2 px-3 py-2 bg-surface-inset border-b border-border text-xs text-text-muted uppercase tracking-wide ${
+            showMaxPossible
+              ? 'grid-cols-[2rem_1fr_3rem_3rem_5rem] sm:grid-cols-[2.5rem_1fr_4rem_4rem_6rem]'
+              : 'grid-cols-[2rem_1fr_4rem_5rem] sm:grid-cols-[2.5rem_1fr_5rem_6rem]'
+          }`}>
             <span className="text-right">#</span>
             <span>Player</span>
-            <span className="text-right">{showScores ? 'Score' : 'Status'}</span>
+            <span className="text-right">{showScores ? 'Pts' : 'Status'}</span>
+            {showMaxPossible && <span className="text-right">Max</span>}
             <span className="text-right">Submitted</span>
           </div>
 
@@ -52,9 +60,11 @@ export function Leaderboard({ members, format, poolStatus }: LeaderboardProps) {
             return (
               <div
                 key={member.id}
-                className={`grid grid-cols-[2rem_1fr_4rem_5rem] sm:grid-cols-[2.5rem_1fr_5rem_6rem] gap-2 px-3 py-2.5 border-b border-border-subtle last:border-0 ${
-                  !member.isActive ? 'opacity-50' : ''
-                }`}
+                className={`grid gap-2 px-3 py-2.5 border-b border-border-subtle last:border-0 ${
+                  showMaxPossible
+                    ? 'grid-cols-[2rem_1fr_3rem_3rem_5rem] sm:grid-cols-[2.5rem_1fr_4rem_4rem_6rem]'
+                    : 'grid-cols-[2rem_1fr_4rem_5rem] sm:grid-cols-[2.5rem_1fr_5rem_6rem]'
+                } ${!member.isActive ? 'opacity-50' : ''}`}
               >
                 <span className={`text-right text-sm ${
                   isTop3 ? 'font-bold text-brand' : 'text-text-muted'
@@ -72,6 +82,11 @@ export function Leaderboard({ members, format, poolStatus }: LeaderboardProps) {
                 }`}>
                   {showScores ? member.score : member.submittedAt ? 'Ready' : '—'}
                 </span>
+                {showMaxPossible && (
+                  <span className="text-right text-sm text-text-muted">
+                    {member.maxPossible}
+                  </span>
+                )}
                 <span className="text-right text-xs text-text-muted">
                   {member.submittedAt
                     ? new Date(member.submittedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })

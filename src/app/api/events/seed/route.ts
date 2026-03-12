@@ -28,6 +28,8 @@ export async function POST(request: Request) {
         return await seedWSixNations(admin)
       case 'sync-hockey-logos':
         return await syncHockeyLogos(admin)
+      case 'frozen-four-2026-schedule':
+        return await seedFrozenFourSchedule(admin)
       default:
         return NextResponse.json({ error: `Unknown tournament: ${tournament}` }, { status: 400 })
     }
@@ -546,11 +548,97 @@ async function seedWSixNations(admin: ReturnType<typeof createAdminClient>) {
 }
 
 // ============================================
+// FROZEN FOUR 2026 — SCHEDULE
+// Sets starts_at for later round games (regional finals, semis, championship).
+// Round 1 dates are set during team seeding. This fills in the rest.
+// ============================================
+
+async function seedFrozenFourSchedule(admin: ReturnType<typeof createAdminClient>) {
+  const { data: tournament } = await admin
+    .from('event_tournaments')
+    .select('id')
+    .eq('slug', 'frozen-four-2026')
+    .single()
+
+  if (!tournament) {
+    return NextResponse.json({ error: 'Frozen Four tournament not found' }, { status: 400 })
+  }
+
+  const { data: games } = await admin
+    .from('event_games')
+    .select('id, game_number, round')
+    .eq('tournament_id', tournament.id)
+    .order('game_number', { ascending: true })
+
+  if (!games) throw new Error('No games found')
+
+  // Schedule dates from tournament config
+  // Regional QF: Mar 27-28 (already set)
+  // Regional Finals: Mar 28-29
+  // Frozen Four Semis: Apr 9
+  // Championship: Apr 11
+  const roundDates: Record<string, string> = {
+    regional_final: '2026-03-29T18:00:00Z',
+    semifinal: '2026-04-09T17:00:00Z',
+    championship: '2026-04-11T20:00:00Z',
+  }
+
+  let updated = 0
+  for (const game of games) {
+    const date = roundDates[game.round]
+    if (date) {
+      await admin
+        .from('event_games')
+        .update({ starts_at: date })
+        .eq('id', game.id)
+      updated++
+    }
+  }
+
+  return NextResponse.json({
+    success: true,
+    action: 'frozen-four-2026-schedule',
+    gamesUpdated: updated,
+  })
+}
+
+// ============================================
 // SYNC HOCKEY LOGOS
 // Fetches team logos from ESPN and updates event_participants.
 // Matches by name (contains check for fuzzy matching).
 // Can be re-run anytime — safe to call multiple times.
 // ============================================
+
+// Known name aliases where our DB name doesn't substring-match ESPN's name
+const HOCKEY_NAME_ALIASES: Record<string, string[]> = {
+  'Connecticut': ['UConn'],
+  'Minnesota Duluth': ['Minnesota-Duluth', 'Minn. Duluth'],
+}
+
+function matchEspnTeam(
+  participantName: string,
+  espnTeams: { name: string; logoUrl: string | null }[],
+): { name: string; logoUrl: string | null } | undefined {
+  const pLower = participantName.toLowerCase()
+
+  // Check aliases first
+  const aliases = HOCKEY_NAME_ALIASES[participantName] || []
+  for (const alias of aliases) {
+    const found = espnTeams.find(t => t.name.toLowerCase().includes(alias.toLowerCase()))
+    if (found) return found
+  }
+
+  // Exact word-boundary match: ESPN name starts with our name
+  // e.g. "Michigan State" matches "Michigan State Spartans" but NOT "Western Michigan Broncos"
+  const exactStart = espnTeams.find(t => t.name.toLowerCase().startsWith(pLower + ' ') || t.name.toLowerCase() === pLower)
+  if (exactStart) return exactStart
+
+  // Fallback: substring match
+  return espnTeams.find(t =>
+    t.name.toLowerCase().includes(pLower) ||
+    pLower.includes(t.name.toLowerCase())
+  )
+}
 
 async function syncHockeyLogos(admin: ReturnType<typeof createAdminClient>) {
   // Get all hockey tournaments
@@ -565,7 +653,7 @@ async function syncHockeyLogos(admin: ReturnType<typeof createAdminClient>) {
 
   const tournamentIds = tournaments.map(t => t.id)
 
-  // Get participants without logos
+  // Get all participants
   const { data: participants } = await admin
     .from('event_participants')
     .select('id, name')
@@ -578,13 +666,13 @@ async function syncHockeyLogos(admin: ReturnType<typeof createAdminClient>) {
   // Fetch all NCAA hockey teams from ESPN (includes logos)
   const espnTeams = await fetchHockeyTeams(admin)
 
+  // Sort participants by name length DESC so "Michigan State" matches before "Michigan"
+  const sortedParticipants = [...participants].sort((a, b) => b.name.length - a.name.length)
+
   let matched = 0
-  for (const participant of participants) {
-    // Match: ESPN name contains our participant name (e.g. "Boston College Eagles" contains "Boston College")
-    const espnTeam = espnTeams.find(t =>
-      t.name.toLowerCase().includes(participant.name.toLowerCase()) ||
-      participant.name.toLowerCase().includes(t.name.toLowerCase())
-    )
+  const matchDetails: Array<{ participant: string; espn: string | null }> = []
+  for (const participant of sortedParticipants) {
+    const espnTeam = matchEspnTeam(participant.name, espnTeams)
 
     if (espnTeam?.logoUrl) {
       await admin
@@ -592,6 +680,9 @@ async function syncHockeyLogos(admin: ReturnType<typeof createAdminClient>) {
         .update({ logo_url: espnTeam.logoUrl })
         .eq('id', participant.id)
       matched++
+      matchDetails.push({ participant: participant.name, espn: espnTeam.name })
+    } else {
+      matchDetails.push({ participant: participant.name, espn: null })
     }
   }
 
@@ -601,5 +692,6 @@ async function syncHockeyLogos(admin: ReturnType<typeof createAdminClient>) {
     totalParticipants: participants.length,
     logosMatched: matched,
     espnTeamsAvailable: espnTeams.length,
+    matchDetails,
   })
 }

@@ -45,6 +45,7 @@ interface Member {
   isActive: boolean
   submittedAt: string | null
   score: number
+  maxPossible: number
   rank: number | null
 }
 

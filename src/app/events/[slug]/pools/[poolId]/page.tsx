@@ -160,9 +160,64 @@ export default async function PoolDetailPage({ params }: PageProps) {
     poolWeeks = data || []
   }
 
+  // For bracket format, fetch all picks to compute leaderboard stats
+  let allEntryPicks: Record<string, Array<{ game_id: string; participant_id: string; is_correct: boolean | null; points_earned: number | null }>> = {}
+  if (tournament.format === 'bracket' && entries?.length) {
+    const entryIds = entries.map(e => e.id)
+    const { data: allPicks } = await admin
+      .from('event_picks')
+      .select('entry_id, game_id, participant_id, is_correct, points_earned')
+      .in('entry_id', entryIds)
+
+    if (allPicks) {
+      for (const pick of allPicks) {
+        if (!allEntryPicks[pick.entry_id]) allEntryPicks[pick.entry_id] = []
+        allEntryPicks[pick.entry_id].push(pick)
+      }
+    }
+  }
+
+  // Build scoring rules and game lookup for max-possible calculation
+  const scoringRules = (pool.scoring_rules && typeof pool.scoring_rules === 'object' && Object.keys(pool.scoring_rules).length > 0)
+    ? pool.scoring_rules as Record<string, number>
+    : { regional_quarterfinal: 2, regional_final: 4, semifinal: 8, championship: 16 }
+
+  const gameById: Record<string, { round: string; status: string; winnerId: string | null }> = {}
+  for (const g of (games || [])) {
+    gameById[g.id] = { round: g.round, status: g.status, winnerId: g.winner_id }
+  }
+
   // Format entries for client (compute rank from sorted total_points)
   const members = (entries || []).map((e, idx) => {
     const p = e.profiles as unknown as { display_name: string | null; email: string } | null
+
+    // Calculate max possible points for this entry
+    let maxPossible = Number(e.total_points) || 0
+    const entryPicks = allEntryPicks[e.id] || []
+
+    if (tournament.format === 'bracket') {
+      for (const pick of entryPicks) {
+        if (!pick.game_id) continue
+        const game = gameById[pick.game_id]
+        if (!game) continue
+        const roundPts = (scoringRules as Record<string, number>)[game.round] || 0
+        const isResolved = game.status === 'completed' || game.status === 'final'
+
+        if (!isResolved) {
+          // Game not resolved yet — pick could still be correct
+          maxPossible += roundPts
+        }
+      }
+
+      // Also add points for games the user hasn't picked yet (still possible)
+      const pickedGameIds = new Set(entryPicks.map(p => p.game_id))
+      for (const g of (games || [])) {
+        if (!pickedGameIds.has(g.id) && g.status !== 'completed' && g.status !== 'final') {
+          maxPossible += (scoringRules as Record<string, number>)[g.round] || 0
+        }
+      }
+    }
+
     return {
       id: e.id,
       userId: e.user_id,
@@ -170,6 +225,7 @@ export default async function PoolDetailPage({ params }: PageProps) {
       isActive: e.is_active,
       submittedAt: e.submitted_at,
       score: Number(e.total_points) || 0,
+      maxPossible,
       rank: idx + 1,
     }
   })
