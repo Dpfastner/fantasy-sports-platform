@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import * as Sentry from '@sentry/nextjs'
 import { createAdminClient } from '@/lib/supabase/server'
+import { fetchHockeyTeams } from '@/lib/events/espn-adapters'
 
 // POST /api/events/seed
 // One-time admin endpoint to seed tournament data.
@@ -25,6 +26,8 @@ export async function POST(request: Request) {
         return await seedMasters(admin)
       case 'w-six-nations-2026':
         return await seedWSixNations(admin)
+      case 'sync-hockey-logos':
+        return await syncHockeyLogos(admin)
       default:
         return NextResponse.json({ error: `Unknown tournament: ${tournament}` }, { status: 400 })
     }
@@ -539,5 +542,64 @@ async function seedWSixNations(admin: ReturnType<typeof createAdminClient>) {
     id: tournament.id,
     participants: teams.length,
     games: fixtures.length,
+  })
+}
+
+// ============================================
+// SYNC HOCKEY LOGOS
+// Fetches team logos from ESPN and updates event_participants.
+// Matches by name (contains check for fuzzy matching).
+// Can be re-run anytime — safe to call multiple times.
+// ============================================
+
+async function syncHockeyLogos(admin: ReturnType<typeof createAdminClient>) {
+  // Get all hockey tournaments
+  const { data: tournaments } = await admin
+    .from('event_tournaments')
+    .select('id')
+    .eq('sport', 'hockey')
+
+  if (!tournaments?.length) {
+    return NextResponse.json({ error: 'No hockey tournaments found' }, { status: 404 })
+  }
+
+  const tournamentIds = tournaments.map(t => t.id)
+
+  // Get participants without logos
+  const { data: participants } = await admin
+    .from('event_participants')
+    .select('id, name')
+    .in('tournament_id', tournamentIds)
+
+  if (!participants?.length) {
+    return NextResponse.json({ error: 'No participants found' }, { status: 404 })
+  }
+
+  // Fetch all NCAA hockey teams from ESPN (includes logos)
+  const espnTeams = await fetchHockeyTeams(admin)
+
+  let matched = 0
+  for (const participant of participants) {
+    // Match: ESPN name contains our participant name (e.g. "Boston College Eagles" contains "Boston College")
+    const espnTeam = espnTeams.find(t =>
+      t.name.toLowerCase().includes(participant.name.toLowerCase()) ||
+      participant.name.toLowerCase().includes(t.name.toLowerCase())
+    )
+
+    if (espnTeam?.logoUrl) {
+      await admin
+        .from('event_participants')
+        .update({ logo_url: espnTeam.logoUrl })
+        .eq('id', participant.id)
+      matched++
+    }
+  }
+
+  return NextResponse.json({
+    success: true,
+    action: 'sync-hockey-logos',
+    totalParticipants: participants.length,
+    logosMatched: matched,
+    espnTeamsAvailable: espnTeams.length,
   })
 }

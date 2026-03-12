@@ -116,9 +116,9 @@ export function getDownstreamGameIds(gameId: string, bracketMap: BracketMap): st
 }
 
 // Layout constants
-export const CARD_HEIGHT = 72
-export const CARD_WIDTH = 200
-export const PAIR_GAP = 8      // gap between two games in a pair
+export const CARD_HEIGHT = 96
+export const CARD_WIDTH = 220
+export const PAIR_GAP = 12     // gap between two games in a pair
 export const REGION_GAP = 32   // gap between regional pairs
 export const CONNECTOR_WIDTH = 32
 
