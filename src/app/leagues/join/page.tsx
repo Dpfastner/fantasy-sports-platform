@@ -32,6 +32,7 @@ function JoinLeagueForm() {
   const [joinSuccess, setJoinSuccess] = useState<{ leagueId: string; leagueName: string } | null>(null)
   const [joinMode, setJoinMode] = useState<'code' | 'browse'>('code')
   const [openEvents, setOpenEvents] = useState<{ id: string; name: string; slug: string; sport: string; format: string; status: string; poolCount: number; startsAt: string }[]>([])
+  const [publicLeagues, setPublicLeagues] = useState<{ id: string; name: string; sport: string; season: string; memberCount: number; maxTeams: number }[]>([])
   const [eventsLoaded, setEventsLoaded] = useState(false)
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -50,10 +51,11 @@ function JoinLeagueForm() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams])
 
-  // Load open events when browsing
+  // Load open events and public leagues when browsing
   useEffect(() => {
     if (joinMode === 'browse' && !eventsLoaded) {
-      async function loadEvents() {
+      async function loadBrowseData() {
+        // Load events
         const { data: tournaments } = await supabase
           .from('event_tournaments')
           .select('id, name, slug, sport, format, status, starts_at')
@@ -84,9 +86,45 @@ function JoinLeagueForm() {
             startsAt: t.starts_at,
           })))
         }
+
+        // Load public leagues that aren't full
+        const { data: leagues } = await supabase
+          .from('leagues')
+          .select('id, name, max_teams, status, sports(name), seasons(name)')
+          .eq('is_public', true)
+          .neq('status', 'dormant')
+          .order('created_at', { ascending: false })
+          .limit(20)
+
+        if (leagues?.length) {
+          // Get member counts
+          const leagueIds = leagues.map(l => l.id)
+          const { data: members } = await supabase
+            .from('league_members')
+            .select('league_id')
+            .in('league_id', leagueIds)
+
+          const memberCounts: Record<string, number> = {}
+          for (const m of members || []) {
+            memberCounts[m.league_id] = (memberCounts[m.league_id] || 0) + 1
+          }
+
+          setPublicLeagues(leagues
+            .map(l => ({
+              id: l.id,
+              name: l.name,
+              sport: (l.sports as unknown as { name: string })?.name || 'Unknown',
+              season: (l.seasons as unknown as { name: string })?.name || '',
+              memberCount: memberCounts[l.id] || 0,
+              maxTeams: l.max_teams,
+            }))
+            .filter(l => l.memberCount < l.maxTeams)
+          )
+        }
+
         setEventsLoaded(true)
       }
-      loadEvents()
+      loadBrowseData()
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [joinMode])
@@ -269,7 +307,7 @@ function JoinLeagueForm() {
           </div>
 
           <h1 className="text-3xl font-bold text-text-primary mb-2">Join</h1>
-          <p className="text-text-secondary mb-6">Join a league with an invite code or browse open events.</p>
+          <p className="text-text-secondary mb-6">Join with an invite code or browse open leagues and events.</p>
 
           {/* Mode toggle */}
           <div className="flex gap-1 border-b border-border mb-6">
@@ -287,54 +325,92 @@ function JoinLeagueForm() {
                 joinMode === 'browse' ? 'border-brand text-brand' : 'border-transparent text-text-muted hover:text-text-secondary'
               }`}
             >
-              Browse Events
+              Browse Open
             </button>
           </div>
 
           {joinMode === 'browse' && (
             <div className="mb-8">
               {!eventsLoaded ? (
-                <div className="bg-surface rounded-lg p-8 text-center text-text-muted">Loading events...</div>
-              ) : openEvents.length === 0 ? (
+                <div className="bg-surface rounded-lg p-8 text-center text-text-muted">Loading...</div>
+              ) : publicLeagues.length === 0 && openEvents.length === 0 ? (
                 <div className="bg-surface rounded-lg p-8 text-center">
-                  <p className="text-text-secondary">No open events right now</p>
-                  <p className="text-text-muted text-sm mt-1">Check back soon for upcoming tournaments.</p>
+                  <p className="text-text-secondary">Nothing open right now</p>
+                  <p className="text-text-muted text-sm mt-1">Check back soon or use an invite code to join a private league.</p>
                 </div>
               ) : (
-                <div className="space-y-3">
-                  {openEvents.map((event) => {
-                    const sportIcon: Record<string, string> = {
-                      hockey: '\uD83C\uDFD2', golf: '\u26F3', rugby: '\uD83C\uDFC9',
-                      football: '\uD83C\uDFC8', basketball: '\uD83C\uDFC0',
-                    }
-                    const formatLabel: Record<string, string> = {
-                      bracket: 'Bracket', pickem: "Pick'em", survivor: 'Survivor',
-                    }
-                    return (
-                      <Link
-                        key={event.id}
-                        href={`/events/${event.slug}`}
-                        className="block bg-surface rounded-lg border border-border hover:border-brand/40 hover:shadow-md transition-all p-4"
-                      >
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <div className="flex items-center gap-2 mb-1">
-                              <span className="text-lg">{sportIcon[event.sport] || '\uD83C\uDFC6'}</span>
-                              <h3 className="text-text-primary font-medium">{event.name}</h3>
+                <div className="space-y-6">
+                  {/* Public Leagues */}
+                  {publicLeagues.length > 0 && (
+                    <div>
+                      <h3 className="text-xs text-text-muted mb-2 uppercase tracking-wide">Open Leagues</h3>
+                      <div className="space-y-3">
+                        {publicLeagues.map((league) => (
+                          <Link
+                            key={league.id}
+                            href={`/leagues/${league.id}`}
+                            className="block bg-surface rounded-lg border border-border hover:border-brand/40 hover:shadow-md transition-all p-4"
+                          >
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <h3 className="text-text-primary font-medium mb-1">{league.name}</h3>
+                                <div className="flex items-center gap-3 text-sm text-text-muted">
+                                  <span>{league.sport}</span>
+                                  <span>{league.season}</span>
+                                  <span>{league.memberCount}/{league.maxTeams} members</span>
+                                </div>
+                              </div>
+                              <svg className="w-5 h-5 text-text-muted shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                              </svg>
                             </div>
-                            <div className="flex items-center gap-3 text-sm text-text-muted">
-                              <span>{formatLabel[event.format] || event.format}</span>
-                              <span>{event.poolCount} pool{event.poolCount !== 1 ? 's' : ''}</span>
-                              <span>{new Date(event.startsAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
-                            </div>
-                          </div>
-                          <svg className="w-5 h-5 text-text-muted shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-                          </svg>
-                        </div>
-                      </Link>
-                    )
-                  })}
+                          </Link>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Events */}
+                  {openEvents.length > 0 && (
+                    <div>
+                      <h3 className="text-xs text-text-muted mb-2 uppercase tracking-wide">Events &amp; Tournaments</h3>
+                      <div className="space-y-3">
+                        {openEvents.map((event) => {
+                          const sportIcon: Record<string, string> = {
+                            hockey: '\uD83C\uDFD2', golf: '\u26F3', rugby: '\uD83C\uDFC9',
+                            football: '\uD83C\uDFC8', basketball: '\uD83C\uDFC0',
+                          }
+                          const formatLabel: Record<string, string> = {
+                            bracket: 'Bracket', pickem: "Pick'em", survivor: 'Survivor',
+                          }
+                          return (
+                            <Link
+                              key={event.id}
+                              href={`/events/${event.slug}`}
+                              className="block bg-surface rounded-lg border border-border hover:border-brand/40 hover:shadow-md transition-all p-4"
+                            >
+                              <div className="flex items-center justify-between">
+                                <div>
+                                  <div className="flex items-center gap-2 mb-1">
+                                    <span className="text-lg">{sportIcon[event.sport] || '\uD83C\uDFC6'}</span>
+                                    <h3 className="text-text-primary font-medium">{event.name}</h3>
+                                  </div>
+                                  <div className="flex items-center gap-3 text-sm text-text-muted">
+                                    <span>{formatLabel[event.format] || event.format}</span>
+                                    <span>{event.poolCount} pool{event.poolCount !== 1 ? 's' : ''}</span>
+                                    <span>{new Date(event.startsAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
+                                  </div>
+                                </div>
+                                <svg className="w-5 h-5 text-text-muted shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                                </svg>
+                              </div>
+                            </Link>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
