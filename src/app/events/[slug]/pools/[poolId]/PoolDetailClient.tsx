@@ -8,6 +8,7 @@ import { BracketPicker } from './BracketPicker'
 import { SurvivorPicker } from './SurvivorPicker'
 import { PickemPicker } from './PickemPicker'
 import { RosterPicker } from './RosterPicker'
+import { RosterDraftRoom } from './RosterDraftRoom'
 import { Leaderboard } from './Leaderboard'
 import { PoolActivityFeed } from './PoolActivityFeed'
 import { PoolChat } from './PoolChat'
@@ -116,6 +117,7 @@ interface PoolDetailClientProps {
   isCreator: boolean
   userId: string | null
   rulesText: string | null
+  rosterSelectionCounts?: Record<string, number>
 }
 
 type Tab = 'overview' | 'picks' | 'schedule' | 'members' | 'settings'
@@ -141,6 +143,7 @@ export function PoolDetailClient({
   isCreator,
   userId,
   rulesText,
+  rosterSelectionCounts,
 }: PoolDetailClientProps) {
   const [activeTab, setActiveTab] = useState<Tab>('overview')
   const [showRules, setShowRules] = useState(false)
@@ -157,6 +160,24 @@ export function PoolDetailClient({
   const activeEntryPicks = activeEntry ? (userPicksByEntry[activeEntry.id] || []) : []
   const hasAnyEntry = userEntries.length > 0
   const canAddEntry = hasAnyEntry && userEntries.length < pool.maxEntriesPerUser && pool.status === 'open'
+
+  // Roster settings state
+  const rosterRules = (pool.scoringRules || {}) as Record<string, unknown>
+  const [settingsDraftMode, setSettingsDraftMode] = useState<string>(
+    (rosterRules.draft_mode as string) || 'open'
+  )
+  const [settingsSelectionCap, setSettingsSelectionCap] = useState(
+    String((rosterRules.selection_cap as number) || 3)
+  )
+  const [settingsRosterSize, setSettingsRosterSize] = useState(
+    String((rosterRules.roster_size as number) || 7)
+  )
+  const [settingsCountBest, setSettingsCountBest] = useState(
+    String((rosterRules.count_best as number) || 5)
+  )
+  const [settingsCutPenalty, setSettingsCutPenalty] = useState<string>(
+    (rosterRules.cut_penalty as string) || 'highest_plus_one'
+  )
 
   // Settings state
   const [settingsName, setSettingsName] = useState(pool.name)
@@ -274,6 +295,16 @@ export function PoolDetailClient({
           maxEntries: settingsMaxEntries ? parseInt(settingsMaxEntries, 10) : null,
           maxEntriesPerUser: parseInt(settingsMaxEntriesPerUser, 10) || 1,
           ...(effectiveFormat === 'bracket' ? { scoringRules: settingsScoringRules ?? {} } : {}),
+          ...(effectiveFormat === 'roster' ? {
+            scoringRules: {
+              ...pool.scoringRules,
+              draft_mode: settingsDraftMode,
+              ...(settingsDraftMode === 'limited' ? { selection_cap: parseInt(settingsSelectionCap, 10) || 3 } : {}),
+              roster_size: parseInt(settingsRosterSize, 10) || 7,
+              count_best: parseInt(settingsCountBest, 10) || 5,
+              cut_penalty: settingsCutPenalty,
+            },
+          } : {}),
         }),
       })
 
@@ -297,7 +328,8 @@ export function PoolDetailClient({
     { key: 'overview', label: 'Overview' },
     { key: 'picks', label: effectiveFormat === 'bracket'
       ? (userEntries.length > 1 ? `My Brackets (${userEntries.length})` : 'My Bracket')
-      : effectiveFormat === 'roster' ? 'My Roster'
+      : effectiveFormat === 'roster'
+        ? (((pool.scoringRules?.draft_mode as string) === 'snake_draft' || (pool.scoringRules?.draft_mode as string) === 'linear_draft') ? 'Draft Room' : 'My Roster')
       : 'My Picks', requiresMember: true },
     { key: 'schedule', label: effectiveFormat === 'roster' ? 'Leaderboard' : 'Schedule' },
     { key: 'members', label: `Members (${members.length})` },
@@ -456,15 +488,15 @@ export function PoolDetailClient({
       {/* Tab Content */}
       {activeTab === 'overview' && (
         <div className="space-y-6">
+          {/* Announcements */}
+          <PoolAnnouncements poolId={pool.id} isCreator={isCreator} />
+
           {/* Leaderboard */}
           <Leaderboard
             members={members}
             format={effectiveFormat}
             poolStatus={pool.status}
           />
-
-          {/* Announcements */}
-          <PoolAnnouncements poolId={pool.id} isCreator={isCreator} />
 
           {/* Chat (members only) */}
           {hasAnyEntry && (
@@ -546,17 +578,36 @@ export function PoolDetailClient({
             />
           )}
           {effectiveFormat === 'roster' && (
-            <RosterPicker
-              entryId={activeEntry.id}
-              tournamentId={tournament.id}
-              poolId={pool.id}
-              poolStatus={pool.status}
-              participants={participants}
-              existingPicks={activeEntryPicks}
-              submittedAt={activeEntry.submittedAt}
-              scoringRules={pool.scoringRules}
-              deadline={pool.deadline}
-            />
+            (() => {
+              const draftMode = (pool.scoringRules?.draft_mode as string) || 'open'
+              if (draftMode === 'snake_draft' || draftMode === 'linear_draft') {
+                return (
+                  <RosterDraftRoom
+                    poolId={pool.id}
+                    tournamentId={tournament.id}
+                    participants={participants}
+                    entries={members.map(m => ({ id: m.id, displayName: m.displayName }))}
+                    userEntryId={activeEntry.id}
+                    isCreator={isCreator}
+                    scoringRules={pool.scoringRules}
+                  />
+                )
+              }
+              return (
+                <RosterPicker
+                  entryId={activeEntry.id}
+                  tournamentId={tournament.id}
+                  poolId={pool.id}
+                  poolStatus={pool.status}
+                  participants={participants}
+                  existingPicks={activeEntryPicks}
+                  submittedAt={activeEntry.submittedAt}
+                  scoringRules={pool.scoringRules}
+                  deadline={pool.deadline}
+                  selectionCounts={rosterSelectionCounts}
+                />
+              )
+            })()
           )}
         </div>
       )}
@@ -765,6 +816,108 @@ export function PoolDetailClient({
                 </select>
                 <p className="text-xs text-text-muted mt-1">How many entries each user can submit</p>
               </div>
+
+              {/* Roster Settings */}
+              {effectiveFormat === 'roster' && (
+                <div className="space-y-4">
+                  <label className="block text-xs text-text-muted mb-2">Roster Settings</label>
+
+                  {/* Draft Mode */}
+                  <div>
+                    <label className="block text-xs text-text-muted mb-1">Draft Mode</label>
+                    <div className="grid grid-cols-2 gap-2">
+                      {([
+                        { value: 'open', label: 'Open Pick', desc: 'Everyone picks independently' },
+                        { value: 'limited', label: 'Limited Pick', desc: 'Shared picks with cap' },
+                        { value: 'snake_draft', label: 'Snake Draft', desc: 'Reverses each round' },
+                        { value: 'linear_draft', label: 'Linear Draft', desc: 'Same order each round' },
+                      ] as const).map((opt) => (
+                        <button
+                          key={opt.value}
+                          type="button"
+                          onClick={() => setSettingsDraftMode(opt.value)}
+                          className={`text-left text-xs py-2 px-3 rounded-md border transition-colors ${
+                            settingsDraftMode === opt.value
+                              ? 'border-brand bg-brand/10 text-brand'
+                              : 'border-border text-text-muted hover:text-text-secondary'
+                          }`}
+                        >
+                          <span className="block font-medium">{opt.label}</span>
+                          <span className="block text-[10px] mt-0.5 opacity-70">{opt.desc}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Selection Cap (limited only) */}
+                  {settingsDraftMode === 'limited' && (
+                    <div>
+                      <label className="block text-xs text-text-muted mb-1">Selection Cap</label>
+                      <select
+                        value={settingsSelectionCap}
+                        onChange={(e) => setSettingsSelectionCap(e.target.value)}
+                        className="w-full bg-surface-inset border border-border rounded-md px-3 py-2 text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-brand/50"
+                      >
+                        {[2, 3, 4, 5, 6, 8, 10].map(n => (
+                          <option key={n} value={String(n)}>Max {n} entries per golfer</option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+
+                  {/* Roster Size + Count Best */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs text-text-muted mb-1">Roster Size</label>
+                      <select
+                        value={settingsRosterSize}
+                        onChange={(e) => setSettingsRosterSize(e.target.value)}
+                        className="w-full bg-surface-inset border border-border rounded-md px-3 py-2 text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-brand/50"
+                      >
+                        {[5, 6, 7, 8, 10].map(n => (
+                          <option key={n} value={String(n)}>{n} golfers</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-xs text-text-muted mb-1">Count Best</label>
+                      <select
+                        value={settingsCountBest}
+                        onChange={(e) => setSettingsCountBest(e.target.value)}
+                        className="w-full bg-surface-inset border border-border rounded-md px-3 py-2 text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-brand/50"
+                      >
+                        {Array.from({ length: parseInt(settingsRosterSize, 10) || 7 }, (_, i) => i + 1).map(n => (
+                          <option key={n} value={String(n)}>Best {n} of {settingsRosterSize}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* Cut Penalty */}
+                  <div>
+                    <label className="block text-xs text-text-muted mb-1">Cut Penalty</label>
+                    <div className="flex gap-2">
+                      {([
+                        { value: 'highest_plus_one', label: 'Field High +1' },
+                        { value: 'none', label: 'No Penalty' },
+                      ] as const).map((opt) => (
+                        <button
+                          key={opt.value}
+                          type="button"
+                          onClick={() => setSettingsCutPenalty(opt.value)}
+                          className={`flex-1 text-xs py-1.5 rounded-md border transition-colors ${
+                            settingsCutPenalty === opt.value
+                              ? 'border-brand bg-brand/10 text-brand'
+                              : 'border-border text-text-muted hover:text-text-secondary'
+                          }`}
+                        >
+                          {opt.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {/* Scoring Rules (bracket only) */}
               {effectiveFormat === 'bracket' && (

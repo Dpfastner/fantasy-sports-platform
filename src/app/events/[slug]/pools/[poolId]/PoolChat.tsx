@@ -109,9 +109,9 @@ export function PoolChat({ poolId, userId }: PoolChatProps) {
   }
 
   return (
-    <div className="flex flex-col" style={{ height: '500px' }}>
+    <div className="flex flex-col">
       {/* Messages */}
-      <div ref={containerRef} className="flex-1 overflow-y-auto space-y-3 mb-4 pr-1">
+      <div ref={containerRef} className="max-h-[300px] overflow-y-auto space-y-3 mb-4 pr-1">
         {messages.length === 0 && (
           <div className="text-center py-12">
             <p className="text-text-muted text-sm">No messages yet. Start the conversation!</p>

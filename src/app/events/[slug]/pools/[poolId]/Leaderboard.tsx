@@ -22,20 +22,29 @@ interface LeaderboardProps {
   poolStatus: string
 }
 
+function formatGolfScore(score: number): string {
+  if (score === 0) return 'E'
+  if (score > 0) return `+${score}`
+  return String(score)
+}
+
 export function Leaderboard({ members, format, poolStatus }: LeaderboardProps) {
-  // Sort: active first, then by score descending, then by max possible, then by submission time
+  const isRoster = format === 'roster'
+
+  // Sort: active first, then by score
+  // Roster: ascending (lower golf score = better). Others: descending (higher = better)
   const sorted = [...members].sort((a, b) => {
     if (a.isActive !== b.isActive) return a.isActive ? -1 : 1
-    if (a.score !== b.score) return b.score - a.score
-    if (a.maxPossible !== b.maxPossible) return b.maxPossible - a.maxPossible
+    if (a.score !== b.score) return isRoster ? a.score - b.score : b.score - a.score
+    if (!isRoster && a.maxPossible !== b.maxPossible) return b.maxPossible - a.maxPossible
     if (a.submittedAt && b.submittedAt) {
       return new Date(a.submittedAt).getTime() - new Date(b.submittedAt).getTime()
     }
     return a.submittedAt ? -1 : 1
   })
 
-  const showScores = poolStatus === 'locked' || poolStatus === 'completed' || sorted.some(m => m.score > 0)
-  const showMaxPossible = showScores && sorted.some(m => m.maxPossible !== m.score)
+  const showScores = poolStatus === 'locked' || poolStatus === 'completed' || sorted.some(m => m.score !== 0 || m.maxPossible > 0)
+  const showMaxPossible = !isRoster && showScores && sorted.some(m => m.maxPossible !== m.score)
 
   return (
     <div>
@@ -53,7 +62,7 @@ export function Leaderboard({ members, format, poolStatus }: LeaderboardProps) {
           }`}>
             <span className="text-right">#</span>
             <span>Player</span>
-            <span className="text-right">{showScores ? 'Pts' : 'Status'}</span>
+            <span className="text-right">{showScores ? (isRoster ? 'Score' : 'Pts') : 'Status'}</span>
             {showMaxPossible && <span className="text-right">Max</span>}
             <span className="text-right">Submitted</span>
           </div>
@@ -88,9 +97,11 @@ export function Leaderboard({ members, format, poolStatus }: LeaderboardProps) {
                   )}
                 </div>
                 <span className={`text-right text-sm ${
-                  showScores && member.score > 0 ? 'text-text-primary font-medium' : 'text-text-muted'
+                  showScores && member.score !== 0 ? 'text-text-primary font-medium' : 'text-text-muted'
                 }`}>
-                  {showScores ? member.score : member.submittedAt ? 'Ready' : '—'}
+                  {showScores
+                    ? (isRoster ? formatGolfScore(member.score) : member.score)
+                    : member.submittedAt ? 'Ready' : '—'}
                 </span>
                 {showMaxPossible && (
                   <span className="text-right text-sm text-text-muted">
