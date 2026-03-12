@@ -3,6 +3,7 @@
 import { useMemo } from 'react'
 import { BracketGameCard } from './BracketGameCard'
 import { getRounds, type BracketMap } from './bracketUtils'
+import type { SlotResult } from './useBracketPicks'
 
 interface Game {
   id: string
@@ -34,7 +35,7 @@ interface BracketListProps {
   scoringRules: Record<string, number>
   isLocked: boolean
   onPick: (gameId: string, participantId: string) => void
-  getParticipantForSlot: (gameId: string, slot: 1 | 2) => Participant | null
+  getParticipantForSlot: (gameId: string, slot: 1 | 2) => SlotResult
 }
 
 const ROUND_LABELS: Record<string, string> = {
@@ -85,12 +86,16 @@ export function BracketList({
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
             {round.games.map(game => {
               const g = gameMap[game.id]
+              const slot1 = getParticipantForSlot(game.id, 1)
+              const slot2 = getParticipantForSlot(game.id, 2)
               return (
                 <BracketGameCard
                   key={game.id}
                   gameId={game.id}
-                  participant1={getParticipantForSlot(game.id, 1)}
-                  participant2={getParticipantForSlot(game.id, 2)}
+                  participant1={slot1.participant}
+                  participant2={slot2.participant}
+                  eliminated1={slot1.eliminated}
+                  eliminated2={slot2.eliminated}
                   pickedId={picks[game.id] || null}
                   winnerId={g?.winnerId || null}
                   status={g?.status || 'scheduled'}

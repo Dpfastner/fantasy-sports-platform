@@ -31,6 +31,11 @@ interface UseBracketPicksParams {
   isLocked: boolean
 }
 
+export interface SlotResult {
+  participant: Participant | null
+  eliminated: boolean
+}
+
 export function useBracketPicks({ games, participants, existingPicks, isLocked }: UseBracketPicksParams) {
   const participantMap = useMemo(() => {
     const m: Record<string, Participant> = {}
@@ -57,33 +62,39 @@ export function useBracketPicks({ games, participants, existingPicks, isLocked }
   /**
    * Get the participant for a game slot.
    * First-round: use DB-assigned participants.
-   * Later rounds: use the user's pick from the feeder game,
-   * or the actual winner if the feeder game is completed.
+   * Later rounds: show the user's pick (even if eliminated) so
+   * the bracket always reflects what the user originally chose.
+   * The `eliminated` flag lets the UI render strikethrough styling.
    */
   const getParticipantForSlot = useCallback(
-    (gameId: string, slot: 1 | 2): Participant | null => {
+    (gameId: string, slot: 1 | 2): SlotResult => {
       const game = games.find(g => g.id === gameId)
-      if (!game) return null
+      if (!game) return { participant: null, eliminated: false }
 
       const feed = bracketMap[gameId]
       if (!feed || feed.feedsFrom.length === 0) {
         // First round — use DB participants
         const pid = slot === 1 ? game.participant1Id : game.participant2Id
-        return pid ? participantMap[pid] || null : null
+        return { participant: pid ? participantMap[pid] || null : null, eliminated: false }
       }
 
       // Later round — resolve from feeder game
       const feederGameId = feed.feedsFrom[slot - 1]
       const feederGame = games.find(g => g.id === feederGameId)
+      const feederComplete = feederGame && (feederGame.status === 'completed' || feederGame.status === 'final') && feederGame.winnerId
+      const pickedId = picks[feederGameId]
 
-      // If feeder game is completed, use actual winner
-      if (feederGame && (feederGame.status === 'completed' || feederGame.status === 'final') && feederGame.winnerId) {
-        return participantMap[feederGame.winnerId] || null
+      if (feederComplete) {
+        if (pickedId && pickedId !== feederGame.winnerId) {
+          // User picked the LOSER — show their pick but mark as eliminated
+          return { participant: participantMap[pickedId] || null, eliminated: true }
+        }
+        // User picked the winner, or no pick — show actual winner
+        return { participant: participantMap[feederGame.winnerId!] || null, eliminated: false }
       }
 
-      // Otherwise use user's pick from the feeder game
-      const pickedId = picks[feederGameId]
-      return pickedId ? participantMap[pickedId] || null : null
+      // Feeder not completed — show user's pick (or null for TBD)
+      return { participant: pickedId ? participantMap[pickedId] || null : null, eliminated: false }
     },
     [games, bracketMap, participantMap, picks],
   )

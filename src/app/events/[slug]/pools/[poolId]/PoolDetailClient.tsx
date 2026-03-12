@@ -108,7 +108,7 @@ interface PoolDetailClientProps {
   rulesText: string | null
 }
 
-type Tab = 'picks' | 'schedule' | 'leaderboard' | 'chat' | 'activity' | 'members' | 'settings'
+type Tab = 'overview' | 'picks' | 'schedule' | 'members' | 'settings'
 
 const tiebreakerLabels: Record<string, string> = {
   none: 'None',
@@ -132,7 +132,7 @@ export function PoolDetailClient({
   userId,
   rulesText,
 }: PoolDetailClientProps) {
-  const [activeTab, setActiveTab] = useState<Tab>(userEntry ? 'picks' : 'leaderboard')
+  const [activeTab, setActiveTab] = useState<Tab>('overview')
   const [showRules, setShowRules] = useState(false)
   const [codeCopied, setCodeCopied] = useState(false)
   const { addToast } = useToast()
@@ -229,11 +229,9 @@ export function PoolDetailClient({
   }
 
   const tabs: { key: Tab; label: string; requiresMember?: boolean }[] = [
+    { key: 'overview', label: 'Overview' },
     { key: 'picks', label: tournament.format === 'bracket' ? 'My Bracket' : 'My Picks', requiresMember: true },
     { key: 'schedule', label: 'Schedule' },
-    { key: 'leaderboard', label: 'Leaderboard' },
-    { key: 'chat', label: 'Chat', requiresMember: true },
-    { key: 'activity', label: 'Activity' },
     { key: 'members', label: `Members (${members.length})` },
     ...(isCreator ? [{ key: 'settings' as Tab, label: 'Settings' }] : []),
   ]
@@ -307,9 +305,6 @@ export function PoolDetailClient({
         )}
       </div>
 
-      {/* Announcements (always visible at top) */}
-      <PoolAnnouncements poolId={pool.id} isCreator={isCreator} />
-
       {/* Not a member notice */}
       {isLoggedIn && !userEntry && pool.status === 'open' && (
         <div className="bg-brand/5 border border-brand/20 rounded-lg p-4 mb-6 text-center">
@@ -381,6 +376,28 @@ export function PoolDetailClient({
       </div>
 
       {/* Tab Content */}
+      {activeTab === 'overview' && (
+        <div className="space-y-6">
+          {/* Leaderboard */}
+          <Leaderboard
+            members={members}
+            format={tournament.format}
+            poolStatus={pool.status}
+          />
+
+          {/* Announcements */}
+          <PoolAnnouncements poolId={pool.id} isCreator={isCreator} />
+
+          {/* Chat (members only) */}
+          {userEntry && (
+            <PoolChat poolId={pool.id} userId={userId} />
+          )}
+
+          {/* Activity Feed */}
+          <PoolActivityFeed poolId={pool.id} tournamentId={tournament.id} />
+        </div>
+      )}
+
       {activeTab === 'picks' && userEntry && (
         <div>
           {tournament.format === 'bracket' && (
@@ -432,22 +449,6 @@ export function PoolDetailClient({
           participants={participants}
           format={tournament.format}
         />
-      )}
-
-      {activeTab === 'leaderboard' && (
-        <Leaderboard
-          members={members}
-          format={tournament.format}
-          poolStatus={pool.status}
-        />
-      )}
-
-      {activeTab === 'chat' && userEntry && (
-        <PoolChat poolId={pool.id} userId={userId} />
-      )}
-
-      {activeTab === 'activity' && (
-        <PoolActivityFeed poolId={pool.id} tournamentId={tournament.id} />
       )}
 
       {activeTab === 'members' && (

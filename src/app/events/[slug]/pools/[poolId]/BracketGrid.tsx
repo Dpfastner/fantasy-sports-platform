@@ -10,6 +10,7 @@ import {
   type BracketMap,
   CARD_HEIGHT,
 } from './bracketUtils'
+import type { SlotResult } from './useBracketPicks'
 
 interface Game {
   id: string
@@ -42,7 +43,7 @@ interface BracketGridProps {
   scoringRules: Record<string, number>
   isLocked: boolean
   onPick: (gameId: string, participantId: string) => void
-  getParticipantForSlot: (gameId: string, slot: 1 | 2) => Participant | null
+  getParticipantForSlot: (gameId: string, slot: 1 | 2) => SlotResult
 }
 
 const ROUND_LABELS: Record<string, string> = {
@@ -126,8 +127,8 @@ export function BracketGrid({
               <div className="relative" style={{ height: totalHeight }}>
                 {round.games.map(game => {
                   const g = gameMap[game.id]
-                  const p1 = getParticipantForSlot(game.id, 1)
-                  const p2 = getParticipantForSlot(game.id, 2)
+                  const slot1 = getParticipantForSlot(game.id, 1)
+                  const slot2 = getParticipantForSlot(game.id, 2)
 
                   return (
                     <div
@@ -137,8 +138,10 @@ export function BracketGrid({
                     >
                       <BracketGameCard
                         gameId={game.id}
-                        participant1={p1}
-                        participant2={p2}
+                        participant1={slot1.participant}
+                        participant2={slot2.participant}
+                        eliminated1={slot1.eliminated}
+                        eliminated2={slot2.eliminated}
                         pickedId={picks[game.id] || null}
                         winnerId={g?.winnerId || null}
                         status={g?.status || 'scheduled'}
@@ -170,16 +173,25 @@ export function BracketGrid({
         ))}
 
         {/* Champion display */}
-        {championPick && (
-          <div className="flex flex-col items-center justify-center shrink-0 ml-4" style={{ marginTop: totalHeight / 2 - 20 }}>
-            <div className="text-[10px] text-text-muted uppercase tracking-wider mb-1">Champion</div>
-            <div className="bg-brand/10 border border-brand/30 rounded-lg px-4 py-2 text-center">
-              <div className="text-sm font-semibold text-brand">
-                {getParticipantForSlot(championshipGame!.id, picks[championshipGame!.id] === getParticipantForSlot(championshipGame!.id, 1)?.id ? 1 : 2)?.name || 'TBD'}
+        {championPick && (() => {
+          const slot1 = getParticipantForSlot(championshipGame!.id, 1)
+          const champSlot = picks[championshipGame!.id] === slot1.participant?.id ? 1 : 2
+          const champResult = getParticipantForSlot(championshipGame!.id, champSlot as 1 | 2)
+          return (
+            <div className="flex flex-col items-center justify-center shrink-0 ml-4" style={{ marginTop: totalHeight / 2 - 20 }}>
+              <div className="text-[10px] text-text-muted uppercase tracking-wider mb-1">Champion</div>
+              <div className={`border rounded-lg px-4 py-2 text-center ${
+                champResult.eliminated ? 'bg-danger/5 border-danger/20' : 'bg-brand/10 border-brand/30'
+              }`}>
+                <div className={`text-sm font-semibold ${
+                  champResult.eliminated ? 'text-danger-text line-through opacity-60' : 'text-brand'
+                }`}>
+                  {champResult.participant?.name || 'TBD'}
+                </div>
               </div>
             </div>
-          </div>
-        )}
+          )
+        })()}
       </div>
     </div>
   )
