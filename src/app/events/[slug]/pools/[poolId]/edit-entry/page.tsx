@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 
@@ -11,6 +11,7 @@ interface PageProps {
 
 export default function EditEntryPage({ params }: PageProps) {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [slug, setSlug] = useState('')
   const [poolId, setPoolId] = useState('')
   const [loading, setLoading] = useState(true)
@@ -49,15 +50,23 @@ export default function EditEntryPage({ params }: PageProps) {
         .single()
       if (pool) setPoolName(pool.name)
 
-      // Get user's entry
-      const { data: entry, error: entryError } = await supabase
+      // Get user's entry — by entryId param if provided, otherwise first entry
+      const entryIdParam = searchParams.get('entryId')
+      let entryQuery = supabase
         .from('event_entries')
-        .select('id, display_name, primary_color, secondary_color, image_url')
+        .select('id, display_name, primary_color, secondary_color, image_url, user_id')
         .eq('pool_id', p)
-        .eq('user_id', user.id)
-        .single()
 
-      if (entryError || !entry) {
+      if (entryIdParam) {
+        entryQuery = entryQuery.eq('id', entryIdParam)
+      } else {
+        entryQuery = entryQuery.eq('user_id', user.id).order('created_at', { ascending: true }).limit(1)
+      }
+
+      const { data: entries, error: entryError } = await entryQuery
+      const entry = entries?.[0]
+
+      if (entryError || !entry || entry.user_id !== user.id) {
         router.push(`/events/${s}/pools/${p}`)
         return
       }
@@ -76,7 +85,7 @@ export default function EditEntryPage({ params }: PageProps) {
       setLoading(false)
     }
     load()
-  }, [params, router])
+  }, [params, router, searchParams])
 
   // Detect changes
   useEffect(() => {

@@ -8,6 +8,7 @@ const updatePoolSchema = z.object({
   visibility: z.enum(['public', 'private']).optional(),
   tiebreaker: z.enum(['none', 'championship_score', 'first_match_score', 'most_upsets', 'random']).optional(),
   maxEntries: z.number().int().min(2).max(1000).nullable().optional(),
+  maxEntriesPerUser: z.number().int().min(1).max(10).optional(),
   scoringRules: z.record(z.string(), z.number().min(0).max(100)).nullable().optional(),
 })
 
@@ -55,6 +56,7 @@ export async function PATCH(
     if (parsed.data.visibility !== undefined) updates.visibility = parsed.data.visibility
     if (parsed.data.tiebreaker !== undefined) updates.tiebreaker = parsed.data.tiebreaker
     if (parsed.data.maxEntries !== undefined) updates.max_entries = parsed.data.maxEntries
+    if (parsed.data.maxEntriesPerUser !== undefined) updates.max_entries_per_user = parsed.data.maxEntriesPerUser
     if (parsed.data.scoringRules !== undefined) updates.scoring_rules = parsed.data.scoringRules
 
     if (Object.keys(updates).length === 0) {

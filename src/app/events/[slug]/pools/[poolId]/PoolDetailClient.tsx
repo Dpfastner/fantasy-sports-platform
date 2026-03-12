@@ -55,6 +55,7 @@ interface Member {
 
 interface UserEntry {
   id: string
+  displayName: string
   isActive: boolean
   submittedAt: string | null
   score: number
@@ -87,6 +88,7 @@ interface PoolDetailClientProps {
     maxEntries: number | null
     scoringRules: Record<string, unknown>
     deadline: string | null
+    maxEntriesPerUser: number
   }
   tournament: {
     id: string
@@ -104,8 +106,8 @@ interface PoolDetailClientProps {
   participants: Participant[]
   games: Game[]
   members: Member[]
-  userEntry: UserEntry | null
-  userPicks: UserPick[]
+  userEntries: UserEntry[]
+  userPicksByEntry: Record<string, UserPick[]>
   poolWeeks: PoolWeek[]
   isLoggedIn: boolean
   isCreator: boolean
@@ -129,8 +131,8 @@ export function PoolDetailClient({
   participants,
   games,
   members,
-  userEntry,
-  userPicks,
+  userEntries,
+  userPicksByEntry,
   poolWeeks,
   isLoggedIn,
   isCreator,
@@ -143,11 +145,19 @@ export function PoolDetailClient({
   const { addToast } = useToast()
   const router = useRouter()
 
+  // Multi-entry state
+  const [activeEntryIndex, setActiveEntryIndex] = useState(0)
+  const activeEntry = userEntries[activeEntryIndex] ?? null
+  const activeEntryPicks = activeEntry ? (userPicksByEntry[activeEntry.id] || []) : []
+  const hasAnyEntry = userEntries.length > 0
+  const canAddEntry = hasAnyEntry && userEntries.length < pool.maxEntriesPerUser && pool.status === 'open'
+
   // Settings state
   const [settingsName, setSettingsName] = useState(pool.name)
   const [settingsVisibility, setSettingsVisibility] = useState(pool.visibility)
   const [settingsTiebreaker, setSettingsTiebreaker] = useState(pool.tiebreaker)
   const [settingsMaxEntries, setSettingsMaxEntries] = useState(pool.maxEntries?.toString() || '')
+  const [settingsMaxEntriesPerUser, setSettingsMaxEntriesPerUser] = useState(pool.maxEntriesPerUser.toString())
   const [settingsScoringRules, setSettingsScoringRules] = useState<Record<string, number> | null>(
     pool.scoringRules && typeof pool.scoringRules === 'object' && Object.keys(pool.scoringRules).length > 0
       ? pool.scoringRules as Record<string, number>
@@ -191,6 +201,25 @@ export function PoolDetailClient({
     ([, preset]) => JSON.stringify(preset.rules) === JSON.stringify(activeScoringRules)
   )?.[0] || 'custom'
 
+  const handleAddEntry = async () => {
+    try {
+      const res = await fetch(`/api/events/pools/${pool.id}/entries`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({}),
+      })
+      if (res.ok) {
+        addToast('New entry created!', 'success')
+        router.refresh()
+      } else {
+        const data = await res.json()
+        addToast(data.error || 'Failed to add entry', 'error')
+      }
+    } catch {
+      addToast('Something went wrong', 'error')
+    }
+  }
+
   const copyInviteCode = async () => {
     try {
       await navigator.clipboard.writeText(pool.inviteCode)
@@ -213,6 +242,7 @@ export function PoolDetailClient({
           visibility: settingsVisibility,
           tiebreaker: settingsTiebreaker,
           maxEntries: settingsMaxEntries ? parseInt(settingsMaxEntries, 10) : null,
+          maxEntriesPerUser: parseInt(settingsMaxEntriesPerUser, 10) || 1,
           ...(tournament.format === 'bracket' ? { scoringRules: settingsScoringRules } : {}),
         }),
       })
@@ -235,7 +265,9 @@ export function PoolDetailClient({
 
   const tabs: { key: Tab; label: string; requiresMember?: boolean }[] = [
     { key: 'overview', label: 'Overview' },
-    { key: 'picks', label: tournament.format === 'bracket' ? 'My Bracket' : 'My Picks', requiresMember: true },
+    { key: 'picks', label: tournament.format === 'bracket'
+      ? (userEntries.length > 1 ? `My Brackets (${userEntries.length})` : 'My Bracket')
+      : 'My Picks', requiresMember: true },
     { key: 'schedule', label: 'Schedule' },
     { key: 'members', label: `Members (${members.length})` },
     ...(isCreator ? [{ key: 'settings' as Tab, label: 'Settings' }] : []),
@@ -268,9 +300,9 @@ export function PoolDetailClient({
 
           {/* Invite Code + Share + Edit Entry */}
           <div className="flex items-center gap-2 flex-wrap">
-            {userEntry && (
+            {activeEntry && (
               <Link
-                href={`/events/${tournament.slug}/pools/${pool.id}/edit-entry`}
+                href={`/events/${tournament.slug}/pools/${pool.id}/edit-entry?entryId=${activeEntry.id}`}
                 className="text-xs px-2 py-1.5 rounded-md border border-border text-text-muted hover:text-text-primary hover:border-brand/40 transition-colors"
               >
                 Edit Entry
@@ -319,7 +351,7 @@ export function PoolDetailClient({
       </div>
 
       {/* Not a member notice */}
-      {isLoggedIn && !userEntry && pool.status === 'open' && (
+      {isLoggedIn && !hasAnyEntry && pool.status === 'open' && (
         <div className="bg-brand/5 border border-brand/20 rounded-lg p-4 mb-6 text-center">
           <p className="text-text-secondary text-sm mb-2">You&apos;re not in this pool yet.</p>
           <p className="text-text-muted text-xs">Use invite code <span className="font-mono font-medium text-brand">{pool.inviteCode}</span> to join from the event page.</p>
@@ -327,7 +359,7 @@ export function PoolDetailClient({
       )}
 
       {/* Start Your Bracket CTA — shown when member hasn't submitted picks */}
-      {userEntry && !userEntry.submittedAt && pool.status === 'open' && activeTab !== 'picks' && (
+      {activeEntry && !activeEntry.submittedAt && pool.status === 'open' && activeTab !== 'picks' && (
         <div className="bg-brand/5 border border-brand/20 rounded-lg p-5 mb-6 text-center">
           <h3 className="brand-h3 text-base text-text-primary mb-1">
             {tournament.format === 'bracket' ? 'Fill out your bracket!' : 'Make your picks!'}
@@ -371,7 +403,7 @@ export function PoolDetailClient({
       <div className="flex gap-1 border-b border-border mb-6 overflow-x-auto">
         {tabs.map((tab) => {
           // Hide member-only tabs if not a member
-          if (tab.requiresMember && !userEntry) return null
+          if (tab.requiresMember && !hasAnyEntry) return null
           return (
             <button
               key={tab.key}
@@ -402,7 +434,7 @@ export function PoolDetailClient({
           <PoolAnnouncements poolId={pool.id} isCreator={isCreator} />
 
           {/* Chat (members only) */}
-          {userEntry && (
+          {hasAnyEntry && (
             <PoolChat poolId={pool.id} userId={userId} />
           )}
 
@@ -411,46 +443,73 @@ export function PoolDetailClient({
         </div>
       )}
 
-      {activeTab === 'picks' && userEntry && (
+      {activeTab === 'picks' && activeEntry && (
         <div>
+          {/* Entry selector */}
+          {(userEntries.length > 1 || canAddEntry) && (
+            <div className="flex items-center gap-2 mb-4 overflow-x-auto pb-1">
+              {userEntries.map((entry, i) => (
+                <button
+                  key={entry.id}
+                  onClick={() => setActiveEntryIndex(i)}
+                  className={`px-3 py-1.5 text-sm rounded-md border whitespace-nowrap transition-colors ${
+                    i === activeEntryIndex
+                      ? 'border-brand bg-brand/10 text-brand'
+                      : 'border-border text-text-muted hover:text-text-secondary'
+                  }`}
+                >
+                  {entry.displayName || `Entry ${i + 1}`}
+                </button>
+              ))}
+              {canAddEntry && (
+                <button
+                  onClick={handleAddEntry}
+                  className="px-3 py-1.5 text-sm rounded-md border border-dashed border-border text-text-muted hover:text-brand hover:border-brand/40 transition-colors whitespace-nowrap"
+                >
+                  + Add Entry
+                </button>
+              )}
+            </div>
+          )}
+
           {tournament.format === 'bracket' && (
             <BracketPicker
-              entryId={userEntry.id}
+              entryId={activeEntry.id}
               tournamentId={tournament.id}
               poolId={pool.id}
               poolStatus={pool.status}
               games={games}
               participants={participants}
-              existingPicks={userPicks}
+              existingPicks={activeEntryPicks}
               tiebreakerType={pool.tiebreaker}
-              existingTiebreaker={userEntry.tiebreakerPrediction}
-              submittedAt={userEntry.submittedAt}
+              existingTiebreaker={activeEntry.tiebreakerPrediction}
+              submittedAt={activeEntry.submittedAt}
               scoringRules={pool.scoringRules}
             />
           )}
           {tournament.format === 'survivor' && (
             <SurvivorPicker
-              entryId={userEntry.id}
+              entryId={activeEntry.id}
               tournamentId={tournament.id}
               poolId={pool.id}
               poolStatus={pool.status}
               participants={participants}
-              existingPicks={userPicks}
+              existingPicks={activeEntryPicks}
               poolWeeks={poolWeeks}
-              isActive={userEntry.isActive}
+              isActive={activeEntry.isActive}
               games={games}
             />
           )}
           {tournament.format === 'pickem' && (
             <PickemPicker
-              entryId={userEntry.id}
+              entryId={activeEntry.id}
               tournamentId={tournament.id}
               poolId={pool.id}
               poolStatus={pool.status}
               games={games}
               participants={participants}
-              existingPicks={userPicks}
-              submittedAt={userEntry.submittedAt}
+              existingPicks={activeEntryPicks}
+              submittedAt={activeEntry.submittedAt}
             />
           )}
         </div>
@@ -587,6 +646,22 @@ export function PoolDetailClient({
                   max={1000}
                   className="w-full bg-surface-inset border border-border rounded-md px-3 py-2 text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-brand/50"
                 />
+              </div>
+
+              {/* Entries Per User */}
+              <div>
+                <label className="block text-xs text-text-muted mb-1">Entries Per User</label>
+                <select
+                  value={settingsMaxEntriesPerUser}
+                  onChange={(e) => setSettingsMaxEntriesPerUser(e.target.value)}
+                  className="w-full bg-surface-inset border border-border rounded-md px-3 py-2 text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-brand/50"
+                >
+                  <option value="1">1 (standard)</option>
+                  <option value="3">Up to 3</option>
+                  <option value="5">Up to 5</option>
+                  <option value="10">Up to 10</option>
+                </select>
+                <p className="text-xs text-text-muted mt-1">How many brackets each user can submit</p>
               </div>
 
               {/* Scoring Rules (bracket only) */}

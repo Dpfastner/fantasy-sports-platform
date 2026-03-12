@@ -62,7 +62,7 @@ export default async function EventDetailPage({ params }: PageProps) {
   const admin = createAdminClient()
   const { data: allPools } = await admin
     .from('event_pools')
-    .select('id, name, created_by, visibility, status, tiebreaker, max_entries, invite_code, scoring_rules, created_at')
+    .select('id, name, created_by, visibility, status, tiebreaker, max_entries, max_entries_per_user, invite_code, scoring_rules, created_at')
     .eq('tournament_id', tournament.id)
     .order('created_at', { ascending: false })
 

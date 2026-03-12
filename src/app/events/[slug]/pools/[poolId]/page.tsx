@@ -113,12 +113,12 @@ export default async function PoolDetailPage({ params }: PageProps) {
     .eq('pool_id', poolId)
     .order('total_points', { ascending: false })
 
-  // Get current user's entry — auto-join if creator without entry
-  let userEntry = user
-    ? (entries || []).find(e => e.user_id === user.id)
-    : null
+  // Get current user's entries — auto-join if creator without entry
+  const userEntries = user
+    ? (entries || []).filter(e => e.user_id === user.id)
+    : []
 
-  if (user && !userEntry && pool.created_by === user.id) {
+  if (user && userEntries.length === 0 && pool.created_by === user.id) {
     // Creator should always be a member — auto-fix if entry is missing
     await admin
       .from('event_entries')
@@ -127,21 +127,25 @@ export default async function PoolDetailPage({ params }: PageProps) {
     redirect(`/events/${slug}/pools/${poolId}`)
   }
 
-  // Get current user's picks
-  let userPicks: Array<{
+  // Get current user's picks (for all their entries)
+  let userPicksByEntry: Record<string, Array<{
     id: string
     game_id: string | null
     participant_id: string
     week_number: number | null
     picked_at: string
-  }> = []
-  if (userEntry) {
+  }>> = {}
+  if (userEntries.length > 0) {
+    const userEntryIds = userEntries.map(e => e.id)
     const { data: picks } = await admin
       .from('event_picks')
-      .select('id, game_id, participant_id, week_number, picked_at')
-      .eq('entry_id', userEntry.id)
+      .select('id, entry_id, game_id, participant_id, week_number, picked_at')
+      .in('entry_id', userEntryIds)
       .order('picked_at', { ascending: true })
-    userPicks = picks || []
+    for (const p of (picks || [])) {
+      if (!userPicksByEntry[p.entry_id]) userPicksByEntry[p.entry_id] = []
+      userPicksByEntry[p.entry_id].push(p)
+    }
   }
 
   // Get pool weeks for survivor
@@ -262,6 +266,7 @@ export default async function PoolDetailPage({ params }: PageProps) {
             maxEntries: pool.max_entries,
             scoringRules: pool.scoring_rules,
             deadline: pool.deadline,
+            maxEntriesPerUser: pool.max_entries_per_user ?? 1,
           }}
           tournament={{
             id: tournament.id,
@@ -300,20 +305,26 @@ export default async function PoolDetailPage({ params }: PageProps) {
             winnerId: g.winner_id,
           }))}
           members={members}
-          userEntry={userEntry ? {
-            id: userEntry.id,
-            isActive: userEntry.is_active,
-            submittedAt: userEntry.submitted_at,
-            score: Number(userEntry.total_points) || 0,
-            rank: members.findIndex(m => m.userId === userEntry!.user_id) + 1 || null,
-            tiebreakerPrediction: userEntry.tiebreaker_prediction as { team1_score: number; team2_score: number } | null,
-          } : null}
-          userPicks={userPicks.map(p => ({
-            id: p.id,
-            gameId: p.game_id,
-            participantId: p.participant_id,
-            weekNumber: p.week_number,
+          userEntries={userEntries.map(ue => ({
+            id: ue.id,
+            displayName: ue.display_name || '',
+            isActive: ue.is_active,
+            submittedAt: ue.submitted_at,
+            score: Number(ue.total_points) || 0,
+            rank: members.findIndex(m => m.id === ue.id) + 1 || null,
+            tiebreakerPrediction: ue.tiebreaker_prediction as { team1_score: number; team2_score: number } | null,
           }))}
+          userPicksByEntry={Object.fromEntries(
+            Object.entries(userPicksByEntry).map(([entryId, picks]) => [
+              entryId,
+              picks.map(p => ({
+                id: p.id,
+                gameId: p.game_id,
+                participantId: p.participant_id,
+                weekNumber: p.week_number,
+              })),
+            ])
+          )}
           poolWeeks={poolWeeks}
           isLoggedIn={!!user}
           isCreator={!!user && pool.created_by === user.id}

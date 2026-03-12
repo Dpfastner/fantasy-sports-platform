@@ -15,6 +15,7 @@ interface Pool {
   status: string
   tiebreaker: string
   max_entries: number | null
+  max_entries_per_user: number
   invite_code: string
   scoring_rules: Record<string, number>
   created_at: string
@@ -63,6 +64,7 @@ export function EventPoolsClient({
   const [visibility, setVisibility] = useState<'public' | 'private'>('private')
   const [tiebreaker, setTiebreaker] = useState('none')
   const [maxEntries, setMaxEntries] = useState('')
+  const [maxEntriesPerUser, setMaxEntriesPerUser] = useState('1')
 
   // Join form state
   const [inviteCode, setInviteCode] = useState('')
@@ -84,6 +86,7 @@ export function EventPoolsClient({
           visibility,
           tiebreaker,
           maxEntries: maxEntries ? parseInt(maxEntries, 10) : undefined,
+          maxEntriesPerUser: parseInt(maxEntriesPerUser, 10) || 1,
         }),
       })
 
@@ -267,6 +270,22 @@ export function EventPoolsClient({
               />
             </div>
 
+            {/* Entries Per User */}
+            <div>
+              <label className="block text-xs text-text-muted mb-1">Entries Per User</label>
+              <select
+                value={maxEntriesPerUser}
+                onChange={(e) => setMaxEntriesPerUser(e.target.value)}
+                className="w-full bg-surface-inset border border-border rounded-md px-3 py-2 text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-brand/50"
+              >
+                <option value="1">1 (standard)</option>
+                <option value="3">Up to 3</option>
+                <option value="5">Up to 5</option>
+                <option value="10">Up to 10</option>
+              </select>
+              <p className="text-xs text-text-muted mt-1">How many brackets each user can submit</p>
+            </div>
+
             {/* Actions */}
             <div className="flex justify-end gap-2 pt-1">
               <button
@@ -335,6 +354,9 @@ export function EventPoolsClient({
                     <span>{pool.entry_count} entr{pool.entry_count === 1 ? 'y' : 'ies'}</span>
                     {pool.max_entries && (
                       <span>/ {pool.max_entries} max</span>
+                    )}
+                    {pool.max_entries_per_user > 1 && (
+                      <span>{pool.max_entries_per_user} entries/user</span>
                     )}
                     {pool.tiebreaker !== 'none' && (
                       <span>TB: {tiebreakerLabels[pool.tiebreaker] || pool.tiebreaker}</span>

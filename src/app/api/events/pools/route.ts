@@ -155,7 +155,7 @@ export async function POST(request: Request) {
       // Look up pool by invite code
       const { data: pool, error: lookupError } = await admin
         .from('event_pools')
-        .select('id, name, tournament_id, max_entries, status')
+        .select('id, name, tournament_id, max_entries, max_entries_per_user, status')
         .eq('invite_code', inviteCode.trim().toUpperCase())
         .single()
 
@@ -167,16 +167,19 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: 'This pool is no longer accepting entries' }, { status: 409 })
       }
 
-      // Check if already a member
-      const { data: existing } = await admin
+      // Check per-user entry limit
+      const { count: userEntryCount } = await admin
         .from('event_entries')
-        .select('id')
+        .select('id', { count: 'exact', head: true })
         .eq('pool_id', pool.id)
         .eq('user_id', user.id)
-        .maybeSingle()
 
-      if (existing) {
-        return NextResponse.json({ error: 'You are already in this pool' }, { status: 409 })
+      const perUserLimit = pool.max_entries_per_user ?? 1
+      if ((userEntryCount ?? 0) >= perUserLimit) {
+        const msg = perUserLimit === 1
+          ? 'You are already in this pool'
+          : `You've reached the maximum of ${perUserLimit} entries in this pool`
+        return NextResponse.json({ error: msg }, { status: 409 })
       }
 
       // Check max entries
@@ -203,9 +206,6 @@ export async function POST(request: Request) {
         .single()
 
       if (entryError) {
-        if (entryError.code === '23505') {
-          return NextResponse.json({ error: 'You are already in this pool' }, { status: 409 })
-        }
         console.error('Entry creation failed:', entryError)
         return NextResponse.json({ error: 'Failed to join pool' }, { status: 500 })
       }
@@ -250,7 +250,7 @@ export async function POST(request: Request) {
     const validation = validateBody(eventPoolCreateSchema, rawBody)
     if (!validation.success) return validation.response
 
-    const { tournamentId, name, visibility, scoringRules, tiebreaker, deadline, maxEntries, leagueId } = validation.data
+    const { tournamentId, name, visibility, scoringRules, tiebreaker, deadline, maxEntries, maxEntriesPerUser, leagueId } = validation.data
     const admin = createAdminClient()
 
     // Verify tournament exists and is upcoming/active
@@ -286,6 +286,7 @@ export async function POST(request: Request) {
         tiebreaker,
         deadline: deadline || null,
         max_entries: maxEntries || null,
+        max_entries_per_user: maxEntriesPerUser || 1,
       })
       .select('id, invite_code')
       .single()

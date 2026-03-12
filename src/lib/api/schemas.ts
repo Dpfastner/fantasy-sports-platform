@@ -176,6 +176,7 @@ export const eventPoolCreateSchema = z.object({
   tiebreaker: z.enum(['none', 'championship_score', 'first_match_score', 'most_upsets', 'random']).default('none'),
   deadline: z.string().datetime().optional(),
   maxEntries: z.number().int().min(2).max(1000).optional(),
+  maxEntriesPerUser: z.number().int().min(1).max(10).optional(),
   leagueId: uuidField.optional(),
 })
 
