@@ -35,6 +35,35 @@ const FAQ_DATA: FaqCategory[] = [
     ],
   },
   {
+    title: 'Events & Prediction Games',
+    items: [
+      {
+        question: 'What are Events?',
+        answer: 'Events are prediction-based competitions tied to real sports tournaments (like the NCAA Frozen Four or The Masters). Unlike fantasy leagues where you draft teams for a full season, events let you make predictions — fill out a bracket, pick game winners, or play survivor-style elimination games.',
+      },
+      {
+        question: 'What game formats are available?',
+        answer: 'Three formats: Bracket (predict the winner of every game in a tournament), Pick\'em (pick game winners each week), and Survivor (pick one team per week — if they lose, you\'re eliminated). Each pool can have its own scoring rules and tiebreakers.',
+      },
+      {
+        question: 'How do I create or join an event pool?',
+        answer: 'Browse Events from the dashboard. Pick a tournament, then either create a new pool (you\'ll get an invite code to share) or join an existing one with a code. Pools can be public (anyone can find and join) or private (invite code required).',
+      },
+      {
+        question: 'Can I submit multiple brackets in one pool?',
+        answer: 'If the pool creator allows it (via the "Entries Per User" setting), you can add multiple entries. Each entry has its own picks, name, colors, and logo. Switch between your entries using the selector on the My Bracket tab.',
+      },
+      {
+        question: 'How does bracket scoring work?',
+        answer: 'You earn points for each correct pick. Points increase in later rounds — for example, 2 points for quarterfinals up to 16 points for the championship. The pool creator can choose from scoring presets (Standard, Upset Heavy, Final Four Focus) or set custom point values for each round.',
+      },
+      {
+        question: 'What sports are available for events?',
+        answer: 'Events are available across multiple sports including college hockey, golf, college football, and more as they\'re added. Each sport has its own tournaments and game formats.',
+      },
+    ],
+  },
+  {
     title: 'Drafts',
     items: [
       {

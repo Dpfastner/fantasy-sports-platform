@@ -112,19 +112,19 @@ export function ScheduleView({ games, participants, format, tournamentId }: Sche
     <div className="space-y-6">
       {/* Schedule/Bracket toggle */}
       {showBracketToggle && (
-        <div className="flex gap-1 bg-surface-inset rounded-lg p-1 w-fit">
+        <div className="flex">
           <button
             onClick={() => setView('list')}
-            className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
-              view === 'list' ? 'bg-surface text-text-primary shadow-sm' : 'text-text-muted hover:text-text-secondary'
+            className={`flex-1 py-3 px-4 text-sm font-medium rounded-l-lg transition-colors ${
+              view === 'list' ? 'bg-brand text-text-primary' : 'bg-surface text-text-secondary hover:bg-surface-subtle'
             }`}
           >
             Schedule
           </button>
           <button
             onClick={() => setView('bracket')}
-            className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
-              view === 'bracket' ? 'bg-surface text-text-primary shadow-sm' : 'text-text-muted hover:text-text-secondary'
+            className={`flex-1 py-3 px-4 text-sm font-medium rounded-r-lg transition-colors ${
+              view === 'bracket' ? 'bg-accent text-text-primary' : 'bg-surface text-text-secondary hover:bg-surface-subtle'
             }`}
           >
             Bracket
