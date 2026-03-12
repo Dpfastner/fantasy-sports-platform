@@ -58,6 +58,13 @@ export default function SettingsPage() {
   const [pushEnabled, setPushEnabled] = useState(false)
   const [pushPermission, setPushPermission] = useState<NotificationPermission>('default')
   const [pushLoading, setPushLoading] = useState(false)
+  const [pushDraft, setPushDraft] = useState(true)
+  const [pushGameResults, setPushGameResults] = useState(true)
+  const [pushTrades, setPushTrades] = useState(true)
+  const [pushTransactions, setPushTransactions] = useState(true)
+  const [pushAnnouncements, setPushAnnouncements] = useState(true)
+  const [pushChatMentions, setPushChatMentions] = useState(true)
+  const [pushLeagueActivity, setPushLeagueActivity] = useState(true)
 
   // Account deletion
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
@@ -102,7 +109,7 @@ export default function SettingsPage() {
       // Load notification preferences
       const { data: notifData } = await supabase
         .from('notification_preferences')
-        .select('email_game_results, email_draft_reminders, email_transaction_confirmations, email_league_announcements, inapp_draft, inapp_game_results, inapp_trades, inapp_transactions, inapp_announcements, inapp_chat_mentions, inapp_league_activity, push_enabled')
+        .select('email_game_results, email_draft_reminders, email_transaction_confirmations, email_league_announcements, inapp_draft, inapp_game_results, inapp_trades, inapp_transactions, inapp_announcements, inapp_chat_mentions, inapp_league_activity, push_enabled, push_draft, push_game_results, push_trades, push_transactions, push_announcements, push_chat_mentions, push_league_activity')
         .eq('user_id', user.id)
         .maybeSingle()
 
@@ -119,6 +126,13 @@ export default function SettingsPage() {
         if (notifData.inapp_chat_mentions !== undefined) setInappChatMentions(notifData.inapp_chat_mentions)
         if (notifData.inapp_league_activity !== undefined) setInappLeagueActivity(notifData.inapp_league_activity)
         if (notifData.push_enabled !== undefined) setPushEnabled(notifData.push_enabled)
+        if (notifData.push_draft !== undefined) setPushDraft(notifData.push_draft)
+        if (notifData.push_game_results !== undefined) setPushGameResults(notifData.push_game_results)
+        if (notifData.push_trades !== undefined) setPushTrades(notifData.push_trades)
+        if (notifData.push_transactions !== undefined) setPushTransactions(notifData.push_transactions)
+        if (notifData.push_announcements !== undefined) setPushAnnouncements(notifData.push_announcements)
+        if (notifData.push_chat_mentions !== undefined) setPushChatMentions(notifData.push_chat_mentions)
+        if (notifData.push_league_activity !== undefined) setPushLeagueActivity(notifData.push_league_activity)
       }
 
       // Check browser push notification permission
@@ -287,6 +301,13 @@ export default function SettingsPage() {
         inapp_chat_mentions: inappChatMentions,
         inapp_league_activity: inappLeagueActivity,
         push_enabled: pushEnabled,
+        push_draft: pushDraft,
+        push_game_results: pushGameResults,
+        push_trades: pushTrades,
+        push_transactions: pushTransactions,
+        push_announcements: pushAnnouncements,
+        push_chat_mentions: pushChatMentions,
+        push_league_activity: pushLeagueActivity,
       }
 
       // Upsert: create if not exists, update if exists
@@ -648,39 +669,23 @@ export default function SettingsPage() {
           <p className="text-text-muted text-sm mb-3">
             Receive browser notifications even when you&apos;re not on Rivyls.
           </p>
-          <div className="mb-6">
+          <div className="space-y-3 mb-6">
             {pushPermission === 'denied' ? (
-              <div className="flex items-center justify-between py-2">
-                <div>
-                  <p className="text-text-primary text-sm font-medium">Push Notifications</p>
-                  <p className="text-text-muted text-xs">Blocked by your browser. Update your browser notification settings to enable push notifications.</p>
-                </div>
-                <div className="relative w-10 h-6 rounded-full bg-surface-inset opacity-50 cursor-not-allowed">
-                  <div className="absolute top-1 w-4 h-4 rounded-full bg-white translate-x-1" />
-                </div>
+              <div className="py-2">
+                <p className="text-text-primary text-sm font-medium">Push Notifications</p>
+                <p className="text-danger text-xs mt-1">Blocked by your browser. Update your browser notification settings to enable push notifications.</p>
               </div>
             ) : (
-              <label className="flex items-center justify-between py-2 cursor-pointer">
-                <div>
-                  <p className="text-text-primary text-sm font-medium">
-                    Push Notifications
-                    {pushLoading && <span className="text-text-muted text-xs ml-2">Setting up...</span>}
-                  </p>
-                  <p className="text-text-muted text-xs">
-                    {pushEnabled
-                      ? 'You will receive browser notifications for draft alerts, trades, scores, and more.'
-                      : 'Enable to get real-time alerts for drafts, trades, and scores.'}
-                  </p>
-                </div>
-                <div
-                  onClick={async (e) => {
-                    e.preventDefault()
+              <>
+                <PushMasterToggle
+                  enabled={pushEnabled}
+                  loading={pushLoading}
+                  onToggle={async () => {
                     if (pushLoading) return
                     setPushLoading(true)
 
                     try {
                       if (!pushEnabled) {
-                        // Enable: request permission + subscribe
                         const permission = await Notification.requestPermission()
                         setPushPermission(permission)
                         if (permission !== 'granted') {
@@ -706,7 +711,6 @@ export default function SettingsPage() {
 
                         setPushEnabled(true)
                       } else {
-                        // Disable: unsubscribe
                         const reg = await navigator.serviceWorker.ready
                         const subscription = await reg.pushManager.getSubscription()
                         if (subscription) {
@@ -726,17 +730,54 @@ export default function SettingsPage() {
                       setPushLoading(false)
                     }
                   }}
-                  className={`relative w-10 h-6 rounded-full transition-colors ${
-                    pushEnabled ? 'bg-brand' : 'bg-surface-inset'
-                  } ${pushLoading ? 'opacity-50' : ''}`}
-                >
-                  <div
-                    className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-transform ${
-                      pushEnabled ? 'translate-x-5' : 'translate-x-1'
-                    }`}
-                  />
-                </div>
-              </label>
+                />
+                {pushEnabled && (
+                  <>
+                    <NotificationToggle
+                      label="Draft Notifications"
+                      description="Draft started, your turn to pick, picks made, and draft completed"
+                      checked={pushDraft}
+                      onChange={setPushDraft}
+                    />
+                    <NotificationToggle
+                      label="Game Results"
+                      description="Weekly score updates when games are completed"
+                      checked={pushGameResults}
+                      onChange={setPushGameResults}
+                    />
+                    <NotificationToggle
+                      label="Trade Notifications"
+                      description="Trade proposals, acceptances, rejections, vetoes, and expirations"
+                      checked={pushTrades}
+                      onChange={setPushTrades}
+                    />
+                    <NotificationToggle
+                      label="Transaction Confirmations"
+                      description="Confirmation when add/drop transactions are processed"
+                      checked={pushTransactions}
+                      onChange={setPushTransactions}
+                    />
+                    <NotificationToggle
+                      label="League Announcements"
+                      description="Updates posted by your league commissioners"
+                      checked={pushAnnouncements}
+                      onChange={setPushAnnouncements}
+                    />
+                    <NotificationToggle
+                      label="Chat Mentions"
+                      description="When someone mentions you in league chat"
+                      checked={pushChatMentions}
+                      onChange={setPushChatMentions}
+                    />
+                    <NotificationToggle
+                      label="League Activity"
+                      description="Members joining your league and other league events"
+                      checked={pushLeagueActivity}
+                      onChange={setPushLeagueActivity}
+                    />
+                  </>
+                )}
+              </>
             )}
           </div>
 
@@ -889,6 +930,39 @@ function NotificationToggle({
         <div
           className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-transform ${
             checked ? 'translate-x-5' : 'translate-x-1'
+          }`}
+        />
+      </div>
+    </label>
+  )
+}
+
+function PushMasterToggle({
+  enabled,
+  loading,
+  onToggle,
+}: {
+  enabled: boolean
+  loading: boolean
+  onToggle: () => void
+}) {
+  return (
+    <label className="flex items-center justify-between py-2 cursor-pointer">
+      <div>
+        <p className="text-text-primary text-sm font-medium">Enable Push Notifications</p>
+        <p className="text-text-muted text-xs">
+          {loading ? 'Updating...' : enabled ? 'You will receive browser notifications' : 'Get alerts even when you\'re not on the site'}
+        </p>
+      </div>
+      <div
+        onClick={onToggle}
+        className={`relative w-10 h-6 rounded-full transition-colors ${
+          loading ? 'bg-surface-inset opacity-50 cursor-wait' : enabled ? 'bg-brand' : 'bg-surface-inset'
+        }`}
+      >
+        <div
+          className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-transform ${
+            enabled ? 'translate-x-5' : 'translate-x-1'
           }`}
         />
       </div>

@@ -24,7 +24,7 @@ export type NotificationType =
   | 'system'
 
 /**
- * Maps notification types to preference column names.
+ * Maps notification types to in-app preference column names.
  * 'system' is always delivered (no user toggle).
  */
 const TYPE_TO_PREF: Record<string, string> = {
@@ -44,6 +44,29 @@ const TYPE_TO_PREF: Record<string, string> = {
   announcement_posted: 'inapp_announcements',
   chat_mention: 'inapp_chat_mentions',
   league_joined: 'inapp_league_activity',
+}
+
+/**
+ * Maps notification types to push preference column names.
+ * 'system' push is always delivered if push_enabled is true.
+ */
+const TYPE_TO_PUSH_PREF: Record<string, string> = {
+  draft_started: 'push_draft',
+  draft_your_turn: 'push_draft',
+  draft_pick_made: 'push_draft',
+  draft_completed: 'push_draft',
+  game_results: 'push_game_results',
+  trade_proposed: 'push_trades',
+  trade_accepted: 'push_trades',
+  trade_rejected: 'push_trades',
+  trade_cancelled: 'push_trades',
+  trade_vetoed: 'push_trades',
+  trade_expired: 'push_trades',
+  trade_expiring: 'push_trades',
+  transaction_completed: 'push_transactions',
+  announcement_posted: 'push_announcements',
+  chat_mention: 'push_chat_mentions',
+  league_joined: 'push_league_activity',
 }
 
 /**
@@ -107,7 +130,8 @@ async function shouldDeliver(userId: string, type: NotificationType): Promise<bo
 }
 
 /**
- * Send a push notification to a user if push_enabled is true.
+ * Send a push notification to a user if push_enabled is true
+ * and the per-type push preference is not disabled.
  * Fire-and-forget.
  */
 function maybeSendPush(
@@ -118,16 +142,21 @@ function maybeSendPush(
   data: Record<string, unknown>,
   leagueId?: string | null
 ): void {
+  const pushPrefColumn = TYPE_TO_PUSH_PREF[type]
+  const selectColumns = pushPrefColumn ? `push_enabled, ${pushPrefColumn}` : 'push_enabled'
   const supabase = createAdminClient()
   Promise.resolve(
     supabase
       .from('notification_preferences')
-      .select('push_enabled')
+      .select(selectColumns)
       .eq('user_id', userId)
       .maybeSingle()
   )
-    .then(({ data: pref }) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    .then(({ data: pref }: { data: any }) => {
       if (pref?.push_enabled !== true) return
+      // Check per-type push preference (default true if column missing)
+      if (pushPrefColumn && pref[pushPrefColumn] === false) return
       const url = buildNotificationUrl(type, data, leagueId)
       sendPushToUser(userId, { title, body, url, type, icon: '/icon-192.png' })
     })
@@ -261,20 +290,28 @@ export async function notifyLeagueMembers(params: NotifyLeagueMembersParams): Pr
   if (insertError) {
     console.error(`[notifications] Failed to notify league members (${type}):`, insertError.message)
   } else {
-    // Send push to recipients with push_enabled (fire-and-forget)
+    // Send push to recipients with push_enabled + per-type pref (fire-and-forget)
     const recipientIds = recipients.map(r => r.user_id)
+    const pushPrefColumn = TYPE_TO_PUSH_PREF[type]
+    const pushSelectCols = pushPrefColumn ? `user_id, ${pushPrefColumn}` : 'user_id'
     Promise.resolve(
       supabase
         .from('notification_preferences')
-        .select('user_id')
+        .select(pushSelectCols)
         .in('user_id', recipientIds)
         .eq('push_enabled', true)
     )
-      .then(({ data: pushPrefs }) => {
-        if (pushPrefs && pushPrefs.length > 0) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .then(({ data: pushPrefs }: { data: any[] | null }) => {
+        if (!pushPrefs || pushPrefs.length === 0) return
+        // Filter out users who disabled this specific push type
+        const pushRecipients = pushPrefColumn
+          ? pushPrefs.filter(p => p[pushPrefColumn] !== false)
+          : pushPrefs
+        if (pushRecipients.length > 0) {
           const url = buildNotificationUrl(type, data, leagueId)
           sendPushToUsers(
-            pushPrefs.map(p => p.user_id),
+            pushRecipients.map(p => p.user_id),
             { title, body, url, type, icon: '/icon-192.png' }
           )
         }
@@ -358,20 +395,23 @@ export async function notifyDraftPickThrottled(params: {
   if (rows.length > 0) {
     const { error } = await supabase.from('notifications').insert(rows)
     if (!error) {
-      // Send push to recipients with push_enabled (fire-and-forget)
+      // Send push to recipients with push_enabled + push_draft (fire-and-forget)
       const rowUserIds = rows.map(r => r.user_id)
       Promise.resolve(
         supabase
           .from('notification_preferences')
-          .select('user_id')
+          .select('user_id, push_draft')
           .in('user_id', rowUserIds)
           .eq('push_enabled', true)
       )
-        .then(({ data: pushPrefs }) => {
-          if (pushPrefs && pushPrefs.length > 0) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        .then(({ data: pushPrefs }: { data: any[] | null }) => {
+          if (!pushPrefs || pushPrefs.length === 0) return
+          const pushRecipients = pushPrefs.filter((p: any) => p.push_draft !== false)
+          if (pushRecipients.length > 0) {
             const url = buildNotificationUrl('draft_pick_made', { leagueId, draftId }, leagueId)
             sendPushToUsers(
-              pushPrefs.map(p => p.user_id),
+              pushRecipients.map(p => p.user_id),
               { title, body, url, type: 'draft_pick_made', icon: '/icon-192.png' }
             )
           }

@@ -1233,6 +1233,20 @@ export interface Database {
           email_transaction_confirmations: boolean
           email_league_announcements: boolean
           push_enabled: boolean
+          push_draft: boolean
+          push_game_results: boolean
+          push_trades: boolean
+          push_transactions: boolean
+          push_announcements: boolean
+          push_chat_mentions: boolean
+          push_league_activity: boolean
+          inapp_draft: boolean
+          inapp_game_results: boolean
+          inapp_trades: boolean
+          inapp_transactions: boolean
+          inapp_announcements: boolean
+          inapp_chat_mentions: boolean
+          inapp_league_activity: boolean
           created_at: string
           updated_at: string | null
         }
@@ -1244,6 +1258,20 @@ export interface Database {
           email_transaction_confirmations?: boolean
           email_league_announcements?: boolean
           push_enabled?: boolean
+          push_draft?: boolean
+          push_game_results?: boolean
+          push_trades?: boolean
+          push_transactions?: boolean
+          push_announcements?: boolean
+          push_chat_mentions?: boolean
+          push_league_activity?: boolean
+          inapp_draft?: boolean
+          inapp_game_results?: boolean
+          inapp_trades?: boolean
+          inapp_transactions?: boolean
+          inapp_announcements?: boolean
+          inapp_chat_mentions?: boolean
+          inapp_league_activity?: boolean
           created_at?: string
           updated_at?: string | null
         }
@@ -1255,6 +1283,20 @@ export interface Database {
           email_transaction_confirmations?: boolean
           email_league_announcements?: boolean
           push_enabled?: boolean
+          push_draft?: boolean
+          push_game_results?: boolean
+          push_trades?: boolean
+          push_transactions?: boolean
+          push_announcements?: boolean
+          push_chat_mentions?: boolean
+          push_league_activity?: boolean
+          inapp_draft?: boolean
+          inapp_game_results?: boolean
+          inapp_trades?: boolean
+          inapp_transactions?: boolean
+          inapp_announcements?: boolean
+          inapp_chat_mentions?: boolean
+          inapp_league_activity?: boolean
           created_at?: string
           updated_at?: string | null
         }
