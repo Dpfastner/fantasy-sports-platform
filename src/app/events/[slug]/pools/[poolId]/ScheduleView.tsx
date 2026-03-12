@@ -32,7 +32,6 @@ interface ScheduleViewProps {
 
 const roundLabels: Record<string, string> = {
   regional_quarterfinal: 'Regional Quarterfinals',
-  regional_semifinal: 'Regional Semifinals',
   regional_final: 'Regional Finals',
   semifinal: 'Frozen Four Semifinals',
   championship: 'Championship',
@@ -81,7 +80,7 @@ export function ScheduleView({ games, participants, format }: ScheduleViewProps)
 
   // Sort rounds in logical order
   const roundOrder = [
-    'regional_quarterfinal', 'regional_semifinal', 'regional_final',
+    'regional_quarterfinal', 'regional_final',
     'semifinal', 'championship', 'third_place',
     'Round 1', 'Round 2', 'Round 3', 'Round 4', 'Round 5',
   ]

@@ -2,7 +2,7 @@
 
 > **Platform Name**: Rivyls (rivyls.com)
 > **Current Sport**: College Football (base for multi-sport expansion)
-> **Last Updated**: March 12, 2026 (Phases 0-32, 34 complete)
+> **Last Updated**: March 12, 2026 (Phases 0-32, 34, 36a-b complete)
 > **Audit Date**: February 27, 2026 (full codebase audit of Phases 0-21)
 
 ---
@@ -46,7 +46,10 @@
     - [Phase 32: Pre-Launch Tasks](#phase-32-pre-launch-tasks) ✅
 16. **COMPLETE — Browser Push Notifications**
     - [Phase 34: Browser Push Notifications](#phase-34-browser-push-notifications) ✅
-17. **UPCOMING**
+17. **COMPLETE — Event System**
+    - Phase 36a: Event System Core (Tier 0) ✅
+    - Phase 36b: Event Pool Feature Parity ✅
+18. **UPCOMING**
     - [Future Phases 33, 35-39](#future-phases)
 
 ---
@@ -1760,7 +1763,10 @@ This breaks leagues mid-season. A team vanishing from the leaderboard with all h
 | **Phase 33** | Email Notifications | Transactional emails via Resend: draft reminders, trade proposals, weekly recaps, commissioner nudge delivery, pre-season reactivation reminders. Unsubscribe links on all non-transactional (CAN-SPAM). Extends Phase 25.5 in-app notifications + Phase 31.4/31.5 commissioner notifications. Uses `notification_preferences` schema from Phase 14.12. **Blocked until DNS transfer to Cloudflare (April 21, 2026).** | Post-Apr 21 |
 | **Phase 34** ✅ | Browser Push Notifications | Service worker + Web Push API. VAPID auth, per-type push preferences (push_draft, push_game_results, etc.), auto-prompt on first login, dead subscription cleanup, fire-and-forget delivery integrated into createNotification/notifyLeagueMembers/notifyDraftPickThrottled. Settings UI with master toggle + 7 per-type toggles. Migrations: 043 (push_subscriptions), 044 (per-type prefs), 045 (default push_enabled=true). | ✅ Mar 12, 2026 |
 | **Phase 35** | Pro Tier + Stripe | **Additive features only** — do NOT gate existing features (per business strategy). AI Draft Assistant (populate `program_analytics`/`program_trends`), Season Projections, Transaction Intelligence, Live Game Insights, Waiver Wire Rankings. New game modes: H2H Weekly Matchups, Conference-Specific Leagues. Stripe subscription billing ($4.99/mo or $29.99/yr). Founding Commissioners get Pro free for life. | Year 2 |
-| **Phase 36** | Multi-Sport Architecture | **Tier 0 (Apr 2026)**: Port bracket engine (from hockey-bracket), pick'em engine (new), survivor engine (from rugby-survivor) to Rivyls/Supabase. Launch: Frozen Four bracket, Masters matchups, Women's Six Nations survivor, Men's Six Nations pick'em. **Tier 1 (Summer→Nov 2026)**: Full multi-sport season refactor. Add Men's/Women's CBB, NCAA Hockey, College Baseball, Women's Volleyball. **Tier 2 (Year 1)**: WNBA, MLS, Softball, Lacrosse, March Madness, annual events. **Tier 3 (Year 2+)**: NFL (Winner/Loser format), Premier League, Champions League, Liga MX, NBA/MLB/NHL (innovative formats). Full plan: `~/.claude/plans/structured-cooking-sketch.md` | Tier 0: Mar-Apr 2026, Tier 1: Summer 2026, Tier 2-3: Year 1-2 |
+| **Phase 36a** ✅ | Event System Core (Tier 0) | Database schema (migrations 046-048): `event_tournaments`, `event_pools`, `event_entries`, `event_picks`, `event_games`, `event_participants`, `event_pool_weeks`, `event_activity_log`. Three game engines: bracket, pick'em, survivor. ESPN adapters for hockey/rugby/golf. Event pages: `/events`, `/events/[slug]`, `/events/[slug]/pools/[poolId]`. Seeded Frozen Four 2026 (16 teams, 15 games). Pool create/join flow with invite codes. Bracket picker, pick'em picker, survivor picker UIs. Leaderboard component. `event-sync` cron (6-hourly). | ✅ Mar 12, 2026 |
+| **Phase 36b** ✅ | Event Pool Feature Parity | **Live scores**: `event-gameday-sync` cron (GitHub Actions, every 10min, smart windowing 30min before→4hr after games). Period/clock/live_status columns on `event_games`. **Pool detail parity**: Activity feed, chat + reactions, announcements (creator-only), schedule view with live scores, scoring breakdown on all 3 picker formats, rules display. **Scoring customization**: Per-round point values with presets (Standard, Upset Heavy, Final Four Focus). **Share/invite**: ShareButton with social sharing (X, Facebook, WhatsApp, Instagram, TikTok), OG image generation (`/api/og/pool`), OpenGraph + Twitter Card metadata. **Dashboard**: Live game badges on event cards, "Events" in header nav. **Notifications**: Pool joined, deadline reminders (24hr), results posted, elimination/survived, tournament starting — all wired into existing `createNotification`/`notifyPoolMembers` with preference checking. **DB fix**: Code referenced nonexistent `score`/`rank` columns on `event_entries` — fixed to use `total_points` (rank computed at read time). | ✅ Mar 12, 2026 |
+| **Phase 36c** | Event System Remaining | **Member management**: Remove member API, entry fee/prize display columns. **Additional sports**: Masters Tournament (golf pick'em/matchups), Women's Six Nations (survivor), Men's Six Nations (pick'em). **Polish**: Unsaved changes detection on settings, "Start Your Bracket" hero CTA for new members. Full plan: `~/.claude/plans/structured-cooking-sketch.md` | Tier 0: Mar-Apr 2026 |
+| **Phase 36d** | Multi-Sport Season Engine (Tier 1) | Full multi-sport season refactor. Add Men's/Women's CBB, NCAA Hockey, College Baseball, Women's Volleyball. **Tier 2 (Year 1)**: WNBA, MLS, Softball, Lacrosse, March Madness, annual events. **Tier 3 (Year 2+)**: NFL (Winner/Loser format), Premier League, Champions League, Liga MX, NBA/MLB/NHL (innovative formats). | Tier 1: Summer 2026, Tier 2-3: Year 1-2 |
 | **Phase 37** | AI Support Agent | Claude-powered help desk: users submit tickets via in-app form, Claude triages and auto-responds to common questions (scoring rules, roster management, trade rules). For bugs/issues, Claude analyzes the problem and proposes fixes. Admin dashboard to review tickets, escalate, and approve Claude's suggested code changes. Reduces support burden before August launch. | Pre-launch (Jul 2026) |
 | **Phase 38** | Ads Infrastructure | Non-intrusive ads on free tier (footer banners, interstitials between pages — NOT during drafts or live scoring). Pro users see no ads. Ad impression tracking for revenue reporting. | Year 2 |
 | **Phase 39** | Native Mobile / PWA | iOS/Android app. Native push notifications. | Year 2-3 |

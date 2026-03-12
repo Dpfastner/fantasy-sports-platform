@@ -155,30 +155,29 @@ export function PoolDetailClient({
     standard: {
       label: 'Standard',
       description: 'Balanced scoring across all rounds',
-      rules: { regional_quarterfinal: 1, regional_semifinal: 2, regional_final: 4, semifinal: 8, championship: 16 },
+      rules: { regional_quarterfinal: 2, regional_final: 4, semifinal: 8, championship: 16 },
     },
     upset_heavy: {
       label: 'Upset Heavy',
       description: 'Early rounds worth more — rewards bold picks',
-      rules: { regional_quarterfinal: 3, regional_semifinal: 4, regional_final: 5, semifinal: 8, championship: 12 },
+      rules: { regional_quarterfinal: 4, regional_final: 5, semifinal: 8, championship: 12 },
     },
     final_four_focus: {
       label: 'Final Four Focus',
       description: 'Late rounds heavily weighted',
-      rules: { regional_quarterfinal: 1, regional_semifinal: 1, regional_final: 2, semifinal: 12, championship: 24 },
+      rules: { regional_quarterfinal: 1, regional_final: 2, semifinal: 12, championship: 24 },
     },
   }
 
   const roundLabels: Record<string, string> = {
     regional_quarterfinal: 'Quarterfinal',
-    regional_semifinal: 'Semifinal',
     regional_final: 'Regional Final',
     semifinal: 'Frozen Four',
     championship: 'Championship',
   }
 
   const defaultScoringRules: Record<string, number> = {
-    regional_quarterfinal: 1, regional_semifinal: 2, regional_final: 4, semifinal: 8, championship: 16,
+    regional_quarterfinal: 2, regional_final: 4, semifinal: 8, championship: 16,
   }
 
   const activeScoringRules = settingsScoringRules || defaultScoringRules

@@ -4,6 +4,9 @@ import { useState, useMemo } from 'react'
 import { useToast } from '@/components/Toast'
 import { trackEventActivity } from '@/app/actions/activity'
 import { track } from '@vercel/analytics'
+import { useBracketPicks } from './useBracketPicks'
+import { BracketGrid } from './BracketGrid'
+import { BracketList } from './BracketList'
 
 interface Participant {
   id: string
@@ -19,10 +22,14 @@ interface Game {
   gameNumber: number
   participant1Id: string | null
   participant2Id: string | null
+  participant1Score?: number | null
+  participant2Score?: number | null
   startsAt: string
   status: string
   result: Record<string, unknown> | null
   winnerId?: string | null
+  period?: string | null
+  clock?: string | null
 }
 
 interface UserPick {
@@ -46,6 +53,24 @@ interface BracketPickerProps {
   scoringRules?: Record<string, unknown> | null
 }
 
+const DEFAULT_SCORING: Record<string, number> = {
+  regional_quarterfinal: 2,
+  regional_final: 4,
+  semifinal: 8,
+  championship: 16,
+}
+
+const ROUND_LABELS: Record<string, string> = {
+  regional_quarterfinal: 'Regional Quarterfinals',
+  regional_final: 'Regional Finals',
+  semifinal: 'Frozen Four Semifinals',
+  championship: 'Championship',
+  round_1: 'Round 1',
+  round_2: 'Round 2',
+  round_3: 'Round 3',
+  round_4: 'Round 4',
+}
+
 export function BracketPicker({
   entryId,
   tournamentId,
@@ -62,62 +87,37 @@ export function BracketPicker({
   const { addToast } = useToast()
   const [isSubmitting, setIsSubmitting] = useState(false)
 
-  // Default scoring per round (matches event-sync and event-gameday-sync)
-  const defaultScoring: Record<string, number> = {
-    'regional_quarterfinal': 1,
-    'regional_semifinal': 2,
-    'regional_final': 4,
-    'semifinal': 8,
-    'championship': 16,
-  }
-  const roundScoring: Record<string, number> = (scoringRules && typeof scoringRules === 'object' && Object.keys(scoringRules).length > 0)
-    ? scoringRules as Record<string, number>
-    : defaultScoring
+  const isLocked = poolStatus !== 'open'
 
-  // Build picks map: gameId -> participantId
-  const initialPicksMap: Record<string, string> = {}
-  for (const pick of existingPicks) {
-    if (pick.gameId) initialPicksMap[pick.gameId] = pick.participantId
-  }
-  const [picks, setPicks] = useState<Record<string, string>>(initialPicksMap)
+  // Resolve scoring rules — use pool's custom rules or defaults
+  const roundScoring: Record<string, number> = useMemo(() => {
+    if (scoringRules && typeof scoringRules === 'object' && Object.keys(scoringRules).length > 0) {
+      return scoringRules as Record<string, number>
+    }
+    return DEFAULT_SCORING
+  }, [scoringRules])
+
+  // Bracket picks hook — handles propagation, cascade clearing, dirty tracking
+  const {
+    picks,
+    bracketMap,
+    handlePick,
+    getParticipantForSlot,
+    pickedCount,
+    totalGames,
+  } = useBracketPicks({
+    games,
+    participants,
+    existingPicks,
+    isLocked,
+  })
 
   // Tiebreaker state
-  const [tiebreaker, setTiebreaker] = useState(existingTiebreaker || { team1_score: 0, team2_score: 0 })
+  const [tiebreaker, setTiebreaker] = useState(
+    existingTiebreaker || { team1_score: 0, team2_score: 0 },
+  )
 
-  const participantMap = useMemo(() => {
-    const m: Record<string, Participant> = {}
-    for (const p of participants) m[p.id] = p
-    return m
-  }, [participants])
-
-  // Group games by round
-  const roundGroups = useMemo(() => {
-    const groups: Record<string, Game[]> = {}
-    for (const game of games) {
-      if (!groups[game.round]) groups[game.round] = []
-      groups[game.round].push(game)
-    }
-    return groups
-  }, [games])
-
-  const roundOrder = Object.keys(roundGroups)
-
-  const roundLabels: Record<string, string> = {
-    regional_quarterfinal: 'Regional Quarterfinals',
-    regional_final: 'Regional Finals',
-    semifinal: 'Frozen Four Semifinals',
-    championship: 'Championship',
-    round_1: 'Round 1',
-    round_2: 'Round 2',
-    round_3: 'Round 3',
-    round_4: 'Round 4',
-  }
-
-  const isLocked = poolStatus !== 'open'
-  const totalGames = games.length
-  const pickedCount = Object.keys(picks).length
-
-  // Scoring breakdown: compute per-game and total earned points
+  // Scoring breakdown for results display
   const scoringBreakdown = useMemo(() => {
     let totalEarned = 0
     let totalPossible = 0
@@ -152,17 +152,15 @@ export function BracketPicker({
 
   const hasAnyResults = games.some(g => g.status === 'final' || g.status === 'completed')
 
-  const handlePick = (gameId: string, participantId: string) => {
-    if (isLocked) return
-    setPicks(prev => {
-      if (prev[gameId] === participantId) {
-        const next = { ...prev }
-        delete next[gameId]
-        return next
-      }
-      return { ...prev, [gameId]: participantId }
-    })
-  }
+  // Group games by round for scoring summary
+  const roundGroups = useMemo(() => {
+    const groups: Record<string, Game[]> = {}
+    for (const game of games) {
+      if (!groups[game.round]) groups[game.round] = []
+      groups[game.round].push(game)
+    }
+    return groups
+  }, [games])
 
   const handleSubmit = async () => {
     if (pickedCount === 0) {
@@ -206,11 +204,6 @@ export function BracketPicker({
     } finally {
       setIsSubmitting(false)
     }
-  }
-
-  const getParticipantForSlot = (participantId: string | null) => {
-    if (!participantId) return null
-    return participantMap[participantId] || null
   }
 
   return (
@@ -259,7 +252,8 @@ export function BracketPicker({
               const roundGames = roundGroups[round] || []
               const roundCorrect = roundGames.filter(g => scoringBreakdown.perGame[g.id]?.correct === true).length
               const roundTotal = roundGames.length
-              const label = roundLabels[round] || round.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
+              if (roundTotal === 0) return null
+              const label = ROUND_LABELS[round] || round.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
               return (
                 <div key={round} className="flex-1 bg-surface-inset rounded px-2 py-1.5 text-center">
                   <div className="text-[10px] text-text-muted truncate">{label}</div>
@@ -272,104 +266,31 @@ export function BracketPicker({
         </div>
       )}
 
-      {/* Rounds */}
-      <div className="space-y-6">
-        {roundOrder.map((round) => (
-          <div key={round}>
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="brand-h3 text-base text-text-primary">{roundLabels[round] || round.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}</h3>
-              {roundScoring[round] != null && (
-                <span className="text-xs text-text-muted">{roundScoring[round]} pt{roundScoring[round] !== 1 ? 's' : ''} each</span>
-              )}
-            </div>
-            <div className="space-y-3">
-              {roundGroups[round].map((game) => {
-                const p1 = getParticipantForSlot(game.participant1Id)
-                const p2 = getParticipantForSlot(game.participant2Id)
-                const picked = picks[game.id]
-                const isFinal = game.status === 'final' || game.status === 'completed'
-                const winnerId = game.winnerId || (isFinal && game.result ? (game.result as Record<string, string>)?.winner_id : null)
-                const hasResult = isFinal && !!winnerId
-                const gameScore = scoringBreakdown.perGame[game.id]
+      {/* Visual Bracket — Desktop */}
+      <div className="hidden md:block">
+        <BracketGrid
+          games={games}
+          participants={participants}
+          picks={picks}
+          bracketMap={bracketMap}
+          scoringRules={roundScoring}
+          isLocked={isLocked}
+          onPick={handlePick}
+          getParticipantForSlot={getParticipantForSlot}
+        />
+      </div>
 
-                return (
-                  <div
-                    key={game.id}
-                    className="bg-surface rounded-lg border border-border overflow-hidden"
-                  >
-                    <div className="text-xs text-text-muted px-3 py-1.5 bg-surface-inset border-b border-border flex justify-between">
-                      <span>Game {game.gameNumber}</span>
-                      <div className="flex items-center gap-2">
-                        {hasResult && picked && gameScore && (
-                          <span className={`font-medium ${gameScore.correct ? 'text-success-text' : 'text-danger-text'}`}>
-                            {gameScore.correct ? `+${gameScore.earned}` : '+0'} pt{gameScore.possible !== 1 ? 's' : ''}
-                          </span>
-                        )}
-                        {isFinal && <span className="text-success-text">Final</span>}
-                      </div>
-                    </div>
-
-                    {/* Participant 1 */}
-                    <button
-                      onClick={() => p1 && handlePick(game.id, p1.id)}
-                      disabled={isLocked || !p1}
-                      className={`w-full flex items-center justify-between px-3 py-2.5 text-left transition-colors ${
-                        picked === p1?.id
-                          ? winnerId
-                            ? winnerId === p1?.id
-                              ? 'bg-success/10 border-l-2 border-l-success'
-                              : 'bg-danger/10 border-l-2 border-l-danger'
-                            : 'bg-brand/10 border-l-2 border-l-brand'
-                          : 'hover:bg-surface-subtle'
-                      } ${!p1 ? 'cursor-default' : ''}`}
-                    >
-                      <div className="flex items-center gap-2 min-w-0">
-                        {p1?.seed && <span className="text-xs text-text-muted w-4 text-right shrink-0">{p1.seed}</span>}
-                        <span className={`text-sm truncate ${picked === p1?.id ? 'font-medium text-text-primary' : 'text-text-secondary'}`}>
-                          {p1?.name || 'TBD'}
-                        </span>
-                      </div>
-                      {picked === p1?.id && (
-                        <svg className="w-4 h-4 text-brand shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                        </svg>
-                      )}
-                    </button>
-
-                    <div className="border-t border-border-subtle" />
-
-                    {/* Participant 2 */}
-                    <button
-                      onClick={() => p2 && handlePick(game.id, p2.id)}
-                      disabled={isLocked || !p2}
-                      className={`w-full flex items-center justify-between px-3 py-2.5 text-left transition-colors ${
-                        picked === p2?.id
-                          ? winnerId
-                            ? winnerId === p2?.id
-                              ? 'bg-success/10 border-l-2 border-l-success'
-                              : 'bg-danger/10 border-l-2 border-l-danger'
-                            : 'bg-brand/10 border-l-2 border-l-brand'
-                          : 'hover:bg-surface-subtle'
-                      } ${!p2 ? 'cursor-default' : ''}`}
-                    >
-                      <div className="flex items-center gap-2 min-w-0">
-                        {p2?.seed && <span className="text-xs text-text-muted w-4 text-right shrink-0">{p2.seed}</span>}
-                        <span className={`text-sm truncate ${picked === p2?.id ? 'font-medium text-text-primary' : 'text-text-secondary'}`}>
-                          {p2?.name || 'TBD'}
-                        </span>
-                      </div>
-                      {picked === p2?.id && (
-                        <svg className="w-4 h-4 text-brand shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                        </svg>
-                      )}
-                    </button>
-                  </div>
-                )
-              })}
-            </div>
-          </div>
-        ))}
+      {/* Stacked Rounds — Mobile */}
+      <div className="block md:hidden">
+        <BracketList
+          games={games}
+          picks={picks}
+          bracketMap={bracketMap}
+          scoringRules={roundScoring}
+          isLocked={isLocked}
+          onPick={handlePick}
+          getParticipantForSlot={getParticipantForSlot}
+        />
       </div>
 
       {/* Tiebreaker */}

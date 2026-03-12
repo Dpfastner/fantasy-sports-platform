@@ -473,8 +473,7 @@ async function scoreBracketPicks(admin: ReturnType<typeof createAdminClient>, to
   }
 
   const defaultScoring: Record<string, number> = {
-    'regional_quarterfinal': 1,
-    'regional_semifinal': 2,
+    'regional_quarterfinal': 2,
     'regional_final': 4,
     'semifinal': 8,
     'championship': 16,
