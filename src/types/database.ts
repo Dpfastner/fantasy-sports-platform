@@ -1260,6 +1260,37 @@ export interface Database {
         }
       }
 
+      // Push notification subscriptions (Web Push API)
+      push_subscriptions: {
+        Row: {
+          id: string
+          user_id: string
+          endpoint: string
+          p256dh: string
+          auth: string
+          user_agent: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          endpoint: string
+          p256dh: string
+          auth: string
+          user_agent?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          endpoint?: string
+          p256dh?: string
+          auth?: string
+          user_agent?: string | null
+          created_at?: string
+        }
+      }
+
       // Watchlists (user school bookmarks)
       watchlists: {
         Row: {

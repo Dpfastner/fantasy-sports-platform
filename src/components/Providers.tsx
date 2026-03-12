@@ -1,6 +1,6 @@
 'use client'
 
-import { ReactNode } from 'react'
+import { ReactNode, useEffect } from 'react'
 import { ToastProvider } from './Toast'
 import { PaletteProvider } from './PaletteProvider'
 import PaletteSwitcher from './PaletteSwitcher'
@@ -12,6 +12,15 @@ interface ProvidersProps {
 }
 
 export function Providers({ children }: ProvidersProps) {
+  // Register service worker for push notifications
+  useEffect(() => {
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js').catch((err) => {
+        console.error('[sw] Registration failed:', err)
+      })
+    }
+  }, [])
+
   return (
     <PaletteProvider>
       <ToastProvider>

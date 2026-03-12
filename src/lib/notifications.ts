@@ -1,4 +1,5 @@
 import { createAdminClient } from '@/lib/supabase/server'
+import { sendPushToUser, sendPushToUsers } from '@/lib/push'
 
 /**
  * All notification types in the platform.
@@ -46,6 +47,46 @@ const TYPE_TO_PREF: Record<string, string> = {
 }
 
 /**
+ * Build an absolute URL for a notification's navigation target.
+ * Server-side equivalent of getNotificationHref() in NotificationBell.tsx.
+ */
+function buildNotificationUrl(
+  type: string,
+  data: Record<string, unknown>,
+  leagueId?: string | null
+): string {
+  const base = process.env.NEXT_PUBLIC_SITE_URL || 'https://rivyls.com'
+  const lid = (data?.leagueId as string) || leagueId
+  if (!lid) return `${base}/dashboard`
+
+  switch (type) {
+    case 'draft_started':
+    case 'draft_your_turn':
+      return `${base}/leagues/${lid}/draft`
+    case 'draft_completed':
+    case 'league_joined':
+      return `${base}/leagues/${lid}`
+    case 'announcement_posted':
+      return `${base}/leagues/${lid}`
+    case 'transaction_completed':
+      return `${base}/leagues/${lid}/transactions`
+    case 'trade_accepted':
+      return `${base}/leagues/${lid}/team`
+    case 'trade_proposed':
+    case 'trade_rejected':
+    case 'trade_cancelled':
+    case 'trade_vetoed':
+    case 'trade_expired':
+    case 'trade_expiring':
+      return `${base}/leagues/${lid}/team`
+    case 'game_results':
+      return `${base}/leagues/${lid}`
+    default:
+      return `${base}/dashboard`
+  }
+}
+
+/**
  * Check if a user has opted out of a notification type.
  * Returns true if the notification should be delivered.
  */
@@ -65,6 +106,36 @@ async function shouldDeliver(userId: string, type: NotificationType): Promise<bo
   return (data as any)[prefColumn] !== false
 }
 
+/**
+ * Send a push notification to a user if push_enabled is true.
+ * Fire-and-forget.
+ */
+function maybeSendPush(
+  userId: string,
+  type: NotificationType,
+  title: string,
+  body: string,
+  data: Record<string, unknown>,
+  leagueId?: string | null
+): void {
+  const supabase = createAdminClient()
+  Promise.resolve(
+    supabase
+      .from('notification_preferences')
+      .select('push_enabled')
+      .eq('user_id', userId)
+      .maybeSingle()
+  )
+    .then(({ data: pref }) => {
+      if (pref?.push_enabled !== true) return
+      const url = buildNotificationUrl(type, data, leagueId)
+      sendPushToUser(userId, { title, body, url, type, icon: '/icon-192.png' })
+    })
+    .catch(() => {
+      // Push is best-effort, don't fail the notification
+    })
+}
+
 interface CreateNotificationParams {
   userId: string
   leagueId?: string | null
@@ -77,6 +148,7 @@ interface CreateNotificationParams {
 /**
  * Create a single notification for a user.
  * Respects user in-app notification preferences.
+ * Also sends a browser push notification if enabled.
  * Fire-and-forget — never blocks the calling request.
  */
 export function createNotification(params: CreateNotificationParams): void {
@@ -99,6 +171,9 @@ export function createNotification(params: CreateNotificationParams): void {
       .then(({ error }) => {
         if (error) {
           console.error(`[notifications] Failed to create ${type}:`, error.message)
+        } else {
+          // Send push notification (fire-and-forget)
+          maybeSendPush(userId, type, title, body, data, leagueId)
         }
       })
   }).catch(err => {
@@ -125,6 +200,7 @@ interface NotifyLeagueMembersParams {
 /**
  * Send a notification to all members of a league, optionally excluding a user.
  * Respects user in-app notification preferences.
+ * Also sends browser push notifications to enabled users.
  * Fire-and-forget.
  */
 export async function notifyLeagueMembers(params: NotifyLeagueMembersParams): Promise<void> {
@@ -184,6 +260,28 @@ export async function notifyLeagueMembers(params: NotifyLeagueMembersParams): Pr
 
   if (insertError) {
     console.error(`[notifications] Failed to notify league members (${type}):`, insertError.message)
+  } else {
+    // Send push to recipients with push_enabled (fire-and-forget)
+    const recipientIds = recipients.map(r => r.user_id)
+    Promise.resolve(
+      supabase
+        .from('notification_preferences')
+        .select('user_id')
+        .in('user_id', recipientIds)
+        .eq('push_enabled', true)
+    )
+      .then(({ data: pushPrefs }) => {
+        if (pushPrefs && pushPrefs.length > 0) {
+          const url = buildNotificationUrl(type, data, leagueId)
+          sendPushToUsers(
+            pushPrefs.map(p => p.user_id),
+            { title, body, url, type, icon: '/icon-192.png' }
+          )
+        }
+      })
+      .catch(() => {
+        // Push is best-effort
+      })
   }
 }
 
@@ -191,6 +289,7 @@ export async function notifyLeagueMembers(params: NotifyLeagueMembersParams): Pr
  * Send draft_pick_made notifications with throttle.
  * Skips users who already have >= 3 unread draft_pick_made notifications for this draft.
  * Respects user in-app notification preferences.
+ * Also sends push notifications to throttle-eligible users.
  */
 export async function notifyDraftPickThrottled(params: {
   leagueId: string
@@ -258,7 +357,29 @@ export async function notifyDraftPickThrottled(params: {
 
   if (rows.length > 0) {
     const { error } = await supabase.from('notifications').insert(rows)
-    if (error) {
+    if (!error) {
+      // Send push to recipients with push_enabled (fire-and-forget)
+      const rowUserIds = rows.map(r => r.user_id)
+      Promise.resolve(
+        supabase
+          .from('notification_preferences')
+          .select('user_id')
+          .in('user_id', rowUserIds)
+          .eq('push_enabled', true)
+      )
+        .then(({ data: pushPrefs }) => {
+          if (pushPrefs && pushPrefs.length > 0) {
+            const url = buildNotificationUrl('draft_pick_made', { leagueId, draftId }, leagueId)
+            sendPushToUsers(
+              pushPrefs.map(p => p.user_id),
+              { title, body, url, type: 'draft_pick_made', icon: '/icon-192.png' }
+            )
+          }
+        })
+        .catch(() => {
+          // Push is best-effort
+        })
+    } else {
       console.error('[notifications] Failed to send throttled draft notifications:', error.message)
     }
   }

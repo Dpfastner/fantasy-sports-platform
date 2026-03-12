@@ -54,6 +54,10 @@ export default function SettingsPage() {
   const [inappChatMentions, setInappChatMentions] = useState(true)
   const [inappLeagueActivity, setInappLeagueActivity] = useState(true)
   const [savingNotifications, setSavingNotifications] = useState(false)
+  // Push notifications
+  const [pushEnabled, setPushEnabled] = useState(false)
+  const [pushPermission, setPushPermission] = useState<NotificationPermission>('default')
+  const [pushLoading, setPushLoading] = useState(false)
 
   // Account deletion
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
@@ -98,7 +102,7 @@ export default function SettingsPage() {
       // Load notification preferences
       const { data: notifData } = await supabase
         .from('notification_preferences')
-        .select('email_game_results, email_draft_reminders, email_transaction_confirmations, email_league_announcements, inapp_draft, inapp_game_results, inapp_trades, inapp_transactions, inapp_announcements, inapp_chat_mentions, inapp_league_activity')
+        .select('email_game_results, email_draft_reminders, email_transaction_confirmations, email_league_announcements, inapp_draft, inapp_game_results, inapp_trades, inapp_transactions, inapp_announcements, inapp_chat_mentions, inapp_league_activity, push_enabled')
         .eq('user_id', user.id)
         .maybeSingle()
 
@@ -114,6 +118,12 @@ export default function SettingsPage() {
         if (notifData.inapp_announcements !== undefined) setInappAnnouncements(notifData.inapp_announcements)
         if (notifData.inapp_chat_mentions !== undefined) setInappChatMentions(notifData.inapp_chat_mentions)
         if (notifData.inapp_league_activity !== undefined) setInappLeagueActivity(notifData.inapp_league_activity)
+        if (notifData.push_enabled !== undefined) setPushEnabled(notifData.push_enabled)
+      }
+
+      // Check browser push notification permission
+      if (typeof window !== 'undefined' && 'Notification' in window) {
+        setPushPermission(Notification.permission)
       }
 
       setLoading(false)
@@ -276,6 +286,7 @@ export default function SettingsPage() {
         inapp_announcements: inappAnnouncements,
         inapp_chat_mentions: inappChatMentions,
         inapp_league_activity: inappLeagueActivity,
+        push_enabled: pushEnabled,
       }
 
       // Upsert: create if not exists, update if exists
@@ -630,6 +641,103 @@ export default function SettingsPage() {
               checked={inappLeagueActivity}
               onChange={setInappLeagueActivity}
             />
+          </div>
+
+          {/* Push Notifications */}
+          <h3 className="text-sm font-semibold text-text-secondary uppercase tracking-wide mb-3">Push Notifications</h3>
+          <p className="text-text-muted text-sm mb-3">
+            Receive browser notifications even when you&apos;re not on Rivyls.
+          </p>
+          <div className="mb-6">
+            {pushPermission === 'denied' ? (
+              <div className="flex items-center justify-between py-2">
+                <div>
+                  <p className="text-text-primary text-sm font-medium">Push Notifications</p>
+                  <p className="text-text-muted text-xs">Blocked by your browser. Update your browser notification settings to enable push notifications.</p>
+                </div>
+                <div className="relative w-10 h-6 rounded-full bg-surface-inset opacity-50 cursor-not-allowed">
+                  <div className="absolute top-1 w-4 h-4 rounded-full bg-white translate-x-1" />
+                </div>
+              </div>
+            ) : (
+              <label className="flex items-center justify-between py-2 cursor-pointer">
+                <div>
+                  <p className="text-text-primary text-sm font-medium">
+                    Push Notifications
+                    {pushLoading && <span className="text-text-muted text-xs ml-2">Setting up...</span>}
+                  </p>
+                  <p className="text-text-muted text-xs">
+                    {pushEnabled
+                      ? 'You will receive browser notifications for draft alerts, trades, scores, and more.'
+                      : 'Enable to get real-time alerts for drafts, trades, and scores.'}
+                  </p>
+                </div>
+                <div
+                  onClick={async (e) => {
+                    e.preventDefault()
+                    if (pushLoading) return
+                    setPushLoading(true)
+
+                    try {
+                      if (!pushEnabled) {
+                        // Enable: request permission + subscribe
+                        const permission = await Notification.requestPermission()
+                        setPushPermission(permission)
+                        if (permission !== 'granted') {
+                          setPushLoading(false)
+                          return
+                        }
+
+                        const reg = await navigator.serviceWorker.ready
+                        const subscription = await reg.pushManager.subscribe({
+                          userVisibleOnly: true,
+                          applicationServerKey: process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY,
+                        })
+
+                        const sub = subscription.toJSON()
+                        await fetch('/api/push/subscribe', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({
+                            endpoint: sub.endpoint,
+                            keys: sub.keys,
+                          }),
+                        })
+
+                        setPushEnabled(true)
+                      } else {
+                        // Disable: unsubscribe
+                        const reg = await navigator.serviceWorker.ready
+                        const subscription = await reg.pushManager.getSubscription()
+                        if (subscription) {
+                          await fetch('/api/push/unsubscribe', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ endpoint: subscription.endpoint }),
+                          })
+                          await subscription.unsubscribe()
+                        }
+                        setPushEnabled(false)
+                      }
+                    } catch (err) {
+                      console.error('[push] Toggle failed:', err)
+                      showMessage('error', 'Failed to update push notifications. Please try again.')
+                    } finally {
+                      setPushLoading(false)
+                    }
+                  }}
+                  className={`relative w-10 h-6 rounded-full transition-colors ${
+                    pushEnabled ? 'bg-brand' : 'bg-surface-inset'
+                  } ${pushLoading ? 'opacity-50' : ''}`}
+                >
+                  <div
+                    className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-transform ${
+                      pushEnabled ? 'translate-x-5' : 'translate-x-1'
+                    }`}
+                  />
+                </div>
+              </label>
+            )}
           </div>
 
           {/* Email Notifications */}

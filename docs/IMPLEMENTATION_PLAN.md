@@ -2,7 +2,7 @@
 
 > **Platform Name**: Rivyls (rivyls.com)
 > **Current Sport**: College Football (base for multi-sport expansion)
-> **Last Updated**: March 10, 2026 (Phases 28.5, 29, 30 complete)
+> **Last Updated**: March 11, 2026 (Phases 0-32 complete)
 > **Audit Date**: February 27, 2026 (full codebase audit of Phases 0-21)
 
 ---
@@ -40,8 +40,12 @@
     - [Phase 29: Mobile Responsiveness](#phase-29-mobile-responsiveness) ✅
 13. **COMPLETE — Fan Engagement**
     - [Phase 30: Favorite Teams & Banner Collection](#phase-30-favorite-teams--banner-collection) ✅
-14. **POST-LAUNCH / YEAR 2**
-    - [Future Phases 31-36](#future-phases)
+14. **COMPLETE — Season Infrastructure**
+    - [Phase 31: Historical Season Caching](#phase-31-historical-season-caching) ✅
+15. **COMPLETE — Pre-Launch Hardening**
+    - [Phase 32: Pre-Launch Tasks](#phase-32-pre-launch-tasks) ✅
+16. **UPCOMING**
+    - [Future Phases 33-38](#future-phases)
 
 ---
 
@@ -1693,20 +1697,61 @@ This breaks leagues mid-season. A team vanishing from the leaderboard with all h
 
 ---
 
+## Phase 31: Historical Season Caching ✅
+
+**Status**: COMPLETE (March 10, 2026)
+
+**Context**: Leagues persist across seasons. After a championship, leagues go dormant and can be reactivated by the commissioner for the next season. Members can view historical data. This enables Year 2+ without losing league identity.
+
+- **League lifecycle**: `active` → `dormant` (auto-archived after championship) → `active` (commissioner reactivates)
+- **season_id FK** added to: `fantasy_team_weekly_points`, `weekly_double_picks`, `roster_periods`, `transactions`
+- **Reactivation**: soft-deletes old teams, creates new ones preserving names/colors, resets draft
+- **Nudge system**: members can remind commissioner once per 24hrs (`commissioner_nudged_at` on `league_members`)
+- **Pre-season cron**: daily-sync notifies commissioners 30 days before next season
+- **DormantRouteGuard**: client component redirects blocked sub-pages (allows `/history`)
+- **Migration**: `supabase/migrations/040_season_caching.sql`
+
+| Task | Description |
+|------|-------------|
+| 31.1 | ✅ Season caching migration — season_id FKs, league status column, dormant flow |
+| 31.2 | ✅ League reactivation flow — commissioner dashboard, new teams, draft reset |
+| 31.3 | ✅ Historical season viewer — past standings, weekly points, roster history |
+| 31.4 | ✅ Commissioner nudge notifications — member can remind commissioner to reactivate |
+| 31.5 | ✅ Pre-season cron reminders — daily-sync alerts commissioners 30 days before season |
+| 31.6 | ✅ DormantRouteGuard — block league sub-pages when dormant (except /history) |
+
+---
+
+## Phase 32: Pre-Launch Tasks ✅
+
+**Status**: COMPLETE (March 11, 2026)
+
+**Context**: Business strategy review (`docs/BUSINESS_UPDATE_FOR_CLAUDE_CODE.md`) identified 7 pre-launch priorities. Age gate was already 18+. Remaining tasks: FAQ/Help Center, ESPN API monitoring, admin manual score override, accessibility audit, load testing analysis, storage estimation + cleanup optimization.
+
+| Task | Description |
+|------|-------------|
+| 32.1 | ✅ FAQ / Help Center at `/help` — 7 categories, 30+ questions, search, accordion. New: `src/app/help/page.tsx`, `src/components/HelpCenter.tsx`. Links in Header + Footer. |
+| 32.2 | ✅ Admin manual score override at `/admin/scores` — season/week selector, inline score editing, Save & Recalculate, Clear Overrides. Migration: `041_manual_score_override.sql`. |
+| 32.3 | ✅ ESPN API monitoring at `/admin/monitoring` — response validation, structure hashing, Sentry alerting on changes. Migration: `042_espn_api_monitoring.sql`. New: `src/lib/api/espn-monitor.ts`. |
+| 32.4 | ✅ Accessibility audit — WCAG AA contrast fixes for Heritage Field (`text-muted` lightened) and Warm Kickoff (`text-muted` darkened, `warning` darkened). |
+| 32.5 | ✅ Storage estimation — ~40 MB/season at 1,000 users. Free tier (500 MB) handles 10+ seasons. |
+| 32.6 | ✅ Notification cleanup — nightly reconcile cron deletes read notifications >90 days, ESPN health checks >30 days. |
+| 32.7 | ✅ Extracted `ADMIN_USER_IDS` to `src/lib/constants/admin.ts` (shared across admin layout + server actions). |
+
+---
+
 ## Future Phases
 
-*Post-launch and Year 2 features.*
+*Upcoming development phases, aligned with business strategy document (March 2026).*
 
 | Phase | Features | Notes | Timeline |
 |-------|----------|-------|----------|
-| **Phase 30** ✅ | Favorite Teams & Banner Collection | Multi-sport favorite teams (`user_sport_favorites` table), 3D fabric banner with color toggle, banner picker on profile, SchoolPicker in league join/create flows, light-color detection for visibility. | Mar 2026 |
-| **Phase 31** | Historical season caching | Archive past seasons, returning user experience. Extends Phase 25.6 with full multi-season data. | Mar-Apr 2026 |
-| **Phase 32** | Multi-sport architecture | Refactor architecture so college football patterns don't block other sports. Abstract week/season, rankings, game types, scoring rules, awards. Create sport config table and API adapters. | Year 2 |
-| **Phase 33** | Premium features launch | Activate feature flags, build premium UI: pre-draft intelligence, live analytics, transaction intelligence, custom scoring templates, what-if simulator, power rankings, custom league themes, early draft access. Pro subscriptions ($4.99/mo or $29.99/yr). | Year 2 |
-| **Phase 34** | Payment integration (Stripe) | Entry fees, prize payouts, charity pooling, Pro subscription billing. **Requires gaming attorney consultation if adding paid entry leagues (NAICS reclassification risk).** | Year 2 |
-| **Phase 35** | Multi-sport launch (Hockey) | First sport after CFB using Phase 32 architecture. | Year 2 |
-| **Phase 36** | Native mobile / PWA | Mobile-optimized experience | Year 2+ |
-| **Phase 37** | Email/push notifications | Game updates, draft reminders, transaction confirmations. Uses `notification_preferences` schema from Phase 14.12. Extends Phase 25.5 in-app notifications with email delivery. **Also add email delivery for**: commissioner nudge notifications (Phase 31.4) and pre-season reactivation reminders (Phase 31.5). **Blocked until DNS transfer to Cloudflare.** | Post-DNS transfer |
+| **Phase 33** | Email Notifications | Transactional emails via Resend: draft reminders, trade proposals, weekly recaps, commissioner nudge delivery, pre-season reactivation reminders. Unsubscribe links on all non-transactional (CAN-SPAM). Extends Phase 25.5 in-app notifications + Phase 31.4/31.5 commissioner notifications. Uses `notification_preferences` schema from Phase 14.12. **Blocked until DNS transfer to Cloudflare (April 21, 2026).** | Post-Apr 21 |
+| **Phase 34** | Browser Push Notifications | Service worker + Web Push API. Real-time draft alerts, gameday scoring updates, trade activity. Extends in-app notifications (Phase 25.5) to work when user isn't on the site. *Note: In-app notifications already work via Supabase Realtime — this adds browser-level push.* | Pre-launch (Jul 2026) |
+| **Phase 35** | Pro Tier + Stripe | **Additive features only** — do NOT gate existing features (per business strategy). AI Draft Assistant (populate `program_analytics`/`program_trends`), Season Projections, Transaction Intelligence, Live Game Insights, Waiver Wire Rankings. New game modes: H2H Weekly Matchups, Conference-Specific Leagues. Stripe subscription billing ($4.99/mo or $29.99/yr). Founding Commissioners get Pro free for life. | Year 2 |
+| **Phase 36** | Multi-Sport Architecture | Abstract scoring by sport. Sport config table + API adapters. College basketball as first expansion (Nov-Apr fills football off-season gap). Refactor week/season, rankings, game types, scoring rules. | Year 2 |
+| **Phase 37** | Ads Infrastructure | Non-intrusive ads on free tier (footer banners, interstitials between pages — NOT during drafts or live scoring). Pro users see no ads. Ad impression tracking for revenue reporting. | Year 2 |
+| **Phase 38** | Native Mobile / PWA | iOS/Android app. Native push notifications. | Year 2-3 |
 
 ---
 
@@ -1724,6 +1769,7 @@ This breaks leagues mid-season. A team vanishing from the leaderboard with all h
 ### Revenue Model
 - **Year 1**: Everything free. $0 revenue. Goal: 100 leagues, 1,000 users playing a full season.
 - **Year 2**: Rivyls Pro at $4.99/mo or $29.99/yr. Stripe integration. Founding Commissioners get Pro free for life.
+- **Pro strategy (revised March 2026)**: Additive features only — do NOT gate existing features. Pro adds AI Draft Assistant, Season Projections, Transaction Intelligence, Live Game Insights, H2H Matchups, Conference Leagues. See `docs/BUSINESS_UPDATE_FOR_CLAUDE_CODE.md` Section 2 for full strategy.
 
 ### NAICS 713990 Implications for Development
 The platform is classified as recreation/entertainment, NOT gambling. This means:
@@ -1796,4 +1842,4 @@ The platform is classified as recreation/entertainment, NOT gambling. This means
 
 ---
 
-*Last Updated: March 10, 2026 (Phases 28.5, 29, 30 COMPLETE)*
+*Last Updated: March 11, 2026 (Phases 0-32 COMPLETE)*
