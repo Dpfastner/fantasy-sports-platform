@@ -18,6 +18,7 @@ import { NextResponse } from 'next/server'
 import * as Sentry from '@sentry/nextjs'
 import { createAdminClient } from '@/lib/supabase/server'
 import { areCronsEnabled, getEnvironment } from '@/lib/env'
+import { notifyPoolMembers } from '@/lib/notifications'
 import {
   fetchHockeyTournamentGames,
   fetchRugbyMatches,
@@ -402,6 +403,22 @@ export async function GET(request: Request) {
           await scorePickemPicks(admin, tournamentId)
         }
         results[`scoring_${tournamentId}`] = { triggered: true, format }
+
+        // Notify pool members about results (fire-and-forget)
+        const { data: scoredPools } = await admin
+          .from('event_pools')
+          .select('id, name, tournament_id, event_tournaments(slug)')
+          .eq('tournament_id', tournamentId)
+        for (const sp of scoredPools || []) {
+          const slug = (sp.event_tournaments as unknown as { slug: string })?.slug
+          notifyPoolMembers({
+            poolId: sp.id,
+            type: 'event_results',
+            title: 'Scores updated',
+            body: `Games have finished and scores have been updated in ${sp.name}.`,
+            data: { poolId: sp.id, tournamentSlug: slug },
+          })
+        }
       } catch (err) {
         console.error(`[event-gameday-sync] Scoring error for ${tournamentId}:`, err)
         Sentry.captureException(err, { tags: { cron: 'event-gameday-sync', action: 'scoring', tournamentId } })
@@ -517,6 +534,13 @@ async function scoreSurvivorPicks(
   if (!pools?.length) return
 
   for (const pool of pools) {
+    // Get tournament slug for notification URLs
+    const { data: poolTournament } = await admin
+      .from('event_tournaments')
+      .select('slug, name')
+      .eq('id', tournamentId)
+      .single()
+
     const { data: weeks } = await admin
       .from('event_pool_weeks')
       .select('id, week_number, deadline, resolution_status')
@@ -544,7 +568,7 @@ async function scoreSurvivorPicks(
 
       const { data: entries } = await admin
         .from('event_entries')
-        .select('id, score, is_active')
+        .select('id, user_id, score, is_active')
         .eq('pool_id', pool.id)
         .eq('is_active', true)
 
@@ -563,6 +587,15 @@ async function scoreSurvivorPicks(
             .from('event_entries')
             .update({ is_active: false, updated_at: new Date().toISOString() })
             .eq('id', entry.id)
+          // Notify: eliminated (missed deadline)
+          const { createNotification } = await import('@/lib/notifications')
+          createNotification({
+            userId: entry.user_id,
+            type: 'event_eliminated',
+            title: 'Eliminated - Missed Pick',
+            body: `You missed the Round ${week.week_number} deadline and have been eliminated.`,
+            data: { poolId: pool.id, tournamentSlug: poolTournament?.slug },
+          })
           continue
         }
 
@@ -571,6 +604,15 @@ async function scoreSurvivorPicks(
             .from('event_entries')
             .update({ is_active: false, updated_at: new Date().toISOString() })
             .eq('id', entry.id)
+          // Notify: eliminated (wrong pick)
+          const { createNotification } = await import('@/lib/notifications')
+          createNotification({
+            userId: entry.user_id,
+            type: 'event_eliminated',
+            title: 'Eliminated',
+            body: `Your Round ${week.week_number} pick lost. Better luck next time!`,
+            data: { poolId: pool.id, tournamentSlug: poolTournament?.slug },
+          })
         } else {
           await admin
             .from('event_entries')
@@ -579,6 +621,15 @@ async function scoreSurvivorPicks(
               updated_at: new Date().toISOString(),
             })
             .eq('id', entry.id)
+          // Notify: survived
+          const { createNotification } = await import('@/lib/notifications')
+          createNotification({
+            userId: entry.user_id,
+            type: 'event_survived',
+            title: 'You survived!',
+            body: `Your Round ${week.week_number} pick won. You advance to the next round.`,
+            data: { poolId: pool.id, tournamentSlug: poolTournament?.slug },
+          })
         }
       }
 

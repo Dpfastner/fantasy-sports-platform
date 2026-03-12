@@ -8,6 +8,7 @@ import {
   fetchGolfLeaderboard,
   syncGameResults,
 } from '@/lib/events/espn-adapters'
+import { notifyPoolMembers, createNotification } from '@/lib/notifications'
 
 // Verify the request is from Vercel Cron
 function verifyCronRequest(request: Request): boolean {
@@ -341,6 +342,95 @@ export async function GET(request: Request) {
       } catch {
         // Non-critical, don't fail the cron
       }
+    }
+
+    // ── Deadline reminders: notify pool members 24hrs before deadline ──
+    try {
+      const now = new Date()
+      const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000)
+
+      // Find open pools with a deadline in the next 24 hours
+      const { data: openPools } = await admin
+        .from('event_pools')
+        .select('id, name, deadline, tournament_id, event_tournaments(slug, starts_at)')
+        .eq('status', 'open')
+
+      for (const pool of openPools || []) {
+        const t = pool.event_tournaments as unknown as { slug: string; starts_at: string }
+        // Use pool deadline or tournament start as the effective deadline
+        const effectiveDeadline = pool.deadline || t?.starts_at
+        if (!effectiveDeadline) continue
+
+        const deadlineDate = new Date(effectiveDeadline)
+        // Only send if deadline is between now and 24hrs from now
+        if (deadlineDate <= now || deadlineDate > tomorrow) continue
+
+        // Find members who haven't submitted picks yet
+        const { data: entries } = await admin
+          .from('event_entries')
+          .select('id, user_id, submitted_at')
+          .eq('pool_id', pool.id)
+
+        for (const entry of entries || []) {
+          if (entry.submitted_at) continue // Already submitted
+          createNotification({
+            userId: entry.user_id,
+            type: 'event_deadline',
+            title: 'Picks deadline approaching',
+            body: `${pool.name} locks in less than 24 hours. Submit your picks!`,
+            data: { poolId: pool.id, tournamentSlug: t?.slug },
+          })
+        }
+      }
+
+      // Survivor week deadlines
+      const { data: pendingWeeks } = await admin
+        .from('event_pool_weeks')
+        .select('id, pool_id, week_number, deadline')
+        .eq('resolution_status', 'pending')
+
+      for (const week of pendingWeeks || []) {
+        const deadlineDate = new Date(week.deadline)
+        if (deadlineDate <= now || deadlineDate > tomorrow) continue
+
+        const { data: poolInfo } = await admin
+          .from('event_pools')
+          .select('name, event_tournaments(slug)')
+          .eq('id', week.pool_id)
+          .single()
+
+        if (!poolInfo) continue
+        const slug = (poolInfo.event_tournaments as unknown as { slug: string })?.slug
+
+        // Find active entries without a pick for this week
+        const { data: activeEntries } = await admin
+          .from('event_entries')
+          .select('id, user_id')
+          .eq('pool_id', week.pool_id)
+          .eq('is_active', true)
+
+        for (const entry of activeEntries || []) {
+          const { data: existingPick } = await admin
+            .from('event_picks')
+            .select('id')
+            .eq('entry_id', entry.id)
+            .eq('week_number', week.week_number)
+            .maybeSingle()
+
+          if (existingPick) continue // Already picked
+
+          createNotification({
+            userId: entry.user_id,
+            type: 'event_deadline',
+            title: `Round ${week.week_number} deadline approaching`,
+            body: `Submit your survivor pick for ${poolInfo.name} before the deadline!`,
+            data: { poolId: week.pool_id, tournamentSlug: slug },
+          })
+        }
+      }
+    } catch (err) {
+      console.error('[event-sync] Deadline reminder error:', err)
+      // Non-critical, don't fail the cron
     }
 
     // Check if any tournaments should transition status

@@ -184,27 +184,40 @@ export function SurvivorPicker({
         </p>
       </div>
 
-      {/* Previous picks summary */}
+      {/* Previous picks with W/L history */}
       {existingPicks.length > 0 && (
         <div className="mb-4">
-          <h4 className="text-xs text-text-muted mb-2 uppercase tracking-wide">Previous Picks</h4>
-          <div className="flex flex-wrap gap-2">
+          <h4 className="text-xs text-text-muted mb-2 uppercase tracking-wide">Pick History</h4>
+          <div className="space-y-1.5">
             {poolWeeks
               .filter(w => w.week_number < currentWeek.week_number && picksByWeek[w.week_number])
               .map(w => {
                 const p = participantMap[picksByWeek[w.week_number]]
                 const resolved = w.resolution_status === 'resolved'
+                // If still active after this resolved week, the pick survived
+                const survived = resolved && isActive
                 return (
-                  <span
+                  <div
                     key={w.week_number}
-                    className={`text-xs px-2 py-1 rounded-md border ${
+                    className={`flex items-center justify-between text-xs px-3 py-2 rounded-md border ${
                       resolved
-                        ? 'border-success/30 bg-success/10 text-success-text'
-                        : 'border-border bg-surface-inset text-text-muted'
+                        ? 'border-success/30 bg-success/5'
+                        : 'border-border bg-surface-inset'
                     }`}
                   >
-                    R{w.week_number}: {p?.shortName || p?.name || '?'}
-                  </span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-text-muted font-medium w-8">R{w.week_number}</span>
+                      <span className="text-text-secondary">{p?.name || '?'}</span>
+                    </div>
+                    {resolved && (
+                      <span className={`font-medium ${survived ? 'text-success-text' : 'text-danger-text'}`}>
+                        {survived ? 'W' : 'L'}
+                      </span>
+                    )}
+                    {!resolved && (
+                      <span className="text-text-muted">Pending</span>
+                    )}
+                  </div>
                 )
               })}
           </div>

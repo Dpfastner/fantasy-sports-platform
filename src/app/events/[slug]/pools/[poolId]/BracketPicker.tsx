@@ -22,6 +22,7 @@ interface Game {
   startsAt: string
   status: string
   result: Record<string, unknown> | null
+  winnerId?: string | null
 }
 
 interface UserPick {
@@ -42,6 +43,7 @@ interface BracketPickerProps {
   tiebreakerType: string
   existingTiebreaker: { team1_score: number; team2_score: number } | null
   submittedAt: string | null
+  scoringRules?: Record<string, unknown> | null
 }
 
 export function BracketPicker({
@@ -55,9 +57,22 @@ export function BracketPicker({
   tiebreakerType,
   existingTiebreaker,
   submittedAt,
+  scoringRules,
 }: BracketPickerProps) {
   const { addToast } = useToast()
   const [isSubmitting, setIsSubmitting] = useState(false)
+
+  // Default scoring per round (matches event-sync and event-gameday-sync)
+  const defaultScoring: Record<string, number> = {
+    'regional_quarterfinal': 1,
+    'regional_semifinal': 2,
+    'regional_final': 4,
+    'semifinal': 8,
+    'championship': 16,
+  }
+  const roundScoring: Record<string, number> = (scoringRules && typeof scoringRules === 'object' && Object.keys(scoringRules).length > 0)
+    ? scoringRules as Record<string, number>
+    : defaultScoring
 
   // Build picks map: gameId -> participantId
   const initialPicksMap: Record<string, string> = {}
@@ -101,6 +116,41 @@ export function BracketPicker({
   const isLocked = poolStatus !== 'open'
   const totalGames = games.length
   const pickedCount = Object.keys(picks).length
+
+  // Scoring breakdown: compute per-game and total earned points
+  const scoringBreakdown = useMemo(() => {
+    let totalEarned = 0
+    let totalPossible = 0
+    let correctCount = 0
+    let incorrectCount = 0
+    const perGame: Record<string, { earned: number; possible: number; correct: boolean | null }> = {}
+
+    for (const game of games) {
+      const pts = roundScoring[game.round] || 0
+      const winnerId = game.winnerId || (game.result as Record<string, string>)?.winner_id || null
+      const isFinal = game.status === 'final' || game.status === 'completed'
+      const picked = picks[game.id]
+
+      totalPossible += pts
+
+      if (isFinal && winnerId && picked) {
+        const isCorrect = picked === winnerId
+        perGame[game.id] = { earned: isCorrect ? pts : 0, possible: pts, correct: isCorrect }
+        if (isCorrect) {
+          totalEarned += pts
+          correctCount++
+        } else {
+          incorrectCount++
+        }
+      } else {
+        perGame[game.id] = { earned: 0, possible: pts, correct: null }
+      }
+    }
+
+    return { totalEarned, totalPossible, correctCount, incorrectCount, perGame }
+  }, [games, picks, roundScoring])
+
+  const hasAnyResults = games.some(g => g.status === 'final' || g.status === 'completed')
 
   const handlePick = (gameId: string, participantId: string) => {
     if (isLocked) return
@@ -192,18 +242,55 @@ export function BracketPicker({
         </div>
       )}
 
+      {/* Scoring Summary */}
+      {hasAnyResults && (
+        <div className="bg-surface rounded-lg border border-border p-4 mb-4">
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="text-sm font-semibold text-text-primary">Scoring Breakdown</h3>
+            <span className="text-lg font-bold text-brand">{scoringBreakdown.totalEarned} pts</span>
+          </div>
+          <div className="flex gap-4 text-xs text-text-muted">
+            <span className="text-success-text">{scoringBreakdown.correctCount} correct</span>
+            <span className="text-danger-text">{scoringBreakdown.incorrectCount} incorrect</span>
+            <span>{totalGames - scoringBreakdown.correctCount - scoringBreakdown.incorrectCount} remaining</span>
+          </div>
+          <div className="mt-2 flex gap-1">
+            {Object.entries(roundScoring).map(([round, pts]) => {
+              const roundGames = roundGroups[round] || []
+              const roundCorrect = roundGames.filter(g => scoringBreakdown.perGame[g.id]?.correct === true).length
+              const roundTotal = roundGames.length
+              const label = roundLabels[round] || round.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
+              return (
+                <div key={round} className="flex-1 bg-surface-inset rounded px-2 py-1.5 text-center">
+                  <div className="text-[10px] text-text-muted truncate">{label}</div>
+                  <div className="text-xs font-medium text-text-primary">{roundCorrect}/{roundTotal}</div>
+                  <div className="text-[10px] text-text-muted">{pts} pt{pts !== 1 ? 's' : ''} each</div>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
+
       {/* Rounds */}
       <div className="space-y-6">
         {roundOrder.map((round) => (
           <div key={round}>
-            <h3 className="brand-h3 text-base text-text-primary mb-3">{roundLabels[round] || round.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}</h3>
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="brand-h3 text-base text-text-primary">{roundLabels[round] || round.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}</h3>
+              {roundScoring[round] != null && (
+                <span className="text-xs text-text-muted">{roundScoring[round]} pt{roundScoring[round] !== 1 ? 's' : ''} each</span>
+              )}
+            </div>
             <div className="space-y-3">
               {roundGroups[round].map((game) => {
                 const p1 = getParticipantForSlot(game.participant1Id)
                 const p2 = getParticipantForSlot(game.participant2Id)
                 const picked = picks[game.id]
-                const hasResult = game.status === 'final' && game.result
-                const winnerId = hasResult ? (game.result as Record<string, string>)?.winner_id : null
+                const isFinal = game.status === 'final' || game.status === 'completed'
+                const winnerId = game.winnerId || (isFinal && game.result ? (game.result as Record<string, string>)?.winner_id : null)
+                const hasResult = isFinal && !!winnerId
+                const gameScore = scoringBreakdown.perGame[game.id]
 
                 return (
                   <div
@@ -212,7 +299,14 @@ export function BracketPicker({
                   >
                     <div className="text-xs text-text-muted px-3 py-1.5 bg-surface-inset border-b border-border flex justify-between">
                       <span>Game {game.gameNumber}</span>
-                      {game.status === 'final' && <span className="text-success-text">Final</span>}
+                      <div className="flex items-center gap-2">
+                        {hasResult && picked && gameScore && (
+                          <span className={`font-medium ${gameScore.correct ? 'text-success-text' : 'text-danger-text'}`}>
+                            {gameScore.correct ? `+${gameScore.earned}` : '+0'} pt{gameScore.possible !== 1 ? 's' : ''}
+                          </span>
+                        )}
+                        {isFinal && <span className="text-success-text">Final</span>}
+                      </div>
                     </div>
 
                     {/* Participant 1 */}

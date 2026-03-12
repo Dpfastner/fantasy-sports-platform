@@ -342,6 +342,7 @@ export function PoolDetailClient({
               tiebreakerType={pool.tiebreaker}
               existingTiebreaker={userEntry.tiebreakerPrediction}
               submittedAt={userEntry.submittedAt}
+              scoringRules={pool.scoringRules}
             />
           )}
           {tournament.format === 'survivor' && (

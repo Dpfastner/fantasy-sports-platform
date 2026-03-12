@@ -45,11 +45,25 @@ function getNotificationIcon(type: string): string {
     case 'trade_cancelled': return '↩️'
     case 'trade_expired':
     case 'trade_expiring': return '⏳'
+    case 'event_eliminated': return '💀'
+    case 'event_survived': return '🎉'
+    case 'event_deadline': return '⏰'
+    case 'event_results': return '📊'
+    case 'event_pool_joined': return '👋'
+    case 'event_tournament_starting': return '🏟️'
     default: return '🔔'
   }
 }
 
 function getNotificationHref(notification: Notification): string | null {
+  // Event notifications use poolId + tournamentSlug for routing
+  if (notification.type.startsWith('event_')) {
+    const poolId = notification.data?.poolId as string
+    const slug = notification.data?.tournamentSlug as string
+    if (poolId && slug) return `/events/${slug}/pools/${poolId}`
+    return '/events'
+  }
+
   const leagueId = notification.data?.leagueId || notification.league_id
   if (!leagueId) return null
 

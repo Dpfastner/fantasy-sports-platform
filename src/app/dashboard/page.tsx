@@ -173,6 +173,7 @@ export default async function DashboardPage() {
     id: string
     name: string
     status: string
+    tournamentId: string
     tournament: {
       name: string
       slug: string
@@ -188,11 +189,12 @@ export default async function DashboardPage() {
   }
 
   let eventPools: EventPool[] = []
+  let liveGameCounts: Record<string, number> = {}
   if (userEventEntries?.length) {
     const poolIds = userEventEntries.map(e => e.pool_id)
     const { data: pools } = await admin
       .from('event_pools')
-      .select('id, name, status, event_tournaments(name, slug, sport, format, status)')
+      .select('id, name, status, tournament_id, event_tournaments(name, slug, sport, format, status)')
       .in('id', poolIds)
 
     // Get entry counts per pool
@@ -206,6 +208,19 @@ export default async function DashboardPage() {
       countMap[e.pool_id] = (countMap[e.pool_id] || 0) + 1
     }
 
+    // Check for live games in each tournament
+    const tournamentIds = [...new Set((pools || []).map(p => p.tournament_id))]
+    if (tournamentIds.length > 0) {
+      const { data: liveGames } = await admin
+        .from('event_games')
+        .select('tournament_id')
+        .in('tournament_id', tournamentIds)
+        .eq('status', 'live')
+      for (const g of liveGames || []) {
+        liveGameCounts[g.tournament_id] = (liveGameCounts[g.tournament_id] || 0) + 1
+      }
+    }
+
     eventPools = (pools || []).map(p => {
       const t = p.event_tournaments as unknown as { name: string; slug: string; sport: string; format: string; status: string }
       const entry = userEventEntries.find(e => e.pool_id === p.id)
@@ -213,6 +228,7 @@ export default async function DashboardPage() {
         id: p.id,
         name: p.name,
         status: p.status,
+        tournamentId: p.tournament_id,
         tournament: t,
         entryCount: countMap[p.id] || 0,
         userScore: entry?.score || 0,
@@ -366,13 +382,21 @@ export default async function DashboardPage() {
                         <h3 className="text-lg font-semibold text-text-primary">{pool.name}</h3>
                         <p className="text-text-muted text-sm">{pool.tournament.name}</p>
                       </div>
-                      <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${
-                        pool.status === 'open' ? 'bg-success/20 text-success-text' :
-                        pool.status === 'locked' ? 'bg-warning/20 text-warning-text' :
-                        'bg-surface-inset text-text-muted'
-                      }`}>
-                        {pool.status}
-                      </span>
+                      <div className="flex items-center gap-1.5">
+                        {liveGameCounts[pool.tournamentId] > 0 && (
+                          <span className="inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full bg-danger/20 text-danger-text">
+                            <span className="w-1.5 h-1.5 rounded-full bg-danger animate-pulse" />
+                            Live
+                          </span>
+                        )}
+                        <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${
+                          pool.status === 'open' ? 'bg-success/20 text-success-text' :
+                          pool.status === 'locked' ? 'bg-warning/20 text-warning-text' :
+                          'bg-surface-inset text-text-muted'
+                        }`}>
+                          {pool.status}
+                        </span>
+                      </div>
                     </div>
                     <div className="space-y-1 text-text-secondary text-sm">
                       <p className="flex items-center gap-2">
@@ -389,6 +413,12 @@ export default async function DashboardPage() {
                           <span>
                             {pool.userRank === 1 ? '1st' : pool.userRank === 2 ? '2nd' : pool.userRank === 3 ? '3rd' : `${pool.userRank}th`} of {pool.entryCount}
                           </span>
+                        </p>
+                      )}
+                      {pool.userScore > 0 && (
+                        <p className="flex items-center gap-2">
+                          <span>&#x2B50;</span>
+                          <span>{pool.userScore} pts</span>
                         </p>
                       )}
                       {!pool.submittedAt && pool.status === 'open' && (

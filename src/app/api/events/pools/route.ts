@@ -3,6 +3,7 @@ import * as Sentry from '@sentry/nextjs'
 import { createClient as createServerClient, createAdminClient } from '@/lib/supabase/server'
 import { validateBody } from '@/lib/api/validation'
 import { eventPoolCreateSchema, eventPoolJoinSchema } from '@/lib/api/schemas'
+import { notifyPoolMembers } from '@/lib/notifications'
 import { createRateLimiter, getClientIp } from '@/lib/api/rate-limit'
 import { logActivity } from '@/lib/activity'
 
@@ -218,6 +219,22 @@ export async function POST(request: Request) {
         details: { display_name: displayName?.trim() || null },
       })
       logActivity({ userId: user.id, action: 'event.pool_joined', details: { poolId: pool.id, tournamentId: pool.tournament_id } })
+
+      // Notify other pool members (fire-and-forget)
+      const { data: tournament } = await admin
+        .from('event_tournaments')
+        .select('slug')
+        .eq('id', pool.tournament_id)
+        .single()
+      const joinName = displayName?.trim() || user.email?.split('@')[0] || 'Someone'
+      notifyPoolMembers({
+        poolId: pool.id,
+        excludeUserId: user.id,
+        type: 'event_pool_joined',
+        title: `${joinName} joined ${pool.name}`,
+        body: `A new member has joined your pool.`,
+        data: { poolId: pool.id, tournamentSlug: tournament?.slug },
+      })
 
       return NextResponse.json({
         success: true,

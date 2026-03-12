@@ -22,6 +22,7 @@ interface Game {
   startsAt: string
   status: string
   result: Record<string, unknown> | null
+  winnerId?: string | null
 }
 
 interface UserPick {
@@ -82,6 +83,22 @@ export function PickemPicker({
   const isLocked = poolStatus !== 'open'
   const totalGames = games.filter(g => g.participant1Id && g.participant2Id).length
   const pickedCount = Object.keys(picks).length
+
+  // Scoring summary
+  const scoringSummary = useMemo(() => {
+    let correct = 0
+    let incorrect = 0
+    for (const game of games) {
+      const winnerId = game.winnerId || (game.result as Record<string, string>)?.winner_id || null
+      const isFinal = game.status === 'final' || game.status === 'completed'
+      const picked = picks[game.id]
+      if (isFinal && winnerId && picked) {
+        if (picked === winnerId) correct++
+        else incorrect++
+      }
+    }
+    return { correct, incorrect, hasResults: correct + incorrect > 0 }
+  }, [games, picks])
 
   const handlePick = (gameId: string, participantId: string) => {
     if (isLocked) return
@@ -159,6 +176,21 @@ export function PickemPicker({
         </div>
       )}
 
+      {/* Scoring Summary */}
+      {scoringSummary.hasResults && (
+        <div className="bg-surface rounded-lg border border-border p-4 mb-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-semibold text-text-primary">Results</h3>
+            <span className="text-lg font-bold text-brand">{scoringSummary.correct} / {scoringSummary.correct + scoringSummary.incorrect}</span>
+          </div>
+          <div className="flex gap-4 text-xs text-text-muted mt-1">
+            <span className="text-success-text">{scoringSummary.correct} correct</span>
+            <span className="text-danger-text">{scoringSummary.incorrect} incorrect</span>
+            <span>{totalGames - scoringSummary.correct - scoringSummary.incorrect} remaining</span>
+          </div>
+        </div>
+      )}
+
       {/* Rounds */}
       <div className="space-y-6">
         {roundOrder.map((round) => (
@@ -169,8 +201,8 @@ export function PickemPicker({
                 const p1 = game.participant1Id ? participantMap[game.participant1Id] : null
                 const p2 = game.participant2Id ? participantMap[game.participant2Id] : null
                 const picked = picks[game.id]
-                const hasResult = game.status === 'final' && game.result
-                const winnerId = hasResult ? (game.result as Record<string, string>)?.winner_id : null
+                const isFinal = game.status === 'final' || game.status === 'completed'
+                const winnerId = game.winnerId || (isFinal && game.result ? (game.result as Record<string, string>)?.winner_id : null)
 
                 if (!p1 && !p2) return null
 
@@ -209,7 +241,7 @@ export function PickemPicker({
                       {/* VS divider */}
                       <div className="flex items-center justify-center px-3 border-x border-border bg-surface-inset">
                         <span className="text-xs text-text-muted font-medium">
-                          {game.status === 'final' ? 'Final' : 'vs'}
+                          {isFinal ? 'Final' : 'vs'}
                         </span>
                       </div>
 

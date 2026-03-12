@@ -25,6 +25,8 @@ export type NotificationType =
   | 'event_survived'
   | 'event_deadline'
   | 'event_results'
+  | 'event_pool_joined'
+  | 'event_tournament_starting'
   | 'system'
 
 /**
@@ -52,6 +54,8 @@ const TYPE_TO_PREF: Record<string, string> = {
   event_survived: 'inapp_events',
   event_deadline: 'inapp_events',
   event_results: 'inapp_events',
+  event_pool_joined: 'inapp_events',
+  event_tournament_starting: 'inapp_events',
 }
 
 /**
@@ -79,6 +83,8 @@ const TYPE_TO_PUSH_PREF: Record<string, string> = {
   event_survived: 'push_events',
   event_deadline: 'push_events',
   event_results: 'push_events',
+  event_pool_joined: 'push_events',
+  event_tournament_starting: 'push_events',
 }
 
 /**
@@ -118,13 +124,14 @@ function buildNotificationUrl(
       return `${base}/leagues/${lid}`
     case 'event_eliminated':
     case 'event_survived':
-    case 'event_results': {
+    case 'event_results':
+    case 'event_deadline':
+    case 'event_pool_joined':
+    case 'event_tournament_starting': {
       const poolId = data?.poolId as string
-      return poolId ? `${base}/events/pools/${poolId}` : `${base}/events`
-    }
-    case 'event_deadline': {
-      const eventPoolId = data?.poolId as string
-      return eventPoolId ? `${base}/events/pools/${eventPoolId}` : `${base}/events`
+      const slug = data?.tournamentSlug as string
+      if (poolId && slug) return `${base}/events/${slug}/pools/${poolId}`
+      return `${base}/events`
     }
     default:
       return `${base}/dashboard`
@@ -444,5 +451,102 @@ export async function notifyDraftPickThrottled(params: {
     } else {
       console.error('[notifications] Failed to send throttled draft notifications:', error.message)
     }
+  }
+}
+
+/**
+ * Send a notification to all members of an event pool, optionally excluding a user.
+ * Respects user in-app notification preferences.
+ * Fire-and-forget.
+ */
+export async function notifyPoolMembers(params: {
+  poolId: string
+  excludeUserId?: string | null
+  type: NotificationType
+  title: string
+  body: string
+  data?: Record<string, unknown>
+}): Promise<void> {
+  const { poolId, excludeUserId, type, title, body, data = {} } = params
+  const supabase = createAdminClient()
+
+  const { data: entries, error } = await supabase
+    .from('event_entries')
+    .select('user_id')
+    .eq('pool_id', poolId)
+
+  if (error || !entries) {
+    console.error('[notifications] Failed to fetch pool members:', error?.message)
+    return
+  }
+
+  const candidates = excludeUserId
+    ? entries.filter(e => e.user_id !== excludeUserId)
+    : entries
+
+  if (candidates.length === 0) return
+
+  // Check preferences
+  const prefColumn = TYPE_TO_PREF[type]
+  let recipients = candidates
+
+  if (prefColumn) {
+    const userIds = candidates.map(e => e.user_id)
+    const { data: prefs } = await supabase
+      .from('notification_preferences')
+      .select('user_id, inapp_events')
+      .in('user_id', userIds)
+
+    if (prefs && prefs.length > 0) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const optedOut = new Set(
+        prefs.filter(p => (p as any)[prefColumn] === false).map(p => p.user_id)
+      )
+      recipients = candidates.filter(e => !optedOut.has(e.user_id))
+    }
+  }
+
+  if (recipients.length === 0) return
+
+  const rows = recipients.map(e => ({
+    user_id: e.user_id,
+    league_id: null,
+    type,
+    title,
+    body,
+    data: { ...data, poolId },
+  }))
+
+  const { error: insertError } = await supabase.from('notifications').insert(rows)
+  if (insertError) {
+    console.error(`[notifications] Failed to notify pool members (${type}):`, insertError.message)
+  } else {
+    // Push notifications (fire-and-forget)
+    const recipientIds = recipients.map(r => r.user_id)
+    const pushPrefColumn = TYPE_TO_PUSH_PREF[type]
+    Promise.resolve(
+      supabase
+        .from('notification_preferences')
+        .select('user_id, push_events')
+        .in('user_id', recipientIds)
+        .eq('push_enabled', true)
+    )
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .then(({ data: pushPrefs }: { data: any[] | null }) => {
+        if (!pushPrefs || pushPrefs.length === 0) return
+        const pushRecipients = pushPrefColumn
+          ? pushPrefs.filter(p => (p as any)[pushPrefColumn] !== false)
+          : pushPrefs
+        if (pushRecipients.length > 0) {
+          const url = buildNotificationUrl(type, { ...data, poolId }, null)
+          sendPushToUsers(
+            pushRecipients.map(p => p.user_id),
+            { title, body, url, type, icon: '/icon-192.png' }
+          )
+        }
+      })
+      .catch(() => {
+        // Push is best-effort
+      })
   }
 }

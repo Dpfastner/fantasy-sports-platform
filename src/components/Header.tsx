@@ -54,6 +54,16 @@ export function Header({ userName, userEmail, userId, showUserMenu = true, child
           Rivyls
         </Link>
 
+        {/* Center nav */}
+        <nav className="hidden sm:flex items-center gap-4 text-sm">
+          <Link href="/dashboard" className="text-text-secondary hover:text-text-primary transition-colors">
+            Leagues
+          </Link>
+          <Link href="/events" className="text-text-secondary hover:text-text-primary transition-colors">
+            Events
+          </Link>
+        </nav>
+
         {/* Legacy children (non-league pages) */}
         {!leagueCtx && children && (
           <div className="hidden sm:flex items-center gap-4">{children}</div>
