@@ -1,5 +1,7 @@
 'use client'
 
+import Link from 'next/link'
+
 interface Member {
   id: string
   userId: string
@@ -9,6 +11,9 @@ interface Member {
   score: number
   maxPossible: number
   rank: number | null
+  primaryColor?: string | null
+  secondaryColor?: string | null
+  imageUrl?: string | null
 }
 
 interface LeaderboardProps {
@@ -71,8 +76,13 @@ export function Leaderboard({ members, format, poolStatus }: LeaderboardProps) {
                 }`}>
                   {rank}
                 </span>
-                <div className="min-w-0">
-                  <span className="text-sm text-text-primary truncate block">{member.displayName}</span>
+                <div className="min-w-0 flex items-center gap-2">
+                  {member.imageUrl ? (
+                    <img src={member.imageUrl} alt="" className="w-5 h-5 rounded-full object-cover shrink-0" />
+                  ) : member.primaryColor && member.primaryColor !== '#1a1a1a' ? (
+                    <span className="w-5 h-5 rounded-full shrink-0 border border-border" style={{ backgroundColor: member.primaryColor }} />
+                  ) : null}
+                  <Link href={`/profile/${member.userId}`} className="text-sm text-text-primary truncate hover:underline">{member.displayName}</Link>
                   {!member.isActive && format === 'survivor' && (
                     <span className="text-xs text-danger-text">Eliminated</span>
                   )}

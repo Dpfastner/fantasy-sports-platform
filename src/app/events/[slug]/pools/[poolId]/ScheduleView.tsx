@@ -1,5 +1,8 @@
 'use client'
 
+import { useState } from 'react'
+import { TournamentBracketView } from './TournamentBracketView'
+
 interface Participant {
   id: string
   name: string
@@ -28,6 +31,7 @@ interface ScheduleViewProps {
   games: Game[]
   participants: Participant[]
   format: string
+  tournamentId?: string
 }
 
 const roundLabels: Record<string, string> = {
@@ -67,7 +71,8 @@ function getStatusBadge(game: Game) {
   return <span className="text-[10px] text-text-muted">TBD</span>
 }
 
-export function ScheduleView({ games, participants, format }: ScheduleViewProps) {
+export function ScheduleView({ games, participants, format, tournamentId }: ScheduleViewProps) {
+  const [view, setView] = useState<'list' | 'bracket'>('list')
   const participantMap = new Map(participants.map(p => [p.id, p]))
 
   // Group games by round
@@ -101,8 +106,41 @@ export function ScheduleView({ games, participants, format }: ScheduleViewProps)
     )
   }
 
+  const showBracketToggle = format === 'bracket' && tournamentId
+
   return (
     <div className="space-y-6">
+      {/* Schedule/Bracket toggle */}
+      {showBracketToggle && (
+        <div className="flex gap-1 bg-surface-inset rounded-lg p-1 w-fit">
+          <button
+            onClick={() => setView('list')}
+            className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+              view === 'list' ? 'bg-surface text-text-primary shadow-sm' : 'text-text-muted hover:text-text-secondary'
+            }`}
+          >
+            Schedule
+          </button>
+          <button
+            onClick={() => setView('bracket')}
+            className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+              view === 'bracket' ? 'bg-surface text-text-primary shadow-sm' : 'text-text-muted hover:text-text-secondary'
+            }`}
+          >
+            Bracket
+          </button>
+        </div>
+      )}
+
+      {/* Bracket view */}
+      {view === 'bracket' && tournamentId ? (
+        <TournamentBracketView
+          tournamentId={tournamentId}
+          games={games}
+          participants={participants}
+        />
+      ) : (
+        <>
       {sortedRounds.map(round => {
         const roundGames = gamesByRound.get(round) || []
         const label = roundLabels[round] || round.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
@@ -189,6 +227,8 @@ export function ScheduleView({ games, participants, format }: ScheduleViewProps)
           </div>
         )
       })}
+        </>
+      )}
     </div>
   )
 }

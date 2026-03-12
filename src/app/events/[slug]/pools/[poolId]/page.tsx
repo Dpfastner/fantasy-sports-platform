@@ -227,6 +227,9 @@ export default async function PoolDetailPage({ params }: PageProps) {
       score: Number(e.total_points) || 0,
       maxPossible,
       rank: idx + 1,
+      primaryColor: (e as Record<string, unknown>).primary_color as string | null,
+      secondaryColor: (e as Record<string, unknown>).secondary_color as string | null,
+      imageUrl: (e as Record<string, unknown>).image_url as string | null,
     }
   })
 

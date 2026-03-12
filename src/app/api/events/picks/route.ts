@@ -95,7 +95,7 @@ export async function POST(request: Request) {
       .from('event_entries')
       .select(`
         id, user_id, pool_id, is_active,
-        event_pools(id, tournament_id, status, deadline, scoring_rules,
+        event_pools(id, tournament_id, status, deadline, scoring_rules, tiebreaker,
           event_tournaments(id, format, status, bracket_size)
         )
       `)
@@ -120,6 +120,7 @@ export async function POST(request: Request) {
       status: string
       deadline: string | null
       scoring_rules: Record<string, unknown>
+      tiebreaker: string
       event_tournaments: {
         id: string
         format: string
@@ -155,7 +156,7 @@ export async function POST(request: Request) {
 async function handleBracketPicks(
   rawBody: unknown,
   entry: { id: string },
-  pool: { id: string; tournament_id: string; deadline: string | null },
+  pool: { id: string; tournament_id: string; deadline: string | null; tiebreaker: string },
   admin: ReturnType<typeof createAdminClient>,
   userId: string
 ) {
@@ -163,6 +164,15 @@ async function handleBracketPicks(
   if (!validation.success) return validation.response
 
   const { picks, tiebreakerPrediction } = validation.data
+
+  // Tiebreaker validation
+  if (pool.tiebreaker !== 'none' && !tiebreakerPrediction) {
+    return NextResponse.json({ error: 'Tiebreaker prediction is required' }, { status: 400 })
+  }
+  if (pool.tiebreaker === 'championship_score' && tiebreakerPrediction &&
+      tiebreakerPrediction.team1_score === 0 && tiebreakerPrediction.team2_score === 0) {
+    return NextResponse.json({ error: 'Tiebreaker scores cannot both be zero' }, { status: 400 })
+  }
 
   // Server-side deadline enforcement
   if (pool.deadline && new Date(pool.deadline) < new Date()) {

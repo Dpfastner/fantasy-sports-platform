@@ -162,9 +162,17 @@ export function BracketPicker({
     return groups
   }, [games])
 
+  const tiebreakerRequired = tiebreakerType !== 'none'
+  const tiebreakerMissing = tiebreakerRequired && tiebreaker.team1_score === 0 && tiebreaker.team2_score === 0
+
   const handleSubmit = async () => {
     if (pickedCount === 0) {
       addToast('Make at least one pick before submitting', 'error')
+      return
+    }
+
+    if (tiebreakerMissing) {
+      addToast('Please fill out the tiebreaker prediction before submitting', 'error')
       return
     }
 
@@ -295,8 +303,16 @@ export function BracketPicker({
 
       {/* Tiebreaker */}
       {tiebreakerType === 'championship_score' && !isLocked && (
-        <div className="mt-6 bg-surface rounded-lg border border-border p-4">
-          <h3 className="text-sm font-medium text-text-primary mb-2">Tiebreaker: Predict Championship Score</h3>
+        <div className={`mt-6 bg-surface rounded-lg border p-4 ${
+          tiebreakerMissing && pickedCount > 0 ? 'border-warning' : 'border-border'
+        }`}>
+          <h3 className="text-sm font-medium text-text-primary mb-2">
+            Tiebreaker: Predict Championship Score
+            <span className="text-warning-text text-xs ml-1">(required)</span>
+          </h3>
+          {tiebreakerMissing && pickedCount > 0 && (
+            <p className="text-xs text-warning-text mb-2">Fill this out before submitting your bracket</p>
+          )}
           <div className="flex items-center gap-3">
             <input
               type="number"

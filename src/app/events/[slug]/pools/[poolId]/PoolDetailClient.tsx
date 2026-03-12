@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { useToast } from '@/components/Toast'
 import { BracketPicker } from './BracketPicker'
 import { SurvivorPicker } from './SurvivorPicker'
@@ -47,6 +48,9 @@ interface Member {
   score: number
   maxPossible: number
   rank: number | null
+  primaryColor?: string | null
+  secondaryColor?: string | null
+  imageUrl?: string | null
 }
 
 interface UserEntry {
@@ -262,8 +266,16 @@ export function PoolDetailClient({
             </p>
           </div>
 
-          {/* Invite Code + Share */}
-          <div className="flex items-center gap-2">
+          {/* Invite Code + Share + Edit Entry */}
+          <div className="flex items-center gap-2 flex-wrap">
+            {userEntry && (
+              <Link
+                href={`/events/${tournament.slug}/pools/${pool.id}/edit-entry`}
+                className="text-xs px-2 py-1.5 rounded-md border border-border text-text-muted hover:text-text-primary hover:border-brand/40 transition-colors"
+              >
+                Edit Entry
+              </Link>
+            )}
             <div className="bg-surface-inset rounded-md px-3 py-1.5 border border-border">
               <span className="text-xs text-text-muted mr-1">Code:</span>
               <span className="font-mono text-sm text-text-primary tracking-wider">{pool.inviteCode}</span>
@@ -449,6 +461,7 @@ export function PoolDetailClient({
           games={games}
           participants={participants}
           format={tournament.format}
+          tournamentId={tournament.id}
         />
       )}
 
@@ -462,7 +475,7 @@ export function PoolDetailClient({
               <div className="flex items-center gap-3">
                 <span className="text-text-muted text-sm w-6 text-right">{i + 1}</span>
                 <div>
-                  <span className="text-text-primary text-sm font-medium">{member.displayName}</span>
+                  <Link href={`/profile/${member.userId}`} className="text-text-primary text-sm font-medium hover:underline">{member.displayName}</Link>
                   {!member.isActive && (
                     <span className="ml-2 text-xs text-danger-text">Eliminated</span>
                   )}
