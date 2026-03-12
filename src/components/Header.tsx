@@ -128,6 +128,13 @@ export function Header({ userName, userEmail, userId, showUserMenu = true, child
                       Dashboard
                     </Link>
                     <Link
+                      href="/events"
+                      className="block px-4 py-2 text-sm text-text-secondary hover:bg-surface-subtle hover:text-text-primary transition-colors"
+                      onClick={() => setProfileOpen(false)}
+                    >
+                      Events
+                    </Link>
+                    <Link
                       href="/profile"
                       className="block px-4 py-2 text-sm text-text-secondary hover:bg-surface-subtle hover:text-text-primary transition-colors"
                       onClick={() => setProfileOpen(false)}
