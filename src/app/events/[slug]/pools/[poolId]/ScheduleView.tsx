@@ -44,34 +44,6 @@ const roundLabels: Record<string, string> = {
   third_place: 'Third Place',
 }
 
-function getStatusBadge(game: Game) {
-  if (game.status === 'live') {
-    return (
-      <span className="inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-danger/20 text-danger-text">
-        <span className="w-1.5 h-1.5 rounded-full bg-danger animate-pulse" />
-        LIVE {game.period && `- ${game.period}`} {game.clock && game.clock}
-      </span>
-    )
-  }
-  if (game.status === 'completed' || game.status === 'final') {
-    return (
-      <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-surface-inset text-text-muted">
-        Final
-      </span>
-    )
-  }
-  if (game.startsAt) {
-    return (
-      <span className="text-[10px] text-text-muted">
-        {new Date(game.startsAt).toLocaleString('en-US', {
-          month: 'short', day: 'numeric',
-          hour: 'numeric', minute: '2-digit',
-        })}
-      </span>
-    )
-  }
-  return <span className="text-[10px] text-text-muted">TBD</span>
-}
 
 export function ScheduleView({ games, participants, format, tournamentId, sport }: ScheduleViewProps) {
   const [view, setView] = useState<'list' | 'bracket' | 'table'>('list')
@@ -182,79 +154,111 @@ export function ScheduleView({ games, participants, format, tournamentId, sport 
                 const p2 = game.participant2Id ? participantMap.get(game.participant2Id) : null
                 const isLive = game.status === 'live'
                 const isFinal = game.status === 'completed' || game.status === 'final'
+                const p1Won = isFinal && game.winnerId === game.participant1Id
+                const p2Won = isFinal && game.winnerId === game.participant2Id
+                const hasScores = game.participant1Score != null && game.participant2Score != null
 
                 return (
                   <div
                     key={game.id}
-                    className={`bg-surface rounded-lg border p-3 ${
-                      isLive ? 'border-danger/30 bg-danger/5' : 'border-border'
+                    className={`bg-surface rounded-lg border overflow-hidden ${
+                      isLive ? 'border-danger/30' : 'border-border'
                     }`}
                   >
-                    <div className="flex items-center justify-between mb-2">
+                    {/* Status bar */}
+                    <div className={`px-3 py-1.5 text-center border-b ${
+                      isLive ? 'bg-danger/5 border-danger/20' : 'bg-surface-inset border-border'
+                    }`}>
                       <span className="text-[10px] text-text-muted">Game {game.gameNumber}</span>
-                      {getStatusBadge(game)}
-                    </div>
-
-                    {/* Matchup */}
-                    <div className="space-y-1.5">
-                      {/* Team 1 */}
-                      <div className={`flex items-center justify-between ${
-                        isFinal && game.winnerId === game.participant1Id ? 'text-success-text font-medium'
-                          : isFinal && game.winnerId && game.winnerId !== game.participant1Id ? 'text-text-muted opacity-60'
-                          : 'text-text-secondary'
-                      }`}>
-                        <div className="flex items-center gap-2">
-                          {p1?.seed && (
-                            <span className="text-[10px] text-text-muted w-4 text-right">{p1.seed}</span>
-                          )}
-                          {p1?.logoUrl && (
-                            <img src={p1.logoUrl} alt="" className="w-4 h-4 rounded-sm object-contain" />
-                          )}
-                          <span className="text-sm">{p1?.name || 'TBD'}</span>
-                          {isFinal && game.winnerId === game.participant1Id && (
-                            <svg className="w-3.5 h-3.5 text-success" fill="currentColor" viewBox="0 0 20 20">
-                              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                            </svg>
+                      {isLive ? (
+                        <div className="flex items-center justify-center gap-2 mt-0.5">
+                          <span className="inline-flex items-center gap-1 text-[10px] font-medium text-danger-text">
+                            <span className="w-1.5 h-1.5 bg-danger rounded-full animate-pulse" />
+                            LIVE
+                          </span>
+                          {(game.period || game.clock) && (
+                            <span className="text-[10px] text-text-muted">
+                              {game.period}{game.period && game.clock && ' · '}{game.clock}
+                            </span>
                           )}
                         </div>
-                        {(isLive || isFinal) && game.participant1Score != null && (
-                          <span className={`text-sm font-mono ${isLive ? 'text-text-primary font-semibold' : ''}`}>
+                      ) : isFinal ? (
+                        <div className="text-[10px] font-medium text-text-muted mt-0.5">Final</div>
+                      ) : (
+                        <div className="text-[10px] text-text-muted mt-0.5">
+                          {game.startsAt ? new Date(game.startsAt).toLocaleString('en-US', {
+                            month: 'short', day: 'numeric',
+                            hour: 'numeric', minute: '2-digit',
+                          }) : 'TBD'}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Horizontal matchup: Team 1 | vs | Team 2 */}
+                    <div className="grid grid-cols-[1fr_auto_1fr] items-stretch">
+                      {/* Team 1 — left */}
+                      <div className={`flex flex-col items-center justify-center gap-1 p-3 min-h-[80px] ${
+                        p1Won ? 'bg-success/5' : ''
+                      }`}>
+                        {p1?.logoUrl && <img src={p1.logoUrl} alt="" className="w-8 h-8 rounded-sm object-contain" />}
+                        {p1?.seed && <span className="text-[9px] text-text-muted">#{p1.seed}</span>}
+                        <span className={`text-xs font-medium text-center leading-tight ${
+                          p1Won ? 'text-success-text'
+                            : isFinal && !p1Won ? 'opacity-50 text-text-muted'
+                            : 'text-text-primary'
+                        }`}>
+                          {p1?.name || 'TBD'}
+                        </span>
+                        {(isLive || isFinal) && hasScores && (
+                          <span className={`text-lg font-mono font-bold tabular-nums ${
+                            isLive ? 'text-text-primary' : p1Won ? 'text-success-text' : 'text-text-muted'
+                          }`}>
                             {game.participant1Score}
                           </span>
                         )}
+                        {p1Won && (
+                          <svg className="w-4 h-4 text-success" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                          </svg>
+                        )}
                       </div>
 
-                      {/* Team 2 */}
-                      <div className={`flex items-center justify-between ${
-                        isFinal && game.winnerId === game.participant2Id ? 'text-success-text font-medium'
-                          : isFinal && game.winnerId && game.winnerId !== game.participant2Id ? 'text-text-muted opacity-60'
-                          : 'text-text-secondary'
+                      {/* Center divider */}
+                      <div className="flex items-center justify-center px-1">
+                        <span className="text-[10px] text-text-muted font-medium">vs</span>
+                      </div>
+
+                      {/* Team 2 — right */}
+                      <div className={`flex flex-col items-center justify-center gap-1 p-3 min-h-[80px] ${
+                        p2Won ? 'bg-success/5' : ''
                       }`}>
-                        <div className="flex items-center gap-2">
-                          {p2?.seed && (
-                            <span className="text-[10px] text-text-muted w-4 text-right">{p2.seed}</span>
-                          )}
-                          {p2?.logoUrl && (
-                            <img src={p2.logoUrl} alt="" className="w-4 h-4 rounded-sm object-contain" />
-                          )}
-                          <span className="text-sm">{p2?.name || 'TBD'}</span>
-                          {isFinal && game.winnerId === game.participant2Id && (
-                            <svg className="w-3.5 h-3.5 text-success" fill="currentColor" viewBox="0 0 20 20">
-                              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                            </svg>
-                          )}
-                        </div>
-                        {(isLive || isFinal) && game.participant2Score != null && (
-                          <span className={`text-sm font-mono ${isLive ? 'text-text-primary font-semibold' : ''}`}>
+                        {p2?.logoUrl && <img src={p2.logoUrl} alt="" className="w-8 h-8 rounded-sm object-contain" />}
+                        {p2?.seed && <span className="text-[9px] text-text-muted">#{p2.seed}</span>}
+                        <span className={`text-xs font-medium text-center leading-tight ${
+                          p2Won ? 'text-success-text'
+                            : isFinal && !p2Won ? 'opacity-50 text-text-muted'
+                            : 'text-text-primary'
+                        }`}>
+                          {p2?.name || 'TBD'}
+                        </span>
+                        {(isLive || isFinal) && hasScores && (
+                          <span className={`text-lg font-mono font-bold tabular-nums ${
+                            isLive ? 'text-text-primary' : p2Won ? 'text-success-text' : 'text-text-muted'
+                          }`}>
                             {game.participant2Score}
                           </span>
+                        )}
+                        {p2Won && (
+                          <svg className="w-4 h-4 text-success" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                          </svg>
                         )}
                       </div>
                     </div>
 
                     {/* Golf live status */}
                     {game.liveStatus && (
-                      <div className="mt-2 text-xs text-text-muted border-t border-border pt-1.5">
+                      <div className="text-xs text-text-muted border-t border-border px-3 py-1.5">
                         {game.liveStatus}
                       </div>
                     )}
