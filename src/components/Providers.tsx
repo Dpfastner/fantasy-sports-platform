@@ -2,6 +2,7 @@
 
 import { ReactNode, useEffect } from 'react'
 import { ToastProvider } from './Toast'
+import { ConfirmProvider } from './ConfirmDialog'
 import { PaletteProvider } from './PaletteProvider'
 import PaletteSwitcher from './PaletteSwitcher'
 import ReportIssue from './ReportIssue'
@@ -78,10 +79,12 @@ export function Providers({ children }: ProvidersProps) {
   return (
     <PaletteProvider>
       <ToastProvider>
-        {children}
-        <PaletteSwitcher />
-        <ReportIssue />
-        <TosGate />
+        <ConfirmProvider>
+          {children}
+          <PaletteSwitcher />
+          <ReportIssue />
+          <TosGate />
+        </ConfirmProvider>
       </ToastProvider>
     </PaletteProvider>
   )

@@ -4,12 +4,14 @@ import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useToast } from '@/components/Toast'
+import { useConfirm } from '@/components/ConfirmDialog'
 import { BracketPicker } from './BracketPicker'
 import { SurvivorPicker } from './SurvivorPicker'
 import { PickemPicker } from './PickemPicker'
 import { RosterPicker } from './RosterPicker'
 import { RosterDraftRoom } from './RosterDraftRoom'
 import { Leaderboard } from './Leaderboard'
+import { RosterLeaderboard } from './RosterLeaderboard'
 import { PoolActivityFeed } from './PoolActivityFeed'
 import { PoolChat } from './PoolChat'
 import { PoolAnnouncements } from './PoolAnnouncements'
@@ -118,6 +120,8 @@ interface PoolDetailClientProps {
   userId: string | null
   rulesText: string | null
   rosterSelectionCounts?: Record<string, number>
+  /** All submitted entries' roster picks: entryId → participantIds */
+  allRosterPicks?: Record<string, string[]>
 }
 
 type Tab = 'overview' | 'picks' | 'schedule' | 'members' | 'settings'
@@ -144,11 +148,13 @@ export function PoolDetailClient({
   userId,
   rulesText,
   rosterSelectionCounts,
+  allRosterPicks,
 }: PoolDetailClientProps) {
   const [activeTab, setActiveTab] = useState<Tab>('overview')
   const [showRules, setShowRules] = useState(false)
   const [codeCopied, setCodeCopied] = useState(false)
   const { addToast } = useToast()
+  const { confirm } = useConfirm()
   const router = useRouter()
 
   // Effective format: pool.gameType takes precedence over tournament.format for multi-format tournaments
@@ -208,12 +214,13 @@ export function PoolDetailClient({
     return () => window.removeEventListener('beforeunload', handler)
   }, [hasUnsavedChanges])
 
-  const handleTabChange = useCallback((tab: Tab) => {
+  const handleTabChange = useCallback(async (tab: Tab) => {
     if (activeTab === 'settings' && hasUnsavedChanges) {
-      if (!window.confirm('You have unsaved settings changes. Discard them?')) return
+      const ok = await confirm({ title: 'Unsaved changes', message: 'You have unsaved settings changes. Discard them?' })
+      if (!ok) return
     }
     setActiveTab(tab)
-  }, [activeTab, hasUnsavedChanges])
+  }, [activeTab, hasUnsavedChanges, confirm])
 
   // Scoring presets for bracket format
   const scoringPresets: Record<string, { label: string; description: string; rules: Record<string, number> }> = {
@@ -487,11 +494,21 @@ export function PoolDetailClient({
           <PoolAnnouncements poolId={pool.id} isCreator={isCreator} />
 
           {/* Leaderboard */}
-          <Leaderboard
-            members={members}
-            format={effectiveFormat}
-            poolStatus={pool.status}
-          />
+          {effectiveFormat === 'roster' ? (
+            <RosterLeaderboard
+              members={members}
+              participants={participants}
+              poolStatus={pool.status}
+              scoringRules={pool.scoringRules}
+              allRosterPicks={allRosterPicks}
+            />
+          ) : (
+            <Leaderboard
+              members={members}
+              format={effectiveFormat}
+              poolStatus={pool.status}
+            />
+          )}
 
           {/* Chat (members only) */}
           {hasAnyEntry && (

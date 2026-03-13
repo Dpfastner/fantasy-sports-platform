@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import { useConfirm } from './ConfirmDialog'
 import { NotificationBell } from './NotificationBell'
 import { useLeagueContext } from '@/contexts/LeagueContext'
 import { LeagueDropdown } from './header/LeagueDropdown'
@@ -21,6 +22,7 @@ export function Header({ userName, userEmail, userId, showUserMenu = true }: Hea
   const [profileOpen, setProfileOpen] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
   const router = useRouter()
+  const { confirm } = useConfirm()
   const leagueCtx = useLeagueContext()
 
   // Close on outside click
@@ -37,7 +39,8 @@ export function Header({ userName, userEmail, userId, showUserMenu = true }: Hea
   }, [profileOpen])
 
   const handleLogout = async () => {
-    if (!window.confirm('Are you sure you want to sign out?')) return
+    const ok = await confirm({ title: 'Sign out?', message: 'Are you sure you want to sign out?' })
+    if (!ok) return
     const supabase = createClient()
     await supabase.auth.signOut()
     router.push('/')

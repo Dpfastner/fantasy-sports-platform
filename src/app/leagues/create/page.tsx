@@ -7,6 +7,7 @@ import { createClient } from '@/lib/supabase/client'
 import { trackActivity } from '@/app/actions/activity'
 import { track } from '@vercel/analytics'
 import { SchoolPicker } from '@/components/SchoolPicker'
+import { useConfirm } from '@/components/ConfirmDialog'
 
 interface Sport {
   id: string
@@ -39,6 +40,7 @@ export default function CreateLeaguePage() {
   const [showPreview, setShowPreview] = useState(false)
   const [touched, setTouched] = useState<Record<string, boolean>>({})
   const router = useRouter()
+  const { confirm } = useConfirm()
   const supabase = createClient()
 
   // Track if form has any input for #25 unsaved changes warning
@@ -250,8 +252,8 @@ export default function CreateLeaguePage() {
         <div className="max-w-2xl mx-auto">
           <div className="mb-8">
             <button
-              onClick={() => {
-                if (hasChanges && !window.confirm('You have unsaved changes. Are you sure you want to leave?')) return
+              onClick={async () => {
+                if (hasChanges && !await confirm({ title: 'Unsaved changes', message: 'You have unsaved changes. Are you sure you want to leave?' })) return
                 router.push('/dashboard')
               }}
               className="text-text-secondary hover:text-text-primary transition-colors"
@@ -473,8 +475,8 @@ export default function CreateLeaguePage() {
             <div className="flex gap-4">
               <button
                 type="button"
-                onClick={() => {
-                  if (hasChanges && !window.confirm('You have unsaved changes. Are you sure you want to leave?')) return
+                onClick={async () => {
+                  if (hasChanges && !await confirm({ title: 'Unsaved changes', message: 'You have unsaved changes. Are you sure you want to leave?' })) return
                   router.push('/dashboard')
                 }}
                 className="flex-1 text-center bg-surface hover:bg-surface-subtle text-text-primary font-semibold py-3 px-4 rounded-lg transition-colors"

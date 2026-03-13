@@ -238,38 +238,61 @@ export function RosterPicker({
     }
   }
 
-  // Compute scoring for submitted picks with live data
-  const scoringBreakdown = useMemo(() => {
-    if (!hasScores || selectedIds.size === 0) return null
+  // Build "My Roster" data — always available after submission (with or without live scores)
+  const myRoster = useMemo(() => {
+    if (selectedIds.size === 0) return null
+
+    const tierOrder: Record<string, number> = { A: 0, B: 1, C: 2 }
 
     const pickedParticipants = participants
       .filter(p => selectedIds.has(p.id))
       .map(p => {
         const meta = (p.metadata || {}) as Record<string, unknown>
-        const scoreToPar = meta.score_to_par as number | null
+        const owgr = (meta.owgr as number) ?? (p.seed ?? 999)
+        // Determine tier from config
+        let tier = (meta.tier as string) || '?'
+        if (tier === '?') {
+          for (const [tierKey, tierDef] of Object.entries(tiers)) {
+            const inMin = owgr >= tierDef.owgr_min
+            const inMax = tierDef.owgr_max ? owgr <= tierDef.owgr_max : true
+            if (inMin && inMax) { tier = tierKey; break }
+          }
+        }
         return {
           id: p.id,
           name: p.name,
-          tier: (meta.tier as string) || '?',
+          tier,
           country: meta.country as string | undefined,
           countryCode: meta.country_code as string | undefined,
-          scoreToPar,
+          scoreToPar: meta.score_to_par as number | null,
           r1: meta.r1 as number | null,
           r2: meta.r2 as number | null,
           r3: meta.r3 as number | null,
           r4: meta.r4 as number | null,
           status: (meta.status as string) || 'active',
-          position: meta.position as number | null,
+          rank: owgr,
         }
       })
-      .sort((a, b) => (a.scoreToPar ?? 999) - (b.scoreToPar ?? 999))
+
+    // When live scores exist, sort by score (best first) for counting/dropped
+    // When no scores, sort by tier then rank
+    if (hasScores) {
+      pickedParticipants.sort((a, b) => (a.scoreToPar ?? 999) - (b.scoreToPar ?? 999))
+    } else {
+      pickedParticipants.sort((a, b) => {
+        const tierDiff = (tierOrder[a.tier] ?? 9) - (tierOrder[b.tier] ?? 9)
+        return tierDiff !== 0 ? tierDiff : a.rank - b.rank
+      })
+    }
 
     const counting = pickedParticipants.slice(0, countBest)
     const dropped = pickedParticipants.slice(countBest)
-    const total = counting.reduce((sum, p) => sum + (p.scoreToPar ?? 0), 0)
+    const total = hasScores
+      ? counting.reduce((sum, p) => sum + (p.scoreToPar ?? 0), 0)
+      : null
 
-    return { counting, dropped, total }
-  }, [hasScores, selectedIds, participants, countBest])
+    return { counting, dropped, total, hasScores }
+  }, [selectedIds, participants, countBest, hasScores, tiers])
 
   return (
     <div>
@@ -310,18 +333,24 @@ export function RosterPicker({
         </div>
       )}
 
-      {/* Scoring breakdown (when live data exists) */}
-      {scoringBreakdown && submittedAt && (
+      {/* My Roster — always visible after submission */}
+      {myRoster && submittedAt && (
         <div className="bg-surface rounded-lg border border-border p-5 mb-6">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="brand-h3 text-base text-text-primary">Scoring Breakdown</h3>
-            <span className="text-2xl font-bold text-brand">{formatGolfScore(scoringBreakdown.total)}</span>
+            <h3 className="brand-h3 text-base text-text-primary">My Roster</h3>
+            {myRoster.total != null ? (
+              <span className="text-2xl font-bold text-brand">{formatGolfScore(myRoster.total)}</span>
+            ) : (
+              <span className="text-sm text-text-muted">Awaiting scores</span>
+            )}
           </div>
           <p className="text-xs text-text-muted mb-3">
-            Best {countBest} of {rosterSize} count &middot; {scoringBreakdown.counting.length} counting &middot; {scoringBreakdown.dropped.length} dropped
+            Best {countBest} of {rosterSize} count
+            {myRoster.hasScores && (
+              <> &middot; {myRoster.counting.length} counting &middot; {myRoster.dropped.length} dropped</>
+            )}
           </p>
 
-          {/* Scoring table */}
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
@@ -336,7 +365,7 @@ export function RosterPicker({
                 </tr>
               </thead>
               <tbody>
-                {scoringBreakdown.counting.map(p => (
+                {myRoster.counting.map(p => (
                   <tr key={p.id} className="border-b border-border-subtle">
                     <td className="py-2 pr-2 text-text-primary">
                       <span className="flex items-center gap-1.5">
@@ -356,12 +385,13 @@ export function RosterPicker({
                     <td className="py-2 pl-1 text-right font-medium text-text-primary">{formatGolfScore(p.scoreToPar)}</td>
                   </tr>
                 ))}
-                {scoringBreakdown.dropped.map(p => (
+                {myRoster.dropped.map(p => (
                   <tr key={p.id} className="border-b border-border-subtle opacity-50">
                     <td className="py-2 pr-2 text-text-muted">
                       <span className="flex items-center gap-1.5">
                         <CountryFlag country={p.country} countryCode={p.countryCode} />
                         {p.name}
+                        <span className="text-[10px] italic">dropped</span>
                       </span>
                     </td>
                     <td className="py-2 px-1 text-center">

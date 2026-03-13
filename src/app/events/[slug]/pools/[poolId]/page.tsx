@@ -180,6 +180,27 @@ export default async function PoolDetailPage({ params }: PageProps) {
     }
   }
 
+  // For roster pools, fetch all submitted entries' picks for the leaderboard
+  let allRosterPicks: Record<string, string[]> = {} // entryId → participantIds
+  const effectiveFormatForQuery = pool.game_type || tournament.format
+  if (effectiveFormatForQuery === 'roster' && entries?.length) {
+    const submittedEntryIds = entries.filter(e => e.submitted_at).map(e => e.id)
+    if (submittedEntryIds.length > 0) {
+      const { data: rosterPicks } = await admin
+        .from('event_picks')
+        .select('entry_id, participant_id')
+        .in('entry_id', submittedEntryIds)
+        .is('game_id', null)
+        .is('week_number', null)
+      if (rosterPicks) {
+        for (const pick of rosterPicks) {
+          if (!allRosterPicks[pick.entry_id]) allRosterPicks[pick.entry_id] = []
+          allRosterPicks[pick.entry_id].push(pick.participant_id)
+        }
+      }
+    }
+  }
+
   // For limited-mode roster pools, compute selection counts per participant
   let rosterSelectionCounts: Record<string, number> = {}
   const poolScoringRules = (pool.scoring_rules || {}) as Record<string, unknown>
@@ -342,6 +363,7 @@ export default async function PoolDetailPage({ params }: PageProps) {
           userId={user?.id || null}
           rulesText={tournament.rules_text || null}
           rosterSelectionCounts={Object.keys(rosterSelectionCounts).length > 0 ? rosterSelectionCounts : undefined}
+          allRosterPicks={Object.keys(allRosterPicks).length > 0 ? allRosterPicks : undefined}
         />
       </main>
     </div>

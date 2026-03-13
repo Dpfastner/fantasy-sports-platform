@@ -37,6 +37,8 @@ export async function POST(request: Request) {
         return await updateMastersConfig(admin)
       case 'sync-golf-field':
         return await syncGolfField(admin, body)
+      case 'refresh-golf-metadata':
+        return await refreshGolfMetadata(admin, body)
       case 'sync-hockey-logos':
         return await syncHockeyLogos(admin)
       case 'frozen-four-2026-schedule':
@@ -1270,5 +1272,131 @@ async function seedMSixNations(admin: ReturnType<typeof createAdminClient>) {
     id: tournament.id,
     participants: teams.length,
     games: fixtures.length,
+  })
+}
+
+// ─── Refresh Golf Metadata (country flags) ────────────────────────
+async function refreshGolfMetadata(
+  admin: ReturnType<typeof createAdminClient>,
+  body: Record<string, unknown>
+) {
+  const slug = (body.slug as string) || 'masters-2026'
+
+  // Find tournament
+  const { data: tournament, error: tErr } = await admin
+    .from('event_tournaments')
+    .select('id, name')
+    .eq('slug', slug)
+    .single()
+
+  if (tErr || !tournament) {
+    return NextResponse.json({ error: `Tournament not found: ${slug}` }, { status: 404 })
+  }
+
+  // Get all participants
+  const { data: participants } = await admin
+    .from('event_participants')
+    .select('id, name, metadata')
+    .eq('tournament_id', tournament.id)
+
+  if (!participants?.length) {
+    return NextResponse.json({ error: 'No participants found' }, { status: 404 })
+  }
+
+  // Fetch OWGR rankings for country data
+  const rankings = await fetchGolfRankings()
+  const rankingsByName = new Map<string, { country: string; rank: number }>()
+  for (const r of rankings) {
+    rankingsByName.set(r.name.toLowerCase(), { country: r.country, rank: r.rank })
+  }
+
+  // Hardcoded country data for past champions not in OWGR top 200
+  const PAST_CHAMPION_COUNTRIES: Record<string, string> = {
+    'jordan spieth': 'United States',
+    'tiger woods': 'United States',
+    'dustin johnson': 'United States',
+    'brooks koepka': 'United States',
+    'phil mickelson': 'United States',
+    'bubba watson': 'United States',
+    'patrick reed': 'United States',
+    'danny willett': 'England',
+    'adam scott': 'Australia',
+    'charl schwartzel': 'South Africa',
+    'angel cabrera': 'Argentina',
+    'trevor immelman': 'South Africa',
+    'zach johnson': 'United States',
+    'mike weir': 'Canada',
+    'vijay singh': 'Fiji',
+    'jose maria olazabal': 'Spain',
+    'fred couples': 'United States',
+    'bernhard langer': 'Germany',
+    'ian woosnam': 'Wales',
+    'sandy lyle': 'Scotland',
+    'ludvig aberg': 'Sweden',
+    'larry mize': 'United States',
+    'jack nicklaus': 'United States',
+    'ben crenshaw': 'United States',
+    'nick faldo': 'England',
+    'mark o\'meara': 'United States',
+  }
+
+  let updated = 0
+  let skipped = 0
+  const updateLog: string[] = []
+
+  for (const p of participants) {
+    const meta = (p.metadata || {}) as Record<string, unknown>
+
+    // Skip if already has country_code
+    if (meta.country_code) {
+      skipped++
+      continue
+    }
+
+    // Try to find country from rankings
+    const nameLower = p.name.toLowerCase()
+    const ranking = rankingsByName.get(nameLower)
+    let country = ranking?.country
+
+    // Fallback to hardcoded past champions
+    if (!country) {
+      country = PAST_CHAMPION_COUNTRIES[nameLower]
+    }
+
+    if (!country) {
+      updateLog.push(`No match: ${p.name}`)
+      skipped++
+      continue
+    }
+
+    const countryCode = getCountryFlagCode(country)
+    if (!countryCode) {
+      updateLog.push(`No flag code for: ${p.name} (${country})`)
+      skipped++
+      continue
+    }
+
+    // Update metadata
+    const updatedMeta: Record<string, unknown> = { ...meta, country, country_code: countryCode }
+    if (ranking?.rank && !meta.owgr) {
+      updatedMeta.owgr = ranking.rank
+    }
+
+    await admin
+      .from('event_participants')
+      .update({ metadata: updatedMeta })
+      .eq('id', p.id)
+
+    updated++
+    updateLog.push(`Updated: ${p.name} → ${country} (${countryCode})`)
+  }
+
+  return NextResponse.json({
+    success: true,
+    tournament: slug,
+    total: participants.length,
+    updated,
+    skipped,
+    log: updateLog,
   })
 }

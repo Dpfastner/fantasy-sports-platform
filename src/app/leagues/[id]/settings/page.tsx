@@ -10,6 +10,7 @@ import { UserBadges } from '@/components/UserBadges'
 import { Header } from '@/components/Header'
 import { LeagueNav } from '@/components/LeagueNav'
 import type { UserTier, UserBadgeWithDefinition } from '@/types/database'
+import { useConfirm } from '@/components/ConfirmDialog'
 
 // Full settings interface matching database schema
 interface LeagueSettings {
@@ -111,6 +112,7 @@ type LeagueSubTab = 'basic' | 'roster' | 'scoring' | 'transactions' | 'trades' |
 export default function CommissionerToolsPage() {
   const params = useParams()
   const router = useRouter()
+  const { confirm: confirmDialog } = useConfirm()
   const searchParams = useSearchParams()
   const leagueId = params.id as string
   const supabase = createClient()
@@ -1350,8 +1352,8 @@ export default function CommissionerToolsPage() {
                   {isCommissioner && (
                     <div className="flex gap-3 mt-6">
                       <button
-                        onClick={() => {
-                          if (!window.confirm('Reset all scoring values to the Standard preset? You can still adjust individual values after.')) return
+                        onClick={async () => {
+                          if (!await confirmDialog({ title: 'Reset scoring?', message: 'Reset all scoring values to the Standard preset? You can still adjust individual values after.' })) return
                           const values = getPresetValues('standard')
                           if (values && settings) {
                             setSettings({ ...settings, ...values, scoring_preset: 'standard' } as LeagueSettings)

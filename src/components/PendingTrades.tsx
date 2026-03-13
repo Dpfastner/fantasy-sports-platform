@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useToast } from './Toast'
+import { useConfirm } from './ConfirmDialog'
 import { fetchWithRetry } from '@/lib/api/fetch'
 import dynamic from 'next/dynamic'
 
@@ -62,6 +63,7 @@ export default function PendingTrades({
   maxRosterSize = 12,
 }: PendingTradesProps) {
   const { addToast } = useToast()
+  const { confirm } = useConfirm()
   const router = useRouter()
   const [actionLoading, setActionLoading] = useState<string | null>(null)
   const [counterTrade, setCounterTrade] = useState<TradeData | null>(null)
@@ -262,7 +264,7 @@ export default function PendingTrades({
                 {isIncoming ? (
                   <>
                     <button
-                      onClick={() => {
+                      onClick={async () => {
                         if (needsDrops) {
                           if (!showingDropPicker) {
                             setDropPickerTradeId(trade.id)
@@ -273,11 +275,11 @@ export default function PendingTrades({
                             addToast(`Select ${dropsNeeded} school(s) to drop`, 'error')
                             return
                           }
-                          if (window.confirm('Accept this trade? This cannot be undone.')) {
+                          if (await confirm({ title: 'Accept trade?', message: 'This cannot be undone.', variant: 'danger' })) {
                             handleAction(trade.id, 'accept', Array.from(dropIds))
                           }
                         } else {
-                          if (window.confirm('Accept this trade? This cannot be undone.')) {
+                          if (await confirm({ title: 'Accept trade?', message: 'This cannot be undone.', variant: 'danger' })) {
                             handleAction(trade.id, 'accept')
                           }
                         }
@@ -288,8 +290,8 @@ export default function PendingTrades({
                       {actionLoading === trade.id ? '...' : 'Accept'}
                     </button>
                     <button
-                      onClick={() => {
-                        if (window.confirm('Are you sure you want to reject this trade?')) {
+                      onClick={async () => {
+                        if (await confirm({ title: 'Reject trade?', message: 'Are you sure you want to reject this trade?', variant: 'danger' })) {
                           handleAction(trade.id, 'reject')
                         }
                       }}

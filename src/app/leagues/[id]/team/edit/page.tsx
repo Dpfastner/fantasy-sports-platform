@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { trackActivity } from '@/app/actions/activity'
+import { useConfirm } from '@/components/ConfirmDialog'
 
 interface PageProps {
   params: Promise<{ id: string }>
@@ -12,6 +13,7 @@ interface PageProps {
 
 export default function TeamEditPage({ params }: PageProps) {
   const router = useRouter()
+  const { confirm } = useConfirm()
   const [leagueId, setLeagueId] = useState<string>('')
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -139,7 +141,7 @@ export default function TeamEditPage({ params }: PageProps) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!window.confirm('Save changes to your team?')) return
+    if (!await confirm({ title: 'Save changes?', message: 'Save changes to your team?' })) return
     setSaving(true)
     setError(null)
     setSuccess(false)
