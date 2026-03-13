@@ -242,12 +242,16 @@ export default async function DashboardPage() {
   const referralUrl = `https://rivyls.com/welcome?ref=${user.id}`
 
   // --- Unified dashboard items ---
-  const sportIcon: Record<string, string> = {
-    hockey: '\uD83C\uDFD2', golf: '\u26F3', rugby: '\uD83C\uDFC9',
-    football: '\uD83C\uDFC8', basketball: '\uD83C\uDFC0',
+  const sportMeta: Record<string, { icon: string; label: string; borderColor: string }> = {
+    hockey: { icon: '\uD83C\uDFD2', label: 'Hockey', borderColor: 'border-l-blue-500' },
+    golf: { icon: '\u26F3', label: 'Golf', borderColor: 'border-l-green-500' },
+    rugby: { icon: '\uD83C\uDFC9', label: 'Rugby', borderColor: 'border-l-red-500' },
+    football: { icon: '\uD83C\uDFC8', label: 'Football', borderColor: 'border-l-orange-500' },
+    basketball: { icon: '\uD83C\uDFC0', label: 'Basketball', borderColor: 'border-l-amber-500' },
   }
+  const defaultSportMeta = { icon: '\uD83C\uDFC6', label: 'Other', borderColor: 'border-l-brand' }
   const formatLabel: Record<string, string> = {
-    bracket: 'Bracket', pickem: "Pick'em", survivor: 'Survivor',
+    bracket: 'Bracket', pickem: "Pick'em", survivor: 'Survivor', roster: 'Roster',
   }
 
   interface DashboardItem {
@@ -256,7 +260,9 @@ export default async function DashboardPage() {
     name: string
     subtitle: string
     href: string
+    sport: string
     icon: string
+    borderColor: string
     format?: string
     rank: number | null
     totalMembers: number
@@ -271,13 +277,16 @@ export default async function DashboardPage() {
   // Convert leagues to dashboard items
   const leagueItems: DashboardItem[] = leagues.map(league => {
     const teamInfo = league.id ? userTeamMap[league.id] : undefined
+    const sm = sportMeta[league.sports?.slug || ''] || defaultSportMeta
     return {
       type: 'league',
       id: league.id!,
       name: league.name || '',
-      subtitle: `${league.sports?.name || 'League'} \u2022 ${league.seasons?.name || ''}`.trim(),
+      subtitle: league.seasons?.name || '',
       href: `/leagues/${league.id}`,
-      icon: sportIcon[league.sports?.slug || ''] || '\uD83C\uDFC8',
+      sport: league.sports?.slug || 'other',
+      icon: sm.icon,
+      borderColor: sm.borderColor,
       rank: teamInfo?.rank ?? null,
       totalMembers: teamInfo?.totalTeams ?? 0,
       score: null,
@@ -300,13 +309,16 @@ export default async function DashboardPage() {
     .map(pool => {
       const isLive = (liveGameCounts[pool.tournamentId] || 0) > 0
       const needsAction = !pool.submittedAt && pool.status === 'open'
+      const sm = sportMeta[pool.tournament.sport] || defaultSportMeta
       return {
         type: 'event',
         id: pool.id,
         name: pool.name,
         subtitle: pool.tournament.name,
         href: `/events/${pool.tournament.slug}/pools/${pool.id}`,
-        icon: sportIcon[pool.tournament.sport] || '\uD83C\uDFC6',
+        sport: pool.tournament.sport,
+        icon: sm.icon,
+        borderColor: sm.borderColor,
         format: formatLabel[pool.tournament.format] || pool.tournament.format,
         rank: pool.userRank,
         totalMembers: pool.entryCount,
@@ -326,13 +338,17 @@ export default async function DashboardPage() {
   // Completed event pools
   const completedEventItems: DashboardItem[] = eventPools
     .filter(p => p.tournament.status === 'completed' || p.status === 'completed')
-    .map(pool => ({
+    .map(pool => {
+      const sm = sportMeta[pool.tournament.sport] || defaultSportMeta
+      return {
       type: 'event' as const,
       id: pool.id,
       name: pool.name,
       subtitle: pool.tournament.name,
       href: `/events/${pool.tournament.slug}/pools/${pool.id}`,
-      icon: sportIcon[pool.tournament.sport] || '\uD83C\uDFC6',
+      sport: pool.tournament.sport,
+      icon: sm.icon,
+      borderColor: sm.borderColor,
       format: formatLabel[pool.tournament.format] || pool.tournament.format,
       rank: pool.userRank,
       totalMembers: pool.entryCount,
@@ -342,16 +358,21 @@ export default async function DashboardPage() {
       isDormant: false,
       isCompleted: true,
       badges: [],
-    }))
+    }
+  })
 
   // Dormant league items
-  const dormantItems: DashboardItem[] = dormantLeagues.map(league => ({
+  const dormantItems: DashboardItem[] = dormantLeagues.map(league => {
+    const sm = sportMeta[league.sports?.slug || ''] || defaultSportMeta
+    return {
     type: 'league' as const,
     id: league.id!,
     name: league.name || '',
-    subtitle: `${league.sports?.name || 'League'} \u2022 ${league.seasons?.name || ''}`.trim(),
+    subtitle: league.seasons?.name || '',
     href: `/leagues/${league.id}`,
-    icon: sportIcon[league.sports?.slug || ''] || '\uD83C\uDFC8',
+    sport: league.sports?.slug || 'other',
+    icon: sm.icon,
+    borderColor: sm.borderColor,
     rank: null,
     totalMembers: 0,
     score: null,
@@ -360,17 +381,42 @@ export default async function DashboardPage() {
     isDormant: true,
     isCompleted: false,
     badges: [{ label: 'Dormant', variant: 'muted' }],
-  }))
+    }
+  })
 
-  // Sort active items: needsAction → isLive → rest (alphabetical within groups)
-  const activeItems = [...leagueItems, ...eventItems].sort((a, b) => {
-    if (a.needsAction !== b.needsAction) return a.needsAction ? -1 : 1
-    if (a.isLive !== b.isLive) return a.isLive ? -1 : 1
-    return a.name.localeCompare(b.name)
+  // Group active items by sport
+  const allActiveItems = [...leagueItems, ...eventItems]
+  const sportGroups = new Map<string, DashboardItem[]>()
+  for (const item of allActiveItems) {
+    const key = item.sport
+    if (!sportGroups.has(key)) sportGroups.set(key, [])
+    sportGroups.get(key)!.push(item)
+  }
+
+  // Sort items within each group: needsAction → isLive → alphabetical
+  for (const items of sportGroups.values()) {
+    items.sort((a, b) => {
+      if (a.needsAction !== b.needsAction) return a.needsAction ? -1 : 1
+      if (a.isLive !== b.isLive) return a.isLive ? -1 : 1
+      return a.name.localeCompare(b.name)
+    })
+  }
+
+  // Sort groups: groups with action-needed first → live → alphabetical sport
+  const sortedSportGroups = [...sportGroups.entries()].sort(([keyA, itemsA], [keyB, itemsB]) => {
+    const aHasAction = itemsA.some(i => i.needsAction)
+    const bHasAction = itemsB.some(i => i.needsAction)
+    if (aHasAction !== bHasAction) return aHasAction ? -1 : 1
+    const aHasLive = itemsA.some(i => i.isLive)
+    const bHasLive = itemsB.some(i => i.isLive)
+    if (aHasLive !== bHasLive) return aHasLive ? -1 : 1
+    const labelA = (sportMeta[keyA] || defaultSportMeta).label
+    const labelB = (sportMeta[keyB] || defaultSportMeta).label
+    return labelA.localeCompare(labelB)
   })
 
   const pastItems = [...dormantItems, ...completedEventItems]
-  const hasAnyItems = activeItems.length > 0 || pastItems.length > 0
+  const hasAnyItems = allActiveItems.length > 0 || pastItems.length > 0
 
   function formatRank(rank: number): string {
     if (rank === 1) return '1st'
@@ -405,7 +451,7 @@ export default async function DashboardPage() {
 
         {/* Title + Actions */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
-          <h1 className="text-3xl font-bold text-text-primary">Dashboard</h1>
+          <h1 className="text-3xl font-bold text-text-primary">Locker Room</h1>
           <div className="flex flex-wrap gap-3">
             <Link
               href="/leagues/join"
@@ -461,72 +507,88 @@ export default async function DashboardPage() {
           </div>
         ) : (
           <>
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {activeItems.map((item) => (
-                <Link
-                  key={`${item.type}-${item.id}`}
-                  href={item.href}
-                  className="bg-surface rounded-lg p-5 hover:bg-surface-subtle transition-all border border-border hover:border-brand/40 hover:shadow-md"
-                >
-                  <div className="flex justify-between items-start mb-3">
-                    <div className="min-w-0 flex-1">
-                      <h3 className="text-lg font-semibold text-text-primary truncate">{item.name}</h3>
-                      <p className="text-text-muted text-sm truncate">{item.subtitle}</p>
-                    </div>
-                    <div className="flex items-center gap-1.5 shrink-0 ml-2">
-                      {item.badges.map((badge, i) => (
-                        <span
-                          key={i}
-                          className={`text-xs font-medium px-2 py-0.5 rounded-full ${
-                            badge.variant === 'brand' ? 'bg-brand/20 text-brand-text' :
-                            badge.variant === 'warning' ? 'bg-warning/20 text-warning-text' :
-                            badge.variant === 'danger'
-                              ? (badge.label === 'Live'
-                                ? 'inline-flex items-center gap-1 bg-danger/20 text-danger-text'
-                                : 'bg-danger/20 text-danger-text')
-                              : 'bg-surface-inset text-text-muted'
-                          }`}
+            <div className="space-y-8">
+              {sortedSportGroups.map(([sportKey, items]) => {
+                const meta = sportMeta[sportKey] || defaultSportMeta
+                return (
+                  <section key={sportKey}>
+                    {sortedSportGroups.length > 1 && (
+                      <h2 className="text-lg font-semibold text-text-secondary mb-3 flex items-center gap-2">
+                        <span className="text-xl">{meta.icon}</span> {meta.label}
+                      </h2>
+                    )}
+                    <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {items.map((item) => (
+                        <Link
+                          key={`${item.type}-${item.id}`}
+                          href={item.href}
+                          className={`bg-surface rounded-lg p-5 hover:bg-surface-subtle transition-all border border-border hover:border-brand/40 hover:shadow-md border-l-4 ${item.borderColor}`}
                         >
-                          {badge.label === 'Live' && (
-                            <span className="w-1.5 h-1.5 rounded-full bg-danger animate-pulse inline-block mr-1" />
-                          )}
-                          {badge.label}
-                        </span>
+                          <div className="flex justify-between items-start mb-2">
+                            <div className="min-w-0 flex-1 flex items-center gap-2">
+                              <span className="text-2xl shrink-0">{item.icon}</span>
+                              <div className="min-w-0">
+                                <h3 className="text-lg font-semibold text-text-primary truncate">{item.name}</h3>
+                                <p className="text-text-muted text-sm truncate">{item.subtitle}</p>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-1.5 shrink-0 ml-2">
+                              {item.badges.map((badge, i) => (
+                                <span
+                                  key={i}
+                                  className={`text-xs font-medium px-2 py-0.5 rounded-full ${
+                                    badge.variant === 'brand' ? 'bg-brand/20 text-brand-text' :
+                                    badge.variant === 'warning' ? 'bg-warning/20 text-warning-text' :
+                                    badge.variant === 'danger'
+                                      ? (badge.label === 'Live'
+                                        ? 'inline-flex items-center gap-1 bg-danger/20 text-danger-text'
+                                        : 'bg-danger/20 text-danger-text')
+                                      : 'bg-surface-inset text-text-muted'
+                                  }`}
+                                >
+                                  {badge.label === 'Live' && (
+                                    <span className="w-1.5 h-1.5 rounded-full bg-danger animate-pulse inline-block mr-1" />
+                                  )}
+                                  {badge.label}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2 mb-3 ml-9">
+                            <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${
+                              item.type === 'league'
+                                ? 'bg-brand/15 text-brand-text'
+                                : 'bg-accent/15 text-accent-text'
+                            }`}>
+                              {item.type === 'league' ? 'League' : item.format || 'Event'}
+                            </span>
+                          </div>
+                          <div className="space-y-1 text-text-secondary text-sm ml-9">
+                            {item.rank && item.totalMembers > 1 && (
+                              <p className="flex items-center gap-2">
+                                <span>{'\uD83C\uDFC6'}</span>
+                                <span>{formatRank(item.rank)} of {item.totalMembers}</span>
+                              </p>
+                            )}
+                            {!item.rank && item.totalMembers > 0 && (
+                              <p className="flex items-center gap-2">
+                                <span>{'\uD83D\uDC65'}</span>
+                                <span>{item.totalMembers} member{item.totalMembers !== 1 ? 's' : ''}</span>
+                              </p>
+                            )}
+                            {item.score !== null && (
+                              <p className="flex items-center gap-2">
+                                <span>{'\u2B50'}</span>
+                                <span>{item.score} pts</span>
+                              </p>
+                            )}
+                          </div>
+                        </Link>
                       ))}
                     </div>
-                  </div>
-                  <div className="flex items-center gap-2 mb-3">
-                    <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${
-                      item.type === 'league'
-                        ? 'bg-brand/15 text-brand-text'
-                        : 'bg-accent/15 text-accent-text'
-                    }`}>
-                      {item.type === 'league' ? 'League' : item.format || 'Event'}
-                    </span>
-                    <span className="text-text-muted text-xs">{item.icon}</span>
-                  </div>
-                  <div className="space-y-1 text-text-secondary text-sm">
-                    {item.rank && item.totalMembers > 1 && (
-                      <p className="flex items-center gap-2">
-                        <span>{'\uD83C\uDFC6'}</span>
-                        <span>{formatRank(item.rank)} of {item.totalMembers}</span>
-                      </p>
-                    )}
-                    {!item.rank && item.totalMembers > 0 && (
-                      <p className="flex items-center gap-2">
-                        <span>{'\uD83D\uDC65'}</span>
-                        <span>{item.totalMembers} member{item.totalMembers !== 1 ? 's' : ''}</span>
-                      </p>
-                    )}
-                    {item.score !== null && (
-                      <p className="flex items-center gap-2">
-                        <span>{'\u2B50'}</span>
-                        <span>{item.score} pts</span>
-                      </p>
-                    )}
-                  </div>
-                </Link>
-              ))}
+                  </section>
+                )
+              })}
             </div>
 
             {/* Past / Completed / Dormant */}
