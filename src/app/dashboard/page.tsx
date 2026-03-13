@@ -637,7 +637,7 @@ export default async function DashboardPage() {
                         <div className="min-w-0 flex-1 flex items-center gap-2">
                           <span className="text-2xl shrink-0">{meta.icon}</span>
                           <div className="min-w-0">
-                            <h3 className="text-lg font-semibold text-card-text group-hover:text-brand transition-colors truncate">
+                            <h3 className="text-lg font-bold text-card-text group-hover:text-brand transition-colors truncate">
                               {tournament.name}
                             </h3>
                           </div>
@@ -658,17 +658,17 @@ export default async function DashboardPage() {
                         </div>
                       </div>
                       {tournament.description && (
-                        <p className="text-card-text-muted text-sm line-clamp-2 ml-9">{tournament.description}</p>
+                        <p className="text-card-text-muted text-sm font-medium line-clamp-2 ml-9">{tournament.description}</p>
                       )}
                     </div>
                     <div className="px-5 py-3 border-t border-card-text/10 flex items-center justify-between text-sm">
-                      <div className="flex items-center gap-4 text-card-text-muted">
-                        <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-brand/15 text-brand">
+                      <div className="flex items-center gap-4 text-card-text-muted font-medium">
+                        <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-brand/15 text-brand">
                           {formatLabel[tournament.format] || tournament.format}
                         </span>
                         <span>{pools} pool{pools !== 1 ? 's' : ''}</span>
                       </div>
-                      <span className="text-card-text-muted text-xs">
+                      <span className="text-card-text-muted text-xs font-medium">
                         {startsAt.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                         {tournament.ends_at && (
                           <> &ndash; {new Date(tournament.ends_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</>
