@@ -540,8 +540,6 @@ export default function CommissionerToolsPage() {
       })))
 
       trackActivity('second_owner.added', leagueId, { teamId, secondOwnerEmail: email })
-      setEditingSecondOwner(null)
-      setSecondOwnerEmail('')
       setSuccess('Second owner added')
       setTimeout(() => setSuccess(null), 3000)
     } catch (err) {

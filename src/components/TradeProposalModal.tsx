@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useToast } from './Toast'
 
 // ── Types ──────────────────────────────────────────────────
@@ -45,7 +45,124 @@ interface TradeProposalModalProps {
   maxRosterSize?: number
 }
 
-// ── Component ──────────────────────────────────────────────
+// ── Chip Component ──────────────────────────────────────────
+
+function SchoolChip({ school, onRemove, variant }: {
+  school: RosterSchool
+  onRemove: () => void
+  variant: 'giving' | 'receiving' | 'dropping'
+}) {
+  const colors = {
+    giving: 'bg-danger/20 border-danger/40 text-danger-text',
+    receiving: 'bg-success/20 border-success/40 text-success-text',
+    dropping: 'bg-warning/20 border-warning/40 text-warning-text',
+  }
+
+  return (
+    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-xs font-medium ${colors[variant]}`}>
+      {school.logoUrl ? (
+        <img src={school.logoUrl} alt="" className="w-4 h-4 object-contain" />
+      ) : null}
+      {school.schoolName}
+      <button onClick={onRemove} className="ml-0.5 hover:opacity-70 text-current">
+        &times;
+      </button>
+    </span>
+  )
+}
+
+// ── Inline Picker ──────────────────────────────────────────
+
+function InlinePicker({ schools, selectedIds, disabledIds, onToggle, variant, search, onSearchChange, schoolPointsMap, rankingsMap, schoolRecordsMap }: {
+  schools: RosterSchool[]
+  selectedIds: Set<string>
+  disabledIds: Set<string>
+  onToggle: (id: string) => void
+  variant: 'giving' | 'receiving' | 'dropping'
+  search: string
+  onSearchChange: (s: string) => void
+  schoolPointsMap: Record<string, number>
+  rankingsMap: Record<string, number>
+  schoolRecordsMap: Record<string, { wins: number; losses: number; confWins: number; confLosses: number }>
+}) {
+  const filtered = schools.filter(s =>
+    s.schoolName.toLowerCase().includes(search.toLowerCase()) ||
+    (s.abbreviation || '').toLowerCase().includes(search.toLowerCase()) ||
+    s.conference.toLowerCase().includes(search.toLowerCase())
+  )
+
+  const colors = {
+    giving: { selected: 'bg-danger/20 border-danger/50', check: 'bg-danger border-danger' },
+    receiving: { selected: 'bg-success/20 border-success/50', check: 'bg-success border-success' },
+    dropping: { selected: 'bg-warning/20 border-warning/50', check: 'bg-warning border-warning' },
+  }
+
+  const getRecord = (schoolId: string) => {
+    const r = schoolRecordsMap[schoolId]
+    return r ? `${r.wins}-${r.losses}` : '-'
+  }
+
+  return (
+    <div className="border border-border rounded-lg overflow-hidden bg-surface">
+      <input
+        type="text"
+        value={search}
+        onChange={(e) => onSearchChange(e.target.value)}
+        placeholder="Search schools..."
+        className="w-full px-3 py-2 bg-surface border-b border-border text-text-primary text-sm placeholder:text-text-muted outline-none"
+        autoFocus
+      />
+      <div className="max-h-48 overflow-y-auto">
+        {filtered.length === 0 ? (
+          <p className="px-3 py-4 text-text-muted text-sm text-center">No matching schools</p>
+        ) : filtered.map(school => {
+          const selected = selectedIds.has(school.schoolId)
+          const disabled = disabledIds.has(school.schoolId)
+          const rank = rankingsMap[school.schoolId]
+          const points = schoolPointsMap[school.schoolId] || 0
+          return (
+            <button
+              key={school.schoolId}
+              onClick={() => !disabled && onToggle(school.schoolId)}
+              disabled={disabled}
+              className={`w-full flex items-center gap-2.5 px-3 py-2 text-left transition-colors ${
+                disabled
+                  ? 'opacity-30 cursor-not-allowed'
+                  : selected
+                    ? colors[variant].selected
+                    : 'hover:bg-surface-subtle'
+              }`}
+            >
+              <div className={`w-4 h-4 rounded border-2 flex items-center justify-center flex-shrink-0 ${
+                selected ? `${colors[variant].check} text-white` : 'border-border'
+              }`}>
+                {selected && <span className="text-[10px]">✓</span>}
+              </div>
+              {school.logoUrl ? (
+                <img src={school.logoUrl} alt="" className="w-5 h-5 object-contain" />
+              ) : (
+                <div className="w-5 h-5 bg-surface-subtle rounded flex items-center justify-center text-[9px] font-bold text-text-muted">
+                  {school.abbreviation?.substring(0, 2) || school.schoolName.substring(0, 2)}
+                </div>
+              )}
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-1.5">
+                  {rank && <span className="text-[10px] text-brand-text font-bold">#{rank}</span>}
+                  <span className="text-sm font-medium text-text-primary truncate">{school.schoolName}</span>
+                </div>
+              </div>
+              <span className="text-[11px] text-text-muted whitespace-nowrap">
+                {disabled ? 'Already owned' : `${school.conference} · ${getRecord(school.schoolId)} · ${points} pts`}
+              </span>
+            </button>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
+// ── Main Component ──────────────────────────────────────────
 
 export default function TradeProposalModal({
   isOpen,
@@ -68,25 +185,33 @@ export default function TradeProposalModal({
   const [dropIds, setDropIds] = useState<Set<string>>(new Set())
   const [message, setMessage] = useState('')
   const [submitting, setSubmitting] = useState(false)
-  const [showDropPicker, setShowDropPicker] = useState(false)
+
+  // Picker visibility
+  const [showGivingPicker, setShowGivingPicker] = useState(false)
+  const [showReceivingPicker, setShowReceivingPicker] = useState(false)
+  const [givingSearch, setGivingSearch] = useState('')
+  const [receivingSearch, setReceivingSearch] = useState('')
+  const [dropSearch, setDropSearch] = useState('')
 
   if (!isOpen) return null
 
   const givingCount = givingIds.size
   const receivingCount = receivingIds.size
   const netGain = receivingCount - givingCount
-  const rosterAfterTrade = myRoster.length + netGain
-  const dropsNeeded = rosterAfterTrade > maxRosterSize ? rosterAfterTrade - maxRosterSize : 0
+  const rosterAfterTrade = myRoster.length + netGain - dropIds.size
+  const dropsNeeded = Math.max(0, myRoster.length + netGain - maxRosterSize)
   const needsDrops = dropsNeeded > 0
-  const dropsSelected = dropIds.size
 
-  // Schools available for dropping (on my roster, not being traded)
+  // Disabled sets (schools already on the other roster)
+  const myRosterSchoolIds = useMemo(() => new Set(myRoster.map(s => s.schoolId)), [myRoster])
+  const partnerRosterSchoolIds = useMemo(() => new Set(partnerRoster.map(s => s.schoolId)), [partnerRoster])
+
+  // Schools available for dropping
   const droppableSchools = myRoster.filter(
-    s => !givingIds.has(s.schoolId) && !receivingIds.has(s.schoolId)
+    s => !givingIds.has(s.schoolId)
   )
 
   const toggleGiving = (schoolId: string) => {
-    // Don't allow giving a school that's already on partner's roster
     if (!givingIds.has(schoolId) && partnerRosterSchoolIds.has(schoolId)) {
       addToast('This school is already on their roster', 'error')
       return
@@ -97,17 +222,10 @@ export default function TradeProposalModal({
       else next.add(schoolId)
       return next
     })
-    // Reset drops when trade changes
     setDropIds(new Set())
-    setShowDropPicker(false)
   }
 
-  // Set of school IDs on each roster (for blocking duplicate selections)
-  const myRosterSchoolIds = new Set(myRoster.map(s => s.schoolId))
-  const partnerRosterSchoolIds = new Set(partnerRoster.map(s => s.schoolId))
-
   const toggleReceiving = (schoolId: string) => {
-    // Don't allow selecting a school that's already on my roster
     if (!receivingIds.has(schoolId) && myRosterSchoolIds.has(schoolId)) {
       addToast('This school is already on your roster', 'error')
       return
@@ -119,7 +237,6 @@ export default function TradeProposalModal({
       return next
     })
     setDropIds(new Set())
-    setShowDropPicker(false)
   }
 
   const toggleDrop = (schoolId: string) => {
@@ -131,7 +248,7 @@ export default function TradeProposalModal({
     })
   }
 
-  const canSubmit = givingCount > 0 && receivingCount > 0 && (!needsDrops || dropsSelected === dropsNeeded)
+  const canSubmit = givingCount > 0 && receivingCount > 0 && (!needsDrops || dropIds.size === dropsNeeded)
 
   const handleSubmit = async () => {
     if (!canSubmit || submitting) return
@@ -175,15 +292,16 @@ export default function TradeProposalModal({
     }
   }
 
-  const getRecord = (schoolId: string) => {
-    const r = schoolRecordsMap[schoolId]
-    return r ? `${r.wins}-${r.losses}` : '-'
-  }
+  // Helper: resolve school from ID
+  const findMySchool = (id: string) => myRoster.find(s => s.schoolId === id)
+  const findPartnerSchool = (id: string) => partnerRoster.find(s => s.schoolId === id)
 
-  const getRank = (schoolId: string) => {
-    const rank = rankingsMap[schoolId]
-    return rank ? `#${rank}` : null
-  }
+  // Roster preview
+  const rosterAfterSchools = myRoster
+    .filter(s => !givingIds.has(s.schoolId) && !dropIds.has(s.schoolId))
+    .map(s => s.schoolName)
+  const receivingSchoolNames = Array.from(receivingIds).map(id => findPartnerSchool(id)?.schoolName || 'Unknown')
+  const finalRoster = [...rosterAfterSchools, ...receivingSchoolNames]
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -191,244 +309,170 @@ export default function TradeProposalModal({
       <div className="absolute inset-0 bg-black/60" onClick={onClose} />
 
       {/* Modal */}
-      <div className="relative bg-page border border-border rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+      <div className="relative bg-page border border-border rounded-xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className="sticky top-0 bg-page border-b border-border px-6 py-4 flex items-center justify-between z-10">
           <h2 className="text-xl font-bold text-text-primary">
-            {counterToTrade ? 'Counter Trade' : `Propose Trade to ${partnerTeam.name}`}
+            {counterToTrade ? 'Counter Trade' : `Trade with ${partnerTeam.name}`}
           </h2>
           <button onClick={onClose} className="text-text-muted hover:text-text-primary text-2xl leading-none">
             &times;
           </button>
         </div>
 
-        {/* Counter-offer message */}
+        {/* Counter-offer context */}
         {counterToTrade?.message && (
           <div className="mx-6 mt-4 bg-info/10 border border-info/30 rounded-lg px-4 py-3">
             <p className="text-xs text-text-secondary">
               <span className="font-semibold">Message from {counterToTrade.proposerTeamName}:</span>{' '}
-              <span className="italic">"{counterToTrade.message}"</span>
+              <span className="italic">&ldquo;{counterToTrade.message}&rdquo;</span>
             </p>
           </div>
         )}
 
-        {/* Two-column roster selection */}
-        <div className="grid md:grid-cols-2 gap-4 p-6">
-          {/* Left: My Roster (giving away) */}
-          <div>
-            {counterToTrade && (() => {
-              const wantedSchools = counterToTrade.items.filter(i => i.teamId !== counterToTrade.proposerTeamId && i.direction === 'giving')
-              return wantedSchools.length > 0 ? (
-                <div className="bg-danger/10 border border-danger/30 rounded-lg px-3 py-2 mb-3">
-                  <p className="text-[10px] uppercase tracking-wide text-text-muted font-semibold mb-1">Originally wanted from you</p>
-                  <p className="text-xs text-danger-text font-medium">{wantedSchools.map(i => i.schoolName).join(', ')}</p>
-                </div>
-              ) : null
-            })()}
-            <h3 className="text-sm font-semibold text-danger-text mb-3 uppercase tracking-wide">
-              Your Roster — Select to Give
-            </h3>
-            <div className="space-y-1">
-              {myRoster.map(school => {
-                const selected = givingIds.has(school.schoolId)
-                const alreadyOnPartnerRoster = partnerRosterSchoolIds.has(school.schoolId)
-                const rank = getRank(school.schoolId)
-                const points = schoolPointsMap[school.schoolId] || 0
-                return (
-                  <button
-                    key={school.schoolId}
-                    onClick={() => toggleGiving(school.schoolId)}
-                    disabled={alreadyOnPartnerRoster}
-                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-colors ${
-                      alreadyOnPartnerRoster
-                        ? 'bg-surface/50 opacity-40 cursor-not-allowed border border-transparent'
-                        : selected
-                          ? 'bg-danger/20 border border-danger/50'
-                          : 'bg-surface hover:bg-surface-subtle border border-transparent'
-                    }`}
-                  >
-                    <div className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 ${
-                      selected ? 'bg-danger border-danger text-white' : 'border-border'
-                    }`}>
-                      {selected && <span className="text-xs">✓</span>}
-                    </div>
-                    {school.logoUrl ? (
-                      <img src={school.logoUrl} alt="" className="w-6 h-6 object-contain" />
-                    ) : (
-                      <div className="w-6 h-6 bg-surface-subtle rounded flex items-center justify-center text-[10px] font-bold text-text-muted">
-                        {school.abbreviation?.substring(0, 2) || school.schoolName.substring(0, 2)}
-                      </div>
-                    )}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-1.5">
-                        {rank && <span className="text-[10px] text-brand-text font-bold">{rank}</span>}
-                        <span className="text-sm font-medium text-text-primary truncate">{school.schoolName}</span>
-                      </div>
-                      <div className="text-[11px] text-text-muted">
-                        {alreadyOnPartnerRoster
-                          ? 'Already on their roster'
-                          : `${school.conference} · ${getRecord(school.schoolId)} · ${points} pts`
-                        }
-                      </div>
-                    </div>
-                  </button>
-                )
-              })}
-            </div>
-          </div>
-
-          {/* Right: Partner Roster (requesting) */}
-          <div>
-            {counterToTrade && (() => {
-              const offeredSchools = counterToTrade.items.filter(i => i.teamId === counterToTrade.proposerTeamId && i.direction === 'giving')
-              return offeredSchools.length > 0 ? (
-                <div className="bg-success/10 border border-success/30 rounded-lg px-3 py-2 mb-3">
-                  <p className="text-[10px] uppercase tracking-wide text-text-muted font-semibold mb-1">Originally offered to you</p>
-                  <p className="text-xs text-success-text font-medium">{offeredSchools.map(i => i.schoolName).join(', ')}</p>
-                </div>
-              ) : null
-            })()}
-            <h3 className="text-sm font-semibold text-success-text mb-3 uppercase tracking-wide">
-              {partnerTeam.name}'s Roster — Select to Receive
-            </h3>
-            <div className="space-y-1">
-              {partnerRoster.map(school => {
-                const selected = receivingIds.has(school.schoolId)
-                const alreadyOnMyRoster = myRosterSchoolIds.has(school.schoolId)
-                const rank = getRank(school.schoolId)
-                const points = schoolPointsMap[school.schoolId] || 0
-                return (
-                  <button
-                    key={school.schoolId}
-                    onClick={() => toggleReceiving(school.schoolId)}
-                    disabled={alreadyOnMyRoster}
-                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-colors ${
-                      alreadyOnMyRoster
-                        ? 'bg-surface/50 opacity-40 cursor-not-allowed border border-transparent'
-                        : selected
-                          ? 'bg-success/20 border border-success/50'
-                          : 'bg-surface hover:bg-surface-subtle border border-transparent'
-                    }`}
-                  >
-                    <div className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 ${
-                      selected ? 'bg-success border-success text-white' : 'border-border'
-                    }`}>
-                      {selected && <span className="text-xs">✓</span>}
-                    </div>
-                    {school.logoUrl ? (
-                      <img src={school.logoUrl} alt="" className="w-6 h-6 object-contain" />
-                    ) : (
-                      <div className="w-6 h-6 bg-surface-subtle rounded flex items-center justify-center text-[10px] font-bold text-text-muted">
-                        {school.abbreviation?.substring(0, 2) || school.schoolName.substring(0, 2)}
-                      </div>
-                    )}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-1.5">
-                        {rank && <span className="text-[10px] text-brand-text font-bold">{rank}</span>}
-                        <span className="text-sm font-medium text-text-primary truncate">{school.schoolName}</span>
-                      </div>
-                      <div className="text-[11px] text-text-muted">
-                        {alreadyOnMyRoster
-                          ? 'Already on your roster'
-                          : `${school.conference} · ${getRecord(school.schoolId)} · ${points} pts`
-                        }
-                      </div>
-                    </div>
-                  </button>
-                )
-              })}
-            </div>
-          </div>
-        </div>
-
-        {/* Drop picker for uneven trades */}
-        {needsDrops && givingCount > 0 && receivingCount > 0 && (
-          <div className="mx-6 mb-4">
-            {!showDropPicker ? (
-              <button
-                onClick={() => setShowDropPicker(true)}
-                className="w-full bg-warning/10 border border-warning/30 text-warning-text rounded-lg p-3 text-sm"
-              >
-                You are receiving {netGain} more school(s) than you are giving. You need to drop {dropsNeeded} school(s) to make room. Click to select.
-              </button>
-            ) : (
-              <div className="bg-warning/10 border border-warning/30 rounded-lg p-4">
-                <p className="text-sm font-semibold text-warning-text mb-3">
-                  Select {dropsNeeded} school(s) to drop ({dropsSelected}/{dropsNeeded})
-                </p>
-                <div className="space-y-1">
-                  {droppableSchools.map(school => {
-                    const selected = dropIds.has(school.schoolId)
-                    return (
-                      <button
-                        key={school.schoolId}
-                        onClick={() => toggleDrop(school.schoolId)}
-                        className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left transition-colors ${
-                          selected
-                            ? 'bg-warning/20 border border-warning/50'
-                            : 'bg-surface hover:bg-surface-subtle border border-transparent'
-                        }`}
-                      >
-                        <div className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 ${
-                          selected ? 'bg-warning border-warning text-white' : 'border-border'
-                        }`}>
-                          {selected && <span className="text-xs">✓</span>}
-                        </div>
-                        <span className="text-sm text-text-primary">{school.schoolName}</span>
-                        <span className="text-[11px] text-text-muted ml-auto">{school.conference}</span>
-                      </button>
-                    )
-                  })}
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Trade summary */}
-        {(givingCount > 0 || receivingCount > 0) && (
-          <div className="mx-6 mb-4 bg-surface-inset rounded-lg p-4">
-            <p className="text-sm font-semibold text-text-primary mb-2">Trade Summary</p>
-            <div className="grid grid-cols-2 gap-4 text-sm">
-              <div>
-                <p className="text-danger-text text-xs uppercase mb-1">You Give</p>
+        <div className="p-6 space-y-5">
+          {/* Two-column chip builder */}
+          <div className="grid md:grid-cols-2 gap-4">
+            {/* You Give */}
+            <div>
+              <h3 className="text-xs font-semibold text-danger-text uppercase tracking-wide mb-2">You Give</h3>
+              <div className="min-h-[44px] bg-surface-inset rounded-lg p-2 flex flex-wrap gap-1.5">
+                {givingCount === 0 && !showGivingPicker && (
+                  <span className="text-text-muted text-xs py-1">No schools selected</span>
+                )}
                 {Array.from(givingIds).map(id => {
-                  const school = myRoster.find(s => s.schoolId === id)
-                  return <p key={id} className="text-text-secondary">{school?.schoolName || id}</p>
+                  const school = findMySchool(id)
+                  return school ? (
+                    <SchoolChip key={id} school={school} onRemove={() => { toggleGiving(id); setDropIds(new Set()) }} variant="giving" />
+                  ) : null
                 })}
-                {givingCount === 0 && <p className="text-text-muted italic">None selected</p>}
+                <button
+                  onClick={() => { setShowGivingPicker(!showGivingPicker); setShowReceivingPicker(false); setGivingSearch('') }}
+                  className="inline-flex items-center gap-1 px-2 py-1 text-xs text-brand-text hover:bg-brand/10 rounded-full transition-colors"
+                >
+                  + Add
+                </button>
               </div>
-              <div>
-                <p className="text-success-text text-xs uppercase mb-1">You Receive</p>
-                {Array.from(receivingIds).map(id => {
-                  const school = partnerRoster.find(s => s.schoolId === id)
-                  return <p key={id} className="text-text-secondary">{school?.schoolName || id}</p>
-                })}
-                {receivingCount === 0 && <p className="text-text-muted italic">None selected</p>}
-              </div>
+              {showGivingPicker && (
+                <div className="mt-2">
+                  <InlinePicker
+                    schools={myRoster}
+                    selectedIds={givingIds}
+                    disabledIds={partnerRosterSchoolIds}
+                    onToggle={toggleGiving}
+                    variant="giving"
+                    search={givingSearch}
+                    onSearchChange={setGivingSearch}
+                    schoolPointsMap={schoolPointsMap}
+                    rankingsMap={rankingsMap}
+                    schoolRecordsMap={schoolRecordsMap}
+                  />
+                </div>
+              )}
             </div>
-            {dropIds.size > 0 && (
-              <div className="mt-2 pt-2 border-t border-border">
-                <p className="text-warning-text text-xs uppercase mb-1">Dropping</p>
+
+            {/* You Receive */}
+            <div>
+              <h3 className="text-xs font-semibold text-success-text uppercase tracking-wide mb-2">You Receive</h3>
+              <div className="min-h-[44px] bg-surface-inset rounded-lg p-2 flex flex-wrap gap-1.5">
+                {receivingCount === 0 && !showReceivingPicker && (
+                  <span className="text-text-muted text-xs py-1">No schools selected</span>
+                )}
+                {Array.from(receivingIds).map(id => {
+                  const school = findPartnerSchool(id)
+                  return school ? (
+                    <SchoolChip key={id} school={school} onRemove={() => { toggleReceiving(id); setDropIds(new Set()) }} variant="receiving" />
+                  ) : null
+                })}
+                <button
+                  onClick={() => { setShowReceivingPicker(!showReceivingPicker); setShowGivingPicker(false); setReceivingSearch('') }}
+                  className="inline-flex items-center gap-1 px-2 py-1 text-xs text-brand-text hover:bg-brand/10 rounded-full transition-colors"
+                >
+                  + Add
+                </button>
+              </div>
+              {showReceivingPicker && (
+                <div className="mt-2">
+                  <InlinePicker
+                    schools={partnerRoster}
+                    selectedIds={receivingIds}
+                    disabledIds={myRosterSchoolIds}
+                    onToggle={toggleReceiving}
+                    variant="receiving"
+                    search={receivingSearch}
+                    onSearchChange={setReceivingSearch}
+                    schoolPointsMap={schoolPointsMap}
+                    rankingsMap={rankingsMap}
+                    schoolRecordsMap={schoolRecordsMap}
+                  />
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Inline drop picker — appears automatically when needed */}
+          {needsDrops && givingCount > 0 && receivingCount > 0 && (
+            <div className="bg-warning/5 border border-warning/30 rounded-lg p-4">
+              <p className="text-sm font-semibold text-warning-text mb-2">
+                You need to drop {dropsNeeded} school{dropsNeeded > 1 ? 's' : ''} to make room
+                <span className="font-normal text-text-muted ml-1">({dropIds.size}/{dropsNeeded} selected)</span>
+              </p>
+              <div className="flex flex-wrap gap-1.5 mb-2">
                 {Array.from(dropIds).map(id => {
-                  const school = myRoster.find(s => s.schoolId === id)
-                  return <p key={id} className="text-text-secondary text-sm">{school?.schoolName || id}</p>
+                  const school = findMySchool(id)
+                  return school ? (
+                    <SchoolChip key={id} school={school} onRemove={() => toggleDrop(id)} variant="dropping" />
+                  ) : null
                 })}
               </div>
-            )}
-          </div>
-        )}
+              <InlinePicker
+                schools={droppableSchools}
+                selectedIds={dropIds}
+                disabledIds={new Set()}
+                onToggle={toggleDrop}
+                variant="dropping"
+                search={dropSearch}
+                onSearchChange={setDropSearch}
+                schoolPointsMap={schoolPointsMap}
+                rankingsMap={rankingsMap}
+                schoolRecordsMap={schoolRecordsMap}
+              />
+            </div>
+          )}
 
-        {/* Message */}
-        <div className="mx-6 mb-4">
-          <textarea
-            value={message}
-            onChange={(e) => setMessage(e.target.value)}
-            placeholder="Add a message (optional)"
-            maxLength={500}
-            rows={2}
-            className="w-full px-4 py-3 bg-surface border border-border rounded-lg text-text-primary placeholder:text-text-muted text-sm resize-none"
-          />
+          {/* Live roster preview */}
+          {(givingCount > 0 || receivingCount > 0) && (
+            <div className="bg-surface-inset rounded-lg p-4">
+              <div className="flex items-center justify-between mb-1">
+                <p className="text-xs font-semibold text-text-secondary uppercase tracking-wide">Your roster after trade</p>
+                <span className={`text-xs font-medium ${
+                  rosterAfterTrade > maxRosterSize ? 'text-danger-text' : 'text-text-muted'
+                }`}>
+                  {finalRoster.length}/{maxRosterSize} schools
+                </span>
+              </div>
+              {rosterAfterTrade > maxRosterSize ? (
+                <p className="text-xs text-danger-text">Exceeds roster limit — select drops above</p>
+              ) : (
+                <p className="text-xs text-text-muted">
+                  {finalRoster.length === 0 ? 'Empty' : finalRoster.join(' · ')}
+                </p>
+              )}
+            </div>
+          )}
+
+          {/* Message */}
+          <div>
+            <label className="block text-xs text-text-secondary mb-1">Message (optional)</label>
+            <input
+              type="text"
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+              placeholder="Add a note to your trade proposal..."
+              maxLength={500}
+              className="w-full px-3 py-2.5 bg-surface border border-border rounded-lg text-text-primary placeholder:text-text-muted text-sm"
+            />
+          </div>
         </div>
 
         {/* Actions */}
@@ -448,7 +492,7 @@ export default function TradeProposalModal({
               ? 'Sending...'
               : counterToTrade
                 ? 'Send Counter'
-                : 'Propose Trade'}
+                : 'Send Proposal'}
           </button>
         </div>
       </div>
