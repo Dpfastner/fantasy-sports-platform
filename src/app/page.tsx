@@ -146,26 +146,26 @@ export default async function Home() {
             </div>
           ) : (
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="bg-surface-subtle p-5 rounded-lg border-l-4 border-l-orange-500">
+              <Link href="/signup?next=%2Fevents%3Fsport%3Dcfb" className="bg-surface-subtle p-5 rounded-lg border-l-4 border-l-orange-500 hover:shadow-md hover:border-brand/40 transition-all">
                 <span className="text-2xl">🏈</span>
                 <h3 className="text-lg font-semibold mt-2">Football</h3>
                 <p className="text-text-secondary text-sm mt-1">Fantasy leagues with college football programs</p>
-              </div>
-              <div className="bg-surface-subtle p-5 rounded-lg border-l-4 border-l-blue-500">
+              </Link>
+              <Link href="/signup?next=%2Fevents%3Fsport%3Dhockey" className="bg-surface-subtle p-5 rounded-lg border-l-4 border-l-blue-500 hover:shadow-md hover:border-brand/40 transition-all">
                 <span className="text-2xl">🏒</span>
                 <h3 className="text-lg font-semibold mt-2">Hockey</h3>
                 <p className="text-text-secondary text-sm mt-1">Bracket predictions for NCAA hockey tournaments</p>
-              </div>
-              <div className="bg-surface-subtle p-5 rounded-lg border-l-4 border-l-green-500">
+              </Link>
+              <Link href="/signup?next=%2Fevents%3Fsport%3Dgolf" className="bg-surface-subtle p-5 rounded-lg border-l-4 border-l-green-500 hover:shadow-md hover:border-brand/40 transition-all">
                 <span className="text-2xl">⛳</span>
                 <h3 className="text-lg font-semibold mt-2">Golf</h3>
                 <p className="text-text-secondary text-sm mt-1">Roster competitions for major golf tournaments</p>
-              </div>
-              <div className="bg-surface-subtle p-5 rounded-lg border-l-4 border-l-red-500">
+              </Link>
+              <Link href="/signup?next=%2Fevents%3Fsport%3Drugby" className="bg-surface-subtle p-5 rounded-lg border-l-4 border-l-red-500 hover:shadow-md hover:border-brand/40 transition-all">
                 <span className="text-2xl">🏉</span>
                 <h3 className="text-lg font-semibold mt-2">Rugby</h3>
                 <p className="text-text-secondary text-sm mt-1">Survivor and pick'em for the Six Nations</p>
-              </div>
+              </Link>
             </div>
           )}
         </div>

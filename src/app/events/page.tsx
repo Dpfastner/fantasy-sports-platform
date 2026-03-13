@@ -33,7 +33,18 @@ export const metadata = {
   description: 'Browse and join bracket predictions, survivor leagues, and pick\'em competitions across multiple sports.',
 }
 
-export default async function EventsPage() {
+// Map sport config IDs to DB sport slugs
+const sportSlugMap: Record<string, string> = {
+  cfb: 'college_football',
+  hockey: 'hockey',
+  golf: 'golf',
+  rugby: 'rugby',
+  football: 'college_football',
+}
+
+export default async function EventsPage({ searchParams }: { searchParams: Promise<{ sport?: string }> }) {
+  const params = await searchParams
+  const sportFilter = params.sport ? sportSlugMap[params.sport] || params.sport : null
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
@@ -48,12 +59,15 @@ export default async function EventsPage() {
     profile = data
   }
 
-  // Get all tournaments (public read)
-  const { data: tournaments } = await supabase
+  // Get all tournaments (public read), optionally filtered by sport
+  let tournamentsQuery = supabase
     .from('event_tournaments')
     .select('*')
     .in('status', ['upcoming', 'active'])
-    .order('starts_at', { ascending: true })
+  if (sportFilter) {
+    tournamentsQuery = tournamentsQuery.eq('sport', sportFilter)
+  }
+  const { data: tournaments } = await tournamentsQuery.order('starts_at', { ascending: true })
 
   // Get pool counts per tournament
   const tournamentIds = (tournaments || []).map(t => t.id)

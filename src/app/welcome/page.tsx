@@ -97,11 +97,12 @@ export default function WelcomePage() {
           </h2>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 max-w-4xl mx-auto">
             {SPORTS.map((sport) => (
-              <div
+              <Link
                 key={sport.id}
-                className={`rounded-xl p-4 md:p-5 border text-center ${
+                href={`/signup?next=${encodeURIComponent(`/events?sport=${sport.id}`)}`}
+                className={`rounded-xl p-4 md:p-5 border text-center transition-all hover:shadow-md ${
                   sport.status === 'active'
-                    ? 'bg-surface-subtle border-brand/40'
+                    ? 'bg-surface-subtle border-brand/40 hover:border-brand'
                     : 'bg-surface border-border opacity-70'
                 }`}
               >
@@ -113,7 +114,7 @@ export default function WelcomePage() {
                   </span>
                 )}
                 <p className="text-text-secondary text-xs leading-relaxed hidden md:block">{sport.description}</p>
-              </div>
+              </Link>
             ))}
           </div>
         </div>
