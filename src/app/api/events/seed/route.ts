@@ -28,6 +28,8 @@ export async function POST(request: Request) {
         return await seedWSixNations(admin)
       case 'm-six-nations-2026':
         return await seedMSixNations(admin)
+      case 'refresh-golf-rankings':
+        return await refreshGolfRankings(admin)
       case 'sync-hockey-logos':
         return await syncHockeyLogos(admin)
       case 'frozen-four-2026-schedule':
@@ -465,6 +467,81 @@ async function seedMasters(admin: ReturnType<typeof createAdminClient>) {
     id: tournament.id,
     participants: golfers.length,
     games: gameRows.length,
+  })
+}
+
+// ============================================
+// REFRESH GOLF RANKINGS
+// Updates existing golf participants with live OWGR + country data from ESPN.
+// ============================================
+
+async function refreshGolfRankings(admin: ReturnType<typeof createAdminClient>) {
+  const rankings = await fetchGolfRankings()
+  if (rankings.length === 0) {
+    return NextResponse.json({ error: 'Failed to fetch rankings from ESPN' }, { status: 502 })
+  }
+
+  // Find all golf tournaments
+  const { data: tournaments } = await admin
+    .from('event_tournaments')
+    .select('id, name')
+    .eq('sport', 'golf')
+
+  if (!tournaments?.length) {
+    return NextResponse.json({ error: 'No golf tournaments found' }, { status: 404 })
+  }
+
+  const getTier = (owgr?: number) => {
+    if (!owgr) return 'C'
+    if (owgr <= 15) return 'A'
+    if (owgr <= 30) return 'B'
+    return 'C'
+  }
+
+  // Build lookup by lowercase name
+  const rankingsByName: Record<string, { rank: number; country: string }> = {}
+  for (const r of rankings) {
+    rankingsByName[r.name.toLowerCase()] = { rank: r.rank, country: r.country }
+  }
+
+  let totalUpdated = 0
+
+  for (const tournament of tournaments) {
+    const { data: participants } = await admin
+      .from('event_participants')
+      .select('id, name, metadata')
+      .eq('tournament_id', tournament.id)
+
+    if (!participants) continue
+
+    for (const p of participants) {
+      const found = rankingsByName[p.name.toLowerCase()]
+      if (!found) continue
+
+      const existingMeta = (p.metadata || {}) as Record<string, unknown>
+      const countryCode = getCountryFlagCode(found.country)
+      const updatedMeta = {
+        ...existingMeta,
+        owgr: found.rank,
+        tier: getTier(found.rank),
+        country: found.country,
+        ...(countryCode ? { country_code: countryCode } : {}),
+      }
+
+      await admin
+        .from('event_participants')
+        .update({ metadata: updatedMeta, updated_at: new Date().toISOString() })
+        .eq('id', p.id)
+
+      totalUpdated++
+    }
+  }
+
+  return NextResponse.json({
+    success: true,
+    rankingsFetched: rankings.length,
+    participantsUpdated: totalUpdated,
+    tournaments: tournaments.map(t => t.name),
   })
 }
 
