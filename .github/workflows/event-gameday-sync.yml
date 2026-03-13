@@ -2,11 +2,11 @@ name: Event Gameday Live Sync
 
 on:
   schedule:
-    # Every 10 minutes - the endpoint has smart skip logic:
+    # Every 5 minutes - the endpoint has smart skip logic:
     # - No event games today? Skip instantly
     # - Outside game window (30min before → 4hr after)? Skip instantly
     # - In game window? Fetch ESPN, update scores/period/clock
-    - cron: '*/10 * * * *'
+    - cron: '*/5 * * * *'
   workflow_dispatch: # Allow manual trigger
 
 jobs:
