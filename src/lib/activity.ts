@@ -63,6 +63,9 @@ export type ActivityAction =
   | 'event.leaderboard_viewed'
   | 'event.draft_started'
   | 'event.draft_pick'
+  // Support
+  | 'support.response_sent'
+  | 'support.ticket_viewed'
   // Other
   | 'invite_code.looked_up'
   | 'issue_report.submitted'

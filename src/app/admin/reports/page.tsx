@@ -2,17 +2,40 @@
 
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import Link from 'next/link'
+
 interface Report {
   id: string
   category: string
   description: string
   user_id: string | null
   page: string | null
-  user_agent: string | null
   status: string
+  priority: string
+  ai_category: string | null
+  ai_summary: string | null
+  response_count: number
+  last_response_at: string | null
   created_at: string
   admin_notes: string | null
   profiles?: { email: string; display_name: string | null } | null
+}
+
+const categoryColors: Record<string, string> = {
+  bug: 'bg-danger/20 text-danger-text',
+  feature: 'bg-brand/20 text-brand-text',
+  other: 'bg-surface-inset text-text-secondary',
+}
+
+const statusColors: Record<string, string> = {
+  new: 'bg-warning/20 text-warning-text',
+  in_progress: 'bg-brand/20 text-brand-text',
+  resolved: 'bg-success/20 text-success-text',
+}
+
+const priorityColors: Record<string, string> = {
+  high: 'bg-warning/20 text-warning-text',
+  urgent: 'bg-danger/20 text-danger-text',
 }
 
 export default function AdminReportsPage() {
@@ -20,7 +43,6 @@ export default function AdminReportsPage() {
   const [reports, setReports] = useState<Report[]>([])
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState<'all' | 'new' | 'in_progress' | 'resolved'>('all')
-  const [updating, setUpdating] = useState<string | null>(null)
 
   useEffect(() => {
     loadReports()
@@ -33,31 +55,9 @@ export default function AdminReportsPage() {
       .select('*, profiles(email, display_name)')
       .order('created_at', { ascending: false })
 
-    if (data) {
-      setReports(data)
-    }
-    if (error) {
-      console.error('Error loading reports:', error)
-    }
+    if (data) setReports(data)
+    if (error) console.error('Error loading reports:', error)
     setLoading(false)
-  }
-
-  const updateStatus = async (reportId: string, newStatus: string) => {
-    setUpdating(reportId)
-    const { error } = await supabase
-      .from('issue_reports')
-      .update({
-        status: newStatus,
-        resolved_at: newStatus === 'resolved' ? new Date().toISOString() : null
-      })
-      .eq('id', reportId)
-
-    if (!error) {
-      setReports(prev => prev.map(r =>
-        r.id === reportId ? { ...r, status: newStatus } : r
-      ))
-    }
-    setUpdating(null)
   }
 
   const filteredReports = filter === 'all'
@@ -69,18 +69,6 @@ export default function AdminReportsPage() {
     new: reports.filter(r => r.status === 'new').length,
     in_progress: reports.filter(r => r.status === 'in_progress').length,
     resolved: reports.filter(r => r.status === 'resolved').length,
-  }
-
-  const categoryColors: Record<string, string> = {
-    bug: 'bg-danger/20 text-danger-text',
-    feature: 'bg-brand/20 text-brand-text',
-    other: 'bg-surface-subtle/20 text-text-secondary',
-  }
-
-  const statusColors: Record<string, string> = {
-    new: 'bg-warning/20 text-warning-text',
-    in_progress: 'bg-brand/20 text-brand-text',
-    resolved: 'bg-success/20 text-success-text',
   }
 
   return (
@@ -100,74 +88,78 @@ export default function AdminReportsPage() {
                   : 'bg-surface text-text-secondary hover:bg-surface-subtle'
               }`}
             >
-              {status.replace('_', ' ').charAt(0).toUpperCase() + status.slice(1).replace('_', ' ')}
+              {status === 'all' ? 'All' : status === 'in_progress' ? 'In Progress' : status.charAt(0).toUpperCase() + status.slice(1)}
               <span className="ml-2 text-sm opacity-70">({statusCounts[status]})</span>
             </button>
           ))}
         </div>
 
         {loading ? (
-          <div className="text-text-secondary">Loading reports...</div>
+          <div className="flex items-center justify-center py-12">
+            <div className="w-6 h-6 border-2 border-brand border-t-transparent rounded-full animate-spin" />
+          </div>
         ) : filteredReports.length === 0 ? (
           <div className="bg-surface rounded-lg p-8 text-center">
             <p className="text-text-secondary">No reports found.</p>
           </div>
         ) : (
-          <div className="space-y-4">
+          <div className="space-y-3">
             {filteredReports.map(report => (
-              <div key={report.id} className="bg-surface rounded-lg p-6">
-                <div className="flex items-start justify-between gap-4 mb-4">
-                  <div className="flex items-center gap-3">
-                    <span className={`px-2 py-1 rounded text-xs font-medium ${categoryColors[report.category] || categoryColors.other}`}>
+              <Link
+                key={report.id}
+                href={`/admin/reports/${report.id}`}
+                className="block bg-surface rounded-lg p-5 hover:bg-surface-inset/30 transition-colors border border-border"
+              >
+                <div className="flex items-start justify-between gap-4 mb-2">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className={`px-2 py-0.5 rounded text-xs font-medium ${categoryColors[report.category] || categoryColors.other}`}>
                       {report.category}
                     </span>
-                    <span className={`px-2 py-1 rounded text-xs font-medium ${statusColors[report.status] || statusColors.new}`}>
+                    <span className={`px-2 py-0.5 rounded text-xs font-medium ${statusColors[report.status] || statusColors.new}`}>
                       {report.status.replace('_', ' ')}
                     </span>
-                    <span className="text-text-muted text-sm">
-                      {new Date(report.created_at).toLocaleString()}
+                    {report.priority && priorityColors[report.priority] && (
+                      <span className={`px-2 py-0.5 rounded text-xs font-medium ${priorityColors[report.priority]}`}>
+                        {report.priority}
+                      </span>
+                    )}
+                    {report.ai_category && (
+                      <span className="px-2 py-0.5 rounded text-xs font-medium bg-accent/20 text-accent">
+                        AI: {report.ai_category}
+                      </span>
+                    )}
+                    <span className="text-text-muted text-xs">
+                      {new Date(report.created_at).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}
                     </span>
                   </div>
-                  <div className="flex gap-2">
-                    {report.status !== 'in_progress' && (
-                      <button
-                        onClick={() => updateStatus(report.id, 'in_progress')}
-                        disabled={updating === report.id}
-                        className="px-3 py-1 bg-brand hover:bg-brand-hover text-text-primary text-sm rounded transition-colors disabled:opacity-50"
-                      >
-                        Mark In Progress
-                      </button>
+                  <div className="flex items-center gap-2 shrink-0">
+                    {(report.response_count || 0) > 0 && (
+                      <span className="text-xs text-text-muted bg-surface-inset px-2 py-0.5 rounded">
+                        {report.response_count} {report.response_count === 1 ? 'reply' : 'replies'}
+                      </span>
                     )}
-                    {report.status !== 'resolved' && (
-                      <button
-                        onClick={() => updateStatus(report.id, 'resolved')}
-                        disabled={updating === report.id}
-                        className="px-3 py-1 bg-success hover:bg-success-hover text-text-primary text-sm rounded transition-colors disabled:opacity-50"
-                      >
-                        Mark Resolved
-                      </button>
-                    )}
-                    {report.status === 'resolved' && (
-                      <button
-                        onClick={() => updateStatus(report.id, 'new')}
-                        disabled={updating === report.id}
-                        className="px-3 py-1 bg-surface-subtle hover:bg-surface-subtle text-text-primary text-sm rounded transition-colors disabled:opacity-50"
-                      >
-                        Reopen
-                      </button>
-                    )}
+                    <svg className="w-4 h-4 text-text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
                   </div>
                 </div>
 
-                <p className="text-text-primary mb-4">{report.description}</p>
+                <p className="text-text-primary text-sm line-clamp-2 mb-1">{report.description}</p>
 
-                <div className="flex flex-wrap gap-4 text-sm text-text-secondary">
+                {report.ai_summary && (
+                  <p className="text-text-secondary text-xs italic mb-1">AI: {report.ai_summary}</p>
+                )}
+
+                <div className="flex flex-wrap gap-3 text-xs text-text-muted">
                   {report.profiles && (
-                    <span>User: {report.profiles.display_name || report.profiles.email}</span>
+                    <span>{report.profiles.display_name || report.profiles.email}</span>
                   )}
-                  {report.page && <span>Page: {report.page}</span>}
+                  {report.page && <span>{report.page}</span>}
+                  {report.last_response_at && (
+                    <span>Last reply: {new Date(report.last_response_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
+                  )}
                 </div>
-              </div>
+              </Link>
             ))}
           </div>
         )}

@@ -225,3 +225,9 @@ export const eventRosterDraftPickSchema = z.object({
   participantId: uuidField,
   pickNumber: z.number().int().min(1),
 })
+
+// ── Support Tickets ──────────────────────────────────────────
+
+export const ticketResponseSchema = z.object({
+  content: z.string().min(1, 'Response is required').max(5000, 'Response too long'),
+})

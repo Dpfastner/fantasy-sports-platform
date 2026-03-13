@@ -26,10 +26,9 @@ export async function POST(request: NextRequest) {
     const supabase = createAdminClient()
 
     // Try to insert into issue_reports table
-    // If table doesn't exist, we'll catch the error and still return success
-    // (user's report is logged to console as fallback)
+    let reportId: string | null = null
     try {
-      const { error } = await supabase
+      const { data: inserted, error } = await supabase
         .from('issue_reports')
         .insert({
           category,
@@ -39,37 +38,29 @@ export async function POST(request: NextRequest) {
           user_agent: userAgent,
           status: 'new',
         })
+        .select('id')
+        .single()
 
       if (error) {
-        // Table might not exist - log to console as fallback
-        console.log('Issue Report (table may not exist):', {
-          category,
-          description,
-          userId: user.id,
-          page,
-          userAgent,
-          timestamp: new Date().toISOString(),
+        console.log('Issue Report (insert error):', {
+          category, description, userId: user.id, page, timestamp: new Date().toISOString(),
         })
+      } else {
+        reportId = inserted?.id || null
       }
     } catch {
-      // Log to console as fallback
-      console.log('Issue Report:', {
-        category,
-        description,
-        userId: user.id,
-        page,
-        userAgent,
-        timestamp: new Date().toISOString(),
+      console.log('Issue Report (fallback):', {
+        category, description, userId: user.id, page, timestamp: new Date().toISOString(),
       })
     }
 
     logActivity({
       userId: user.id,
       action: 'issue_report.submitted',
-      details: { category },
+      details: { category, reportId },
     })
 
-    return NextResponse.json({ success: true })
+    return NextResponse.json({ success: true, reportId })
   } catch (error) {
     console.error('Report submission error:', error)
     return NextResponse.json(

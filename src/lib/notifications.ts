@@ -27,6 +27,7 @@ export type NotificationType =
   | 'event_results'
   | 'event_pool_joined'
   | 'event_tournament_starting'
+  | 'support_response'
   | 'system'
 
 /**
@@ -132,6 +133,11 @@ function buildNotificationUrl(
       const slug = data?.tournamentSlug as string
       if (poolId && slug) return `${base}/events/${slug}/pools/${poolId}`
       return `${base}/events`
+    }
+    case 'support_response': {
+      const reportId = data?.reportId as string
+      if (reportId) return `${base}/support/${reportId}`
+      return `${base}/support`
     }
     default:
       return `${base}/dashboard`
