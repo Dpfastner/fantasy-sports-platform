@@ -47,6 +47,8 @@ export async function POST(request: Request) {
         return await resetWSixNationsScores(admin)
       case 'update-w-six-nations-config':
         return await updateWSixNationsConfig(admin)
+      case 'fix-m-six-nations-rounds':
+        return await fixMSixNationsRounds(admin)
       case 'sync-hockey-logos':
         return await syncHockeyLogos(admin)
       case 'frozen-four-2026-schedule':
@@ -973,6 +975,118 @@ async function updateWSixNationsConfig(admin: ReturnType<typeof createAdminClien
   return NextResponse.json({ success: true, config: updatedConfig })
 }
 
+// Fix Men's Six Nations round/date/matchup assignments to match actual 2026 schedule
+async function fixMSixNationsRounds(admin: ReturnType<typeof createAdminClient>) {
+  const { data: tournament } = await admin
+    .from('event_tournaments')
+    .select('id')
+    .eq('slug', 'm-six-nations-2026')
+    .single()
+
+  if (!tournament) return NextResponse.json({ error: 'M Six Nations not found' }, { status: 404 })
+
+  const { data: participants } = await admin
+    .from('event_participants')
+    .select('id, short_name')
+    .eq('tournament_id', tournament.id)
+
+  const codeToId: Record<string, string> = {}
+  for (const p of (participants || [])) {
+    if (p.short_name) codeToId[p.short_name] = p.id
+  }
+
+  // Correct fixtures per TheSportsDB league 4714
+  const correctFixtures = [
+    { round: 'round_1', num: 1, home: 'FRA', away: 'IRL', at: '2026-02-05T21:00:00Z', venue: 'Stade de France, Paris' },
+    { round: 'round_1', num: 2, home: 'ITA', away: 'SCO', at: '2026-02-07T14:15:00Z', venue: 'Stadio Olimpico, Rome' },
+    { round: 'round_1', num: 3, home: 'ENG', away: 'WAL', at: '2026-02-07T16:45:00Z', venue: 'Allianz Stadium, Twickenham' },
+    { round: 'round_2', num: 4, home: 'IRL', away: 'ITA', at: '2026-02-14T14:15:00Z', venue: 'Aviva Stadium, Dublin' },
+    { round: 'round_2', num: 5, home: 'SCO', away: 'ENG', at: '2026-02-14T16:45:00Z', venue: 'Scottish Gas Murrayfield' },
+    { round: 'round_2', num: 6, home: 'WAL', away: 'FRA', at: '2026-02-15T15:00:00Z', venue: 'Principality Stadium, Cardiff' },
+    { round: 'round_3', num: 7, home: 'ENG', away: 'IRL', at: '2026-02-21T16:45:00Z', venue: 'Allianz Stadium, Twickenham' },
+    { round: 'round_3', num: 8, home: 'WAL', away: 'SCO', at: '2026-02-21T14:15:00Z', venue: 'Principality Stadium, Cardiff' },
+    { round: 'round_3', num: 9, home: 'FRA', away: 'ITA', at: '2026-02-22T15:00:00Z', venue: 'Stade de France, Paris' },
+    { round: 'round_4', num: 10, home: 'IRL', away: 'WAL', at: '2026-03-06T20:00:00Z', venue: 'Aviva Stadium, Dublin' },
+    { round: 'round_4', num: 11, home: 'SCO', away: 'FRA', at: '2026-03-07T14:15:00Z', venue: 'Scottish Gas Murrayfield' },
+    { round: 'round_4', num: 12, home: 'ITA', away: 'ENG', at: '2026-03-07T16:45:00Z', venue: 'Stadio Olimpico, Rome' },
+    { round: 'round_5', num: 13, home: 'IRL', away: 'SCO', at: '2026-03-14T14:15:00Z', venue: 'Aviva Stadium, Dublin' },
+    { round: 'round_5', num: 14, home: 'WAL', away: 'ITA', at: '2026-03-14T16:45:00Z', venue: 'Principality Stadium, Cardiff' },
+    { round: 'round_5', num: 15, home: 'FRA', away: 'ENG', at: '2026-03-14T21:00:00Z', venue: 'Stade de France, Paris' },
+  ]
+
+  // Get existing games to match by team pair
+  const { data: existingGames } = await admin
+    .from('event_games')
+    .select('id, participant_1_id, participant_2_id')
+    .eq('tournament_id', tournament.id)
+
+  if (!existingGames) throw new Error('Failed to fetch existing games')
+
+  // Build lookup: sorted team pair → game id
+  const pairToGame = new Map<string, string>()
+  for (const g of existingGames) {
+    const pair = [g.participant_1_id, g.participant_2_id].sort().join('|')
+    pairToGame.set(pair, g.id)
+  }
+
+  const details: unknown[] = []
+
+  // Pass 1: Set temporary game_numbers (100+) to avoid unique constraint conflicts
+  for (const f of correctFixtures) {
+    const p1Id = codeToId[f.home]
+    const p2Id = codeToId[f.away]
+    const pair = [p1Id, p2Id].sort().join('|')
+    const gameId = pairToGame.get(pair)
+    if (!gameId) continue
+
+    await admin
+      .from('event_games')
+      .update({ game_number: 100 + f.num })
+      .eq('id', gameId)
+  }
+
+  // Pass 2: Set correct values
+  let updated = 0
+  for (const f of correctFixtures) {
+    const p1Id = codeToId[f.home]
+    const p2Id = codeToId[f.away]
+    const pair = [p1Id, p2Id].sort().join('|')
+    const gameId = pairToGame.get(pair)
+
+    if (!gameId) {
+      details.push({ game: `${f.home}-${f.away}`, error: 'no matching game found' })
+      continue
+    }
+
+    const { error } = await admin
+      .from('event_games')
+      .update({
+        round: f.round,
+        game_number: f.num,
+        participant_1_id: p1Id,
+        participant_2_id: p2Id,
+        starts_at: f.at,
+        participant_1_score: null,
+        participant_2_score: null,
+        winner_id: null,
+        is_draw: false,
+        status: 'scheduled',
+        metadata: { venue: f.venue },
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', gameId)
+
+    if (!error) {
+      updated++
+      details.push({ game: `${f.home}-${f.away}`, round: f.round, num: f.num })
+    } else {
+      details.push({ game: `${f.home}-${f.away}`, error: error.message })
+    }
+  }
+
+  return NextResponse.json({ success: true, games_updated: updated, details })
+}
+
 // Fetch past scores from ESPN Site API and update all rugby games + trigger scoring.
 async function backfillRugbyScores(admin: ReturnType<typeof createAdminClient>) {
   const { data: tournaments } = await admin
@@ -1510,29 +1624,29 @@ async function seedMSixNations(admin: ReturnType<typeof createAdminClient>) {
     if (p.short_name) codeToId[p.short_name] = p.id
   }
 
-  // Full fixture schedule (all times UTC)
+  // Full fixture schedule (all times UTC) — matches TheSportsDB league 4714
   // Note: Pick'em uses round labels but no week_number (no elimination tracking)
   const fixtures = [
-    // Round 1 — Sat Feb 1
-    { round: 'round_1', num: 1, home: 'FRA', away: 'WAL', at: '2026-02-01T14:15:00Z', venue: 'Stade de France, Paris' },
-    { round: 'round_1', num: 2, home: 'SCO', away: 'ITA', at: '2026-02-01T16:15:00Z', venue: 'Scottish Gas Murrayfield' },
-    { round: 'round_1', num: 3, home: 'IRL', away: 'ENG', at: '2026-02-01T17:45:00Z', venue: 'Aviva Stadium, Dublin' },
-    // Round 2 — Sat Feb 8
-    { round: 'round_2', num: 4, home: 'ITA', away: 'WAL', at: '2026-02-08T14:15:00Z', venue: 'Stadio Olimpico, Rome' },
-    { round: 'round_2', num: 5, home: 'ENG', away: 'FRA', at: '2026-02-08T16:45:00Z', venue: 'Allianz Stadium, Twickenham' },
-    { round: 'round_2', num: 6, home: 'SCO', away: 'IRL', at: '2026-02-08T17:00:00Z', venue: 'Scottish Gas Murrayfield' },
-    // Round 3 — Sat Feb 22
-    { round: 'round_3', num: 7, home: 'ITA', away: 'IRL', at: '2026-02-22T14:15:00Z', venue: 'Stadio Olimpico, Rome' },
-    { round: 'round_3', num: 8, home: 'WAL', away: 'ENG', at: '2026-02-22T16:45:00Z', venue: 'Principality Stadium, Cardiff' },
-    { round: 'round_3', num: 9, home: 'FRA', away: 'SCO', at: '2026-02-22T21:00:00Z', venue: 'Stade de France, Paris' },
-    // Round 4 — Sat Mar 8
-    { round: 'round_4', num: 10, home: 'IRL', away: 'FRA', at: '2026-03-08T14:15:00Z', venue: 'Aviva Stadium, Dublin' },
-    { round: 'round_4', num: 11, home: 'WAL', away: 'SCO', at: '2026-03-08T16:45:00Z', venue: 'Principality Stadium, Cardiff' },
-    { round: 'round_4', num: 12, home: 'ENG', away: 'ITA', at: '2026-03-08T17:00:00Z', venue: 'Allianz Stadium, Twickenham' },
-    // Round 5 — Sat Mar 15 (Super Saturday)
-    { round: 'round_5', num: 13, home: 'SCO', away: 'ENG', at: '2026-03-15T14:15:00Z', venue: 'Scottish Gas Murrayfield' },
-    { round: 'round_5', num: 14, home: 'FRA', away: 'ITA', at: '2026-03-15T16:45:00Z', venue: 'Stade de France, Paris' },
-    { round: 'round_5', num: 15, home: 'WAL', away: 'IRL', at: '2026-03-15T21:00:00Z', venue: 'Principality Stadium, Cardiff' },
+    // Round 1 — Feb 5-7
+    { round: 'round_1', num: 1, home: 'FRA', away: 'IRL', at: '2026-02-05T21:00:00Z', venue: 'Stade de France, Paris' },
+    { round: 'round_1', num: 2, home: 'ITA', away: 'SCO', at: '2026-02-07T14:15:00Z', venue: 'Stadio Olimpico, Rome' },
+    { round: 'round_1', num: 3, home: 'ENG', away: 'WAL', at: '2026-02-07T16:45:00Z', venue: 'Allianz Stadium, Twickenham' },
+    // Round 2 — Feb 14-15
+    { round: 'round_2', num: 4, home: 'IRL', away: 'ITA', at: '2026-02-14T14:15:00Z', venue: 'Aviva Stadium, Dublin' },
+    { round: 'round_2', num: 5, home: 'SCO', away: 'ENG', at: '2026-02-14T16:45:00Z', venue: 'Scottish Gas Murrayfield' },
+    { round: 'round_2', num: 6, home: 'WAL', away: 'FRA', at: '2026-02-15T15:00:00Z', venue: 'Principality Stadium, Cardiff' },
+    // Round 3 — Feb 21-22
+    { round: 'round_3', num: 7, home: 'ENG', away: 'IRL', at: '2026-02-21T16:45:00Z', venue: 'Allianz Stadium, Twickenham' },
+    { round: 'round_3', num: 8, home: 'WAL', away: 'SCO', at: '2026-02-21T14:15:00Z', venue: 'Principality Stadium, Cardiff' },
+    { round: 'round_3', num: 9, home: 'FRA', away: 'ITA', at: '2026-02-22T15:00:00Z', venue: 'Stade de France, Paris' },
+    // Round 4 — Mar 6-7
+    { round: 'round_4', num: 10, home: 'IRL', away: 'WAL', at: '2026-03-06T20:00:00Z', venue: 'Aviva Stadium, Dublin' },
+    { round: 'round_4', num: 11, home: 'SCO', away: 'FRA', at: '2026-03-07T14:15:00Z', venue: 'Scottish Gas Murrayfield' },
+    { round: 'round_4', num: 12, home: 'ITA', away: 'ENG', at: '2026-03-07T16:45:00Z', venue: 'Stadio Olimpico, Rome' },
+    // Round 5 — Sat Mar 14 (Super Saturday)
+    { round: 'round_5', num: 13, home: 'IRL', away: 'SCO', at: '2026-03-14T14:15:00Z', venue: 'Aviva Stadium, Dublin' },
+    { round: 'round_5', num: 14, home: 'WAL', away: 'ITA', at: '2026-03-14T16:45:00Z', venue: 'Principality Stadium, Cardiff' },
+    { round: 'round_5', num: 15, home: 'FRA', away: 'ENG', at: '2026-03-14T21:00:00Z', venue: 'Stade de France, Paris' },
   ]
 
   const gameRows = fixtures.map(f => ({
