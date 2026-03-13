@@ -126,7 +126,7 @@ export function Leaderboard({ members, format, poolStatus }: LeaderboardProps) {
                     <span className={`text-right text-xs font-medium ${
                       member.isActive ? 'text-success-text' : 'text-danger-text'
                     }`}>
-                      {member.isActive ? 'Alive' : 'Out'}
+                      {member.isActive ? 'Alive' : 'Eliminated'}
                     </span>
                   </>
                 ) : (
