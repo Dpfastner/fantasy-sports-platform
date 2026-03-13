@@ -241,45 +241,204 @@ export default async function DashboardPage() {
 
   const referralUrl = `https://rivyls.com/welcome?ref=${user.id}`
 
+  // --- Unified dashboard items ---
+  const sportIcon: Record<string, string> = {
+    hockey: '\uD83C\uDFD2', golf: '\u26F3', rugby: '\uD83C\uDFC9',
+    football: '\uD83C\uDFC8', basketball: '\uD83C\uDFC0',
+  }
+  const formatLabel: Record<string, string> = {
+    bracket: 'Bracket', pickem: "Pick'em", survivor: 'Survivor',
+  }
+
+  interface DashboardItem {
+    type: 'league' | 'event'
+    id: string
+    name: string
+    subtitle: string
+    href: string
+    icon: string
+    format?: string
+    rank: number | null
+    totalMembers: number
+    score: number | null
+    needsAction: boolean
+    isLive: boolean
+    isDormant: boolean
+    isCompleted: boolean
+    badges: { label: string; variant: string }[]
+  }
+
+  // Convert leagues to dashboard items
+  const leagueItems: DashboardItem[] = leagues.map(league => {
+    const teamInfo = league.id ? userTeamMap[league.id] : undefined
+    return {
+      type: 'league',
+      id: league.id!,
+      name: league.name || '',
+      subtitle: `${league.sports?.name || 'League'} \u2022 ${league.seasons?.name || ''}`.trim(),
+      href: `/leagues/${league.id}`,
+      icon: sportIcon[league.sports?.slug || ''] || '\uD83C\uDFC8',
+      rank: teamInfo?.rank ?? null,
+      totalMembers: teamInfo?.totalTeams ?? 0,
+      score: null,
+      needsAction: false,
+      isLive: false,
+      isDormant: false,
+      isCompleted: false,
+      badges: [
+        ...(currentWeek >= 0 ? [{ label: `Week ${currentWeek}`, variant: 'brand' }] : []),
+        ...((league.role === 'commissioner' || league.role === 'co_commissioner')
+          ? [{ label: league.role === 'co_commissioner' ? 'Co-Commish' : 'Commissioner', variant: 'warning' }]
+          : []),
+      ],
+    }
+  })
+
+  // Convert event pools to dashboard items
+  const eventItems: DashboardItem[] = eventPools
+    .filter(p => p.tournament.status !== 'completed' && p.status !== 'completed')
+    .map(pool => {
+      const isLive = (liveGameCounts[pool.tournamentId] || 0) > 0
+      const needsAction = !pool.submittedAt && pool.status === 'open'
+      return {
+        type: 'event',
+        id: pool.id,
+        name: pool.name,
+        subtitle: pool.tournament.name,
+        href: `/events/${pool.tournament.slug}/pools/${pool.id}`,
+        icon: sportIcon[pool.tournament.sport] || '\uD83C\uDFC6',
+        format: formatLabel[pool.tournament.format] || pool.tournament.format,
+        rank: pool.userRank,
+        totalMembers: pool.entryCount,
+        score: pool.userScore > 0 ? pool.userScore : null,
+        needsAction,
+        isLive,
+        isDormant: false,
+        isCompleted: false,
+        badges: [
+          ...(isLive ? [{ label: 'Live', variant: 'danger' }] : []),
+          ...(needsAction ? [{ label: 'Picks needed', variant: 'brand' }] : []),
+          ...(!pool.isActive && pool.tournament.format === 'survivor' ? [{ label: 'Eliminated', variant: 'danger' }] : []),
+        ],
+      }
+    })
+
+  // Completed event pools
+  const completedEventItems: DashboardItem[] = eventPools
+    .filter(p => p.tournament.status === 'completed' || p.status === 'completed')
+    .map(pool => ({
+      type: 'event' as const,
+      id: pool.id,
+      name: pool.name,
+      subtitle: pool.tournament.name,
+      href: `/events/${pool.tournament.slug}/pools/${pool.id}`,
+      icon: sportIcon[pool.tournament.sport] || '\uD83C\uDFC6',
+      format: formatLabel[pool.tournament.format] || pool.tournament.format,
+      rank: pool.userRank,
+      totalMembers: pool.entryCount,
+      score: pool.userScore > 0 ? pool.userScore : null,
+      needsAction: false,
+      isLive: false,
+      isDormant: false,
+      isCompleted: true,
+      badges: [],
+    }))
+
+  // Dormant league items
+  const dormantItems: DashboardItem[] = dormantLeagues.map(league => ({
+    type: 'league' as const,
+    id: league.id!,
+    name: league.name || '',
+    subtitle: `${league.sports?.name || 'League'} \u2022 ${league.seasons?.name || ''}`.trim(),
+    href: `/leagues/${league.id}`,
+    icon: sportIcon[league.sports?.slug || ''] || '\uD83C\uDFC8',
+    rank: null,
+    totalMembers: 0,
+    score: null,
+    needsAction: false,
+    isLive: false,
+    isDormant: true,
+    isCompleted: false,
+    badges: [{ label: 'Dormant', variant: 'muted' }],
+  }))
+
+  // Sort active items: needsAction → isLive → rest (alphabetical within groups)
+  const activeItems = [...leagueItems, ...eventItems].sort((a, b) => {
+    if (a.needsAction !== b.needsAction) return a.needsAction ? -1 : 1
+    if (a.isLive !== b.isLive) return a.isLive ? -1 : 1
+    return a.name.localeCompare(b.name)
+  })
+
+  const pastItems = [...dormantItems, ...completedEventItems]
+  const hasAnyItems = activeItems.length > 0 || pastItems.length > 0
+
+  function formatRank(rank: number): string {
+    if (rank === 1) return '1st'
+    if (rank === 2) return '2nd'
+    if (rank === 3) return '3rd'
+    return `${rank}th`
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-gradient-from to-gradient-to">
       <Header userName={profile?.display_name} userEmail={user.email} userId={user.id} />
 
-      {/* Main Content */}
       <main className="container mx-auto px-4 py-8">
         {queryFailed && (
           <div className="bg-danger/10 border border-danger text-danger-text px-4 py-3 rounded-lg mb-6">
             Something went wrong loading your data. Try refreshing the page. If the problem persists, check your internet connection.
           </div>
         )}
-        <div className="flex justify-between items-center mb-8">
-          <h1 className="text-3xl font-bold text-text-primary">My Leagues</h1>
-          <div className="flex gap-4">
+
+        {/* Fan Zone — at the top */}
+        <div className="mb-8">
+          <FanZoneWidget
+            userSchool={userSchool}
+            fanDistribution={fanDistribution}
+            totalFans={totalFans}
+            rivalSchool={rivalSchool}
+            referralUrl={referralUrl}
+            displayName={profile?.display_name || 'A friend'}
+            userId={user.id}
+          />
+        </div>
+
+        {/* Title + Actions */}
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
+          <h1 className="text-3xl font-bold text-text-primary">Dashboard</h1>
+          <div className="flex flex-wrap gap-3">
             <Link
               href="/leagues/join"
-              className="bg-surface hover:bg-surface-subtle text-text-primary font-semibold py-2 px-4 rounded-lg transition-all border border-border hover:border-brand/40 hover:shadow-md"
+              className="bg-surface hover:bg-surface-subtle text-text-primary font-semibold py-2 px-4 rounded-lg transition-all border border-border hover:border-brand/40 hover:shadow-md text-sm"
             >
               Join League
             </Link>
             <Link
               href="/leagues/create"
-              className="bg-brand hover:bg-brand-hover text-text-primary font-semibold py-2 px-4 rounded-lg transition-colors"
+              className="bg-brand hover:bg-brand-hover text-text-primary font-semibold py-2 px-4 rounded-lg transition-colors text-sm"
             >
               Create League
+            </Link>
+            <Link
+              href="/events"
+              className="bg-surface hover:bg-surface-subtle text-text-primary font-semibold py-2 px-4 rounded-lg transition-all border border-border hover:border-brand/40 hover:shadow-md text-sm"
+            >
+              Browse Events &rarr;
             </Link>
           </div>
         </div>
 
-        {leagues.length === 0 ? (
+        {/* Unified Grid */}
+        {!hasAnyItems ? (
           <div className="bg-surface rounded-lg p-8 text-center">
-            <div className="text-5xl mb-4">🏈</div>
+            <div className="text-5xl mb-4">{'\uD83C\uDFC6'}</div>
             <h2 className="text-xl font-semibold text-text-primary mb-2">
-              No leagues yet
+              No games yet
             </h2>
             <p className="text-text-secondary mb-6">
-              Create a new league to become a commissioner, or join an existing league with an invite code.
+              Create or join a league, or browse prediction events to get started.
             </p>
-            <div className="flex gap-4 justify-center">
+            <div className="flex flex-wrap gap-4 justify-center">
               <Link
                 href="/leagues/join"
                 className="bg-surface hover:bg-surface-subtle text-text-primary font-semibold py-2 px-6 rounded-lg transition-all border border-border hover:border-brand/40 hover:shadow-md"
@@ -292,192 +451,120 @@ export default async function DashboardPage() {
               >
                 Create League
               </Link>
+              <Link
+                href="/events"
+                className="bg-surface hover:bg-surface-subtle text-text-primary font-semibold py-2 px-6 rounded-lg transition-all border border-border hover:border-brand/40 hover:shadow-md"
+              >
+                Browse Events
+              </Link>
             </div>
           </div>
         ) : (
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {leagues.map((league) => (
-              <Link
-                key={league.id}
-                href={`/leagues/${league.id}`}
-                className="bg-surface rounded-lg p-6 hover:bg-surface-subtle transition-all border border-border hover:border-brand/40 hover:shadow-md"
-              >
-                <div className="flex justify-between items-start mb-4">
-                  <h3 className="text-xl font-semibold text-text-primary">
-                    {league.name}
-                  </h3>
-                  <div className="flex items-center gap-2">
-                    {currentWeek >= 0 && (
-                      <span className="bg-brand/20 text-brand-text text-xs px-2 py-1 rounded font-medium">
-                        Week {currentWeek}
-                      </span>
-                    )}
-                    {(league.role === 'commissioner' || league.role === 'co_commissioner') && (
-                      <span className="bg-warning/20 text-warning-text text-xs px-2 py-1 rounded">
-                        {league.role === 'co_commissioner' ? 'Co-Commish' : 'Commissioner'}
-                      </span>
-                    )}
-                  </div>
-                </div>
-                <div className="space-y-2 text-text-secondary">
-                  <p className="flex items-center gap-2">
-                    <span>🏈</span>
-                    <span>{league.sports?.name}</span>
-                  </p>
-                  <p className="flex items-center gap-2">
-                    <span>📅</span>
-                    <span>{league.seasons?.name}</span>
-                  </p>
-                  {league.id && userTeamMap[league.id] && userTeamMap[league.id].totalTeams > 1 && (
-                    <p className="flex items-center gap-2">
-                      <span>🏆</span>
-                      <span>
-                        {userTeamMap[league.id].rank === 1
-                          ? '1st'
-                          : userTeamMap[league.id].rank === 2
-                          ? '2nd'
-                          : userTeamMap[league.id].rank === 3
-                          ? '3rd'
-                          : `${userTeamMap[league.id].rank}th`
-                        } of {userTeamMap[league.id].totalTeams}
-                      </span>
-                    </p>
-                  )}
-                </div>
-              </Link>
-            ))}
-          </div>
-        )}
-
-        {/* Event Pools */}
-        {eventPools.length > 0 && (
-          <div className="mt-8">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-2xl font-bold text-text-primary">My Events</h2>
-              <Link
-                href="/events"
-                className="text-sm text-text-muted hover:text-text-secondary transition-colors"
-              >
-                Browse Events &rarr;
-              </Link>
-            </div>
+          <>
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {eventPools.map((pool) => {
-                const sportIcon: Record<string, string> = {
-                  hockey: '\uD83C\uDFD2', golf: '\u26F3', rugby: '\uD83C\uDFC9',
-                  football: '\uD83C\uDFC8', basketball: '\uD83C\uDFC0',
-                }
-                const formatLabel: Record<string, string> = {
-                  bracket: 'Bracket', pickem: "Pick'em", survivor: 'Survivor',
-                }
-                const icon = sportIcon[pool.tournament.sport] || '\uD83C\uDFC6'
-                return (
-                  <Link
-                    key={pool.id}
-                    href={`/events/${pool.tournament.slug}/pools/${pool.id}`}
-                    className="bg-surface rounded-lg p-5 hover:bg-surface-subtle transition-all border border-border hover:border-brand/40 hover:shadow-md"
-                  >
-                    <div className="flex justify-between items-start mb-3">
-                      <div>
-                        <h3 className="text-lg font-semibold text-text-primary">{pool.name}</h3>
-                        <p className="text-text-muted text-sm">{pool.tournament.name}</p>
-                      </div>
-                      <div className="flex items-center gap-1.5">
-                        {liveGameCounts[pool.tournamentId] > 0 && (
-                          <span className="inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full bg-danger/20 text-danger-text">
-                            <span className="w-1.5 h-1.5 rounded-full bg-danger animate-pulse" />
-                            Live
-                          </span>
-                        )}
-                        <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${
-                          pool.status === 'open' ? 'bg-success/20 text-success-text' :
-                          pool.status === 'locked' ? 'bg-warning/20 text-warning-text' :
-                          'bg-surface-inset text-text-muted'
-                        }`}>
-                          {pool.status}
-                        </span>
-                      </div>
-                    </div>
-                    <div className="space-y-1 text-text-secondary text-sm">
-                      <p className="flex items-center gap-2">
-                        <span>{icon}</span>
-                        <span>{formatLabel[pool.tournament.format] || pool.tournament.format}</span>
-                      </p>
-                      <p className="flex items-center gap-2">
-                        <span>👥</span>
-                        <span>{pool.entryCount} member{pool.entryCount !== 1 ? 's' : ''}</span>
-                      </p>
-                      {pool.userRank && pool.entryCount > 1 && (
-                        <p className="flex items-center gap-2">
-                          <span>🏆</span>
-                          <span>
-                            {pool.userRank === 1 ? '1st' : pool.userRank === 2 ? '2nd' : pool.userRank === 3 ? '3rd' : `${pool.userRank}th`} of {pool.entryCount}
-                          </span>
-                        </p>
-                      )}
-                      {pool.userScore > 0 && (
-                        <p className="flex items-center gap-2">
-                          <span>&#x2B50;</span>
-                          <span>{pool.userScore} pts</span>
-                        </p>
-                      )}
-                      {!pool.submittedAt && pool.status === 'open' && (
-                        <p className="text-brand text-xs font-medium mt-1">Picks needed!</p>
-                      )}
-                      {!pool.isActive && pool.tournament.format === 'survivor' && (
-                        <p className="text-danger-text text-xs">Eliminated</p>
-                      )}
-                    </div>
-                  </Link>
-                )
-              })}
-            </div>
-          </div>
-        )}
-
-        {/* Dormant Leagues (Past Seasons) */}
-        {dormantLeagues.length > 0 && (
-          <details className="mt-6">
-            <summary className="cursor-pointer select-none text-text-secondary hover:text-text-primary transition-colors">
-              <span className="text-lg font-semibold">Past Season Leagues ({dormantLeagues.length})</span>
-            </summary>
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4 mt-4">
-              {dormantLeagues.map((league) => (
+              {activeItems.map((item) => (
                 <Link
-                  key={league.id}
-                  href={`/leagues/${league.id}`}
-                  className="bg-surface/60 rounded-lg p-5 hover:bg-surface-subtle transition-all border border-border/50 opacity-75 hover:opacity-100"
+                  key={`${item.type}-${item.id}`}
+                  href={item.href}
+                  className="bg-surface rounded-lg p-5 hover:bg-surface-subtle transition-all border border-border hover:border-brand/40 hover:shadow-md"
                 >
                   <div className="flex justify-between items-start mb-3">
-                    <h3 className="text-lg font-semibold text-text-secondary">
-                      {league.name}
-                    </h3>
-                    <span className="bg-surface-inset text-text-muted text-xs px-2 py-1 rounded font-medium">
-                      Dormant
-                    </span>
+                    <div className="min-w-0 flex-1">
+                      <h3 className="text-lg font-semibold text-text-primary truncate">{item.name}</h3>
+                      <p className="text-text-muted text-sm truncate">{item.subtitle}</p>
+                    </div>
+                    <div className="flex items-center gap-1.5 shrink-0 ml-2">
+                      {item.badges.map((badge, i) => (
+                        <span
+                          key={i}
+                          className={`text-xs font-medium px-2 py-0.5 rounded-full ${
+                            badge.variant === 'brand' ? 'bg-brand/20 text-brand-text' :
+                            badge.variant === 'warning' ? 'bg-warning/20 text-warning-text' :
+                            badge.variant === 'danger'
+                              ? (badge.label === 'Live'
+                                ? 'inline-flex items-center gap-1 bg-danger/20 text-danger-text'
+                                : 'bg-danger/20 text-danger-text')
+                              : 'bg-surface-inset text-text-muted'
+                          }`}
+                        >
+                          {badge.label === 'Live' && (
+                            <span className="w-1.5 h-1.5 rounded-full bg-danger animate-pulse inline-block mr-1" />
+                          )}
+                          {badge.label}
+                        </span>
+                      ))}
+                    </div>
                   </div>
-                  <div className="space-y-1 text-text-muted text-sm">
-                    <p>{league.sports?.name}</p>
-                    <p>{league.seasons?.name}</p>
+                  <div className="flex items-center gap-2 mb-3">
+                    <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${
+                      item.type === 'league'
+                        ? 'bg-brand/15 text-brand-text'
+                        : 'bg-accent/15 text-accent-text'
+                    }`}>
+                      {item.type === 'league' ? 'League' : item.format || 'Event'}
+                    </span>
+                    <span className="text-text-muted text-xs">{item.icon}</span>
+                  </div>
+                  <div className="space-y-1 text-text-secondary text-sm">
+                    {item.rank && item.totalMembers > 1 && (
+                      <p className="flex items-center gap-2">
+                        <span>{'\uD83C\uDFC6'}</span>
+                        <span>{formatRank(item.rank)} of {item.totalMembers}</span>
+                      </p>
+                    )}
+                    {!item.rank && item.totalMembers > 0 && (
+                      <p className="flex items-center gap-2">
+                        <span>{'\uD83D\uDC65'}</span>
+                        <span>{item.totalMembers} member{item.totalMembers !== 1 ? 's' : ''}</span>
+                      </p>
+                    )}
+                    {item.score !== null && (
+                      <p className="flex items-center gap-2">
+                        <span>{'\u2B50'}</span>
+                        <span>{item.score} pts</span>
+                      </p>
+                    )}
                   </div>
                 </Link>
               ))}
             </div>
-          </details>
-        )}
 
-        {/* Fan Zone Widget */}
-        <div className="mt-8">
-          <FanZoneWidget
-            userSchool={userSchool}
-            fanDistribution={fanDistribution}
-            totalFans={totalFans}
-            rivalSchool={rivalSchool}
-            referralUrl={referralUrl}
-            displayName={profile?.display_name || 'A friend'}
-            userId={user.id}
-          />
-        </div>
+            {/* Past / Completed / Dormant */}
+            {pastItems.length > 0 && (
+              <details className="mt-6">
+                <summary className="cursor-pointer select-none text-text-secondary hover:text-text-primary transition-colors">
+                  <span className="text-lg font-semibold">Past &amp; Completed ({pastItems.length})</span>
+                </summary>
+                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4 mt-4">
+                  {pastItems.map((item) => (
+                    <Link
+                      key={`${item.type}-${item.id}`}
+                      href={item.href}
+                      className="bg-surface/60 rounded-lg p-5 hover:bg-surface-subtle transition-all border border-border/50 opacity-75 hover:opacity-100"
+                    >
+                      <div className="flex justify-between items-start mb-3">
+                        <h3 className="text-lg font-semibold text-text-secondary truncate">
+                          {item.name}
+                        </h3>
+                        <span className={`text-xs font-medium px-2 py-0.5 rounded-full shrink-0 ml-2 ${
+                          item.type === 'league'
+                            ? 'bg-brand/15 text-brand-text'
+                            : 'bg-accent/15 text-accent-text'
+                        }`}>
+                          {item.type === 'league' ? 'League' : item.format || 'Event'}
+                        </span>
+                      </div>
+                      <div className="space-y-1 text-text-muted text-sm">
+                        <p>{item.subtitle}</p>
+                        {item.score !== null && <p>{'\u2B50'} {item.score} pts</p>}
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              </details>
+            )}
+          </>
+        )}
       </main>
     </div>
   )
