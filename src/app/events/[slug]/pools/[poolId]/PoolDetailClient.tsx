@@ -185,17 +185,12 @@ export function PoolDetailClient({
   const [settingsTiebreaker, setSettingsTiebreaker] = useState(pool.tiebreaker)
   const [settingsMaxEntries, setSettingsMaxEntries] = useState(pool.maxEntries?.toString() || '')
   const [settingsMaxEntriesPerUser, setSettingsMaxEntriesPerUser] = useState(pool.maxEntriesPerUser.toString())
-  const [settingsScoringRules, setSettingsScoringRules] = useState<Record<string, number>>(
-    pool.scoringRules && typeof pool.scoringRules === 'object' && Object.keys(pool.scoringRules).length > 0
-      ? pool.scoringRules as Record<string, number>
-      : { regional_quarterfinal: 2, regional_final: 4, semifinal: 8, championship: 16 }
-  )
-  const [isSavingSettings, setIsSavingSettings] = useState(false)
-
-  // Unsaved changes detection
+  const defaultScoringRules: Record<string, number> = { regional_quarterfinal: 2, regional_final: 4, semifinal: 8, championship: 16 }
   const initialScoringRules = pool.scoringRules && typeof pool.scoringRules === 'object' && Object.keys(pool.scoringRules).length > 0
-    ? pool.scoringRules
-    : { regional_quarterfinal: 2, regional_final: 4, semifinal: 8, championship: 16 }
+    ? pool.scoringRules as Record<string, number>
+    : defaultScoringRules
+  const [settingsScoringRules, setSettingsScoringRules] = useState<Record<string, number>>({ ...initialScoringRules })
+  const [isSavingSettings, setIsSavingSettings] = useState(false)
 
   const hasUnsavedChanges = activeTab === 'settings' && (
     settingsName !== pool.name ||
