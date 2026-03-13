@@ -951,6 +951,17 @@ export function PoolDetailClient({
                         {preset.label}
                       </button>
                     ))}
+                    <button
+                      type="button"
+                      onClick={() => {/* no-op — values stay as-is, user edits below */}}
+                      className={`flex-1 text-xs py-1.5 rounded-md border transition-colors ${
+                        activePreset === 'custom'
+                          ? 'border-brand bg-brand/10 text-brand'
+                          : 'border-border text-text-muted hover:text-text-secondary'
+                      }`}
+                    >
+                      Custom
+                    </button>
                   </div>
 
                   {activePreset === 'custom' ? (
