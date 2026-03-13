@@ -608,12 +608,12 @@ export default async function DashboardPage() {
 
       {/* Featured Events */}
       {featuredEvents.length > 0 && (
-        <section className="bg-surface-subtle py-8">
+        <section className="bg-tertiary py-8">
           <div className="container mx-auto px-4">
             <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-bold text-text-primary">Featured Events</h2>
+              <h2 className="text-xl font-bold text-text-inverse">Featured Events</h2>
               {(allTournaments || []).length > 3 && (
-                <Link href="/events" className="text-sm text-brand hover:text-brand-hover transition-colors">
+                <Link href="/events" className="text-sm text-text-inverse/80 hover:text-text-inverse transition-colors">
                   Browse all &rarr;
                 </Link>
               )}
@@ -685,7 +685,7 @@ export default async function DashboardPage() {
 
       {/* Past & Completed */}
       {pastItems.length > 0 && (
-        <section className="bg-surface/60 py-8">
+        <section className="bg-surface py-8">
           <div className="container mx-auto px-4">
             <details>
               <summary className="cursor-pointer select-none text-text-secondary hover:text-text-primary transition-colors">
