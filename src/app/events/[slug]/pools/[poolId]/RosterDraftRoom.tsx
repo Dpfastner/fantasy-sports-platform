@@ -57,6 +57,21 @@ interface RosterDraftRoomProps {
   scoringRules: Record<string, unknown>
 }
 
+function CountryFlag({ country, countryCode }: { country?: string; countryCode?: string }) {
+  if (!countryCode) return null
+  return (
+    <img
+      src={`https://flagcdn.com/24x18/${countryCode}.png`}
+      alt={country || ''}
+      title={country || ''}
+      width={18}
+      height={14}
+      className="inline-block shrink-0 rounded-[2px]"
+      loading="lazy"
+    />
+  )
+}
+
 const TIER_COLORS: Record<string, { bg: string; text: string }> = {
   A: { bg: 'bg-success/10', text: 'text-success-text' },
   B: { bg: 'bg-info/10', text: 'text-info-text' },
@@ -447,6 +462,8 @@ export function RosterDraftRoom({
                   const meta = (p.metadata || {}) as Record<string, unknown>
                   const owgr = (meta.owgr as number) ?? p.seed
                   const scoreToPar = meta.score_to_par as number | null
+                  const country = meta.country as string | undefined
+                  const countryCode = meta.country_code as string | undefined
 
                   return (
                     <button
@@ -464,7 +481,10 @@ export function RosterDraftRoom({
                     >
                       <div className="flex items-center justify-between">
                         <div className="min-w-0">
-                          <span className="text-text-primary font-medium truncate block">{p.name}</span>
+                          <span className="text-text-primary font-medium truncate flex items-center gap-1.5">
+                            <CountryFlag country={country} countryCode={countryCode} />
+                            {p.name}
+                          </span>
                           {owgr && <span className="text-xs text-text-muted">#{owgr}</span>}
                         </div>
                         <div className="flex items-center gap-1 shrink-0 ml-2">

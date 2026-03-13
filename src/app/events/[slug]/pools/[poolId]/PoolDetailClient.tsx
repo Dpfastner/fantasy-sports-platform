@@ -641,7 +641,18 @@ export function PoolDetailClient({
                     className={`grid grid-cols-[2rem_1fr_3rem_3rem_3rem_3rem_4rem] gap-1 px-3 py-2 border-b border-border-subtle last:border-0 text-sm ${isCut ? 'opacity-50' : ''}`}
                   >
                     <span className="text-right text-text-muted">{i + 1}</span>
-                    <div className="flex items-center gap-1 min-w-0">
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      {typeof meta.country_code === 'string' && (
+                        <img
+                          src={`https://flagcdn.com/24x18/${meta.country_code}.png`}
+                          alt={String(meta.country || '')}
+                          title={String(meta.country || '')}
+                          width={18}
+                          height={14}
+                          className="inline-block shrink-0 rounded-[2px]"
+                          loading="lazy"
+                        />
+                      )}
                       <span className="text-text-primary truncate">{p.name}</span>
                       {isCut && <span className="text-xs text-danger-text shrink-0">CUT</span>}
                     </div>

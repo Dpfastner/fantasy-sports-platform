@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import * as Sentry from '@sentry/nextjs'
 import { createAdminClient } from '@/lib/supabase/server'
-import { fetchHockeyTeams } from '@/lib/events/espn-adapters'
+import { fetchHockeyTeams, fetchGolfRankings, getCountryFlagCode } from '@/lib/events/espn-adapters'
 
 // POST /api/events/seed
 // One-time admin endpoint to seed tournament data.
@@ -330,51 +330,83 @@ async function seedMasters(admin: ReturnType<typeof createAdminClient>) {
     return 'C'
   }
 
-  const golfers = [
-    { name: 'Scottie Scheffler', seed: 1, meta: { owgr: 1, note: '2024 Masters champion' } },
-    { name: 'Rory McIlroy', seed: 2, meta: { owgr: 2, note: '2025 Masters champion (defending)' } },
-    { name: 'Tommy Fleetwood', seed: 3, meta: { owgr: 3 } },
-    { name: 'Collin Morikawa', seed: 4, meta: { owgr: 4 } },
-    { name: 'Justin Rose', seed: 5, meta: { owgr: 5 } },
-    { name: 'Russell Henley', seed: 6, meta: { owgr: 6 } },
-    { name: 'Chris Gotterup', seed: 7, meta: { owgr: 7 } },
-    { name: 'Robert MacIntyre', seed: 8, meta: { owgr: 8 } },
-    { name: 'Sepp Straka', seed: 9, meta: { owgr: 9 } },
-    { name: 'Xander Schauffele', seed: 10, meta: { owgr: 10 } },
-    { name: 'J.J. Spaun', seed: 11, meta: { owgr: 11 } },
-    { name: 'Hideki Matsuyama', seed: 12, meta: { owgr: 12, note: '2021 Masters champion' } },
-    { name: 'Ben Griffin', seed: 13, meta: { owgr: 13 } },
-    { name: 'Justin Thomas', seed: 14, meta: { owgr: 14 } },
-    { name: 'Cameron Young', seed: 15, meta: { owgr: 15 } },
-    { name: 'Harris English', seed: 16, meta: { owgr: 16 } },
-    { name: 'Alex Noren', seed: 17, meta: { owgr: 17 } },
-    { name: 'Viktor Hovland', seed: 18, meta: { owgr: 18 } },
-    { name: 'Akshay Bhatia', seed: 19, meta: { owgr: 19 } },
-    { name: 'Patrick Reed', seed: 20, meta: { owgr: 20, note: '2018 Masters champion' } },
-    { name: 'Ludvig Aberg', seed: 21, meta: { owgr: 21 } },
-    { name: 'Jacob Bridgeman', seed: 22, meta: { owgr: 22 } },
-    { name: 'Keegan Bradley', seed: 23, meta: { owgr: 23 } },
-    { name: 'Matt Fitzpatrick', seed: 24, meta: { owgr: 24 } },
-    { name: 'Maverick McNealy', seed: 25, meta: { owgr: 25 } },
-    { name: 'Tyrrell Hatton', seed: 26, meta: { owgr: 26 } },
-    { name: 'Ryan Gerard', seed: 27, meta: { owgr: 27 } },
-    { name: 'Si Woo Kim', seed: 28, meta: { owgr: 28 } },
-    { name: 'Shane Lowry', seed: 29, meta: { owgr: 29 } },
-    { name: 'Min Woo Lee', seed: 30, meta: { owgr: 30 } },
-    { name: 'Jon Rahm', seed: 31, meta: { owgr: 36, note: '2023 Masters champion' } },
-    { name: 'Bryson DeChambeau', seed: 32, meta: { owgr: 41 } },
-    { name: 'Jordan Spieth', seed: 33, meta: { note: '2015 Masters champion' } },
-    { name: 'Tiger Woods', seed: 34, meta: { note: '5x Masters champion, participation uncertain' } },
-    { name: 'Dustin Johnson', seed: 35, meta: { note: '2020 Masters champion' } },
-    { name: 'Patrick Cantlay', seed: 36, meta: { owgr: 33 } },
-    { name: 'Sam Burns', seed: 37, meta: { owgr: 32 } },
-    { name: 'Adam Scott', seed: 38, meta: { owgr: 50, note: '2013 Masters champion' } },
-    { name: 'Brooks Koepka', seed: 39, meta: { note: 'Past major winner' } },
-    { name: 'Phil Mickelson', seed: 40, meta: { note: '3x Masters champion' } },
-  ].map(g => ({
-    ...g,
-    meta: { ...g.meta, tier: getTier(g.meta.owgr as number | undefined) },
-  }))
+  // Auto-fetch OWGR rankings from ESPN
+  const espnRankings = await fetchGolfRankings()
+  const rankingsByName: Record<string, { rank: number; country: string }> = {}
+  for (const r of espnRankings) {
+    // Normalize name for matching (lowercase, no accents)
+    rankingsByName[r.name.toLowerCase()] = { rank: r.rank, country: r.country }
+  }
+
+  // Helper: look up OWGR from ESPN rankings, fall back to hardcoded value
+  const lookupOwgr = (name: string, fallback?: number) => {
+    const found = rankingsByName[name.toLowerCase()]
+    return found?.rank ?? fallback
+  }
+  const lookupCountry = (name: string) => {
+    const found = rankingsByName[name.toLowerCase()]
+    return found?.country || null
+  }
+
+  const golferDefs = [
+    { name: 'Scottie Scheffler', seed: 1, fallbackOwgr: 1, note: '2024 Masters champion' },
+    { name: 'Rory McIlroy', seed: 2, fallbackOwgr: 2, note: '2025 Masters champion (defending)' },
+    { name: 'Tommy Fleetwood', seed: 3, fallbackOwgr: 3 },
+    { name: 'Collin Morikawa', seed: 4, fallbackOwgr: 4 },
+    { name: 'Justin Rose', seed: 5, fallbackOwgr: 5 },
+    { name: 'Russell Henley', seed: 6, fallbackOwgr: 6 },
+    { name: 'Chris Gotterup', seed: 7, fallbackOwgr: 7 },
+    { name: 'Robert MacIntyre', seed: 8, fallbackOwgr: 8 },
+    { name: 'Sepp Straka', seed: 9, fallbackOwgr: 9 },
+    { name: 'Xander Schauffele', seed: 10, fallbackOwgr: 10 },
+    { name: 'J.J. Spaun', seed: 11, fallbackOwgr: 11 },
+    { name: 'Hideki Matsuyama', seed: 12, fallbackOwgr: 12, note: '2021 Masters champion' },
+    { name: 'Ben Griffin', seed: 13, fallbackOwgr: 13 },
+    { name: 'Justin Thomas', seed: 14, fallbackOwgr: 14 },
+    { name: 'Cameron Young', seed: 15, fallbackOwgr: 15 },
+    { name: 'Harris English', seed: 16, fallbackOwgr: 16 },
+    { name: 'Alex Noren', seed: 17, fallbackOwgr: 17 },
+    { name: 'Viktor Hovland', seed: 18, fallbackOwgr: 18 },
+    { name: 'Akshay Bhatia', seed: 19, fallbackOwgr: 19 },
+    { name: 'Patrick Reed', seed: 20, fallbackOwgr: 20, note: '2018 Masters champion' },
+    { name: 'Ludvig Aberg', seed: 21, fallbackOwgr: 21 },
+    { name: 'Jacob Bridgeman', seed: 22, fallbackOwgr: 22 },
+    { name: 'Keegan Bradley', seed: 23, fallbackOwgr: 23 },
+    { name: 'Matt Fitzpatrick', seed: 24, fallbackOwgr: 24 },
+    { name: 'Maverick McNealy', seed: 25, fallbackOwgr: 25 },
+    { name: 'Tyrrell Hatton', seed: 26, fallbackOwgr: 26 },
+    { name: 'Ryan Gerard', seed: 27, fallbackOwgr: 27 },
+    { name: 'Si Woo Kim', seed: 28, fallbackOwgr: 28 },
+    { name: 'Shane Lowry', seed: 29, fallbackOwgr: 29 },
+    { name: 'Min Woo Lee', seed: 30, fallbackOwgr: 30 },
+    { name: 'Jon Rahm', seed: 31, fallbackOwgr: 36, note: '2023 Masters champion' },
+    { name: 'Bryson DeChambeau', seed: 32, fallbackOwgr: 41 },
+    { name: 'Jordan Spieth', seed: 33, note: '2015 Masters champion' },
+    { name: 'Tiger Woods', seed: 34, note: '5x Masters champion, participation uncertain' },
+    { name: 'Dustin Johnson', seed: 35, note: '2020 Masters champion' },
+    { name: 'Patrick Cantlay', seed: 36, fallbackOwgr: 33 },
+    { name: 'Sam Burns', seed: 37, fallbackOwgr: 32 },
+    { name: 'Adam Scott', seed: 38, fallbackOwgr: 50, note: '2013 Masters champion' },
+    { name: 'Brooks Koepka', seed: 39, note: 'Past major winner' },
+    { name: 'Phil Mickelson', seed: 40, note: '3x Masters champion' },
+  ]
+
+  const golfers = golferDefs.map(g => {
+    const owgr = lookupOwgr(g.name, g.fallbackOwgr)
+    const country = lookupCountry(g.name)
+    const countryCode = country ? getCountryFlagCode(country) : null
+    return {
+      name: g.name,
+      seed: g.seed,
+      meta: {
+        ...(owgr ? { owgr } : {}),
+        ...(g.note ? { note: g.note } : {}),
+        ...(country ? { country } : {}),
+        ...(countryCode ? { country_code: countryCode } : {}),
+        tier: getTier(owgr),
+      },
+    }
+  })
 
   const participantRows = golfers.map(g => ({
     tournament_id: tournament.id,

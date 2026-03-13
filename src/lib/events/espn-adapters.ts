@@ -529,6 +529,7 @@ export interface ESPNGolfer {
   espnPlayerId: string
   name: string
   country: string
+  countryCode: string | null        // ISO code for flag display
   position: number | null
   score: string | null
   totalStrokes: number | null
@@ -584,10 +585,13 @@ export async function fetchGolfLeaderboard(
           const linescores = comp.linescores as { value: number }[] | undefined
           const scoreObj = (comp.score as Record<string, unknown>) || {}
 
+          const countryName = String((athlete.flag as Record<string, unknown>)?.alt || '')
+
           golfers.push({
             espnPlayerId: String(athlete.id || comp.id || ''),
             name: String(athlete.displayName || (athlete as Record<string, unknown>).fullName || ''),
-            country: String((athlete.flag as Record<string, unknown>)?.alt || ''),
+            country: countryName,
+            countryCode: getCountryFlagCode(countryName),
             position: (comp.order as number) || null,
             score: (scoreObj.displayValue as string) || null,
             totalStrokes: linescores
@@ -612,6 +616,155 @@ export async function fetchGolfLeaderboard(
   }
 
   return golfers.sort((a, b) => (a.position || 999) - (b.position || 999))
+}
+
+// ============================================
+// Golf OWGR Rankings — HTML scrape from ESPN
+// ============================================
+
+export interface ESPNGolfRanking {
+  rank: number
+  name: string
+  country: string
+}
+
+/**
+ * Country name → ISO 3166-1 alpha-2 code mapping for flag display.
+ * Used with flagcdn.com: https://flagcdn.com/24x18/{code}.png
+ */
+const COUNTRY_ISO: Record<string, string> = {
+  'united states': 'us',
+  'usa': 'us',
+  'england': 'gb-eng',
+  'scotland': 'gb-sct',
+  'wales': 'gb-wls',
+  'northern ireland': 'gb-nir',
+  'ireland': 'ie',
+  'australia': 'au',
+  'canada': 'ca',
+  'south africa': 'za',
+  'japan': 'jp',
+  'south korea': 'kr',
+  'korea': 'kr',
+  'sweden': 'se',
+  'norway': 'no',
+  'denmark': 'dk',
+  'germany': 'de',
+  'france': 'fr',
+  'spain': 'es',
+  'italy': 'it',
+  'austria': 'at',
+  'belgium': 'be',
+  'netherlands': 'nl',
+  'switzerland': 'ch',
+  'china': 'cn',
+  'chinese taipei': 'tw',
+  'taiwan': 'tw',
+  'india': 'in',
+  'thailand': 'th',
+  'philippines': 'ph',
+  'mexico': 'mx',
+  'argentina': 'ar',
+  'colombia': 'co',
+  'chile': 'cl',
+  'brazil': 'br',
+  'fiji': 'fj',
+  'new zealand': 'nz',
+  'zimbabwe': 'zw',
+  'nigeria': 'ng',
+  'puerto rico': 'pr',
+  'finland': 'fi',
+  'czech republic': 'cz',
+  'czechia': 'cz',
+  'poland': 'pl',
+  'portugal': 'pt',
+  'singapore': 'sg',
+  'malaysia': 'my',
+  'indonesia': 'id',
+  'vietnam': 'vn',
+  'pakistan': 'pk',
+  'venezuela': 've',
+  'paraguay': 'py',
+  'bermuda': 'bm',
+  'bahamas': 'bs',
+  'jamaica': 'jm',
+  'trinidad and tobago': 'tt',
+  'guatemala': 'gt',
+  'panama': 'pa',
+  'costa rica': 'cr',
+  'dominican republic': 'do',
+  'peru': 'pe',
+  'ecuador': 'ec',
+  'uruguay': 'uy',
+  'honduras': 'hn',
+  'el salvador': 'sv',
+  'nicaragua': 'ni',
+  'bolivia': 'bo',
+}
+
+/**
+ * Get ISO country code for flag CDN display.
+ * Returns code for use with flagcdn.com: `https://flagcdn.com/24x18/${code}.png`
+ */
+export function getCountryFlagCode(country: string): string | null {
+  if (!country) return null
+  return COUNTRY_ISO[country.toLowerCase()] || null
+}
+
+/**
+ * Get flag image URL for a country name.
+ * Uses flagcdn.com which serves free, public domain flag images.
+ */
+export function getCountryFlagUrl(country: string, size: '16x12' | '24x18' | '32x24' | '48x36' = '24x18'): string | null {
+  const code = getCountryFlagCode(country)
+  if (!code) return null
+  return `https://flagcdn.com/${size}/${code}.png`
+}
+
+/**
+ * Fetch OWGR golf rankings from ESPN's rankings page.
+ * Scrapes the HTML table to extract rank, name, and country for top 200 golfers.
+ * Falls back gracefully if the page structure changes.
+ */
+export async function fetchGolfRankings(): Promise<ESPNGolfRanking[]> {
+  const rankings: ESPNGolfRanking[] = []
+
+  try {
+    const response = await fetchWithTimeout('https://www.espn.com/golf/rankings', 15000)
+    if (!response.ok) {
+      console.error(`[espn-golf] Rankings page returned ${response.status}`)
+      return []
+    }
+
+    const html = await response.text()
+
+    // Parse table rows: each row has <td>rank</td><td><img alt="Country"><a>Name</a></td>
+    // Use regex to extract from the server-rendered HTML
+    const rowPattern = /<tr\b[^>]*>\s*<td[^>]*>\s*(\d+)\s*<\/td>\s*<td[^>]*>[\s\S]*?<img[^>]*alt="([^"]*)"[^>]*>[\s\S]*?<a[^>]*>([^<]+)<\/a>/g
+    let match
+    while ((match = rowPattern.exec(html)) !== null) {
+      const rank = parseInt(match[1], 10)
+      const country = match[2].trim()
+      const name = match[3].trim()
+
+      if (rank > 0 && name) {
+        rankings.push({ rank, name, country })
+      }
+    }
+
+    if (rankings.length === 0) {
+      // Structure may have changed — alert via Sentry
+      Sentry.captureMessage('ESPN golf rankings page returned 0 results — HTML structure may have changed', {
+        level: 'warning',
+        tags: { sport: 'golf', monitor: 'espn-rankings' },
+      })
+    }
+  } catch (err) {
+    console.error('[espn-golf] Failed to fetch rankings:', err)
+    Sentry.captureException(err, { tags: { sport: 'golf', monitor: 'espn-rankings' } })
+  }
+
+  return rankings
 }
 
 // ============================================

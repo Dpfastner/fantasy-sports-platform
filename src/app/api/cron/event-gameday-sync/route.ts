@@ -376,6 +376,8 @@ export async function GET(request: Request) {
               status: golfer.status || existingMeta.status || 'active',
               position: golfer.position || existingMeta.position || null,
               score_display: golfer.score || existingMeta.score_display || null,
+              country: golfer.country || existingMeta.country || null,
+              country_code: golfer.countryCode || existingMeta.country_code || null,
             }
 
             const { error } = await admin

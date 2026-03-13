@@ -49,6 +49,21 @@ const DEFAULT_TIERS: Record<string, TierConfig> = {
   C: { count: 3, owgr_min: 31 },
 }
 
+function CountryFlag({ country, countryCode }: { country?: string; countryCode?: string }) {
+  if (!countryCode) return null
+  return (
+    <img
+      src={`https://flagcdn.com/24x18/${countryCode}.png`}
+      alt={country || ''}
+      title={country || ''}
+      width={18}
+      height={14}
+      className="inline-block shrink-0 rounded-[2px]"
+      loading="lazy"
+    />
+  )
+}
+
 const TIER_COLORS: Record<string, { bg: string; text: string; border: string }> = {
   A: { bg: 'bg-success/10', text: 'text-success-text', border: 'border-success/30' },
   B: { bg: 'bg-info/10', text: 'text-info-text', border: 'border-info/30' },
@@ -236,6 +251,8 @@ export function RosterPicker({
           id: p.id,
           name: p.name,
           tier: (meta.tier as string) || '?',
+          country: meta.country as string | undefined,
+          countryCode: meta.country_code as string | undefined,
           scoreToPar,
           r1: meta.r1 as number | null,
           r2: meta.r2 as number | null,
@@ -321,7 +338,12 @@ export function RosterPicker({
               <tbody>
                 {scoringBreakdown.counting.map(p => (
                   <tr key={p.id} className="border-b border-border-subtle">
-                    <td className="py-2 pr-2 text-text-primary">{p.name}</td>
+                    <td className="py-2 pr-2 text-text-primary">
+                      <span className="flex items-center gap-1.5">
+                        <CountryFlag country={p.country} countryCode={p.countryCode} />
+                        {p.name}
+                      </span>
+                    </td>
                     <td className="py-2 px-1 text-center">
                       <span className={`text-xs px-1.5 py-0.5 rounded ${TIER_COLORS[p.tier]?.bg || 'bg-surface-inset'} ${TIER_COLORS[p.tier]?.text || 'text-text-muted'}`}>
                         {p.tier}
@@ -336,7 +358,12 @@ export function RosterPicker({
                 ))}
                 {scoringBreakdown.dropped.map(p => (
                   <tr key={p.id} className="border-b border-border-subtle opacity-50">
-                    <td className="py-2 pr-2 text-text-muted">{p.name}</td>
+                    <td className="py-2 pr-2 text-text-muted">
+                      <span className="flex items-center gap-1.5">
+                        <CountryFlag country={p.country} countryCode={p.countryCode} />
+                        {p.name}
+                      </span>
+                    </td>
                     <td className="py-2 px-1 text-center">
                       <span className={`text-xs px-1.5 py-0.5 rounded ${TIER_COLORS[p.tier]?.bg || 'bg-surface-inset'} ${TIER_COLORS[p.tier]?.text || 'text-text-muted'}`}>
                         {p.tier}
@@ -391,6 +418,8 @@ export function RosterPicker({
                   const scoreToPar = meta.score_to_par as number | null
                   const status = (meta.status as string) || 'active'
                   const isCut = status === 'cut'
+                  const country = meta.country as string | undefined
+                  const countryCode = meta.country_code as string | undefined
                   const pickCount = isLimitedMode && selectionCounts ? (selectionCounts[p.id] || 0) : 0
                   const isAtCap = isLimitedMode && pickCount >= selectionCap
 
@@ -416,7 +445,8 @@ export function RosterPicker({
                             </span>
                           )}
                           <div className="min-w-0">
-                            <p className={`text-sm font-medium truncate ${isSelected ? 'text-text-primary' : 'text-text-secondary'}`}>
+                            <p className={`text-sm font-medium truncate flex items-center gap-1.5 ${isSelected ? 'text-text-primary' : 'text-text-secondary'}`}>
+                              <CountryFlag country={country} countryCode={countryCode} />
                               {p.name}
                             </p>
                             {owgr && (
