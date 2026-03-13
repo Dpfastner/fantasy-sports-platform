@@ -738,9 +738,9 @@ export async function fetchGolfRankings(): Promise<ESPNGolfRanking[]> {
 
     const html = await response.text()
 
-    // Parse table rows: each row has <td>rank</td><td><img alt="Country"><a>Name</a></td>
-    // Use regex to extract from the server-rendered HTML
-    const rowPattern = /<tr\b[^>]*>\s*<td[^>]*>\s*(\d+)\s*<\/td>\s*<td[^>]*>[\s\S]*?<img[^>]*alt="([^"]*)"[^>]*>[\s\S]*?<a[^>]*>([^<]+)<\/a>/g
+    // ESPN structure: <tr><td><span class="rank_column">1</span></td><td>...<img title="Country">...<a>Name</a>...</td></tr>
+    // The img uses title= for country, and rank is inside a span
+    const rowPattern = /<tr\b[^>]*>[\s\S]*?<span[^>]*class="rank_column"[^>]*>(\d+)<\/span>[\s\S]*?<img[^>]*title="([^"]*)"[^>]*>[\s\S]*?<a[^>]*>([^<]+)<\/a>[\s\S]*?<\/tr>/g
     let match
     while ((match = rowPattern.exec(html)) !== null) {
       const rank = parseInt(match[1], 10)
