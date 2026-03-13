@@ -229,7 +229,6 @@ export function RosterPicker({
       addToast(submittedAt ? 'Roster updated!' : 'Roster submitted!', 'success')
       track('event_roster_submitted', { pickCount: picks.length })
       trackEventActivity('roster.submitted', poolId, tournamentId, { pickCount: picks.length })
-      window.scrollTo({ top: 0, behavior: 'smooth' })
       router.refresh()
     } catch {
       addToast('Something went wrong', 'error')

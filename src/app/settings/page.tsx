@@ -7,6 +7,8 @@ import { createClient } from '@/lib/supabase/client'
 import { Header } from '@/components/Header'
 import { trackActivity } from '@/app/actions/activity'
 import { SchoolPicker } from '@/components/SchoolPicker'
+import { useToast } from '@/components/Toast'
+import { useConfirm } from '@/components/ConfirmDialog'
 
 interface Profile {
   display_name: string | null
@@ -18,6 +20,8 @@ interface Profile {
 export default function SettingsPage() {
   const router = useRouter()
   const supabase = createClient()
+  const { addToast } = useToast()
+  const { confirm } = useConfirm()
 
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -72,9 +76,7 @@ export default function SettingsPage() {
   const [deleting, setDeleting] = useState(false)
   const [userLeagueTeams, setUserLeagueTeams] = useState<{ leagueName: string; teamName: string }[]>([])
 
-  // Messages
-  const [successMessage, setSuccessMessage] = useState('')
-  const [errorMessage, setErrorMessage] = useState('')
+  // Messages (via toast)
 
   useEffect(() => {
     async function loadProfile() {
@@ -147,18 +149,7 @@ export default function SettingsPage() {
   }, [supabase, router])
 
   const showMessage = (type: 'success' | 'error', message: string) => {
-    if (type === 'success') {
-      setSuccessMessage(message)
-      setErrorMessage('')
-    } else {
-      setErrorMessage(message)
-      setSuccessMessage('')
-    }
-    window.scrollTo({ top: 0, behavior: 'smooth' })
-    setTimeout(() => {
-      setSuccessMessage('')
-      setErrorMessage('')
-    }, 5000)
+    addToast(message, type)
   }
 
   const handleUpdateProfile = async (e: React.FormEvent) => {
@@ -388,18 +379,6 @@ export default function SettingsPage() {
         </div>
 
         <h1 className="text-3xl font-bold text-text-primary mb-8">Account Settings</h1>
-
-        {/* Success/Error Messages */}
-        {successMessage && (
-          <div className="bg-success/10 border border-success text-success-text px-4 py-3 rounded-lg mb-6">
-            {successMessage}
-          </div>
-        )}
-        {errorMessage && (
-          <div className="bg-danger/10 border border-danger text-danger-text px-4 py-3 rounded-lg mb-6">
-            {errorMessage}
-          </div>
-        )}
 
         {/* Profile Settings */}
         <div className="bg-surface rounded-lg p-6 mb-6">

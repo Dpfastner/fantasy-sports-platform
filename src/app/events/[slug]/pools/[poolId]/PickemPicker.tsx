@@ -164,7 +164,6 @@ export function PickemPicker({
       addToast(`Picks saved! ${data.pickCount} picks submitted.`, 'success')
       track('event_pickem_submitted', { pickCount: data.pickCount })
       trackEventActivity('pick.submitted', poolId, tournamentId, { pickCount: data.pickCount })
-      window.scrollTo({ top: 0, behavior: 'smooth' })
       router.refresh()
     } catch {
       addToast('Something went wrong', 'error')
