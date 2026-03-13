@@ -237,7 +237,7 @@ function validateTeamsResponse(data: unknown): ValidationResult {
 
 // ============================================
 // Rugby (Six Nations) adapter
-// Uses Core API (site API doesn't cover Six Nations well)
+// Uses Site API scoreboard endpoint (Core API doesn't return scores)
 // ============================================
 
 export interface ESPNRugbyMatch {
@@ -257,55 +257,50 @@ export interface ESPNRugbyMatch {
 }
 
 /**
- * Fetch Six Nations fixtures and scores from ESPN.
- * Logs all API calls to espn_api_health for monitoring.
+ * Fetch Six Nations fixtures and scores from ESPN Site API.
+ * Uses the scoreboard endpoint which returns scores (unlike Core API).
  */
 export async function fetchRugbyMatches(
   dates: string[],
   supabase: SupabaseClient | null = null
 ): Promise<ESPNRugbyMatch[]> {
   const config = ESPN_SPORTS.rugby
-  const baseUrl = `${CORE_API_BASE}/rugby/leagues/${config.coreLeagueId}`
   const matches: ESPNRugbyMatch[] = []
   const seenEventIds = new Set<string>()
 
   for (const dateStr of dates) {
     try {
-      const eventsUrl = `${baseUrl}/events?dates=${dateStr}`
-      const { data: eventsData } = await monitoredEventFetch(
+      const url = `${SITE_API_BASE}/rugby/${config.coreLeagueId}/scoreboard?dates=${dateStr}`
+      const { data } = await monitoredEventFetch(
         supabase,
-        `events/rugby/six-nations/events?dates=${dateStr}`,
-        eventsUrl,
-        validateRugbyEventsListResponse
+        `events/rugby/six-nations/scoreboard?dates=${dateStr}`,
+        url,
+        validateSiteScoreboardResponse
       )
 
-      const eventRefs = (eventsData as Record<string, unknown>).items as { $ref?: string }[] || []
+      const events = (data as Record<string, unknown>).events as Record<string, unknown>[] || []
 
-      for (const ref of eventRefs) {
+      for (const event of events) {
         try {
-          const eventUrl = ref.$ref
-          if (!eventUrl) continue
+          const eventId = event.id as string
+          if (seenEventIds.has(eventId)) continue
+          seenEventIds.add(eventId)
 
-          // Individual event fetches don't need full monitoring (too many calls)
-          const eventResponse = await fetchWithTimeout(eventUrl)
-          if (!eventResponse.ok) continue
-
-          const eventData = await eventResponse.json()
-          if (seenEventIds.has(eventData.id)) continue
-          seenEventIds.add(eventData.id)
-
-          const competition = eventData.competitions?.[0]
+          const competitions = event.competitions as Record<string, unknown>[] || []
+          const competition = competitions[0]
           if (!competition) continue
 
-          const competitors = competition.competitors || []
+          const competitors = competition.competitors as Record<string, unknown>[] || []
           let homeTeamCode = ''
           let awayTeamCode = ''
           let homeScore: number | null = null
           let awayScore: number | null = null
 
           for (const comp of competitors) {
-            const teamCode = config.teamMap[comp.id] || normalizeAbbreviation(comp.abbreviation || '')
-            const score = comp.score?.value ?? null
+            const team = comp.team as Record<string, unknown> || {}
+            const abbr = normalizeAbbreviation((team.abbreviation as string) || '')
+            const teamCode = config.teamMap[team.id as string] || abbr
+            const score = comp.score != null ? parseInt(comp.score as string) : null
 
             if (comp.homeAway === 'home') {
               homeTeamCode = teamCode
@@ -318,7 +313,8 @@ export async function fetchRugbyMatches(
 
           if (!homeTeamCode || !awayTeamCode) continue
 
-          const statusType = competition.status?.type || eventData.status?.type || {}
+          const status = competition.status as Record<string, unknown> || {}
+          const statusType = status.type as Record<string, unknown> || {}
           const isComplete = statusType.completed === true
           const isLive = statusType.state === 'in' || statusType.name === 'STATUS_IN_PROGRESS'
           const isDraw = isComplete && homeScore !== null && awayScore !== null && homeScore === awayScore
@@ -327,13 +323,12 @@ export async function fetchRugbyMatches(
           if (isComplete && homeScore !== null && awayScore !== null) {
             if (homeScore > awayScore) winnerTeamCode = homeTeamCode
             else if (awayScore > homeScore) winnerTeamCode = awayTeamCode
-            // Draw: winnerTeamCode stays null
           }
 
           matches.push({
-            espnEventId: eventData.id,
-            name: eventData.name || `${homeTeamCode} vs ${awayTeamCode}`,
-            date: eventData.date,
+            espnEventId: eventId,
+            name: (event.name as string) || `${homeTeamCode} vs ${awayTeamCode}`,
+            date: event.date as string,
             homeTeamCode,
             awayTeamCode,
             homeScore,
@@ -342,8 +337,8 @@ export async function fetchRugbyMatches(
             isComplete,
             isDraw,
             winnerTeamCode,
-            displayClock: competition.status?.displayClock,
-            period: competition.status?.period,
+            displayClock: (status.displayClock as string) || undefined,
+            period: (status.period as number) || undefined,
           })
         } catch {
           continue
@@ -352,7 +347,6 @@ export async function fetchRugbyMatches(
 
       await new Promise(resolve => setTimeout(resolve, 200))
     } catch (err) {
-      // monitoredEventFetch already logged + Sentry'd, just continue
       console.error(`[espn-rugby] Error fetching date ${dateStr}:`, err instanceof Error ? err.message : err)
       continue
     }

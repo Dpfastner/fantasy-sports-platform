@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import * as Sentry from '@sentry/nextjs'
 import { createAdminClient } from '@/lib/supabase/server'
-import { fetchHockeyTeams, fetchGolfRankings, fetchGolfField, getCountryFlagCode } from '@/lib/events/espn-adapters'
+import { fetchHockeyTeams, fetchGolfRankings, fetchGolfField, getCountryFlagCode, fetchRugbyMatches } from '@/lib/events/espn-adapters'
 
 // POST /api/events/seed
 // One-time admin endpoint to seed tournament data.
@@ -945,46 +945,35 @@ async function resetWSixNationsScores(admin: ReturnType<typeof createAdminClient
   return NextResponse.json({ reset: games?.length || 0, error: error?.message })
 }
 
-// Fetch past scores from TheSportsDB and update rugby games + trigger scoring.
-// ESPN Core API doesn't return scores for Six Nations — TheSportsDB is the reliable source.
-// TheSportsDB league 4714 = Men's Six Nations only.
+// Fetch past scores from ESPN Site API and update all rugby games + trigger scoring.
 async function backfillRugbyScores(admin: ReturnType<typeof createAdminClient>) {
-  // Only backfill Men's Six Nations (TheSportsDB league 4714 is Men's only)
   const { data: tournaments } = await admin
     .from('event_tournaments')
     .select('id, slug, format, config, starts_at, ends_at')
-    .eq('slug', 'm-six-nations-2026')
+    .eq('sport', 'rugby')
 
   if (!tournaments?.length) {
-    return NextResponse.json({ error: 'Men\'s Six Nations tournament not found' }, { status: 404 })
+    return NextResponse.json({ error: 'No rugby tournaments found' }, { status: 404 })
   }
-
-  // TheSportsDB team name → our team code mapping
-  const sportsDbTeamMap: Record<string, string> = {
-    'England': 'ENG', 'France': 'FRA', 'Ireland': 'IRL',
-    'Italy': 'ITA', 'Scotland': 'SCO', 'Wales': 'WAL',
-  }
-  function getTeamCode(name: string): string | null {
-    if (sportsDbTeamMap[name]) return sportsDbTeamMap[name]
-    for (const [key, code] of Object.entries(sportsDbTeamMap)) {
-      if (name.toLowerCase().includes(key.toLowerCase())) return code
-    }
-    return null
-  }
-
-  // Fetch all 2026 Six Nations fixtures from TheSportsDB
-  const apiKey = process.env.SPORTS_API_KEY || '3'
-  const sportsDbUrl = `https://www.thesportsdb.com/api/v1/json/${apiKey}/eventsseason.php?id=4714&s=2026`
-  const sportsDbRes = await fetch(sportsDbUrl)
-  const sportsDbData = await sportsDbRes.json()
-  const apiMatches = (sportsDbData.events || []) as {
-    idEvent: string; strHomeTeam: string; strAwayTeam: string
-    intHomeScore: string | null; intAwayScore: string | null; strStatus: string
-  }[]
 
   const results: Record<string, unknown> = {}
 
   for (const tournament of tournaments) {
+    // Generate all dates from tournament start to today
+    const start = new Date(tournament.starts_at)
+    const end = new Date(Math.min(new Date(tournament.ends_at).getTime(), Date.now()))
+    const dates: string[] = []
+    for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+      dates.push(d.toISOString().slice(0, 10).replace(/-/g, ''))
+    }
+
+    if (!dates.length) {
+      results[tournament.slug] = { skipped: true, reason: 'No dates in range yet' }
+      continue
+    }
+
+    const espnMatches = await fetchRugbyMatches(dates, admin)
+
     // Get our games and participants
     const { data: ourGames } = await admin
       .from('event_games')
@@ -1001,64 +990,52 @@ async function backfillRugbyScores(admin: ReturnType<typeof createAdminClient>) 
     let updated = 0
     const matchDetails: unknown[] = []
 
-    for (const apiMatch of apiMatches) {
-      const homeCode = getTeamCode(apiMatch.strHomeTeam)
-      const awayCode = getTeamCode(apiMatch.strAwayTeam)
-      if (!homeCode || !awayCode) continue
-
-      const hasScores = apiMatch.intHomeScore !== null && apiMatch.intAwayScore !== null
-        && apiMatch.intHomeScore !== '' && apiMatch.intAwayScore !== ''
-      const isFinished = apiMatch.strStatus === 'Match Finished' || apiMatch.strStatus === 'FT'
-
-      if (!hasScores || !isFinished) {
-        matchDetails.push({ match: `${homeCode} vs ${awayCode}`, status: apiMatch.strStatus, hasScores, skipped: true })
+    for (const match of espnMatches) {
+      if (match.status === 'scheduled') {
+        matchDetails.push({ match: `${match.homeTeamCode} vs ${match.awayTeamCode}`, status: 'scheduled', skipped: true })
         continue
       }
 
-      const homeScore = parseInt(apiMatch.intHomeScore!)
-      const awayScore = parseInt(apiMatch.intAwayScore!)
-
-      // Match to our game by team codes
-      const homeP = participantByCode.get(homeCode)
-      const awayP = participantByCode.get(awayCode)
-      if (!homeP || !awayP) continue
-
-      const ourGame = ourGames?.find(g =>
-        (g.participant_1_id === homeP.id && g.participant_2_id === awayP.id) ||
-        (g.participant_1_id === awayP.id && g.participant_2_id === homeP.id)
-      )
+      // Match by external_id or team codes
+      let ourGame = ourGames?.find(g => g.external_id === match.espnEventId)
+      if (!ourGame) {
+        const homeP = participantByCode.get(match.homeTeamCode)
+        const awayP = participantByCode.get(match.awayTeamCode)
+        if (homeP && awayP) {
+          ourGame = ourGames?.find(g =>
+            (g.participant_1_id === homeP.id && g.participant_2_id === awayP.id) ||
+            (g.participant_1_id === awayP.id && g.participant_2_id === homeP.id)
+          )
+        }
+      }
       if (!ourGame) continue
 
       // Determine scores relative to participant_1/participant_2 order
-      const p1IsHome = ourGame.participant_1_id === homeP.id
-      const p1Score = p1IsHome ? homeScore : awayScore
-      const p2Score = p1IsHome ? awayScore : homeScore
-
-      const isDraw = homeScore === awayScore
-      let winnerId: string | null = null
-      if (!isDraw) {
-        winnerId = homeScore > awayScore ? homeP.id : awayP.id
-      }
+      const homeP = participantByCode.get(match.homeTeamCode)
+      const p1IsHome = ourGame.participant_1_id === homeP?.id
+      const p1Score = p1IsHome ? match.homeScore : match.awayScore
+      const p2Score = p1IsHome ? match.awayScore : match.homeScore
 
       const { error } = await admin
         .from('event_games')
         .update({
           participant_1_score: p1Score,
           participant_2_score: p2Score,
-          status: 'completed',
-          is_draw: isDraw,
-          winner_id: winnerId,
+          status: match.status === 'completed' ? 'completed' : 'live',
+          is_draw: match.isDraw,
+          winner_id: match.winnerTeamCode ? participantByCode.get(match.winnerTeamCode)?.id || null : null,
+          external_id: match.espnEventId,
           updated_at: new Date().toISOString(),
         })
         .eq('id', ourGame.id)
 
       if (!error) {
         updated++
-        matchDetails.push({ match: `${homeCode} ${homeScore}-${awayScore} ${awayCode}`, updated: true })
+        matchDetails.push({ match: `${match.homeTeamCode} ${match.homeScore}-${match.awayScore} ${match.awayTeamCode}`, updated: true })
       }
     }
 
-    // Update tournament status to active if it was upcoming
+    // Update tournament status to active if it was upcoming and we got results
     if (updated > 0) {
       await admin
         .from('event_tournaments')
@@ -1113,7 +1090,8 @@ async function backfillRugbyScores(admin: ReturnType<typeof createAdminClient>) 
     }
 
     results[tournament.slug] = {
-      api_matches: apiMatches.length,
+      dates_checked: dates.length,
+      espn_matches: espnMatches.length,
       games_updated: updated,
       entries_scored: scored,
       details: matchDetails,
