@@ -31,6 +31,8 @@
   /* Brand swatches */
   --palette-tertiary: #F5A623;
   --palette-neutral: #F7F8FA;
+  --palette-card-text: #0D1520;
+  --palette-card-text-muted: #94A3B8;
 
   /* Brand action */
   --palette-brand: #E8513D;
@@ -85,6 +87,8 @@
   --palette-text-inverse: #0E2218;
   --palette-tertiary: #F2E8D5;
   --palette-neutral: #FFFFFF;
+  --palette-card-text: #0E2218;
+  --palette-card-text-muted: #B8A88A;
   --palette-brand: #C47A3A;
   --palette-brand-hover: #B06A2E;
   --palette-brand-text: #C47A3A;
@@ -127,6 +131,8 @@
   --palette-text-inverse: #1A0F28;
   --palette-tertiary: #FAF5EE;
   --palette-neutral: #FFFFFF;
+  --palette-card-text: #1A0F28;
+  --palette-card-text-muted: #C4B5D4;
   --palette-brand: #F59E0B;
   --palette-brand-hover: #D97706;
   --palette-brand-text: #F59E0B;
@@ -169,6 +175,8 @@
   --palette-text-inverse: #FAF7F2;
   --palette-tertiary: #E07A3A;
   --palette-neutral: #F0EBE1;
+  --palette-card-text: #2C3E50;
+  --palette-card-text-muted: #5D6D7E;
   --palette-brand: #3D5A80;
   --palette-brand-hover: #2C4A6E;
   --palette-brand-text: #3D5A80;
@@ -209,6 +217,8 @@
 
   /* Brand swatches */
   --color-card-neutral: var(--palette-neutral);
+  --color-card-text: var(--palette-card-text);
+  --color-card-text-muted: var(--palette-card-text-muted);
 
   /* Gradient endpoints */
   --color-gradient-from: var(--palette-gradient-from);

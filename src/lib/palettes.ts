@@ -359,6 +359,8 @@ export function paletteToCSSVars(palette: PaletteDefinition): Record<string, str
     '--palette-surface-inset': colors.surfaceInset,
     '--palette-tertiary': colors.tertiary,
     '--palette-neutral': colors.neutral,
+    '--palette-card-text': colors.base,
+    '--palette-card-text-muted': colors.textSecondary,
     '--palette-border': colors.border,
     '--palette-border-subtle': colors.borderSubtle,
     '--palette-text-primary': colors.textPrimary,
