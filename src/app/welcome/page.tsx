@@ -82,10 +82,10 @@ export default function WelcomePage() {
           run the league you&apos;ve always wanted.
         </p>
         <a
-          href="#commissioner"
+          href="/signup"
           className="inline-block bg-brand hover:bg-brand-hover text-text-inverse font-semibold py-4 px-10 rounded-lg text-lg transition-colors"
         >
-          Join the Waitlist
+          Sign Up Free
         </a>
       </section>
 

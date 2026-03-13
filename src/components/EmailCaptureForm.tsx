@@ -180,7 +180,7 @@ export default function EmailCaptureForm({ source = 'landing_page', inverted = f
         disabled={loading}
         className={btnClass}
       >
-        {loading ? 'Joining...' : 'Join the Waitlist'}
+        {loading ? 'Signing up...' : 'Sign Up Free'}
       </button>
     </form>
   )

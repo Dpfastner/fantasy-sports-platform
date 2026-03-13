@@ -239,7 +239,7 @@ export default async function DashboardPage() {
     })
   }
 
-  // Upcoming events the user hasn't joined
+  // Upcoming/active events for featured section
   const joinedTournamentIds = new Set(eventPools.map(p => p.tournamentId))
   const { data: allTournaments } = await admin
     .from('event_tournaments')
@@ -247,22 +247,20 @@ export default async function DashboardPage() {
     .in('status', ['upcoming', 'active'])
     .order('starts_at', { ascending: true })
 
-  const unjoinedTournaments = (allTournaments || []).filter(t => !joinedTournamentIds.has(t.id))
-
-  // Pool counts for unjoined tournaments
+  // Pool counts for featured tournaments
   let featuredPoolCounts: Record<string, number> = {}
-  if (unjoinedTournaments.length > 0) {
+  if ((allTournaments || []).length > 0) {
     const { data: featuredPools } = await admin
       .from('event_pools')
       .select('tournament_id')
-      .in('tournament_id', unjoinedTournaments.map(t => t.id))
+      .in('tournament_id', (allTournaments || []).map(t => t.id))
     for (const p of featuredPools || []) {
       featuredPoolCounts[p.tournament_id] = (featuredPoolCounts[p.tournament_id] || 0) + 1
     }
   }
 
   // Sort: active first, then upcoming by date. Limit to 3.
-  const featuredEvents = unjoinedTournaments
+  const featuredEvents = (allTournaments || [])
     .sort((a, b) => {
       if (a.status !== b.status) return a.status === 'active' ? -1 : 1
       return new Date(a.starts_at).getTime() - new Date(b.starts_at).getTime()
@@ -606,8 +604,8 @@ export default async function DashboardPage() {
         {featuredEvents.length > 0 && (
           <div className="bg-surface-subtle rounded-xl p-6 mt-6 border border-border/50 shadow-lg shadow-black/10">
             <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-bold text-text-primary">Upcoming Events</h2>
-              {unjoinedTournaments.length > 3 && (
+              <h2 className="text-xl font-bold text-text-primary">Featured Events</h2>
+              {(allTournaments || []).length > 3 && (
                 <Link href="/events" className="text-sm text-brand hover:text-brand-hover transition-colors">
                   Browse all &rarr;
                 </Link>
@@ -620,6 +618,7 @@ export default async function DashboardPage() {
                 const now = new Date()
                 const daysUntil = Math.ceil((startsAt.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
                 const pools = featuredPoolCounts[tournament.id] || 0
+                const isJoined = joinedTournamentIds.has(tournament.id)
                 return (
                   <Link
                     key={tournament.id}
@@ -636,13 +635,20 @@ export default async function DashboardPage() {
                             </h3>
                           </div>
                         </div>
-                        <span className={`text-xs font-medium px-2 py-0.5 rounded-full shrink-0 ml-2 ${statusStyles[tournament.status] || ''}`}>
-                          {tournament.status === 'upcoming' && daysUntil > 0
-                            ? `Starts in ${daysUntil}d`
-                            : tournament.status === 'active'
-                            ? 'Live'
-                            : tournament.status}
-                        </span>
+                        <div className="flex items-center gap-1.5 shrink-0 ml-2">
+                          <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${statusStyles[tournament.status] || ''}`}>
+                            {tournament.status === 'upcoming' && daysUntil > 0
+                              ? `Starts in ${daysUntil}d`
+                              : tournament.status === 'active'
+                              ? 'Live'
+                              : tournament.status}
+                          </span>
+                          {isJoined && (
+                            <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-success/20 text-success-text">
+                              Joined
+                            </span>
+                          )}
+                        </div>
                       </div>
                       {tournament.description && (
                         <p className="text-text-muted text-sm line-clamp-2 ml-9">{tournament.description}</p>
