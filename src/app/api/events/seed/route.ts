@@ -987,14 +987,26 @@ async function convertMSixNationsToSurvivor(admin: ReturnType<typeof createAdmin
 
   if (!tournament) return NextResponse.json({ error: 'M Six Nations not found' }, { status: 404 })
   if (tournament.format === 'survivor') {
-    // Still patch espn_league_id if missing
+    // Patch any remaining config/pool issues
     const cfg = (tournament.config || {}) as Record<string, unknown>
+    const patches: string[] = []
     if (!cfg.espn_league_id) {
       await admin
         .from('event_tournaments')
         .update({ config: { ...cfg, espn_league_id: '180659' }, updated_at: new Date().toISOString() })
         .eq('id', tournament.id)
-      return NextResponse.json({ message: 'Already survivor, patched espn_league_id', id: tournament.id })
+      patches.push('espn_league_id')
+    }
+    // Fix any pools still set to pickem
+    const { data: pickemPools } = await admin
+      .from('event_pools')
+      .update({ game_type: 'survivor', updated_at: new Date().toISOString() })
+      .eq('tournament_id', tournament.id)
+      .neq('game_type', 'survivor')
+      .select('id')
+    if (pickemPools?.length) patches.push(`${pickemPools.length} pools→survivor`)
+    if (patches.length) {
+      return NextResponse.json({ message: `Already survivor, patched: ${patches.join(', ')}`, id: tournament.id })
     }
     return NextResponse.json({ message: 'Already survivor format', id: tournament.id })
   }
@@ -1044,6 +1056,12 @@ async function convertMSixNationsToSurvivor(admin: ReturnType<typeof createAdmin
   let weeksCreated = 0
 
   for (const pool of (pools || [])) {
+    // Update pool game_type to survivor
+    await admin
+      .from('event_pools')
+      .update({ game_type: 'survivor', updated_at: new Date().toISOString() })
+      .eq('id', pool.id)
+
     // Delete existing pick'em picks (game_id based, incompatible with survivor)
     const { data: entries } = await admin
       .from('event_entries')

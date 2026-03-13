@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { TournamentBracketView } from './TournamentBracketView'
+import { StandingsTable } from './StandingsTable'
 
 interface Participant {
   id: string
@@ -32,6 +33,7 @@ interface ScheduleViewProps {
   participants: Participant[]
   format: string
   tournamentId?: string
+  sport?: string
 }
 
 const roundLabels: Record<string, string> = {
@@ -71,8 +73,8 @@ function getStatusBadge(game: Game) {
   return <span className="text-[10px] text-text-muted">TBD</span>
 }
 
-export function ScheduleView({ games, participants, format, tournamentId }: ScheduleViewProps) {
-  const [view, setView] = useState<'list' | 'bracket'>('list')
+export function ScheduleView({ games, participants, format, tournamentId, sport }: ScheduleViewProps) {
+  const [view, setView] = useState<'list' | 'bracket' | 'table'>('list')
   const participantMap = new Map(participants.map(p => [p.id, p]))
 
   // Group games by round
@@ -108,6 +110,7 @@ export function ScheduleView({ games, participants, format, tournamentId }: Sche
   }
 
   const showBracketToggle = format === 'bracket' && tournamentId
+  const showTableToggle = sport === 'rugby' && tournamentId
 
   return (
     <div className="space-y-6">
@@ -133,8 +136,32 @@ export function ScheduleView({ games, participants, format, tournamentId }: Sche
         </div>
       )}
 
-      {/* Bracket view */}
-      {view === 'bracket' && tournamentId ? (
+      {/* Schedule/Table toggle for rugby */}
+      {showTableToggle && (
+        <div className="flex">
+          <button
+            onClick={() => setView('list')}
+            className={`flex-1 py-3 px-4 text-sm font-medium rounded-l-lg transition-colors ${
+              view === 'list' ? 'bg-brand text-text-primary' : 'bg-surface text-text-secondary hover:bg-surface-subtle'
+            }`}
+          >
+            Schedule
+          </button>
+          <button
+            onClick={() => setView('table')}
+            className={`flex-1 py-3 px-4 text-sm font-medium rounded-r-lg transition-colors ${
+              view === 'table' ? 'bg-accent text-text-primary' : 'bg-surface text-text-secondary hover:bg-surface-subtle'
+            }`}
+          >
+            Table
+          </button>
+        </div>
+      )}
+
+      {/* Table view */}
+      {view === 'table' && tournamentId ? (
+        <StandingsTable tournamentId={tournamentId} />
+      ) : view === 'bracket' && tournamentId ? (
         <TournamentBracketView
           tournamentId={tournamentId}
           games={games}

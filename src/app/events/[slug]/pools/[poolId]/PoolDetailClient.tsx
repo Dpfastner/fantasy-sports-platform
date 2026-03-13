@@ -16,7 +16,6 @@ import { PoolActivityFeed } from './PoolActivityFeed'
 import { PoolChat } from './PoolChat'
 import { PoolAnnouncements } from './PoolAnnouncements'
 import { ScheduleView } from './ScheduleView'
-import { StandingsTable } from './StandingsTable'
 import { ShareButton } from '@/components/ShareButton'
 
 interface Participant {
@@ -125,7 +124,7 @@ interface PoolDetailClientProps {
   allRosterPicks?: Record<string, string[]>
 }
 
-type Tab = 'overview' | 'picks' | 'schedule' | 'table' | 'members' | 'settings'
+type Tab = 'overview' | 'picks' | 'schedule' | 'members' | 'settings'
 
 const tiebreakerLabels: Record<string, string> = {
   none: 'None',
@@ -334,7 +333,6 @@ export function PoolDetailClient({
         ? (((pool.scoringRules?.draft_mode as string) === 'snake_draft' || (pool.scoringRules?.draft_mode as string) === 'linear_draft') ? 'Draft Room' : 'My Roster')
       : 'My Picks', requiresMember: true },
     { key: 'schedule', label: effectiveFormat === 'roster' ? 'Leaderboard' : 'Schedule' },
-    ...(tournament.sport === 'rugby' ? [{ key: 'table' as Tab, label: 'Table' }] : []),
     { key: 'members', label: `Members (${members.length})` },
     ...(isCreator ? [{ key: 'settings' as Tab, label: 'Settings' }] : []),
   ]
@@ -697,12 +695,9 @@ export function PoolDetailClient({
             participants={participants}
             format={effectiveFormat}
             tournamentId={tournament.id}
+            sport={tournament.sport}
           />
         )
-      )}
-
-      {activeTab === 'table' && (
-        <StandingsTable tournamentId={tournament.id} />
       )}
 
       {activeTab === 'members' && (
