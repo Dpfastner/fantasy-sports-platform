@@ -103,8 +103,8 @@ export function SurvivorPicker({
   // Get games for the current week/round
   const currentRoundGames = useMemo(() => {
     if (!currentWeek) return []
-    const roundLabel = `Round ${currentWeek.week_number}`
-    return games.filter(g => g.round === roundLabel)
+    const weekNum = currentWeek.week_number
+    return games.filter(g => g.round === `Round ${weekNum}` || g.round === `round_${weekNum}`)
   }, [games, currentWeek])
 
   const handleSubmit = async () => {

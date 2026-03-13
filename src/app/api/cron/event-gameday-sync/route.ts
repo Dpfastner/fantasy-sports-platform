@@ -295,8 +295,23 @@ export async function GET(request: Request) {
           for (const match of espnMatches) {
             if (match.status === 'scheduled') continue
 
-            // Match by external_id or by team codes
-            const ourGame = ourGames?.find(g => g.external_id === match.espnEventId)
+            // Match by external_id first, then fall back to team codes
+            let ourGame = ourGames?.find(g => g.external_id === match.espnEventId)
+            if (!ourGame) {
+              // Fallback: match by home/away team codes via participants
+              const homeParticipant = participantByCode.get(match.homeTeamCode)
+              const awayParticipant = participantByCode.get(match.awayTeamCode)
+              if (homeParticipant && awayParticipant) {
+                ourGame = ourGames?.find(g =>
+                  (g.participant_1_id === homeParticipant.id && g.participant_2_id === awayParticipant.id) ||
+                  (g.participant_1_id === awayParticipant.id && g.participant_2_id === homeParticipant.id)
+                )
+                // Write back external_id for fast future matching
+                if (ourGame) {
+                  await admin.from('event_games').update({ external_id: match.espnEventId }).eq('id', ourGame.id)
+                }
+              }
+            }
             if (!ourGame) continue
 
             if (match.status === 'live') live++

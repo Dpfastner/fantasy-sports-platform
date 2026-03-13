@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import * as Sentry from '@sentry/nextjs'
 import { createAdminClient } from '@/lib/supabase/server'
-import { fetchHockeyTeams, fetchGolfRankings, fetchGolfField, getCountryFlagCode } from '@/lib/events/espn-adapters'
+import { fetchHockeyTeams, fetchGolfRankings, fetchGolfField, getCountryFlagCode, fetchRugbyMatches } from '@/lib/events/espn-adapters'
 
 // POST /api/events/seed
 // One-time admin endpoint to seed tournament data.
@@ -39,6 +39,10 @@ export async function POST(request: Request) {
         return await syncGolfField(admin, body)
       case 'refresh-golf-metadata':
         return await refreshGolfMetadata(admin, body)
+      case 'update-rugby-metadata':
+        return await updateRugbyMetadata(admin)
+      case 'backfill-rugby-scores':
+        return await backfillRugbyScores(admin)
       case 'sync-hockey-logos':
         return await syncHockeyLogos(admin)
       case 'frozen-four-2026-schedule':
@@ -862,6 +866,193 @@ async function syncGolfField(
   })
 }
 
+// Rugby flag codes for flagcdn.com
+const RUGBY_FLAG_MAP: Record<string, string> = {
+  ENG: 'gb-eng', FRA: 'fr', IRL: 'ie', ITA: 'it', SCO: 'gb-sct', WAL: 'gb-wls',
+}
+
+// Update existing rugby participants with country_code metadata and flag logo_url
+async function updateRugbyMetadata(admin: ReturnType<typeof createAdminClient>) {
+  const { data: tournaments } = await admin
+    .from('event_tournaments')
+    .select('id, slug')
+    .eq('sport', 'rugby')
+
+  if (!tournaments?.length) {
+    return NextResponse.json({ error: 'No rugby tournaments found' }, { status: 404 })
+  }
+
+  let totalUpdated = 0
+  for (const tournament of tournaments) {
+    const { data: participants } = await admin
+      .from('event_participants')
+      .select('id, short_name')
+      .eq('tournament_id', tournament.id)
+
+    if (!participants) continue
+
+    for (const p of participants) {
+      const code = p.short_name
+      if (!code || !RUGBY_FLAG_MAP[code]) continue
+
+      const countryCode = RUGBY_FLAG_MAP[code]
+      const { error } = await admin
+        .from('event_participants')
+        .update({
+          metadata: { code, country_code: countryCode },
+          logo_url: `https://flagcdn.com/48x36/${countryCode}.png`,
+        })
+        .eq('id', p.id)
+
+      if (!error) totalUpdated++
+    }
+  }
+
+  return NextResponse.json({ updated: totalUpdated, tournaments: tournaments.map(t => t.slug) })
+}
+
+// Fetch past scores from ESPN and update all rugby games + trigger scoring
+async function backfillRugbyScores(admin: ReturnType<typeof createAdminClient>) {
+  const { data: tournaments } = await admin
+    .from('event_tournaments')
+    .select('id, slug, format, config, starts_at, ends_at')
+    .eq('sport', 'rugby')
+
+  if (!tournaments?.length) {
+    return NextResponse.json({ error: 'No rugby tournaments found' }, { status: 404 })
+  }
+
+  const results: Record<string, unknown> = {}
+
+  for (const tournament of tournaments) {
+    // Generate all dates from tournament start to today
+    const start = new Date(tournament.starts_at)
+    const end = new Date(Math.min(new Date(tournament.ends_at).getTime(), Date.now()))
+    const dates: string[] = []
+    for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+      dates.push(d.toISOString().slice(0, 10).replace(/-/g, ''))
+    }
+
+    if (!dates.length) {
+      results[tournament.slug] = { skipped: true, reason: 'No dates in range' }
+      continue
+    }
+
+    // Fetch all ESPN matches across all dates
+    const espnMatches = await fetchRugbyMatches(dates, admin)
+
+    // Get our games and participants
+    const { data: ourGames } = await admin
+      .from('event_games')
+      .select('id, external_id, participant_1_id, participant_2_id, status')
+      .eq('tournament_id', tournament.id)
+
+    const { data: participants } = await admin
+      .from('event_participants')
+      .select('id, short_name')
+      .eq('tournament_id', tournament.id)
+
+    const participantByCode = new Map(participants?.map(p => [p.short_name, p]) || [])
+
+    let updated = 0
+    for (const match of espnMatches) {
+      if (match.status === 'scheduled') continue
+
+      // Match by external_id or team codes
+      let ourGame = ourGames?.find(g => g.external_id === match.espnEventId)
+      if (!ourGame) {
+        const homeP = participantByCode.get(match.homeTeamCode)
+        const awayP = participantByCode.get(match.awayTeamCode)
+        if (homeP && awayP) {
+          ourGame = ourGames?.find(g =>
+            (g.participant_1_id === homeP.id && g.participant_2_id === awayP.id) ||
+            (g.participant_1_id === awayP.id && g.participant_2_id === homeP.id)
+          )
+        }
+      }
+      if (!ourGame) continue
+
+      const updateData: Record<string, unknown> = {
+        participant_1_score: match.homeScore,
+        participant_2_score: match.awayScore,
+        status: match.status === 'completed' ? 'completed' : 'live',
+        is_draw: match.isDraw,
+        external_id: match.espnEventId,
+        updated_at: new Date().toISOString(),
+      }
+
+      if (match.isComplete && match.winnerTeamCode) {
+        const winnerP = participantByCode.get(match.winnerTeamCode)
+        if (winnerP) updateData.winner_id = winnerP.id
+      }
+
+      const { error } = await admin.from('event_games').update(updateData).eq('id', ourGame.id)
+      if (!error) updated++
+    }
+
+    // Update tournament status to active if it was upcoming
+    await admin
+      .from('event_tournaments')
+      .update({ status: 'active', updated_at: new Date().toISOString() })
+      .eq('id', tournament.id)
+      .eq('status', 'upcoming')
+
+    // Score pick'em entries based on updated results
+    let scored = 0
+    if (tournament.format === 'pickem' && updated > 0) {
+      const { data: completedGames } = await admin
+        .from('event_games')
+        .select('id, winner_id')
+        .eq('tournament_id', tournament.id)
+        .eq('status', 'completed')
+
+      const gameResults: Record<string, string> = {}
+      for (const g of completedGames || []) {
+        if (g.winner_id) gameResults[g.id] = g.winner_id
+      }
+
+      const { data: pools } = await admin
+        .from('event_pools')
+        .select('id')
+        .eq('tournament_id', tournament.id)
+
+      for (const pool of pools || []) {
+        const { data: entries } = await admin
+          .from('event_entries')
+          .select('id')
+          .eq('pool_id', pool.id)
+
+        for (const entry of entries || []) {
+          const { data: picks } = await admin
+            .from('event_picks')
+            .select('game_id, participant_id')
+            .eq('entry_id', entry.id)
+
+          let score = 0
+          for (const pick of picks || []) {
+            if (pick.game_id && gameResults[pick.game_id] === pick.participant_id) score++
+          }
+
+          await admin
+            .from('event_entries')
+            .update({ total_points: score, updated_at: new Date().toISOString() })
+            .eq('id', entry.id)
+          scored++
+        }
+      }
+    }
+
+    results[tournament.slug] = {
+      dates_checked: dates.length,
+      espn_matches: espnMatches.length,
+      games_updated: updated,
+      entries_scored: scored,
+    }
+  }
+
+  return NextResponse.json({ results })
+}
+
 // ============================================
 // WOMEN'S SIX NATIONS 2026
 // Survivor format — 6 teams, 5 weeks.
@@ -925,7 +1116,8 @@ async function seedWSixNations(admin: ReturnType<typeof createAdminClient>) {
     name: t.name,
     short_name: t.code,
     seed: t.seed,
-    metadata: { code: t.code },
+    metadata: { code: t.code, country_code: RUGBY_FLAG_MAP[t.code] },
+    logo_url: `https://flagcdn.com/48x36/${RUGBY_FLAG_MAP[t.code]}.png`,
   }))
 
   const { error: pErr } = await admin.from('event_participants').insert(participantRows)
@@ -1208,7 +1400,8 @@ async function seedMSixNations(admin: ReturnType<typeof createAdminClient>) {
     name: t.name,
     short_name: t.code,
     seed: t.seed,
-    metadata: { code: t.code },
+    metadata: { code: t.code, country_code: RUGBY_FLAG_MAP[t.code] },
+    logo_url: `https://flagcdn.com/48x36/${RUGBY_FLAG_MAP[t.code]}.png`,
   }))
 
   const { error: pErr } = await admin.from('event_participants').insert(participantRows)
