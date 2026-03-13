@@ -207,6 +207,9 @@ export function SurvivorPicker({
                   >
                     <div className="flex items-center gap-2">
                       <span className="text-text-muted font-medium w-8">R{w.week_number}</span>
+                      {p?.logoUrl && (
+                        <img src={p.logoUrl} alt="" className="w-5 h-5 rounded-sm object-contain" />
+                      )}
                       <span className="text-text-secondary">{p?.name || '?'}</span>
                     </div>
                     {resolved && (
@@ -234,9 +237,15 @@ export function SurvivorPicker({
               const p2 = game.participant2Id ? participantMap[game.participant2Id] : null
               return (
                 <div key={game.id} className="bg-surface-inset rounded-md p-2 text-sm flex items-center justify-between">
-                  <span className="text-text-secondary">{p1?.name || 'TBD'}</span>
+                  <div className="flex items-center gap-1.5">
+                    {p1?.logoUrl && <img src={p1.logoUrl} alt="" className="w-4 h-4 rounded-sm object-contain" />}
+                    <span className="text-text-secondary">{p1?.name || 'TBD'}</span>
+                  </div>
                   <span className="text-text-muted text-xs">vs</span>
-                  <span className="text-text-secondary">{p2?.name || 'TBD'}</span>
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-text-secondary">{p2?.name || 'TBD'}</span>
+                    {p2?.logoUrl && <img src={p2.logoUrl} alt="" className="w-4 h-4 rounded-sm object-contain" />}
+                  </div>
                 </div>
               )
             })}
@@ -255,7 +264,7 @@ export function SurvivorPicker({
               key={p.id}
               onClick={() => !isUsed && setSelectedParticipant(isSelected ? null : p.id)}
               disabled={isUsed || poolStatus !== 'open'}
-              className={`p-3 rounded-lg border text-left transition-colors ${
+              className={`p-3 min-h-[44px] rounded-lg border text-left transition-colors ${
                 isSelected
                   ? 'border-brand bg-brand/10 ring-1 ring-brand'
                   : isUsed
@@ -263,11 +272,16 @@ export function SurvivorPicker({
                   : 'border-border bg-surface hover:border-brand/40 hover:bg-surface-subtle'
               }`}
             >
-              <span className={`text-sm font-medium block truncate ${
-                isSelected ? 'text-brand' : isUsed ? 'text-text-muted line-through' : 'text-text-primary'
-              }`}>
-                {p.name}
-              </span>
+              <div className="flex items-center gap-2">
+                {p.logoUrl && (
+                  <img src={p.logoUrl} alt="" className="w-5 h-5 rounded-sm object-contain" />
+                )}
+                <span className={`text-sm font-medium truncate ${
+                  isSelected ? 'text-brand' : isUsed ? 'text-text-muted line-through' : 'text-text-primary'
+                }`}>
+                  {p.name}
+                </span>
+              </div>
               {p.shortName && (
                 <span className="text-xs text-text-muted">{p.shortName}</span>
               )}

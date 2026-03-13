@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import * as Sentry from '@sentry/nextjs'
 import { createAdminClient } from '@/lib/supabase/server'
-import { fetchHockeyTeams, fetchGolfRankings, fetchGolfField, getCountryFlagCode, fetchRugbyMatches } from '@/lib/events/espn-adapters'
+import { fetchHockeyTeams, fetchGolfRankings, fetchGolfField, getCountryFlagCode, fetchRugbyMatches, fetchRugbyMatchesSportsDb } from '@/lib/events/espn-adapters'
 
 // POST /api/events/seed
 // One-time admin endpoint to seed tournament data.
@@ -45,6 +45,8 @@ export async function POST(request: Request) {
         return await backfillRugbyScores(admin)
       case 'reset-w-six-nations-scores':
         return await resetWSixNationsScores(admin)
+      case 'update-w-six-nations-config':
+        return await updateWSixNationsConfig(admin)
       case 'sync-hockey-logos':
         return await syncHockeyLogos(admin)
       case 'frozen-four-2026-schedule':
@@ -945,6 +947,32 @@ async function resetWSixNationsScores(admin: ReturnType<typeof createAdminClient
   return NextResponse.json({ reset: games?.length || 0, error: error?.message })
 }
 
+async function updateWSixNationsConfig(admin: ReturnType<typeof createAdminClient>) {
+  const { data: tournament } = await admin
+    .from('event_tournaments')
+    .select('id, config')
+    .eq('slug', 'w-six-nations-2026')
+    .single()
+
+  if (!tournament) return NextResponse.json({ error: 'W Six Nations not found' }, { status: 404 })
+
+  const existingConfig = (tournament.config || {}) as Record<string, unknown>
+  const updatedConfig = {
+    ...existingConfig,
+    score_source: 'sportsdb',
+    sportsdb_league_id: '5563',
+  }
+
+  const { error } = await admin
+    .from('event_tournaments')
+    .update({ config: updatedConfig, updated_at: new Date().toISOString() })
+    .eq('id', tournament.id)
+
+  if (error) throw error
+
+  return NextResponse.json({ success: true, config: updatedConfig })
+}
+
 // Fetch past scores from ESPN Site API and update all rugby games + trigger scoring.
 async function backfillRugbyScores(admin: ReturnType<typeof createAdminClient>) {
   const { data: tournaments } = await admin
@@ -959,20 +987,34 @@ async function backfillRugbyScores(admin: ReturnType<typeof createAdminClient>) 
   const results: Record<string, unknown> = {}
 
   for (const tournament of tournaments) {
-    // Generate all dates from tournament start to today
-    const start = new Date(tournament.starts_at)
-    const end = new Date(Math.min(new Date(tournament.ends_at).getTime(), Date.now()))
-    const dates: string[] = []
-    for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
-      dates.push(d.toISOString().slice(0, 10).replace(/-/g, ''))
-    }
+    const tConfig = (tournament.config || {}) as Record<string, unknown>
 
-    if (!dates.length) {
-      results[tournament.slug] = { skipped: true, reason: 'No dates in range yet' }
-      continue
-    }
+    let espnMatches: Awaited<ReturnType<typeof fetchRugbyMatches>>
 
-    const espnMatches = await fetchRugbyMatches(dates, admin)
+    if (tConfig.score_source === 'sportsdb') {
+      const leagueId = String(tConfig.sportsdb_league_id || '5563')
+      espnMatches = await fetchRugbyMatchesSportsDb(leagueId)
+
+      if (!espnMatches.length) {
+        results[tournament.slug] = { skipped: true, reason: 'No matches returned from TheSportsDB' }
+        continue
+      }
+    } else {
+      // Generate all dates from tournament start to today
+      const start = new Date(tournament.starts_at)
+      const end = new Date(Math.min(new Date(tournament.ends_at).getTime(), Date.now()))
+      const dates: string[] = []
+      for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+        dates.push(d.toISOString().slice(0, 10).replace(/-/g, ''))
+      }
+
+      if (!dates.length) {
+        results[tournament.slug] = { skipped: true, reason: 'No dates in range yet' }
+        continue
+      }
+
+      espnMatches = await fetchRugbyMatches(dates, admin)
+    }
 
     // Get our games and participants
     const { data: ourGames } = await admin
@@ -1090,8 +1132,8 @@ async function backfillRugbyScores(admin: ReturnType<typeof createAdminClient>) 
     }
 
     results[tournament.slug] = {
-      dates_checked: dates.length,
-      espn_matches: espnMatches.length,
+      source: tConfig.score_source || 'espn',
+      matches_fetched: espnMatches.length,
       games_updated: updated,
       entries_scored: scored,
       details: matchDetails,

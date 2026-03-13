@@ -88,6 +88,7 @@ export function ScheduleView({ games, participants, format, tournamentId }: Sche
     'regional_quarterfinal', 'regional_final',
     'semifinal', 'championship', 'third_place',
     'Round 1', 'Round 2', 'Round 3', 'Round 4', 'Round 5',
+    'round_1', 'round_2', 'round_3', 'round_4', 'round_5',
   ]
   const sortedRounds = [...gamesByRound.keys()].sort((a, b) => {
     const ai = roundOrder.indexOf(a)
@@ -177,6 +178,9 @@ export function ScheduleView({ games, participants, format, tournamentId }: Sche
                           {p1?.seed && (
                             <span className="text-[10px] text-text-muted w-4 text-right">{p1.seed}</span>
                           )}
+                          {p1?.logoUrl && (
+                            <img src={p1.logoUrl} alt="" className="w-4 h-4 rounded-sm object-contain" />
+                          )}
                           <span className="text-sm">{p1?.name || 'TBD'}</span>
                           {isFinal && game.winnerId === game.participant1Id && (
                             <svg className="w-3.5 h-3.5 text-success" fill="currentColor" viewBox="0 0 20 20">
@@ -198,6 +202,9 @@ export function ScheduleView({ games, participants, format, tournamentId }: Sche
                         <div className="flex items-center gap-2">
                           {p2?.seed && (
                             <span className="text-[10px] text-text-muted w-4 text-right">{p2.seed}</span>
+                          )}
+                          {p2?.logoUrl && (
+                            <img src={p2.logoUrl} alt="" className="w-4 h-4 rounded-sm object-contain" />
                           )}
                           <span className="text-sm">{p2?.name || 'TBD'}</span>
                           {isFinal && game.winnerId === game.participant2Id && (

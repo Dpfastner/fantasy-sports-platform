@@ -356,6 +356,107 @@ export async function fetchRugbyMatches(
 }
 
 // ============================================
+// TheSportsDB adapter (Women's Six Nations)
+// ESPN does not cover Women's Six Nations; TheSportsDB league 5563 does.
+// ============================================
+
+/** Team name patterns from TheSportsDB → our team codes */
+const SPORTSDB_TEAM_MAP: Record<string, string> = {
+  england: 'ENG',
+  france: 'FRA',
+  ireland: 'IRL',
+  italy: 'ITA',
+  scotland: 'SCO',
+  wales: 'WAL',
+}
+
+function mapSportsDbTeam(name: string): string | null {
+  const lower = name.toLowerCase()
+  for (const [key, code] of Object.entries(SPORTSDB_TEAM_MAP)) {
+    if (lower.includes(key)) return code
+  }
+  return null
+}
+
+/**
+ * Fetch rugby matches from TheSportsDB for a given league + season.
+ * Returns the same ESPNRugbyMatch interface so downstream code is unchanged.
+ */
+export async function fetchRugbyMatchesSportsDb(
+  leagueId: string,
+  season: string = '2026'
+): Promise<ESPNRugbyMatch[]> {
+  const apiKey = '3' // public test key
+  const url = `https://www.thesportsdb.com/api/v1/json/${apiKey}/eventsseason.php?id=${leagueId}&s=${season}`
+
+  let data: Record<string, unknown>
+  try {
+    const response = await fetchWithTimeout(url, 15000)
+    if (!response.ok) {
+      console.error(`[sportsdb] HTTP ${response.status} for league ${leagueId}`)
+      return []
+    }
+    data = await response.json()
+  } catch (err) {
+    console.error(`[sportsdb] Fetch failed for league ${leagueId}:`, err instanceof Error ? err.message : err)
+    return []
+  }
+
+  const events = (data.events || []) as Record<string, unknown>[]
+  if (!events.length) return []
+
+  const matches: ESPNRugbyMatch[] = []
+
+  for (const event of events) {
+    const homeTeamCode = mapSportsDbTeam(String(event.strHomeTeam || ''))
+    const awayTeamCode = mapSportsDbTeam(String(event.strAwayTeam || ''))
+    if (!homeTeamCode || !awayTeamCode) continue
+
+    const status = String(event.strStatus || '')
+    const isComplete = status === 'FT' || status === 'Match Finished' || status === 'AET'
+    const isLive = !isComplete && status !== 'NS' && status !== 'Not Started' && status !== '' && status !== 'Postponed'
+
+    let homeScore: number | null = null
+    let awayScore: number | null = null
+    if (event.intHomeScore != null && event.intHomeScore !== '') {
+      homeScore = parseInt(String(event.intHomeScore))
+      if (isNaN(homeScore)) homeScore = null
+    }
+    if (event.intAwayScore != null && event.intAwayScore !== '') {
+      awayScore = parseInt(String(event.intAwayScore))
+      if (isNaN(awayScore)) awayScore = null
+    }
+
+    const isDraw = isComplete && homeScore !== null && awayScore !== null && homeScore === awayScore
+    let winnerTeamCode: string | null = null
+    if (isComplete && homeScore !== null && awayScore !== null) {
+      if (homeScore > awayScore) winnerTeamCode = homeTeamCode
+      else if (awayScore > homeScore) winnerTeamCode = awayTeamCode
+    }
+
+    // Build date from strTimestamp or dateEvent
+    let date = String(event.strTimestamp || event.dateEvent || '')
+    if (date && !date.includes('T')) date = `${date}T00:00:00Z`
+
+    matches.push({
+      espnEventId: String(event.idEvent || ''),
+      name: String(event.strEvent || `${homeTeamCode} vs ${awayTeamCode}`),
+      date,
+      homeTeamCode,
+      awayTeamCode,
+      homeScore,
+      awayScore,
+      status: isComplete ? 'completed' : isLive ? 'live' : 'scheduled',
+      isComplete,
+      isDraw,
+      winnerTeamCode,
+    })
+  }
+
+  return matches.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+}
+
+// ============================================
 // Hockey (NCAA) adapter — Site API
 // ============================================
 

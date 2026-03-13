@@ -22,6 +22,7 @@ import { notifyPoolMembers } from '@/lib/notifications'
 import {
   fetchHockeyTournamentGames,
   fetchRugbyMatches,
+  fetchRugbyMatchesSportsDb,
   fetchGolfLeaderboard,
   syncGameResults,
   type ESPNHockeyGame,
@@ -269,9 +270,16 @@ export async function GET(request: Request) {
             completed,
           }
         } else if (sport === 'rugby') {
-          // Fetch today's rugby matches
-          const dateStr = todayStr.replace(/-/g, '')
-          const espnMatches = await fetchRugbyMatches([dateStr], admin)
+          // Fetch today's rugby matches — check score_source config
+          const tConfig = (tournament.config || {}) as Record<string, unknown>
+          let espnMatches: ESPNRugbyMatch[]
+          if (tConfig.score_source === 'sportsdb') {
+            const leagueId = String(tConfig.sportsdb_league_id || '5563')
+            espnMatches = await fetchRugbyMatchesSportsDb(leagueId)
+          } else {
+            const dateStr = todayStr.replace(/-/g, '')
+            espnMatches = await fetchRugbyMatches([dateStr], admin)
+          }
 
           // Get our games for this tournament
           const { data: ourGames } = await admin
