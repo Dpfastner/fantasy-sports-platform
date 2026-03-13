@@ -203,6 +203,9 @@
   --color-surface-subtle: var(--palette-surface-subtle);
   --color-surface-inset: var(--palette-surface-inset);
 
+  /* Brand swatches */
+  --color-neutral: var(--palette-neutral);
+
   /* Gradient endpoints */
   --color-gradient-from: var(--palette-gradient-from);
   --color-gradient-to: var(--palette-gradient-to);

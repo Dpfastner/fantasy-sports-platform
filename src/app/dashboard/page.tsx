@@ -630,14 +630,14 @@ export default async function DashboardPage() {
                   <Link
                     key={tournament.id}
                     href={`/events/${tournament.slug}`}
-                    className={`bg-surface rounded-lg border border-border hover:border-brand/40 hover:shadow-md transition-all group border-l-4 ${meta.borderColor}`}
+                    className={`bg-neutral rounded-lg hover:shadow-lg transition-all group border-l-4 ${meta.borderColor}`}
                   >
                     <div className="p-5 pb-3">
                       <div className="flex items-start justify-between mb-2">
                         <div className="min-w-0 flex-1 flex items-center gap-2">
                           <span className="text-2xl shrink-0">{meta.icon}</span>
                           <div className="min-w-0">
-                            <h3 className="text-lg font-semibold text-text-primary group-hover:text-brand transition-colors truncate">
+                            <h3 className="text-lg font-semibold text-text-inverse group-hover:text-brand transition-colors truncate">
                               {tournament.name}
                             </h3>
                           </div>
@@ -658,17 +658,17 @@ export default async function DashboardPage() {
                         </div>
                       </div>
                       {tournament.description && (
-                        <p className="text-text-muted text-sm line-clamp-2 ml-9">{tournament.description}</p>
+                        <p className="text-text-inverse/60 text-sm line-clamp-2 ml-9">{tournament.description}</p>
                       )}
                     </div>
-                    <div className="px-5 py-3 border-t border-border-subtle flex items-center justify-between text-sm">
-                      <div className="flex items-center gap-4 text-text-secondary">
-                        <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-accent/15 text-accent-text">
+                    <div className="px-5 py-3 border-t border-text-inverse/10 flex items-center justify-between text-sm">
+                      <div className="flex items-center gap-4 text-text-inverse/70">
+                        <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-brand/15 text-brand">
                           {formatLabel[tournament.format] || tournament.format}
                         </span>
                         <span>{pools} pool{pools !== 1 ? 's' : ''}</span>
                       </div>
-                      <span className="text-text-muted text-xs">
+                      <span className="text-text-inverse/50 text-xs">
                         {startsAt.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                         {tournament.ends_at && (
                           <> &ndash; {new Date(tournament.ends_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</>
