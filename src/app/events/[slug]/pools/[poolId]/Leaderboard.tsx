@@ -11,6 +11,7 @@ interface Member {
   score: number
   maxPossible: number
   rank: number | null
+  roundsSurvived?: number
   primaryColor?: string | null
   secondaryColor?: string | null
   imageUrl?: string | null
@@ -30,13 +31,20 @@ function formatGolfScore(score: number): string {
 
 export function Leaderboard({ members, format, poolStatus }: LeaderboardProps) {
   const isRoster = format === 'roster'
+  const isSurvivor = format === 'survivor'
 
-  // Sort: active first, then by score
-  // Roster: ascending (lower golf score = better). Others: descending (higher = better)
+  // Sort: active first, then by score (or rounds survived for survivor)
   const sorted = [...members].sort((a, b) => {
     if (a.isActive !== b.isActive) return a.isActive ? -1 : 1
-    if (a.score !== b.score) return isRoster ? a.score - b.score : b.score - a.score
-    if (!isRoster && a.maxPossible !== b.maxPossible) return b.maxPossible - a.maxPossible
+    if (isSurvivor) {
+      // Survivor: more rounds survived = better
+      const aRounds = a.roundsSurvived || 0
+      const bRounds = b.roundsSurvived || 0
+      if (aRounds !== bRounds) return bRounds - aRounds
+    } else {
+      if (a.score !== b.score) return isRoster ? a.score - b.score : b.score - a.score
+      if (!isRoster && a.maxPossible !== b.maxPossible) return b.maxPossible - a.maxPossible
+    }
     if (a.submittedAt && b.submittedAt) {
       return new Date(a.submittedAt).getTime() - new Date(b.submittedAt).getTime()
     }
@@ -44,7 +52,7 @@ export function Leaderboard({ members, format, poolStatus }: LeaderboardProps) {
   })
 
   const showScores = poolStatus === 'locked' || poolStatus === 'completed' || sorted.some(m => m.score !== 0 || m.maxPossible > 0)
-  const showMaxPossible = !isRoster && showScores && sorted.some(m => m.maxPossible !== m.score)
+  const showMaxPossible = !isRoster && !isSurvivor && showScores && sorted.some(m => m.maxPossible !== m.score)
 
   return (
     <div>
@@ -56,15 +64,26 @@ export function Leaderboard({ members, format, poolStatus }: LeaderboardProps) {
         <div className="bg-surface rounded-lg border border-border overflow-hidden">
           {/* Header */}
           <div className={`grid gap-2 px-3 py-2 bg-surface-inset border-b border-border text-xs text-text-muted uppercase tracking-wide ${
-            showMaxPossible
+            isSurvivor
+              ? 'grid-cols-[2rem_1fr_4rem_4rem] sm:grid-cols-[2.5rem_1fr_5rem_5rem]'
+              : showMaxPossible
               ? 'grid-cols-[2rem_1fr_3rem_3rem_5rem] sm:grid-cols-[2.5rem_1fr_4rem_4rem_6rem]'
               : 'grid-cols-[2rem_1fr_4rem_5rem] sm:grid-cols-[2.5rem_1fr_5rem_6rem]'
           }`}>
             <span className="text-right">#</span>
             <span>Player</span>
-            <span className="text-right">{showScores ? (isRoster ? 'Score' : 'Pts') : 'Status'}</span>
-            {showMaxPossible && <span className="text-right">Max</span>}
-            <span className="text-right">Submitted</span>
+            {isSurvivor ? (
+              <>
+                <span className="text-right">Rounds</span>
+                <span className="text-right">Status</span>
+              </>
+            ) : (
+              <>
+                <span className="text-right">{showScores ? (isRoster ? 'Score' : 'Pts') : 'Status'}</span>
+                {showMaxPossible && <span className="text-right">Max</span>}
+                <span className="text-right">Submitted</span>
+              </>
+            )}
           </div>
 
           {/* Rows */}
@@ -75,10 +94,12 @@ export function Leaderboard({ members, format, poolStatus }: LeaderboardProps) {
               <div
                 key={member.id}
                 className={`grid gap-2 px-3 py-2.5 border-b border-border-subtle last:border-0 ${
-                  showMaxPossible
+                  isSurvivor
+                    ? 'grid-cols-[2rem_1fr_4rem_4rem] sm:grid-cols-[2.5rem_1fr_5rem_5rem]'
+                    : showMaxPossible
                     ? 'grid-cols-[2rem_1fr_3rem_3rem_5rem] sm:grid-cols-[2.5rem_1fr_4rem_4rem_6rem]'
                     : 'grid-cols-[2rem_1fr_4rem_5rem] sm:grid-cols-[2.5rem_1fr_5rem_6rem]'
-                } ${!member.isActive ? 'opacity-50' : ''}`}
+                } ${!member.isActive && !isSurvivor ? 'opacity-50' : ''}`}
               >
                 <span className={`text-right text-sm ${
                   isTop3 ? 'font-bold text-brand' : 'text-text-muted'
@@ -96,27 +117,39 @@ export function Leaderboard({ members, format, poolStatus }: LeaderboardProps) {
                   ) : (
                     <span className="text-sm text-text-muted truncate italic">{member.displayName}</span>
                   )}
-                  {!member.isActive && format === 'survivor' && (
-                    <span className="text-xs text-danger-text">Eliminated</span>
-                  )}
                 </div>
-                <span className={`text-right text-sm ${
-                  showScores && member.score !== 0 ? 'text-text-primary font-medium' : 'text-text-muted'
-                }`}>
-                  {showScores
-                    ? (isRoster ? formatGolfScore(member.score) : member.score)
-                    : member.submittedAt ? 'Ready' : '—'}
-                </span>
-                {showMaxPossible && (
-                  <span className="text-right text-sm text-text-muted">
-                    {member.maxPossible}
-                  </span>
+                {isSurvivor ? (
+                  <>
+                    <span className="text-right text-sm text-text-primary font-medium">
+                      {member.roundsSurvived || 0}
+                    </span>
+                    <span className={`text-right text-xs font-medium ${
+                      member.isActive ? 'text-success-text' : 'text-danger-text'
+                    }`}>
+                      {member.isActive ? 'Alive' : 'Out'}
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <span className={`text-right text-sm ${
+                      showScores && member.score !== 0 ? 'text-text-primary font-medium' : 'text-text-muted'
+                    }`}>
+                      {showScores
+                        ? (isRoster ? formatGolfScore(member.score) : member.score)
+                        : member.submittedAt ? 'Ready' : '—'}
+                    </span>
+                    {showMaxPossible && (
+                      <span className="text-right text-sm text-text-muted">
+                        {member.maxPossible}
+                      </span>
+                    )}
+                    <span className="text-right text-xs text-text-muted">
+                      {member.submittedAt
+                        ? new Date(member.submittedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+                        : '—'}
+                    </span>
+                  </>
                 )}
-                <span className="text-right text-xs text-text-muted">
-                  {member.submittedAt
-                    ? new Date(member.submittedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-                    : '—'}
-                </span>
               </div>
             )
           })}

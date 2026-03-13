@@ -239,6 +239,21 @@ export default async function PoolDetailPage({ params }: PageProps) {
     }
   }
 
+  // For survivor format, count picks per entry (= rounds survived)
+  let survivorPickCounts: Record<string, number> = {}
+  if ((effectiveFormatForQuery === 'survivor') && entries?.length) {
+    const entryIds = entries.map(e => e.id)
+    const { data: survivorPicks } = await admin
+      .from('event_picks')
+      .select('entry_id')
+      .in('entry_id', entryIds)
+    if (survivorPicks) {
+      for (const pick of survivorPicks) {
+        survivorPickCounts[pick.entry_id] = (survivorPickCounts[pick.entry_id] || 0) + 1
+      }
+    }
+  }
+
   // Build scoring rules and game lookup for max-possible calculation
   const scoringRules = (pool.scoring_rules && typeof pool.scoring_rules === 'object' && Object.keys(pool.scoring_rules).length > 0)
     ? pool.scoring_rules as Record<string, number>
@@ -290,6 +305,7 @@ export default async function PoolDetailPage({ params }: PageProps) {
       score: Number(e.total_points) || 0,
       maxPossible,
       rank: idx + 1,
+      roundsSurvived: survivorPickCounts[e.id] || 0,
       primaryColor: (e as Record<string, unknown>).primary_color as string | null,
       secondaryColor: (e as Record<string, unknown>).secondary_color as string | null,
       imageUrl: (e as Record<string, unknown>).image_url as string | null,

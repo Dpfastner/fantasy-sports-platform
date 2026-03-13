@@ -53,6 +53,7 @@ interface Member {
   score: number
   maxPossible: number
   rank: number | null
+  roundsSurvived?: number
   primaryColor?: string | null
   secondaryColor?: string | null
   imageUrl?: string | null
