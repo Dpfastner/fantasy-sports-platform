@@ -132,11 +132,18 @@ export default async function PoolDetailPage({ params }: PageProps) {
 
   if (user && userEntries.length === 0 && pool.created_by === user.id) {
     // Creator should always be a member — auto-fix if entry is missing
-    await admin
+    // Use a direct existence check to prevent duplicate inserts from redirect loops
+    const { count } = await admin
       .from('event_entries')
-      .insert({ pool_id: poolId, user_id: user.id })
-
-    redirect(`/events/${slug}/pools/${poolId}`)
+      .select('id', { count: 'exact', head: true })
+      .eq('pool_id', poolId)
+      .eq('user_id', user.id)
+    if (count === 0) {
+      await admin
+        .from('event_entries')
+        .insert({ pool_id: poolId, user_id: user.id })
+      redirect(`/events/${slug}/pools/${poolId}`)
+    }
   }
 
   // Get current user's picks (for all their entries)
