@@ -243,13 +243,14 @@ export default async function DashboardPage() {
 
   // --- Unified dashboard items ---
   const sportMeta: Record<string, { icon: string; label: string; borderColor: string }> = {
+    college_football: { icon: '\uD83C\uDFC8', label: 'Football', borderColor: 'border-l-orange-500' },
     hockey: { icon: '\uD83C\uDFD2', label: 'Hockey', borderColor: 'border-l-blue-500' },
     golf: { icon: '\u26F3', label: 'Golf', borderColor: 'border-l-green-500' },
     rugby: { icon: '\uD83C\uDFC9', label: 'Rugby', borderColor: 'border-l-red-500' },
     football: { icon: '\uD83C\uDFC8', label: 'Football', borderColor: 'border-l-orange-500' },
     basketball: { icon: '\uD83C\uDFC0', label: 'Basketball', borderColor: 'border-l-amber-500' },
   }
-  const defaultSportMeta = { icon: '\uD83C\uDFC6', label: 'Other', borderColor: 'border-l-brand' }
+  const defaultSportMeta = { icon: '\uD83C\uDFC8', label: 'Football', borderColor: 'border-l-orange-500' }
   const formatLabel: Record<string, string> = {
     bracket: 'Bracket', pickem: "Pick'em", survivor: 'Survivor', roster: 'Roster',
   }
@@ -512,11 +513,6 @@ export default async function DashboardPage() {
                 const meta = sportMeta[sportKey] || defaultSportMeta
                 return (
                   <section key={sportKey}>
-                    {sortedSportGroups.length > 1 && (
-                      <h2 className="text-lg font-semibold text-text-secondary mb-3 flex items-center gap-2">
-                        <span className="text-xl">{meta.icon}</span> {meta.label}
-                      </h2>
-                    )}
                     <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
                       {items.map((item) => (
                         <Link
