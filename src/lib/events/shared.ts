@@ -846,10 +846,10 @@ export function validateRosterCompleteness(
     }
 
     const meta = (participant.metadata || {}) as Record<string, unknown>
-    const owgr = meta.owgr as number | undefined
+    const owgr = (meta.owgr as number | undefined) ?? (participant.seed as number | undefined)
 
     if (owgr == null) {
-      errors.push(`Participant ${participant.name} has no OWGR ranking`)
+      errors.push(`Participant ${participant.name} has no ranking`)
       continue
     }
 

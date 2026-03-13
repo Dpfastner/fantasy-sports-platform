@@ -285,16 +285,16 @@ export function EventPoolsClient({
                 {/* Selection cap (limited mode only) */}
                 {draftMode === 'limited' && (
                   <div className="mt-2">
-                    <label className="block text-[10px] text-text-muted mb-1">Max times a golfer can be picked across all rosters</label>
-                    <select
+                    <label className="block text-[10px] text-text-muted mb-1">Max times a golfer can be drafted across all rosters</label>
+                    <input
+                      type="number"
                       value={selectionCap}
                       onChange={(e) => setSelectionCap(e.target.value)}
-                      className="w-full bg-surface-inset border border-border rounded-md px-3 py-2 text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-brand/50"
-                    >
-                      {[2, 3, 4, 5, 6, 8, 10].map(n => (
-                        <option key={n} value={String(n)}>{n} entries</option>
-                      ))}
-                    </select>
+                      min={1}
+                      max={50}
+                      placeholder="3"
+                      className="w-full bg-surface-inset border border-border rounded-md px-3 py-2 text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-brand/50"
+                    />
                   </div>
                 )}
               </div>

@@ -398,7 +398,7 @@ export function RosterPicker({
                   Tier {tierKey}
                 </h3>
                 <span className="text-xs text-text-muted">
-                  OWGR {tierDef.owgr_min}{tierDef.owgr_max ? `–${tierDef.owgr_max}` : '+'}
+                  Rank {tierDef.owgr_min}{tierDef.owgr_max ? `–${tierDef.owgr_max}` : '+'}
                 </span>
                 <span className="text-xs text-text-muted">—</span>
                 <span className="text-xs text-text-muted">Pick {tierDef.count}</span>
@@ -450,7 +450,7 @@ export function RosterPicker({
                               {p.name}
                             </p>
                             {owgr && (
-                              <span className="text-xs text-text-muted">OWGR #{owgr}</span>
+                              <span className="text-xs text-text-muted">Rank #{owgr}</span>
                             )}
                           </div>
                         </div>
@@ -479,16 +479,29 @@ export function RosterPicker({
         })}
       </div>
 
-      {/* Sticky submit on mobile */}
+      {/* Bottom submit */}
       {canEdit && selectedIds.size > 0 && (
-        <div className="sticky bottom-4 mt-6 sm:hidden">
-          <button
-            onClick={handleSubmit}
-            disabled={isSubmitting || selectedIds.size !== rosterSize}
-            className="w-full py-3 text-sm font-medium rounded-lg bg-brand text-text-primary shadow-lg transition-colors disabled:bg-brand/50 disabled:cursor-not-allowed"
-          >
-            {isSubmitting ? 'Saving...' : `${submittedAt ? 'Update' : 'Submit'} Roster (${selectedIds.size}/${rosterSize})`}
-          </button>
+        <div className="mt-6">
+          {/* Desktop: static button */}
+          <div className="hidden sm:block">
+            <button
+              onClick={handleSubmit}
+              disabled={isSubmitting || selectedIds.size !== rosterSize}
+              className="px-6 py-2.5 text-sm font-semibold rounded-lg bg-brand hover:bg-brand-hover text-text-primary transition-colors disabled:bg-brand/50 disabled:cursor-not-allowed"
+            >
+              {isSubmitting ? 'Saving...' : `${submittedAt ? 'Update' : 'Submit'} Roster (${selectedIds.size}/${rosterSize})`}
+            </button>
+          </div>
+          {/* Mobile: sticky button */}
+          <div className="sticky bottom-4 sm:hidden">
+            <button
+              onClick={handleSubmit}
+              disabled={isSubmitting || selectedIds.size !== rosterSize}
+              className="w-full py-3 text-sm font-medium rounded-lg bg-brand text-text-primary shadow-lg transition-colors disabled:bg-brand/50 disabled:cursor-not-allowed"
+            >
+              {isSubmitting ? 'Saving...' : `${submittedAt ? 'Update' : 'Submit'} Roster (${selectedIds.size}/${rosterSize})`}
+            </button>
+          </div>
         </div>
       )}
     </div>

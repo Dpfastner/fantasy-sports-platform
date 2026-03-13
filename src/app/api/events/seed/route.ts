@@ -387,19 +387,19 @@ async function seedMasters(admin: ReturnType<typeof createAdminClient>) {
     { name: 'Min Woo Lee', seed: 30, fallbackOwgr: 30 },
     { name: 'Jon Rahm', seed: 31, fallbackOwgr: 36, note: '2023 Masters champion' },
     { name: 'Bryson DeChambeau', seed: 32, fallbackOwgr: 41 },
-    { name: 'Jordan Spieth', seed: 33, note: '2015 Masters champion' },
-    { name: 'Tiger Woods', seed: 34, note: '5x Masters champion, participation uncertain' },
-    { name: 'Dustin Johnson', seed: 35, note: '2020 Masters champion' },
+    { name: 'Jordan Spieth', seed: 33, fallbackOwgr: 56, note: '2015 Masters champion', country: 'United States' },
+    { name: 'Tiger Woods', seed: 34, fallbackOwgr: 800, note: '5x Masters champion, participation uncertain', country: 'United States' },
+    { name: 'Dustin Johnson', seed: 35, fallbackOwgr: 150, note: '2020 Masters champion', country: 'United States' },
     { name: 'Patrick Cantlay', seed: 36, fallbackOwgr: 33 },
     { name: 'Sam Burns', seed: 37, fallbackOwgr: 32 },
     { name: 'Adam Scott', seed: 38, fallbackOwgr: 50, note: '2013 Masters champion' },
-    { name: 'Brooks Koepka', seed: 39, note: 'Past major winner' },
-    { name: 'Phil Mickelson', seed: 40, note: '3x Masters champion' },
+    { name: 'Brooks Koepka', seed: 39, fallbackOwgr: 75, note: 'Past major winner', country: 'United States' },
+    { name: 'Phil Mickelson', seed: 40, fallbackOwgr: 300, note: '3x Masters champion', country: 'United States' },
   ]
 
   const golfers = golferDefs.map(g => {
     const owgr = lookupOwgr(g.name, g.fallbackOwgr)
-    const country = lookupCountry(g.name)
+    const country = lookupCountry(g.name) || (g as { country?: string }).country || null
     const countryCode = country ? getCountryFlagCode(country) : null
     return {
       name: g.name,
@@ -656,11 +656,42 @@ async function updateMastersConfig(admin: ReturnType<typeof createAdminClient>) 
 
   if (error) throw error
 
+  // Fix participants missing country/owgr data (past champions not in ESPN top 200)
+  const hardcodedFixes: Record<string, { owgr: number; country: string; country_code: string }> = {
+    'Jordan Spieth': { owgr: 56, country: 'United States', country_code: 'us' },
+    'Tiger Woods': { owgr: 800, country: 'United States', country_code: 'us' },
+    'Dustin Johnson': { owgr: 150, country: 'United States', country_code: 'us' },
+    'Brooks Koepka': { owgr: 75, country: 'United States', country_code: 'us' },
+    'Phil Mickelson': { owgr: 300, country: 'United States', country_code: 'us' },
+  }
+
+  const { data: participants } = await admin
+    .from('event_participants')
+    .select('id, name, metadata')
+    .eq('tournament_id', tournament.id)
+
+  let fixed = 0
+  for (const p of participants || []) {
+    const fix = hardcodedFixes[p.name]
+    if (!fix) continue
+    const meta = (p.metadata || {}) as Record<string, unknown>
+    if (meta.country_code) continue // already has data
+    await admin
+      .from('event_participants')
+      .update({
+        metadata: { ...meta, ...fix, tier: 'C' },
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', p.id)
+    fixed++
+  }
+
   return NextResponse.json({
     success: true,
     action: 'update-masters-config',
     previousFormat: tournament.format,
     newFormat: 'multi',
+    participantsFixed: fixed,
     message: 'Masters tournament updated to multi-format. Roster and Pick\'em pools can now be created.',
   })
 }
