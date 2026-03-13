@@ -212,6 +212,9 @@ export default async function EventDetailPage({ params }: PageProps) {
                         {p.seed && (
                           <span className="text-text-muted w-5 text-right text-xs">{p.seed}</span>
                         )}
+                        {p.logo_url && (
+                          <img src={p.logo_url} alt="" className="w-5 h-5 object-contain shrink-0" />
+                        )}
                         <span className="text-text-primary">{p.name}</span>
                       </div>
                       {p.short_name && (

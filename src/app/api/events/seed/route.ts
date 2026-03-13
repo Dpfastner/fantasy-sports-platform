@@ -30,6 +30,8 @@ export async function POST(request: Request) {
         return await seedMSixNations(admin)
       case 'refresh-golf-rankings':
         return await refreshGolfRankings(admin)
+      case 'reseed-masters-games':
+        return await reseedMastersGames(admin)
       case 'sync-hockey-logos':
         return await syncHockeyLogos(admin)
       case 'frozen-four-2026-schedule':
@@ -420,7 +422,7 @@ async function seedMasters(admin: ReturnType<typeof createAdminClient>) {
   const { error: pErr } = await admin.from('event_participants').insert(participantRows)
   if (pErr) throw pErr
 
-  // Create round-based matchups: 20 per round × 4 rounds = 80 games
+  // Create 20 head-to-head matchups (pick once for the whole tournament)
   // Seeded: 1v40, 2v39, 3v38, etc.
   const { data: seededParticipants } = await admin
     .from('event_participants')
@@ -434,28 +436,17 @@ async function seedMasters(admin: ReturnType<typeof createAdminClient>) {
     if (p.seed != null) seedToId[p.seed] = p.id
   }
 
-  const roundDates = [
-    '2026-04-09T12:00:00Z', // Round 1 — Thursday
-    '2026-04-10T12:00:00Z', // Round 2 — Friday
-    '2026-04-11T14:00:00Z', // Round 3 — Saturday
-    '2026-04-12T14:00:00Z', // Round 4 — Sunday
-  ]
-
   const gameRows: Record<string, unknown>[] = []
-  let gameNum = 1
-
-  for (let round = 1; round <= 4; round++) {
-    for (let i = 0; i < 20; i++) {
-      gameRows.push({
-        tournament_id: tournament.id,
-        game_number: gameNum++,
-        round: `round_${round}`,
-        participant_1_id: seedToId[i + 1],
-        participant_2_id: seedToId[40 - i],
-        status: 'scheduled',
-        starts_at: roundDates[round - 1],
-      })
-    }
+  for (let i = 0; i < 20; i++) {
+    gameRows.push({
+      tournament_id: tournament.id,
+      game_number: i + 1,
+      round: 'tournament',
+      participant_1_id: seedToId[i + 1],
+      participant_2_id: seedToId[40 - i],
+      status: 'scheduled',
+      starts_at: '2026-04-09T12:00:00Z', // Tournament start
+    })
   }
 
   const { error: gErr } = await admin.from('event_games').insert(gameRows)
@@ -542,6 +533,88 @@ async function refreshGolfRankings(admin: ReturnType<typeof createAdminClient>) 
     rankingsFetched: rankings.length,
     participantsUpdated: totalUpdated,
     tournaments: tournaments.map(t => t.name),
+  })
+}
+
+// ============================================
+// RESEED MASTERS GAMES
+// Deletes existing 80 games + stale picks, re-creates 20 matchups.
+// Safe to run on existing tournament to fix game count.
+// ============================================
+
+async function reseedMastersGames(admin: ReturnType<typeof createAdminClient>) {
+  const { data: tournament } = await admin
+    .from('event_tournaments')
+    .select('id')
+    .eq('slug', 'masters-2026')
+    .single()
+
+  if (!tournament) {
+    return NextResponse.json({ error: 'Masters tournament not found. Run masters-2026 seed first.' }, { status: 400 })
+  }
+
+  // Get existing game IDs to delete associated picks
+  const { data: existingGames } = await admin
+    .from('event_games')
+    .select('id')
+    .eq('tournament_id', tournament.id)
+
+  const existingGameIds = existingGames?.map(g => g.id) || []
+
+  // Delete picks that reference these games
+  if (existingGameIds.length > 0) {
+    const { error: pickErr } = await admin
+      .from('event_picks')
+      .delete()
+      .in('game_id', existingGameIds)
+
+    if (pickErr) throw pickErr
+  }
+
+  // Delete existing games
+  const { error: delErr } = await admin
+    .from('event_games')
+    .delete()
+    .eq('tournament_id', tournament.id)
+
+  if (delErr) throw delErr
+
+  // Re-create 20 matchups with round: 'tournament'
+  const { data: participants } = await admin
+    .from('event_participants')
+    .select('id, seed')
+    .eq('tournament_id', tournament.id)
+
+  if (!participants) throw new Error('No participants found')
+
+  const seedToId: Record<number, string> = {}
+  for (const p of participants) {
+    if (p.seed != null) seedToId[p.seed] = p.id
+  }
+
+  const gameRows: Record<string, unknown>[] = []
+  for (let i = 0; i < 20; i++) {
+    gameRows.push({
+      tournament_id: tournament.id,
+      game_number: i + 1,
+      round: 'tournament',
+      participant_1_id: seedToId[i + 1],
+      participant_2_id: seedToId[40 - i],
+      status: 'scheduled',
+      starts_at: '2026-04-09T12:00:00Z',
+    })
+  }
+
+  const { error: gErr } = await admin.from('event_games').insert(gameRows)
+  if (gErr) throw gErr
+
+  return NextResponse.json({
+    success: true,
+    action: 'reseed-masters-games',
+    gamesDeleted: existingGameIds.length,
+    picksDeleted: existingGameIds.length > 0 ? 'associated picks removed' : 'no picks to remove',
+    gamesCreated: 20,
+    message: 'Masters games re-seeded: 20 head-to-head matchups (pick once for tournament).',
   })
 }
 

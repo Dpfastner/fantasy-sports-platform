@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useMemo } from 'react'
+import { useRouter } from 'next/navigation'
 import { useToast } from '@/components/Toast'
 import { trackEventActivity } from '@/app/actions/activity'
 import { track } from '@vercel/analytics'
@@ -11,6 +12,7 @@ interface Participant {
   shortName: string | null
   seed: number | null
   logoUrl: string | null
+  metadata?: Record<string, unknown>
 }
 
 interface Game {
@@ -43,6 +45,21 @@ interface PickemPickerProps {
   submittedAt: string | null
 }
 
+function CountryFlag({ country, countryCode }: { country?: string; countryCode?: string }) {
+  if (!countryCode) return null
+  return (
+    <img
+      src={`https://flagcdn.com/24x18/${countryCode}.png`}
+      alt={country || ''}
+      title={country || ''}
+      width={18}
+      height={14}
+      className="inline-block shrink-0 rounded-[2px]"
+      loading="lazy"
+    />
+  )
+}
+
 export function PickemPicker({
   entryId,
   tournamentId,
@@ -54,6 +71,7 @@ export function PickemPicker({
   submittedAt,
 }: PickemPickerProps) {
   const { addToast } = useToast()
+  const router = useRouter()
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   // Build picks map: gameId -> participantId
@@ -83,6 +101,12 @@ export function PickemPicker({
   const isLocked = poolStatus !== 'open'
   const totalGames = games.filter(g => g.participant1Id && g.participant2Id).length
   const pickedCount = Object.keys(picks).length
+
+  // Format round labels nicely
+  const formatRoundLabel = (round: string) => {
+    if (round === 'tournament') return 'Matchups'
+    return round.replace('round_', 'Round ').replace(/_/g, ' ')
+  }
 
   // Scoring summary
   const scoringSummary = useMemo(() => {
@@ -140,6 +164,8 @@ export function PickemPicker({
       addToast(`Picks saved! ${data.pickCount} picks submitted.`, 'success')
       track('event_pickem_submitted', { pickCount: data.pickCount })
       trackEventActivity('pick.submitted', poolId, tournamentId, { pickCount: data.pickCount })
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+      router.refresh()
     } catch {
       addToast('Something went wrong', 'error')
     } finally {
@@ -150,12 +176,14 @@ export function PickemPicker({
   return (
     <div>
       {/* Status bar */}
-      <div className="flex items-center justify-between mb-4">
-        <div className="text-sm text-text-muted">
-          {pickedCount} / {totalGames} matchups picked
+      <div className="bg-surface rounded-lg border border-border p-4 mb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div>
+          <span className="text-sm text-text-primary font-medium">
+            {pickedCount} / {totalGames} matchups picked
+          </span>
           {submittedAt && (
-            <span className="ml-2 text-success-text">
-              &middot; Last saved {new Date(submittedAt).toLocaleDateString()}
+            <span className="text-xs text-text-muted ml-3">
+              Last saved {new Date(submittedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}
             </span>
           )}
         </div>
@@ -163,7 +191,7 @@ export function PickemPicker({
           <button
             onClick={handleSubmit}
             disabled={isSubmitting || pickedCount === 0}
-            className="px-4 py-2 text-sm font-medium rounded-md bg-brand text-text-primary hover:bg-brand-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="px-6 py-2.5 text-sm font-semibold rounded-lg bg-brand hover:bg-brand-hover text-text-primary transition-colors disabled:bg-brand/50 disabled:cursor-not-allowed"
           >
             {isSubmitting ? 'Saving...' : submittedAt ? 'Update Picks' : 'Submit Picks'}
           </button>
@@ -191,11 +219,13 @@ export function PickemPicker({
         </div>
       )}
 
-      {/* Rounds */}
+      {/* Matchups */}
       <div className="space-y-6">
         {roundOrder.map((round) => (
           <div key={round}>
-            <h3 className="brand-h3 text-base text-text-primary mb-3">{round}</h3>
+            {roundOrder.length > 1 && (
+              <h3 className="brand-h3 text-base text-text-primary mb-3">{formatRoundLabel(round)}</h3>
+            )}
             <div className="space-y-3">
               {roundGroups[round].map((game) => {
                 const p1 = game.participant1Id ? participantMap[game.participant1Id] : null
@@ -205,6 +235,13 @@ export function PickemPicker({
                 const winnerId = game.winnerId || (isFinal && game.result ? (game.result as Record<string, string>)?.winner_id : null)
 
                 if (!p1 && !p2) return null
+
+                const p1Meta = (p1 as Participant & { metadata?: Record<string, unknown> })?.metadata
+                const p2Meta = (p2 as Participant & { metadata?: Record<string, unknown> })?.metadata
+                const p1Country = p1Meta?.country as string | undefined
+                const p1CountryCode = p1Meta?.country_code as string | undefined
+                const p2Country = p2Meta?.country as string | undefined
+                const p2CountryCode = p2Meta?.country_code as string | undefined
 
                 return (
                   <div key={game.id} className="bg-surface rounded-lg border border-border overflow-hidden">
@@ -223,14 +260,12 @@ export function PickemPicker({
                             : 'hover:bg-surface-subtle'
                         }`}
                       >
-                        <span className={`text-sm block truncate ${
+                        <span className={`text-sm flex items-center justify-center gap-1.5 ${
                           picked === p1?.id ? 'font-medium text-text-primary' : 'text-text-secondary'
                         }`}>
-                          {p1?.name || 'TBD'}
+                          <CountryFlag country={p1Country} countryCode={p1CountryCode} />
+                          <span className="truncate">{p1?.name || 'TBD'}</span>
                         </span>
-                        {p1?.shortName && (
-                          <span className="text-xs text-text-muted">{p1.shortName}</span>
-                        )}
                         {picked === p1?.id && (
                           <svg className="w-4 h-4 text-brand mx-auto mt-1" fill="currentColor" viewBox="0 0 20 20">
                             <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
@@ -259,14 +294,12 @@ export function PickemPicker({
                             : 'hover:bg-surface-subtle'
                         }`}
                       >
-                        <span className={`text-sm block truncate ${
+                        <span className={`text-sm flex items-center justify-center gap-1.5 ${
                           picked === p2?.id ? 'font-medium text-text-primary' : 'text-text-secondary'
                         }`}>
-                          {p2?.name || 'TBD'}
+                          <CountryFlag country={p2Country} countryCode={p2CountryCode} />
+                          <span className="truncate">{p2?.name || 'TBD'}</span>
                         </span>
-                        {p2?.shortName && (
-                          <span className="text-xs text-text-muted">{p2.shortName}</span>
-                        )}
                         {picked === p2?.id && (
                           <svg className="w-4 h-4 text-brand mx-auto mt-1" fill="currentColor" viewBox="0 0 20 20">
                             <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
@@ -284,11 +317,11 @@ export function PickemPicker({
 
       {/* Bottom submit */}
       {!isLocked && pickedCount > 0 && (
-        <div className="sticky bottom-4 mt-6">
+        <div className="sticky bottom-4 mt-6 sm:hidden">
           <button
             onClick={handleSubmit}
             disabled={isSubmitting}
-            className="w-full py-3 text-sm font-medium rounded-lg bg-brand text-text-primary hover:bg-brand-hover transition-colors shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full py-3 text-sm font-medium rounded-lg bg-brand text-text-primary hover:bg-brand-hover transition-colors shadow-lg disabled:bg-brand/50 disabled:cursor-not-allowed"
           >
             {isSubmitting ? 'Saving...' : `${submittedAt ? 'Update' : 'Submit'} Picks (${pickedCount}/${totalGames})`}
           </button>
