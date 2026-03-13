@@ -8,6 +8,7 @@ const navItems = [
   { href: '/admin/sync', label: 'Data Sync' },
   { href: '/admin/badges', label: 'Badges' },
   { href: '/admin/analytics', label: 'Analytics' },
+  { href: '/admin/users', label: 'Users' },
   { href: '/admin/reports', label: 'Reports' },
   { href: '/admin/scores', label: 'Scores' },
   { href: '/admin/monitoring', label: 'Monitoring' },
