@@ -1,3 +1,4 @@
+import * as Sentry from '@sentry/nextjs'
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/server'
 import { requireAuth } from '@/lib/auth'
@@ -5,11 +6,17 @@ import { validateBody } from '@/lib/api/validation'
 import { announcementUpdateSchema } from '@/lib/api/schemas'
 import { logActivity } from '@/lib/activity'
 import { checkContent } from '@/lib/moderation/word-filter'
+import { createRateLimiter, getClientIp } from '@/lib/api/rate-limit'
+
+const limiter = createRateLimiter({ windowMs: 60_000, max: 10 })
 
 export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string; announcementId: string }> }
 ) {
+  const { limited, response } = limiter.check(getClientIp(request))
+  if (limited) return response!
+
   try {
     const { id: leagueId, announcementId } = await params
 
@@ -77,6 +84,7 @@ export async function PATCH(
 
     return NextResponse.json({ success: true, announcement })
   } catch (error) {
+    Sentry.captureException(error)
     console.error('Announcement PATCH error:', error)
     return NextResponse.json(
       { error: 'Failed to update announcement' },
@@ -86,9 +94,12 @@ export async function PATCH(
 }
 
 export async function DELETE(
-  _request: Request,
+  request: NextRequest,
   { params }: { params: Promise<{ id: string; announcementId: string }> }
 ) {
+  const { limited, response } = limiter.check(getClientIp(request))
+  if (limited) return response!
+
   try {
     const { id: leagueId, announcementId } = await params
 
@@ -134,6 +145,7 @@ export async function DELETE(
 
     return NextResponse.json({ success: true })
   } catch (error) {
+    Sentry.captureException(error)
     console.error('Announcement DELETE error:', error)
     return NextResponse.json(
       { error: 'Failed to delete announcement' },

@@ -1,15 +1,19 @@
+import * as Sentry from '@sentry/nextjs'
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/server'
 import { requireAuth, verifyLeagueMembership } from '@/lib/auth'
 import { createRateLimiter, getClientIp } from '@/lib/api/rate-limit'
 import { archiveLeagueSeason } from '@/lib/archive-season'
 
-const limiter = createRateLimiter({ windowMs: 60_000, max: 10 })
+const limiter = createRateLimiter({ windowMs: 60_000, max: 30 })
 
 export async function GET(
-  _request: Request,
+  request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const { limited, response } = limiter.check(getClientIp(request))
+  if (limited) return response!
+
   try {
     const { id: leagueId } = await params
 
@@ -61,6 +65,7 @@ export async function GET(
       })),
     })
   } catch (error) {
+    Sentry.captureException(error)
     console.error('History GET error:', error)
     return NextResponse.json(
       { error: 'Failed to fetch history' },
@@ -110,6 +115,7 @@ export async function POST(
         { status: 409 }
       )
     }
+    Sentry.captureException(error)
     console.error('History POST error:', error)
     return NextResponse.json(
       { error: 'Failed to archive season' },

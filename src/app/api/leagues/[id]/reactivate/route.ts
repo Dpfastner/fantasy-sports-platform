@@ -1,13 +1,20 @@
+import * as Sentry from '@sentry/nextjs'
 import { NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/server'
 import { requireAuth } from '@/lib/auth'
 import { notifyLeagueMembers } from '@/lib/notifications'
 import { logActivity } from '@/lib/activity'
+import { createRateLimiter, getClientIp } from '@/lib/api/rate-limit'
+
+const limiter = createRateLimiter({ windowMs: 60_000, max: 3 })
 
 export async function POST(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const { limited, response } = limiter.check(getClientIp(request))
+  if (limited) return response!
+
   try {
     const { id: leagueId } = await params
 
@@ -182,6 +189,7 @@ export async function POST(
       seasonName: season.name,
     })
   } catch (error) {
+    Sentry.captureException(error)
     console.error('Reactivate error:', error)
     return NextResponse.json(
       { error: 'Failed to reactivate league', details: String(error) },

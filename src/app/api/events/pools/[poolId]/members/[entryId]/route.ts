@@ -1,10 +1,17 @@
 import { NextResponse } from 'next/server'
+import * as Sentry from '@sentry/nextjs'
 import { createClient as createServerClient, createAdminClient } from '@/lib/supabase/server'
+import { createRateLimiter, getClientIp } from '@/lib/api/rate-limit'
+
+const limiter = createRateLimiter({ windowMs: 60_000, max: 5 })
 
 export async function DELETE(
   request: Request,
   { params }: { params: Promise<{ poolId: string; entryId: string }> }
 ) {
+  const { limited, response } = limiter.check(getClientIp(request))
+  if (limited) return response!
+
   try {
     const { poolId, entryId } = await params
     const supabase = await createServerClient()
@@ -58,6 +65,7 @@ export async function DELETE(
 
     return NextResponse.json({ success: true })
   } catch (err) {
+    Sentry.captureException(err)
     console.error('Remove member error:', err)
     return NextResponse.json({ error: 'Failed to remove member' }, { status: 500 })
   }

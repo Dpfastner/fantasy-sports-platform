@@ -1,3 +1,4 @@
+import * as Sentry from '@sentry/nextjs'
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/server'
 import { requireAuth, verifyLeagueMembership } from '@/lib/auth'
@@ -28,6 +29,7 @@ export async function DELETE(
 
     return NextResponse.json({ success: true })
   } catch (error) {
+    Sentry.captureException(error)
     console.error('Reset auto-pick error:', error)
     return NextResponse.json({ error: 'Failed to reset auto-pick' }, { status: 500 })
   }
@@ -228,6 +230,7 @@ export async function POST(
       },
     })
   } catch (error) {
+    Sentry.captureException(error)
     console.error('Auto-pick error:', error)
     return NextResponse.json(
       { error: 'Auto-pick failed', details: String(error) },

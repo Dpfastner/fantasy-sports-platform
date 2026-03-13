@@ -1,7 +1,11 @@
+import * as Sentry from '@sentry/nextjs'
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/server'
 import { requireAuth, verifyLeagueMembership } from '@/lib/auth'
 import { calculateCurrentWeek } from '@/lib/constants/season'
+import { createRateLimiter, getClientIp } from '@/lib/api/rate-limit'
+
+const limiter = createRateLimiter({ windowMs: 60_000, max: 30 })
 
 interface SchoolStats {
   id: string
@@ -27,6 +31,9 @@ export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const { limited, response } = limiter.check(getClientIp(request))
+  if (limited) return response!
+
   try {
     const { id: leagueId } = await params
 
@@ -219,6 +226,7 @@ export async function GET(
       headers: { 'Cache-Control': 'private, max-age=30, stale-while-revalidate=60' },
     })
   } catch (error) {
+    Sentry.captureException(error)
     console.error('Stats calculation error:', error)
     return NextResponse.json(
       { error: 'Internal server error' },

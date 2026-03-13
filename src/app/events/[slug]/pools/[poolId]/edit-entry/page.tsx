@@ -25,6 +25,7 @@ export default function EditEntryPage({ params }: PageProps) {
   const [secondaryColor, setSecondaryColor] = useState('#ffffff')
   const [imageUrl, setImageUrl] = useState('')
   const [poolName, setPoolName] = useState('')
+  const [gameType, setGameType] = useState('')
   const [hasChanges, setHasChanges] = useState(false)
   const [logoFile, setLogoFile] = useState<File | null>(null)
   const [logoPreviewUrl, setLogoPreviewUrl] = useState<string | null>(null)
@@ -45,10 +46,13 @@ export default function EditEntryPage({ params }: PageProps) {
       // Get pool info
       const { data: pool } = await supabase
         .from('event_pools')
-        .select('name')
+        .select('name, game_type')
         .eq('id', p)
         .single()
-      if (pool) setPoolName(pool.name)
+      if (pool) {
+        setPoolName(pool.name)
+        setGameType(pool.game_type || '')
+      }
 
       // Get user's entry — by entryId param if provided, otherwise first entry
       const entryIdParam = searchParams.get('entryId')
@@ -199,7 +203,7 @@ export default function EditEntryPage({ params }: PageProps) {
 
       <main className="container mx-auto px-4 py-8 max-w-2xl">
         <div className="bg-surface rounded-lg p-6">
-          <h1 className="text-2xl font-bold text-text-primary mb-6">Edit Bracket Entry</h1>
+          <h1 className="text-2xl font-bold text-text-primary mb-6">Edit {({ bracket: 'Bracket', pickem: "Pick'em", survivor: 'Survivor', roster: 'Roster' } as Record<string, string>)[gameType] || ''} Entry</h1>
 
           {error && (
             <div className="bg-danger/20 border border-danger text-danger-text px-4 py-3 rounded-lg mb-6">{error}</div>
@@ -214,7 +218,7 @@ export default function EditEntryPage({ params }: PageProps) {
             {/* Bracket Name */}
             <div>
               <label htmlFor="name" className="block text-sm font-medium text-text-secondary mb-2">
-                Bracket Name
+                Entry Name
               </label>
               <input
                 type="text"
@@ -223,7 +227,7 @@ export default function EditEntryPage({ params }: PageProps) {
                 onChange={(e) => setName(e.target.value)}
                 maxLength={50}
                 className="w-full px-4 py-2 bg-surface border border-border rounded-lg text-text-primary focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent"
-                placeholder="Give your bracket a name"
+                placeholder="Give your entry a name"
               />
             </div>
 
@@ -282,7 +286,7 @@ export default function EditEntryPage({ params }: PageProps) {
               <label className="block text-sm font-medium text-text-secondary mb-2">Preview</label>
               <div className="h-20 rounded-lg flex items-center justify-center" style={{ backgroundColor: primaryColor, border: `3px solid ${secondaryColor}` }}>
                 <span className="text-lg font-bold px-4 py-2 rounded" style={{ color: secondaryColor }}>
-                  {name || 'My Bracket'}
+                  {name || 'My Entry'}
                 </span>
               </div>
             </div>
@@ -290,7 +294,7 @@ export default function EditEntryPage({ params }: PageProps) {
             {/* Logo */}
             <div>
               <label className="block text-sm font-medium text-text-secondary mb-2">
-                Bracket Logo <span className="text-text-muted">(optional)</span>
+                Entry Logo <span className="text-text-muted">(optional)</span>
               </label>
 
               {(logoPreviewUrl || imageUrl) && (

@@ -1,3 +1,4 @@
+import * as Sentry from '@sentry/nextjs'
 import { NextRequest, NextResponse } from 'next/server'
 import { requireAuth, verifyLeagueMembership } from '@/lib/auth'
 import { createAdminClient } from '@/lib/supabase/server'
@@ -343,6 +344,7 @@ export async function POST(
     return NextResponse.json({ error: 'Invalid action' }, { status: 400 })
 
   } catch (error) {
+    Sentry.captureException(error)
     console.error('Trade action error:', error)
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Failed to process trade action' },

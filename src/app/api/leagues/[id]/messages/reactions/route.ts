@@ -1,3 +1,4 @@
+import * as Sentry from '@sentry/nextjs'
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/server'
 import { requireAuth, verifyLeagueMembership } from '@/lib/auth'
@@ -83,6 +84,7 @@ export async function POST(
       return NextResponse.json({ action: 'added' })
     }
   } catch (error) {
+    Sentry.captureException(error)
     console.error('Reactions POST error:', error)
     return NextResponse.json(
       { error: 'Failed to toggle reaction' },

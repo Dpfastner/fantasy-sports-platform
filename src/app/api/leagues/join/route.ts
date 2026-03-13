@@ -1,3 +1,4 @@
+import * as Sentry from '@sentry/nextjs'
 import { NextResponse } from 'next/server'
 import { createClient as createServerClient, createAdminClient } from '@/lib/supabase/server'
 import { validateBody } from '@/lib/api/validation'
@@ -190,6 +191,7 @@ export async function POST(request: Request) {
       leagueId: league.id,
     })
   } catch (err) {
+    Sentry.captureException(err)
     const isSandbox = process.env.NEXT_PUBLIC_ENVIRONMENT === 'sandbox'
     console.error('League join error:', err)
     return NextResponse.json({

@@ -58,6 +58,7 @@ export default function SettingsPage() {
   const [inappChatMentions, setInappChatMentions] = useState(true)
   const [inappLeagueActivity, setInappLeagueActivity] = useState(true)
   const [savingNotifications, setSavingNotifications] = useState(false)
+  const [expandedCategory, setExpandedCategory] = useState<string | null>('inapp')
   // Push notifications
   const [pushEnabled, setPushEnabled] = useState(false)
   const [pushPermission, setPushPermission] = useState<NotificationPermission>('default')
@@ -592,206 +593,121 @@ export default function SettingsPage() {
 
         {/* Notification Preferences */}
         <div className="bg-surface rounded-lg p-6 mt-6">
-          <h2 className="text-xl font-semibold text-text-primary mb-2">Notifications</h2>
+          <h2 className="text-xl font-semibold text-text-primary mb-4">Notifications</h2>
 
-          {/* In-App Notifications */}
-          <h3 className="text-sm font-semibold text-text-secondary uppercase tracking-wide mt-4 mb-3">In-App Notifications</h3>
-          <p className="text-text-muted text-sm mb-3">
-            Control which notifications appear in your notification bell.
-          </p>
-          <div className="space-y-3 mb-6">
-            <NotificationToggle
-              label="Draft Notifications"
-              description="Draft started, your turn to pick, picks made, and draft completed"
-              checked={inappDraft}
-              onChange={setInappDraft}
-            />
-            <NotificationToggle
-              label="Game Results"
-              description="Weekly score updates when games are completed"
-              checked={inappGameResults}
-              onChange={setInappGameResults}
-            />
-            <NotificationToggle
-              label="Trade Notifications"
-              description="Trade proposals, acceptances, rejections, vetoes, and expirations"
-              checked={inappTrades}
-              onChange={setInappTrades}
-            />
-            <NotificationToggle
-              label="Transaction Confirmations"
-              description="Confirmation when add/drop transactions are processed"
-              checked={inappTransactions}
-              onChange={setInappTransactions}
-            />
-            <NotificationToggle
-              label="League Announcements"
-              description="Updates posted by your league commissioners"
-              checked={inappAnnouncements}
-              onChange={setInappAnnouncements}
-            />
-            <NotificationToggle
-              label="Chat Mentions"
-              description="When someone mentions you in league chat"
-              checked={inappChatMentions}
-              onChange={setInappChatMentions}
-            />
-            <NotificationToggle
-              label="League Activity"
-              description="Members joining your league and other league events"
-              checked={inappLeagueActivity}
-              onChange={setInappLeagueActivity}
-            />
-          </div>
+          <div className="space-y-2">
+            {/* In-App Notifications Category */}
+            <NotificationCategory
+              title="In-App Notifications"
+              description="Notifications in your notification bell"
+              expanded={expandedCategory === 'inapp'}
+              onToggleExpand={() => setExpandedCategory(expandedCategory === 'inapp' ? null : 'inapp')}
+              toggles={[inappDraft, inappGameResults, inappTrades, inappTransactions, inappAnnouncements, inappChatMentions, inappLeagueActivity]}
+              onMasterToggle={(val) => {
+                setInappDraft(val); setInappGameResults(val); setInappTrades(val)
+                setInappTransactions(val); setInappAnnouncements(val); setInappChatMentions(val); setInappLeagueActivity(val)
+              }}
+            >
+              <NotificationToggle label="Draft Notifications" description="Draft started, your turn to pick, picks made, and draft completed" checked={inappDraft} onChange={setInappDraft} />
+              <NotificationToggle label="Game Results" description="Weekly score updates when games are completed" checked={inappGameResults} onChange={setInappGameResults} />
+              <NotificationToggle label="Trade Notifications" description="Trade proposals, acceptances, rejections, vetoes, and expirations" checked={inappTrades} onChange={setInappTrades} />
+              <NotificationToggle label="Transaction Confirmations" description="Confirmation when add/drop transactions are processed" checked={inappTransactions} onChange={setInappTransactions} />
+              <NotificationToggle label="League Announcements" description="Updates posted by your league commissioners" checked={inappAnnouncements} onChange={setInappAnnouncements} />
+              <NotificationToggle label="Chat Mentions" description="When someone mentions you in league chat" checked={inappChatMentions} onChange={setInappChatMentions} />
+              <NotificationToggle label="League Activity" description="Members joining your league and other league events" checked={inappLeagueActivity} onChange={setInappLeagueActivity} />
+            </NotificationCategory>
 
-          {/* Push Notifications */}
-          <h3 className="text-sm font-semibold text-text-secondary uppercase tracking-wide mb-3">Push Notifications</h3>
-          <p className="text-text-muted text-sm mb-3">
-            Receive browser notifications even when you&apos;re not on Rivyls.
-          </p>
-          <div className="space-y-3 mb-6">
-            {pushPermission === 'denied' ? (
-              <div className="py-2">
-                <p className="text-text-primary text-sm font-medium">Push Notifications</p>
-                <p className="text-danger text-xs mt-1">Blocked by your browser. Update your browser notification settings to enable push notifications.</p>
-              </div>
-            ) : (
-              <>
-                <PushMasterToggle
-                  enabled={pushEnabled}
-                  loading={pushLoading}
-                  onToggle={async () => {
-                    if (pushLoading) return
-                    setPushLoading(true)
-
-                    try {
-                      if (!pushEnabled) {
-                        const permission = await Notification.requestPermission()
-                        setPushPermission(permission)
-                        if (permission !== 'granted') {
-                          setPushLoading(false)
-                          return
-                        }
-
-                        const reg = await navigator.serviceWorker.ready
-                        const subscription = await reg.pushManager.subscribe({
-                          userVisibleOnly: true,
-                          applicationServerKey: process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY,
-                        })
-
-                        const sub = subscription.toJSON()
-                        await fetch('/api/push/subscribe', {
-                          method: 'POST',
-                          headers: { 'Content-Type': 'application/json' },
-                          body: JSON.stringify({
-                            endpoint: sub.endpoint,
-                            keys: sub.keys,
-                          }),
-                        })
-
-                        setPushEnabled(true)
-                      } else {
-                        const reg = await navigator.serviceWorker.ready
-                        const subscription = await reg.pushManager.getSubscription()
-                        if (subscription) {
-                          await fetch('/api/push/unsubscribe', {
+            {/* Push Notifications Category */}
+            <NotificationCategory
+              title="Push Notifications"
+              description="Browser notifications even when you're not on Rivyls"
+              expanded={expandedCategory === 'push'}
+              onToggleExpand={() => setExpandedCategory(expandedCategory === 'push' ? null : 'push')}
+              toggles={pushEnabled ? [pushDraft, pushGameResults, pushTrades, pushTransactions, pushAnnouncements, pushChatMentions, pushLeagueActivity] : []}
+              onMasterToggle={undefined}
+              customMasterToggle={
+                pushPermission === 'denied' ? (
+                  <p className="text-danger text-xs">Blocked by browser settings</p>
+                ) : (
+                  <PushMasterToggle
+                    enabled={pushEnabled}
+                    loading={pushLoading}
+                    onToggle={async () => {
+                      if (pushLoading) return
+                      setPushLoading(true)
+                      try {
+                        if (!pushEnabled) {
+                          const permission = await Notification.requestPermission()
+                          setPushPermission(permission)
+                          if (permission !== 'granted') { setPushLoading(false); return }
+                          const reg = await navigator.serviceWorker.ready
+                          const subscription = await reg.pushManager.subscribe({
+                            userVisibleOnly: true,
+                            applicationServerKey: process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY,
+                          })
+                          const sub = subscription.toJSON()
+                          await fetch('/api/push/subscribe', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ endpoint: subscription.endpoint }),
+                            body: JSON.stringify({ endpoint: sub.endpoint, keys: sub.keys }),
                           })
-                          await subscription.unsubscribe()
+                          setPushEnabled(true)
+                        } else {
+                          const reg = await navigator.serviceWorker.ready
+                          const subscription = await reg.pushManager.getSubscription()
+                          if (subscription) {
+                            await fetch('/api/push/unsubscribe', {
+                              method: 'POST',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({ endpoint: subscription.endpoint }),
+                            })
+                            await subscription.unsubscribe()
+                          }
+                          setPushEnabled(false)
                         }
-                        setPushEnabled(false)
+                      } catch (err) {
+                        console.error('[push] Toggle failed:', err)
+                        showMessage('error', 'Failed to update push notifications. Please try again.')
+                      } finally {
+                        setPushLoading(false)
                       }
-                    } catch (err) {
-                      console.error('[push] Toggle failed:', err)
-                      showMessage('error', 'Failed to update push notifications. Please try again.')
-                    } finally {
-                      setPushLoading(false)
-                    }
-                  }}
-                />
-                {pushEnabled && (
-                  <>
-                    <NotificationToggle
-                      label="Draft Notifications"
-                      description="Draft started, your turn to pick, picks made, and draft completed"
-                      checked={pushDraft}
-                      onChange={setPushDraft}
-                    />
-                    <NotificationToggle
-                      label="Game Results"
-                      description="Weekly score updates when games are completed"
-                      checked={pushGameResults}
-                      onChange={setPushGameResults}
-                    />
-                    <NotificationToggle
-                      label="Trade Notifications"
-                      description="Trade proposals, acceptances, rejections, vetoes, and expirations"
-                      checked={pushTrades}
-                      onChange={setPushTrades}
-                    />
-                    <NotificationToggle
-                      label="Transaction Confirmations"
-                      description="Confirmation when add/drop transactions are processed"
-                      checked={pushTransactions}
-                      onChange={setPushTransactions}
-                    />
-                    <NotificationToggle
-                      label="League Announcements"
-                      description="Updates posted by your league commissioners"
-                      checked={pushAnnouncements}
-                      onChange={setPushAnnouncements}
-                    />
-                    <NotificationToggle
-                      label="Chat Mentions"
-                      description="When someone mentions you in league chat"
-                      checked={pushChatMentions}
-                      onChange={setPushChatMentions}
-                    />
-                    <NotificationToggle
-                      label="League Activity"
-                      description="Members joining your league and other league events"
-                      checked={pushLeagueActivity}
-                      onChange={setPushLeagueActivity}
-                    />
-                  </>
-                )}
-              </>
-            )}
+                    }}
+                  />
+                )
+              }
+            >
+              {pushEnabled && (
+                <>
+                  <NotificationToggle label="Draft Notifications" description="Draft started, your turn to pick, picks made, and draft completed" checked={pushDraft} onChange={setPushDraft} />
+                  <NotificationToggle label="Game Results" description="Weekly score updates when games are completed" checked={pushGameResults} onChange={setPushGameResults} />
+                  <NotificationToggle label="Trade Notifications" description="Trade proposals, acceptances, rejections, vetoes, and expirations" checked={pushTrades} onChange={setPushTrades} />
+                  <NotificationToggle label="Transaction Confirmations" description="Confirmation when add/drop transactions are processed" checked={pushTransactions} onChange={setPushTransactions} />
+                  <NotificationToggle label="League Announcements" description="Updates posted by your league commissioners" checked={pushAnnouncements} onChange={setPushAnnouncements} />
+                  <NotificationToggle label="Chat Mentions" description="When someone mentions you in league chat" checked={pushChatMentions} onChange={setPushChatMentions} />
+                  <NotificationToggle label="League Activity" description="Members joining your league and other league events" checked={pushLeagueActivity} onChange={setPushLeagueActivity} />
+                </>
+              )}
+            </NotificationCategory>
+
+            {/* Email Notifications Category */}
+            <NotificationCategory
+              title="Email Notifications"
+              description="Email notifications you'd like to receive"
+              expanded={expandedCategory === 'email'}
+              onToggleExpand={() => setExpandedCategory(expandedCategory === 'email' ? null : 'email')}
+              toggles={[emailGameResults, emailDraftReminders, emailTransactionConfirmations, emailLeagueAnnouncements]}
+              onMasterToggle={(val) => {
+                setEmailGameResults(val); setEmailDraftReminders(val)
+                setEmailTransactionConfirmations(val); setEmailLeagueAnnouncements(val)
+              }}
+            >
+              <NotificationToggle label="Game Results" description="Weekly score updates when games are completed" checked={emailGameResults} onChange={setEmailGameResults} />
+              <NotificationToggle label="Draft Reminders" description="Reminders when your draft is about to start" checked={emailDraftReminders} onChange={setEmailDraftReminders} />
+              <NotificationToggle label="Transaction Confirmations" description="Confirmation when add/drop transactions are processed" checked={emailTransactionConfirmations} onChange={setEmailTransactionConfirmations} />
+              <NotificationToggle label="League Announcements" description="Updates from your league commissioners" checked={emailLeagueAnnouncements} onChange={setEmailLeagueAnnouncements} />
+            </NotificationCategory>
           </div>
 
-          {/* Email Notifications */}
-          <h3 className="text-sm font-semibold text-text-secondary uppercase tracking-wide mb-3">Email Notifications</h3>
-          <p className="text-text-muted text-sm mb-3">
-            Choose which email notifications you&apos;d like to receive.
-          </p>
-          <div className="space-y-3">
-            <NotificationToggle
-              label="Game Results"
-              description="Weekly score updates when games are completed"
-              checked={emailGameResults}
-              onChange={setEmailGameResults}
-            />
-            <NotificationToggle
-              label="Draft Reminders"
-              description="Reminders when your draft is about to start"
-              checked={emailDraftReminders}
-              onChange={setEmailDraftReminders}
-            />
-            <NotificationToggle
-              label="Transaction Confirmations"
-              description="Confirmation when add/drop transactions are processed"
-              checked={emailTransactionConfirmations}
-              onChange={setEmailTransactionConfirmations}
-            />
-            <NotificationToggle
-              label="League Announcements"
-              description="Updates from your league commissioners"
-              checked={emailLeagueAnnouncements}
-              onChange={setEmailLeagueAnnouncements}
-            />
-          </div>
           <button
             type="button"
             onClick={handleUpdateNotifications}
@@ -880,6 +796,84 @@ export default function SettingsPage() {
           )}
         </div>
       </main>
+    </div>
+  )
+}
+
+function NotificationCategory({
+  title,
+  description,
+  expanded,
+  onToggleExpand,
+  toggles,
+  onMasterToggle,
+  customMasterToggle,
+  children,
+}: {
+  title: string
+  description: string
+  expanded: boolean
+  onToggleExpand: () => void
+  toggles: boolean[]
+  onMasterToggle?: ((val: boolean) => void) | undefined
+  customMasterToggle?: React.ReactNode
+  children: React.ReactNode
+}) {
+  const allOn = toggles.length > 0 && toggles.every(Boolean)
+  const someOn = toggles.some(Boolean)
+
+  return (
+    <div className="border border-border rounded-lg overflow-hidden">
+      <div className="flex items-center justify-between px-4 py-3 bg-surface-subtle">
+        <button
+          type="button"
+          onClick={onToggleExpand}
+          className="flex items-center gap-2 flex-1 min-w-0"
+        >
+          <svg
+            className={`w-4 h-4 text-text-muted transition-transform shrink-0 ${expanded ? 'rotate-90' : ''}`}
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth={2}
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+          </svg>
+          <div className="text-left min-w-0">
+            <p className="text-text-primary text-sm font-semibold">{title}</p>
+            <p className="text-text-muted text-xs">{description}</p>
+          </div>
+        </button>
+        <div className="shrink-0 ml-3">
+          {customMasterToggle || (onMasterToggle && (
+            <div
+              onClick={(e) => {
+                e.stopPropagation()
+                onMasterToggle(!allOn)
+              }}
+              className={`relative w-10 h-6 rounded-full transition-colors cursor-pointer ${
+                allOn ? 'bg-brand' : someOn ? 'bg-brand/50' : 'bg-surface-inset'
+              }`}
+            >
+              <div
+                className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-transform ${
+                  allOn || someOn ? 'translate-x-5' : 'translate-x-1'
+                }`}
+              />
+              {someOn && !allOn && (
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="w-2 h-0.5 bg-white rounded-full" />
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+      {expanded && (
+        <div className="px-4 py-2 space-y-1 border-t border-border">
+          {children}
+        </div>
+      )}
     </div>
   )
 }

@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
+import * as Sentry from '@sentry/nextjs'
 import { requireAuth } from '@/lib/auth'
 import { createAdminClient } from '@/lib/supabase/server'
+import { createRateLimiter, getClientIp } from '@/lib/api/rate-limit'
+
+const limiter = createRateLimiter({ windowMs: 60_000, max: 5 })
 
 const MAX_FILE_SIZE = 500 * 1024 // 500KB
 const ALLOWED_TYPES = new Set([
@@ -16,6 +20,9 @@ export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ poolId: string; entryId: string }> }
 ) {
+  const { limited, response } = limiter.check(getClientIp(request))
+  if (limited) return response!
+
   try {
     const { entryId } = await params
     const authResult = await requireAuth()
@@ -89,7 +96,8 @@ export async function POST(
       .eq('id', entryId)
 
     return NextResponse.json({ url: publicUrl })
-  } catch {
+  } catch (err) {
+    Sentry.captureException(err)
     return NextResponse.json(
       { error: 'Something went wrong. Please try again.' },
       { status: 500 }

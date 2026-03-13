@@ -71,7 +71,7 @@ export function Leaderboard({ members, format, poolStatus, tiebreaker }: Leaderb
   return (
     <div>
       {sorted.length === 0 ? (
-        <div className="bg-surface rounded-lg border border-border p-6 text-center">
+        <div className="bg-surface rounded-lg border border-border p-8 text-center">
           <p className="text-text-muted">No entries yet.</p>
         </div>
       ) : (

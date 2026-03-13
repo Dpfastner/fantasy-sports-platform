@@ -2,12 +2,18 @@ import { NextResponse } from 'next/server'
 import * as Sentry from '@sentry/nextjs'
 import { createAdminClient } from '@/lib/supabase/server'
 import { fetchHockeyTeams, fetchGolfRankings, fetchGolfField, getCountryFlagCode, fetchRugbyMatches, fetchRugbyMatchesSportsDb } from '@/lib/events/espn-adapters'
+import { createRateLimiter, getClientIp } from '@/lib/api/rate-limit'
+
+const limiter = createRateLimiter({ windowMs: 60_000, max: 5 })
 
 // POST /api/events/seed
 // One-time admin endpoint to seed tournament data.
 // Body: { tournament: 'frozen-four-2026' | 'masters-2026' | 'w-six-nations-2026' | 'm-six-nations-2026' }
 // Auth: CRON_SECRET (admin only)
 export async function POST(request: Request) {
+  const { limited, response } = limiter.check(getClientIp(request))
+  if (limited) return response!
+
   const authHeader = request.headers.get('authorization')
   if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })

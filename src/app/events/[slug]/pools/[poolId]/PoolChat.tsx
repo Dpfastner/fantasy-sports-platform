@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef, useCallback } from 'react'
+import { useToast } from '@/components/Toast'
 
 interface ChatMessage {
   id: string
@@ -24,6 +25,7 @@ export function PoolChat({ poolId, userId }: PoolChatProps) {
   const [sending, setSending] = useState(false)
   const [loading, setLoading] = useState(true)
   const [reactionPickerId, setReactionPickerId] = useState<string | null>(null)
+  const { addToast } = useToast()
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
 
@@ -63,9 +65,11 @@ export function PoolChat({ poolId, userId }: PoolChatProps) {
       if (res.ok) {
         setNewMessage('')
         await fetchMessages()
+      } else {
+        addToast('Failed to send message', 'error')
       }
     } catch {
-      // silent
+      addToast('Failed to send message', 'error')
     } finally {
       setSending(false)
     }
@@ -81,7 +85,7 @@ export function PoolChat({ poolId, userId }: PoolChatProps) {
       })
       await fetchMessages()
     } catch {
-      // silent
+      addToast('Failed to react', 'error')
     }
   }
 
@@ -197,7 +201,7 @@ export function PoolChat({ poolId, userId }: PoolChatProps) {
           onKeyDown={handleKeyDown}
           placeholder="Type a message..."
           maxLength={2000}
-          className="flex-1 bg-surface-inset border border-border rounded-lg px-3 py-2 text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-brand/50"
+          className="flex-1 bg-surface-inset border border-border rounded-md px-3 py-2 text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-brand/50"
         />
         <button
           onClick={handleSend}

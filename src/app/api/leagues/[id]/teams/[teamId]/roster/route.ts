@@ -1,13 +1,20 @@
+import * as Sentry from '@sentry/nextjs'
 import { NextRequest, NextResponse } from 'next/server'
 import { requireAuth, verifyLeagueMembership } from '@/lib/auth'
 import { createAdminClient } from '@/lib/supabase/server'
 import { getCurrentWeek } from '@/lib/week'
 import { getLeagueYear } from '@/lib/league-helpers'
+import { createRateLimiter, getClientIp } from '@/lib/api/rate-limit'
+
+const limiter = createRateLimiter({ windowMs: 60_000, max: 30 })
 
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string; teamId: string }> }
 ) {
+  const { limited, response } = limiter.check(getClientIp(request))
+  if (limited) return response!
+
   try {
     const { id: leagueId, teamId } = await params
     const authResult = await requireAuth()
@@ -60,6 +67,7 @@ export async function GET(
 
     return NextResponse.json({ roster: roster || [] })
   } catch (error) {
+    Sentry.captureException(error)
     console.error('Fetch team roster error:', error)
     return NextResponse.json(
       { error: 'Failed to fetch roster' },

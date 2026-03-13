@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useMemo } from 'react'
+import { useRouter } from 'next/navigation'
 import { useToast } from '@/components/Toast'
 import { trackEventActivity } from '@/app/actions/activity'
 import { track } from '@vercel/analytics'
@@ -66,6 +67,7 @@ export function SurvivorPicker({
   isActive,
   games,
 }: SurvivorPickerProps) {
+  const router = useRouter()
   const { addToast } = useToast()
   const [isSubmitting, setIsSubmitting] = useState(false)
 
@@ -144,6 +146,7 @@ export function SurvivorPicker({
       addToast(`Pick saved: ${data.participant}`, 'success')
       track('event_survivor_pick', { week: currentWeek.week_number })
       trackEventActivity('survivor.pick_made', poolId, tournamentId, { week: currentWeek.week_number })
+      router.refresh()
     } catch {
       addToast('Something went wrong', 'error')
     } finally {

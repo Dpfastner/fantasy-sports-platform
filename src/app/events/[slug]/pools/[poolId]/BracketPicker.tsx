@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useMemo } from 'react'
+import { useRouter } from 'next/navigation'
 import { useToast } from '@/components/Toast'
 import { trackEventActivity } from '@/app/actions/activity'
 import { track } from '@vercel/analytics'
@@ -84,6 +85,7 @@ export function BracketPicker({
   submittedAt,
   scoringRules,
 }: BracketPickerProps) {
+  const router = useRouter()
   const { addToast } = useToast()
   const [isSubmitting, setIsSubmitting] = useState(false)
 
@@ -207,6 +209,7 @@ export function BracketPicker({
       addToast(`Bracket saved! ${data.pickCount} picks submitted.`, 'success')
       track('event_bracket_submitted', { pickCount: data.pickCount })
       trackEventActivity('bracket.completed', poolId, tournamentId, { pickCount: data.pickCount })
+      router.refresh()
     } catch {
       addToast('Something went wrong', 'error')
     } finally {

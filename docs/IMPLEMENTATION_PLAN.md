@@ -572,6 +572,9 @@ Phase 36c (More Sports)      ████████████  COMPLETE ✅
 Phase 40 (Dashboard Redesign) ████████████  COMPLETE ✅
 Phase 41a (Support Tickets)  ████████████  COMPLETE ✅
 
+━━━ IN PROGRESS ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Phase 42 (UX Friction Audit) ████████░░░░  3/5 items done
+
 ━━━ UPCOMING ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Phase 41b (Claude AI)        ░░░░░░░░░░░░  Deferred (no API key yet)
 Phase 33 (Email Notifs)      ░░░░░░░░░░░░  Blocked until DNS transfer (Apr 21)
@@ -580,7 +583,7 @@ Phase 35c (Pro Features)     ░░░░░░░░░░░░  AI Draft Assi
 Phase 35a (Stripe Billing)   ░░░░░░░░░░░░  Subscriptions, checkout, customer portal
 Phase 35d (New Game Modes)   ░░░░░░░░░░░░  H2H Matchups, Conference Leagues
 Phase 36d (Multi-Sport)      ░░░░░░░░░░░░  Summer 2026
-Future Phases 42, 43         ░░░░░░░░░░░░
+Future Phases 43, 44         ░░░░░░░░░░░░
 ```
 
 ### June Deadline Decision Framework
@@ -1792,8 +1795,9 @@ This breaks leagues mid-season. A team vanishing from the leaderboard with all h
 | **Phase 40** ✅ | Unified Dashboard Redesign | **Header**: Sleeper-inspired minimal header — logo only, no nav text links, hamburger menu on mobile. **Dashboard**: Unified leagues + events view with full-width sections (Fan Zone transparent, Locker Room bg-surface, Featured Events bg-tertiary with bg-card-neutral cards, Past & Completed bg-surface). Live status badges, quick-action buttons. 4 sports (CFB, Hockey, Golf, Rugby) in sports-config.ts. **Toast**: Single bottom-right Toast component (111+ usages). **Navigation**: BackButton component. **Landing/Welcome**: 4 clickable sport cards linking to signup with sport context, "Sign Up Free" CTA, events page ?sport= filter. **Palette**: card-neutral/card-text/card-text-muted tokens, Heritage/Royal neutral fix (Tailwind neutral collision). | ✅ Mar 13, 2026 |
 | **Phase 41a** ✅ | Support Ticket System | Enhance `issue_reports` into ticket system with conversation threads (`ticket_responses` table, migration 054). User-facing `/support` pages (ticket list + thread detail). Shared `TicketThread` and `TicketReplyForm` components. Admin ticket detail at `/admin/reports/[reportId]` with status/priority management, admin notes. API routes for ticket CRUD and responses. `support_response` notification type. | ✅ Mar 13, 2026 |
 | **Phase 41b** | Claude AI Integration (Deferred) | Auto-triage on submission (priority, category, summary), admin-triggered suggested responses, FAQ knowledge base search. Uses `@anthropic-ai/sdk` with Sonnet. Claude never auto-responds — admin reviews all. **Deferred until Anthropic API key is set up.** Admin UI shows "AI not configured" placeholder. | Deferred |
-| **Phase 42** | Ads Infrastructure | Non-intrusive ads on free tier (footer banners, interstitials between pages — NOT during drafts or live scoring). Pro users see no ads. Ad impression tracking for revenue reporting. | Year 2 |
-| **Phase 43** | Native Mobile / PWA | iOS/Android app. Native push notifications. | Year 2-3 |
+| **Phase 42** 🔄 | UX Friction Audit | **5 items**: (1) League Settings — extract 2,105-line page into 6 sub-components (BasicSettings, RosterSettings, ScoringSettings, TransactionSettings, DraftSettings, MembersSettings). (2) Notification Settings — collapsible category groups with master toggles (In-App/Push/Email). (3) Pool Detail — extract MembersTab + SettingsTab components. (4) Trade System — single-view trade builder with chip selections, inline drop picker, live roster preview. (5) Event Entry Identity — wire up existing customization columns to entry pills + members tab. Items 2, 3, 5 complete. | 🔄 Mar 13, 2026 |
+| **Phase 43** | Ads Infrastructure | Non-intrusive ads on free tier (footer banners, interstitials between pages — NOT during drafts or live scoring). Pro users see no ads. Ad impression tracking for revenue reporting. | Year 2 |
+| **Phase 44** | Native Mobile / PWA | iOS/Android app. Native push notifications. | Year 2-3 |
 
 ---
 

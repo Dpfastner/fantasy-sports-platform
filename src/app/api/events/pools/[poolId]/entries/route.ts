@@ -1,12 +1,18 @@
 import { NextResponse } from 'next/server'
 import * as Sentry from '@sentry/nextjs'
 import { createClient as createServerClient, createAdminClient } from '@/lib/supabase/server'
+import { createRateLimiter, getClientIp } from '@/lib/api/rate-limit'
+
+const limiter = createRateLimiter({ windowMs: 60_000, max: 5 })
 
 // POST /api/events/pools/[poolId]/entries — add an additional entry to a pool
 export async function POST(
   request: Request,
   { params }: { params: Promise<{ poolId: string }> }
 ) {
+  const { limited, response } = limiter.check(getClientIp(request))
+  if (limited) return response!
+
   try {
     const { poolId } = await params
     const supabase = await createServerClient()

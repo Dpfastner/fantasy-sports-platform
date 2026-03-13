@@ -2,6 +2,9 @@ import { NextResponse } from 'next/server'
 import * as Sentry from '@sentry/nextjs'
 import { createAdminClient } from '@/lib/supabase/server'
 import { createNotification } from '@/lib/notifications'
+import { createRateLimiter, getClientIp } from '@/lib/api/rate-limit'
+
+const limiter = createRateLimiter({ windowMs: 60_000, max: 10 })
 import {
   scoreBracketEntry,
   scorePickemEntry,
@@ -23,6 +26,9 @@ import type { EventGame, EventParticipant, EventPick } from '@/types/database'
 // Triggered by cron or admin to resolve picks for completed games.
 // Body: { tournamentId: string, weekNumber?: number }
 export async function POST(request: Request) {
+  const { limited, response } = limiter.check(getClientIp(request))
+  if (limited) return response!
+
   // Verify cron secret or admin
   const authHeader = request.headers.get('authorization')
   if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {

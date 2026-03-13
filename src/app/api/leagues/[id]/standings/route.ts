@@ -1,8 +1,12 @@
+import * as Sentry from '@sentry/nextjs'
 import { NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/server'
 import { getCurrentWeek } from '@/lib/week'
 import { requireAuth, verifyLeagueMembership } from '@/lib/auth'
 import { getLeagueYear } from '@/lib/league-helpers'
+import { createRateLimiter, getClientIp } from '@/lib/api/rate-limit'
+
+const limiter = createRateLimiter({ windowMs: 60_000, max: 30 })
 
 interface StandingsTeam {
   id: string
@@ -24,6 +28,9 @@ export async function GET(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const { limited, response } = limiter.check(getClientIp(request))
+  if (limited) return response!
+
   try {
     const { id: leagueId } = await params
 
@@ -160,6 +167,7 @@ export async function GET(
       headers: { 'Cache-Control': 'private, max-age=30, stale-while-revalidate=60' },
     })
   } catch (error) {
+    Sentry.captureException(error)
     console.error('Standings error:', error)
     return NextResponse.json(
       { error: 'Failed to fetch standings', details: String(error) },

@@ -1,10 +1,16 @@
 import { NextResponse } from 'next/server'
 import * as Sentry from '@sentry/nextjs'
 import { createClient as createServerClient } from '@/lib/supabase/server'
+import { createRateLimiter, getClientIp } from '@/lib/api/rate-limit'
+
+const limiter = createRateLimiter({ windowMs: 60_000, max: 30 })
 
 // GET /api/events/tournaments
 // Returns all active/upcoming tournaments
-export async function GET() {
+export async function GET(request: Request) {
+  const { limited, response } = limiter.check(getClientIp(request))
+  if (limited) return response!
+
   try {
     const supabase = await createServerClient()
 

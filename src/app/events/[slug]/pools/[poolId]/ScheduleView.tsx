@@ -75,8 +75,9 @@ export function ScheduleView({ games, participants, format, tournamentId, sport 
 
   if (games.length === 0) {
     return (
-      <div className="text-center py-8">
-        <p className="text-text-muted text-sm">No games scheduled yet.</p>
+      <div className="bg-surface rounded-lg p-8 text-center">
+        <p className="text-text-secondary">No games scheduled yet.</p>
+        <p className="text-text-muted text-sm mt-1">Games will appear here when the schedule is set.</p>
       </div>
     )
   }
@@ -147,7 +148,7 @@ export function ScheduleView({ games, participants, format, tournamentId, sport 
 
         return (
           <div key={round}>
-            <h3 className="brand-h3 text-sm text-text-secondary mb-3">{label}</h3>
+            <h3 className="text-sm font-semibold text-text-secondary mb-3">{label}</h3>
             <div className="space-y-2">
               {roundGames.sort((a, b) => a.gameNumber - b.gameNumber).map(game => {
                 const p1 = game.participant1Id ? participantMap.get(game.participant1Id) : null

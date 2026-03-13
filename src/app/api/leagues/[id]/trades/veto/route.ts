@@ -1,3 +1,4 @@
+import * as Sentry from '@sentry/nextjs'
 import { NextRequest, NextResponse } from 'next/server'
 import { requireAuth } from '@/lib/auth'
 import { createAdminClient } from '@/lib/supabase/server'
@@ -218,6 +219,7 @@ export async function POST(
     return NextResponse.json({ success: true })
 
   } catch (error) {
+    Sentry.captureException(error)
     console.error('Trade veto error:', error)
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Failed to veto trade' },

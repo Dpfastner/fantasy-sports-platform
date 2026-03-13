@@ -1,10 +1,17 @@
 import { NextResponse } from 'next/server'
+import * as Sentry from '@sentry/nextjs'
 import { createAdminClient } from '@/lib/supabase/server'
+import { createRateLimiter, getClientIp } from '@/lib/api/rate-limit'
+
+const limiter = createRateLimiter({ windowMs: 60_000, max: 30 })
 
 export async function GET(
   request: Request,
   { params }: { params: Promise<{ poolId: string }> }
 ) {
+  const { limited, response } = limiter.check(getClientIp(request))
+  if (limited) return response!
+
   try {
     const { poolId } = await params
     const admin = createAdminClient()
@@ -46,6 +53,7 @@ export async function GET(
       })),
     })
   } catch (err) {
+    Sentry.captureException(err)
     console.error('Pool activity fetch error:', err)
     return NextResponse.json({ error: 'Failed to fetch activity' }, { status: 500 })
   }

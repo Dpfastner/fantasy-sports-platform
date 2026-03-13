@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 
 interface ActivityEvent {
   id: string
@@ -67,21 +67,24 @@ export function PoolActivityFeed({ poolId, tournamentId }: PoolActivityFeedProps
   const [events, setEvents] = useState<ActivityEvent[]>([])
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    async function fetchActivity() {
-      try {
-        const res = await fetch(`/api/events/pools/${poolId}/activity`)
-        if (!res.ok) return
-        const data = await res.json()
-        setEvents(data.events || [])
-      } catch {
-        // silent
-      } finally {
-        setLoading(false)
-      }
+  const fetchActivity = useCallback(async () => {
+    try {
+      const res = await fetch(`/api/events/pools/${poolId}/activity`)
+      if (!res.ok) return
+      const data = await res.json()
+      setEvents(data.events || [])
+    } catch {
+      // silent
+    } finally {
+      setLoading(false)
     }
-    fetchActivity()
   }, [poolId])
+
+  useEffect(() => {
+    fetchActivity()
+    const interval = setInterval(fetchActivity, 30000)
+    return () => clearInterval(interval)
+  }, [fetchActivity])
 
   if (loading) {
     return (
@@ -95,9 +98,9 @@ export function PoolActivityFeed({ poolId, tournamentId }: PoolActivityFeedProps
 
   if (filtered.length === 0) {
     return (
-      <div className="text-center py-8">
-        <p className="text-text-muted text-sm">No activity yet.</p>
-        <p className="text-text-muted text-xs mt-1">Events like picks submitted, members joining, and results will appear here.</p>
+      <div className="bg-surface rounded-lg p-8 text-center">
+        <p className="text-text-secondary">No activity yet.</p>
+        <p className="text-text-muted text-sm mt-1">Events like picks submitted, members joining, and results will appear here.</p>
       </div>
     )
   }

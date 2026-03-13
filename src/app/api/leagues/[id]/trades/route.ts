@@ -1,3 +1,4 @@
+import * as Sentry from '@sentry/nextjs'
 import { NextRequest, NextResponse } from 'next/server'
 import { requireAuth, verifyLeagueMembership } from '@/lib/auth'
 import { createAdminClient } from '@/lib/supabase/server'
@@ -324,6 +325,7 @@ export async function POST(
     return NextResponse.json({ success: true, tradeId: trade.id })
 
   } catch (error) {
+    Sentry.captureException(error)
     console.error('Propose trade error:', error)
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Failed to propose trade' },
@@ -378,6 +380,7 @@ export async function GET(
     return NextResponse.json({ trades: trades || [] })
 
   } catch (error) {
+    Sentry.captureException(error)
     console.error('List trades error:', error)
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Failed to list trades' },

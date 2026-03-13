@@ -1,7 +1,10 @@
 import { NextResponse } from 'next/server'
 import * as Sentry from '@sentry/nextjs'
 import { createClient as createServerClient, createAdminClient } from '@/lib/supabase/server'
+import { createRateLimiter, getClientIp } from '@/lib/api/rate-limit'
 import { z } from 'zod'
+
+const limiter = createRateLimiter({ windowMs: 60_000, max: 10 })
 
 const updatePoolSchema = z.object({
   name: z.string().min(2).max(60).optional(),
@@ -16,6 +19,9 @@ export async function PATCH(
   request: Request,
   { params }: { params: Promise<{ poolId: string }> }
 ) {
+  const { limited, response } = limiter.check(getClientIp(request))
+  if (limited) return response!
+
   try {
     const { poolId } = await params
     const supabase = await createServerClient()

@@ -108,7 +108,7 @@ export default async function PoolDetailPage({ params }: PageProps) {
   // Get entries (members) — no FK join on user_id since it's nullable after soft-delete
   const { data: entries } = await admin
     .from('event_entries')
-    .select('id, user_id, display_name, is_active, submitted_at, total_points, tiebreaker_prediction')
+    .select('id, user_id, display_name, is_active, submitted_at, total_points, tiebreaker_prediction, primary_color, secondary_color, image_url')
     .eq('pool_id', poolId)
     .order('total_points', { ascending: pool.game_type === 'roster' })
 
@@ -307,9 +307,9 @@ export default async function PoolDetailPage({ params }: PageProps) {
       rank: idx + 1,
       roundsSurvived: survivorPickCounts[e.id] || 0,
       tiebreakerPrediction: e.tiebreaker_prediction as { team1_score: number; team2_score: number } | null,
-      primaryColor: (e as Record<string, unknown>).primary_color as string | null,
-      secondaryColor: (e as Record<string, unknown>).secondary_color as string | null,
-      imageUrl: (e as Record<string, unknown>).image_url as string | null,
+      primaryColor: e.primary_color as string | null,
+      secondaryColor: e.secondary_color as string | null,
+      imageUrl: e.image_url as string | null,
     }
   })
 
@@ -382,6 +382,9 @@ export default async function PoolDetailPage({ params }: PageProps) {
             score: Number(ue.total_points) || 0,
             rank: members.findIndex(m => m.id === ue.id) + 1 || null,
             tiebreakerPrediction: ue.tiebreaker_prediction as { team1_score: number; team2_score: number } | null,
+            primaryColor: ue.primary_color as string | null,
+            secondaryColor: ue.secondary_color as string | null,
+            imageUrl: ue.image_url as string | null,
           }))}
           userPicksByEntry={Object.fromEntries(
             Object.entries(userPicksByEntry).map(([entryId, picks]) => [
