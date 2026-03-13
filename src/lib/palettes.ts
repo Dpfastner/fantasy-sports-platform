@@ -154,7 +154,7 @@ export const palettes: PaletteDefinition[] = [
       primary: '#1A3C2A',
       secondary: '#C47A3A',
       tertiary: '#F2E8D5',
-      neutral: '#F2E8D5',
+      neutral: '#FFFFFF',
       base: '#0E2218',
 
       // Surfaces
@@ -219,7 +219,7 @@ export const palettes: PaletteDefinition[] = [
       primary: '#2A1A3E',
       secondary: '#F59E0B',
       tertiary: '#FAF5EE',
-      neutral: '#FAF5EE',
+      neutral: '#FFFFFF',
       base: '#1A0F28',
 
       // Surfaces
