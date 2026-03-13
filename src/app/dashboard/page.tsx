@@ -474,7 +474,7 @@ export default async function DashboardPage() {
         </div>
 
         {/* Locker Room Block */}
-        <div className="bg-surface rounded-xl p-6">
+        <div className="bg-surface rounded-xl p-6 border border-border/50 shadow-lg shadow-black/10">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
             <h1 className="text-3xl font-bold text-text-primary">Locker Room</h1>
             <div className="flex flex-wrap gap-3">
@@ -604,7 +604,7 @@ export default async function DashboardPage() {
 
         {/* Upcoming Events Block */}
         {featuredEvents.length > 0 && (
-          <div className="bg-surface-subtle rounded-xl p-6 mt-6">
+          <div className="bg-surface-subtle rounded-xl p-6 mt-6 border border-border/50 shadow-lg shadow-black/10">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-xl font-bold text-text-primary">Upcoming Events</h2>
               {unjoinedTournaments.length > 3 && (
@@ -671,7 +671,7 @@ export default async function DashboardPage() {
 
         {/* Past / Completed / Dormant Block */}
         {pastItems.length > 0 && (
-          <div className="bg-surface/60 rounded-xl p-6 mt-6">
+          <div className="bg-surface/60 rounded-xl p-6 mt-6 border border-border/50 shadow-lg shadow-black/10">
             <details>
               <summary className="cursor-pointer select-none text-text-secondary hover:text-text-primary transition-colors">
                 <span className="text-lg font-semibold">Past &amp; Completed ({pastItems.length})</span>

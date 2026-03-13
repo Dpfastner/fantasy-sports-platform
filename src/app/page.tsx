@@ -84,7 +84,7 @@ export default async function Home() {
         </div>
 
         {/* Live & Upcoming Events */}
-        <div className="bg-surface rounded-xl p-6 mb-16">
+        <div className="bg-surface rounded-xl p-6 mb-16 border border-border/50 shadow-lg shadow-black/10">
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-2xl font-bold">Live &amp; Upcoming</h2>
             <Link href="/events" className="text-sm text-brand hover:text-brand-hover transition-colors">
@@ -200,7 +200,7 @@ export default async function Home() {
         </div>
 
         {/* CTA Section */}
-        <div className="bg-highlight-row rounded-xl p-8 text-center">
+        <div className="bg-highlight-row rounded-xl p-8 text-center border border-border/50 shadow-lg shadow-black/10">
           <h2 className="text-2xl font-bold mb-4">
             Jump into the action
           </h2>
