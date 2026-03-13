@@ -176,11 +176,14 @@ export default async function EventDetailPage({ params }: PageProps) {
 
           {/* Right: Sidebar */}
           <div className="space-y-6">
-            {/* Rules */}
+            {/* Rules (collapsible, starts collapsed) */}
             {tournament.rules_text && (
-              <div className="bg-surface rounded-lg border border-border p-5">
-                <h3 className="brand-h3 text-lg text-text-primary mb-3">Rules</h3>
-                <div className="text-text-secondary text-sm prose-sm prose-invert max-w-none space-y-2 [&_h2]:text-text-primary [&_h2]:text-base [&_h2]:font-semibold [&_h2]:mt-4 [&_h2]:mb-1 [&_h3]:text-text-primary [&_h3]:text-sm [&_h3]:font-semibold [&_h3]:mt-3 [&_h3]:mb-1 [&_ul]:list-disc [&_ul]:pl-4 [&_li]:mb-1">
+              <details className="bg-surface rounded-lg border border-border p-5 group">
+                <summary className="brand-h3 text-lg text-text-primary cursor-pointer list-none flex items-center justify-between">
+                  Rules
+                  <svg className="w-4 h-4 text-text-muted transition-transform group-open:rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" /></svg>
+                </summary>
+                <div className="text-text-secondary text-sm prose-sm prose-invert max-w-none space-y-2 mt-3 [&_h2]:text-text-primary [&_h2]:text-base [&_h2]:font-semibold [&_h2]:mt-4 [&_h2]:mb-1 [&_h3]:text-text-primary [&_h3]:text-sm [&_h3]:font-semibold [&_h3]:mt-3 [&_h3]:mb-1 [&_ul]:list-disc [&_ul]:pl-4 [&_li]:mb-1">
                   {tournament.rules_text.split('\n').map((line: string, i: number) => {
                     if (line.startsWith('## ')) return <h2 key={i}>{line.replace('## ', '')}</h2>
                     if (line.startsWith('### ')) return <h3 key={i}>{line.replace('### ', '')}</h3>
@@ -190,7 +193,7 @@ export default async function EventDetailPage({ params }: PageProps) {
                     return <p key={i}>{line}</p>
                   })}
                 </div>
-              </div>
+              </details>
             )}
 
             {/* Participants */}
