@@ -239,7 +239,43 @@ export default async function DashboardPage() {
     })
   }
 
+  // Upcoming events the user hasn't joined
+  const joinedTournamentIds = new Set(eventPools.map(p => p.tournamentId))
+  const { data: allTournaments } = await admin
+    .from('event_tournaments')
+    .select('id, name, slug, sport, format, status, description, starts_at, ends_at')
+    .in('status', ['upcoming', 'active'])
+    .order('starts_at', { ascending: true })
+
+  const unjoinedTournaments = (allTournaments || []).filter(t => !joinedTournamentIds.has(t.id))
+
+  // Pool counts for unjoined tournaments
+  let featuredPoolCounts: Record<string, number> = {}
+  if (unjoinedTournaments.length > 0) {
+    const { data: featuredPools } = await admin
+      .from('event_pools')
+      .select('tournament_id')
+      .in('tournament_id', unjoinedTournaments.map(t => t.id))
+    for (const p of featuredPools || []) {
+      featuredPoolCounts[p.tournament_id] = (featuredPoolCounts[p.tournament_id] || 0) + 1
+    }
+  }
+
+  // Sort: active first, then upcoming by date. Limit to 3.
+  const featuredEvents = unjoinedTournaments
+    .sort((a, b) => {
+      if (a.status !== b.status) return a.status === 'active' ? -1 : 1
+      return new Date(a.starts_at).getTime() - new Date(b.starts_at).getTime()
+    })
+    .slice(0, 3)
+
   const referralUrl = `https://rivyls.com/welcome?ref=${user.id}`
+
+  const statusStyles: Record<string, string> = {
+    active: 'bg-success/20 text-success-text',
+    upcoming: 'bg-brand/20 text-brand',
+    completed: 'bg-surface-inset text-text-muted',
+  }
 
   // --- Unified dashboard items ---
   const sportMeta: Record<string, { icon: string; label: string; borderColor: string }> = {
@@ -437,70 +473,69 @@ export default async function DashboardPage() {
           />
         </div>
 
-        {/* Title + Actions */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
-          <h1 className="text-3xl font-bold text-text-primary">Locker Room</h1>
-          <div className="flex flex-wrap gap-3">
-            <Link
-              href="/leagues/join"
-              className="bg-surface hover:bg-surface-subtle text-text-primary font-semibold py-2 px-4 rounded-lg transition-all border border-border hover:border-brand/40 hover:shadow-md text-sm"
-            >
-              Join League
-            </Link>
-            <Link
-              href="/leagues/create"
-              className="bg-brand hover:bg-brand-hover text-text-primary font-semibold py-2 px-4 rounded-lg transition-colors text-sm"
-            >
-              Create League
-            </Link>
-            <Link
-              href="/events"
-              className="bg-surface hover:bg-surface-subtle text-text-primary font-semibold py-2 px-4 rounded-lg transition-all border border-border hover:border-brand/40 hover:shadow-md text-sm"
-            >
-              Browse Events &rarr;
-            </Link>
-          </div>
-        </div>
-
-        {/* Unified Grid */}
-        {!hasAnyItems ? (
-          <div className="bg-surface rounded-lg p-8 text-center">
-            <div className="text-5xl mb-4">{'\uD83C\uDFC6'}</div>
-            <h2 className="text-xl font-semibold text-text-primary mb-2">
-              No games yet
-            </h2>
-            <p className="text-text-secondary mb-6">
-              Create or join a league, or browse prediction events to get started.
-            </p>
-            <div className="flex flex-wrap gap-4 justify-center">
+        {/* Locker Room Block */}
+        <div className="bg-surface rounded-xl p-6">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+            <h1 className="text-3xl font-bold text-text-primary">Locker Room</h1>
+            <div className="flex flex-wrap gap-3">
               <Link
                 href="/leagues/join"
-                className="bg-surface hover:bg-surface-subtle text-text-primary font-semibold py-2 px-6 rounded-lg transition-all border border-border hover:border-brand/40 hover:shadow-md"
+                className="bg-surface-subtle hover:bg-surface-inset text-text-primary font-semibold py-2 px-4 rounded-lg transition-all border border-border hover:border-brand/40 hover:shadow-md text-sm"
               >
-                Join with Code
+                Join League
               </Link>
               <Link
                 href="/leagues/create"
-                className="bg-brand hover:bg-brand-hover text-text-primary font-semibold py-2 px-6 rounded-lg transition-colors"
+                className="bg-brand hover:bg-brand-hover text-text-primary font-semibold py-2 px-4 rounded-lg transition-colors text-sm"
               >
                 Create League
               </Link>
               <Link
                 href="/events"
-                className="bg-surface hover:bg-surface-subtle text-text-primary font-semibold py-2 px-6 rounded-lg transition-all border border-border hover:border-brand/40 hover:shadow-md"
+                className="bg-surface-subtle hover:bg-surface-inset text-text-primary font-semibold py-2 px-4 rounded-lg transition-all border border-border hover:border-brand/40 hover:shadow-md text-sm"
               >
-                Browse Events
+                Browse Events &rarr;
               </Link>
             </div>
           </div>
-        ) : (
-          <>
+
+          {!hasAnyItems ? (
+            <div className="text-center py-8">
+              <div className="text-5xl mb-4">{'\uD83C\uDFC6'}</div>
+              <h2 className="text-xl font-semibold text-text-primary mb-2">
+                No games yet
+              </h2>
+              <p className="text-text-secondary mb-6">
+                Create or join a league, or browse prediction events to get started.
+              </p>
+              <div className="flex flex-wrap gap-4 justify-center">
+                <Link
+                  href="/leagues/join"
+                  className="bg-surface-subtle hover:bg-surface-inset text-text-primary font-semibold py-2 px-6 rounded-lg transition-all border border-border hover:border-brand/40 hover:shadow-md"
+                >
+                  Join with Code
+                </Link>
+                <Link
+                  href="/leagues/create"
+                  className="bg-brand hover:bg-brand-hover text-text-primary font-semibold py-2 px-6 rounded-lg transition-colors"
+                >
+                  Create League
+                </Link>
+                <Link
+                  href="/events"
+                  className="bg-surface-subtle hover:bg-surface-inset text-text-primary font-semibold py-2 px-6 rounded-lg transition-all border border-border hover:border-brand/40 hover:shadow-md"
+                >
+                  Browse Events
+                </Link>
+              </div>
+            </div>
+          ) : (
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
               {activeItems.map((item) => (
                 <Link
                   key={`${item.type}-${item.id}`}
                   href={item.href}
-                  className={`bg-surface rounded-lg p-5 hover:bg-surface-subtle transition-all border border-border hover:border-brand/40 hover:shadow-md border-l-4 ${item.borderColor}`}
+                  className={`bg-surface-subtle rounded-lg p-5 hover:bg-surface-inset transition-all border border-border hover:border-brand/40 hover:shadow-md border-l-4 ${item.borderColor}`}
                 >
                   <div className="flex justify-between items-start mb-2">
                     <div className="min-w-0 flex-1 flex items-center gap-2">
@@ -564,42 +599,111 @@ export default async function DashboardPage() {
                 </Link>
               ))}
             </div>
+          )}
+        </div>
 
-            {/* Past / Completed / Dormant */}
-            {pastItems.length > 0 && (
-              <details className="mt-6">
-                <summary className="cursor-pointer select-none text-text-secondary hover:text-text-primary transition-colors">
-                  <span className="text-lg font-semibold">Past &amp; Completed ({pastItems.length})</span>
-                </summary>
-                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4 mt-4">
-                  {pastItems.map((item) => (
-                    <Link
-                      key={`${item.type}-${item.id}`}
-                      href={item.href}
-                      className="bg-surface/60 rounded-lg p-5 hover:bg-surface-subtle transition-all border border-border/50 opacity-75 hover:opacity-100"
-                    >
-                      <div className="flex justify-between items-start mb-3">
-                        <h3 className="text-lg font-semibold text-text-secondary truncate">
-                          {item.name}
-                        </h3>
-                        <span className={`text-xs font-medium px-2 py-0.5 rounded-full shrink-0 ml-2 ${
-                          item.type === 'league'
-                            ? 'bg-brand/15 text-brand-text'
-                            : 'bg-accent/15 text-accent-text'
-                        }`}>
-                          {item.type === 'league' ? 'League' : item.format || 'Event'}
+        {/* Upcoming Events Block */}
+        {featuredEvents.length > 0 && (
+          <div className="bg-surface-subtle rounded-xl p-6 mt-6">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-bold text-text-primary">Upcoming Events</h2>
+              {unjoinedTournaments.length > 3 && (
+                <Link href="/events" className="text-sm text-brand hover:text-brand-hover transition-colors">
+                  Browse all &rarr;
+                </Link>
+              )}
+            </div>
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {featuredEvents.map((tournament) => {
+                const meta = sportMeta[tournament.sport] || defaultSportMeta
+                const startsAt = new Date(tournament.starts_at)
+                const now = new Date()
+                const daysUntil = Math.ceil((startsAt.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+                const pools = featuredPoolCounts[tournament.id] || 0
+                return (
+                  <Link
+                    key={tournament.id}
+                    href={`/events/${tournament.slug}`}
+                    className={`bg-surface rounded-lg border border-border hover:border-brand/40 hover:shadow-md transition-all group border-l-4 ${meta.borderColor}`}
+                  >
+                    <div className="p-5 pb-3">
+                      <div className="flex items-start justify-between mb-2">
+                        <div className="min-w-0 flex-1 flex items-center gap-2">
+                          <span className="text-2xl shrink-0">{meta.icon}</span>
+                          <div className="min-w-0">
+                            <h3 className="text-lg font-semibold text-text-primary group-hover:text-brand transition-colors truncate">
+                              {tournament.name}
+                            </h3>
+                          </div>
+                        </div>
+                        <span className={`text-xs font-medium px-2 py-0.5 rounded-full shrink-0 ml-2 ${statusStyles[tournament.status] || ''}`}>
+                          {tournament.status === 'upcoming' && daysUntil > 0
+                            ? `Starts in ${daysUntil}d`
+                            : tournament.status === 'active'
+                            ? 'Live'
+                            : tournament.status}
                         </span>
                       </div>
-                      <div className="space-y-1 text-text-muted text-sm">
-                        <p>{item.subtitle}</p>
-                        {item.score !== null && <p>{'\u2B50'} {item.score} pts</p>}
+                      {tournament.description && (
+                        <p className="text-text-muted text-sm line-clamp-2 ml-9">{tournament.description}</p>
+                      )}
+                    </div>
+                    <div className="px-5 py-3 border-t border-border-subtle flex items-center justify-between text-sm">
+                      <div className="flex items-center gap-4 text-text-secondary">
+                        <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-accent/15 text-accent-text">
+                          {formatLabel[tournament.format] || tournament.format}
+                        </span>
+                        <span>{pools} pool{pools !== 1 ? 's' : ''}</span>
                       </div>
-                    </Link>
-                  ))}
-                </div>
-              </details>
-            )}
-          </>
+                      <span className="text-text-muted text-xs">
+                        {startsAt.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                        {tournament.ends_at && (
+                          <> &ndash; {new Date(tournament.ends_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</>
+                        )}
+                      </span>
+                    </div>
+                  </Link>
+                )
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Past / Completed / Dormant Block */}
+        {pastItems.length > 0 && (
+          <div className="bg-surface/60 rounded-xl p-6 mt-6">
+            <details>
+              <summary className="cursor-pointer select-none text-text-secondary hover:text-text-primary transition-colors">
+                <span className="text-lg font-semibold">Past &amp; Completed ({pastItems.length})</span>
+              </summary>
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4 mt-4">
+                {pastItems.map((item) => (
+                  <Link
+                    key={`${item.type}-${item.id}`}
+                    href={item.href}
+                    className="bg-surface/60 rounded-lg p-5 hover:bg-surface-subtle transition-all border border-border/50 opacity-75 hover:opacity-100"
+                  >
+                    <div className="flex justify-between items-start mb-3">
+                      <h3 className="text-lg font-semibold text-text-secondary truncate">
+                        {item.name}
+                      </h3>
+                      <span className={`text-xs font-medium px-2 py-0.5 rounded-full shrink-0 ml-2 ${
+                        item.type === 'league'
+                          ? 'bg-brand/15 text-brand-text'
+                          : 'bg-accent/15 text-accent-text'
+                      }`}>
+                        {item.type === 'league' ? 'League' : item.format || 'Event'}
+                      </span>
+                    </div>
+                    <div className="space-y-1 text-text-muted text-sm">
+                      <p>{item.subtitle}</p>
+                      {item.score !== null && <p>{'\u2B50'} {item.score} pts</p>}
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            </details>
+          </div>
         )}
       </main>
     </div>
