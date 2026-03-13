@@ -105,12 +105,25 @@ export default async function PoolDetailPage({ params }: PageProps) {
     .eq('tournament_id', tournament.id)
     .order('game_number', { ascending: true })
 
-  // Get entries (members)
+  // Get entries (members) — no FK join on user_id since it's nullable after soft-delete
   const { data: entries } = await admin
     .from('event_entries')
-    .select('id, user_id, display_name, is_active, submitted_at, total_points, tiebreaker_prediction, profiles(display_name, email)')
+    .select('id, user_id, display_name, is_active, submitted_at, total_points, tiebreaker_prediction')
     .eq('pool_id', poolId)
     .order('total_points', { ascending: pool.game_type === 'roster' })
+
+  // Fetch profiles separately for entries that have a user_id
+  const entryUserIds = (entries || []).map(e => e.user_id).filter(Boolean) as string[]
+  let profileMap: Record<string, { display_name: string | null; email: string }> = {}
+  if (entryUserIds.length > 0) {
+    const { data: profiles } = await admin
+      .from('profiles')
+      .select('id, display_name, email')
+      .in('id', entryUserIds)
+    for (const p of (profiles || [])) {
+      profileMap[p.id] = { display_name: p.display_name, email: p.email }
+    }
+  }
 
   // Get current user's entries — auto-join if creator without entry
   const userEntries = user
@@ -205,15 +218,15 @@ export default async function PoolDetailPage({ params }: PageProps) {
   let rosterSelectionCounts: Record<string, number> = {}
   const poolScoringRules = (pool.scoring_rules || {}) as Record<string, unknown>
   if (poolScoringRules.draft_mode === 'limited' && poolScoringRules.selection_cap) {
-    const { data: allRosterPicks } = await admin
+    const { data: limitedPicks } = await admin
       .from('event_picks')
       .select('participant_id, entry_id')
       .in('entry_id', (entries || []).map(e => e.id))
       .is('game_id', null)
       .is('week_number', null)
 
-    if (allRosterPicks) {
-      for (const pick of allRosterPicks) {
+    if (limitedPicks) {
+      for (const pick of limitedPicks) {
         rosterSelectionCounts[pick.participant_id] = (rosterSelectionCounts[pick.participant_id] || 0) + 1
       }
     }
@@ -231,7 +244,7 @@ export default async function PoolDetailPage({ params }: PageProps) {
 
   // Format entries for client (compute rank from sorted total_points)
   const members = (entries || []).map((e, idx) => {
-    const p = e.profiles as unknown as { display_name: string | null; email: string } | null
+    const p = e.user_id ? profileMap[e.user_id] : null
 
     // Calculate max possible points for this entry
     let maxPossible = Number(e.total_points) || 0

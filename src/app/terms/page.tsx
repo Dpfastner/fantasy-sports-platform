@@ -27,7 +27,7 @@ export default function TermsPage() {
           <h1 className="text-2xl font-bold mb-1">Terms of Service</h1>
           <div className="text-sm text-text-muted">
             <span className="mr-4">Effective Date: April 1, 2026</span>
-            <span>Last Updated: March 12, 2026</span>
+            <span>Last Updated: March 13, 2026</span>
           </div>
         </div>
 
@@ -62,7 +62,7 @@ export default function TermsPage() {
           <h2>4. Description of Services</h2>
           <h3>4.1 Platform Overview</h3>
           <p>Rivyls is a fantasy sports entertainment platform that allows users to participate in fantasy leagues where they draft entire sports programs (e.g., college football teams/schools) rather than individual players. Users earn points based on the real-world performance of their selected programs, including but not limited to wins, ranked opponent victories, shutouts, conference championships, and playoff appearances.</p>
-          <p>In addition to season-long fantasy leagues, Rivyls offers prediction-based games including bracket pools (predicting tournament outcomes), pick&rsquo;em pools (predicting game winners on a weekly basis), and survivor pools (selecting one winner per week with elimination upon an incorrect pick). These prediction-based games are available across multiple sports including but not limited to college football, college hockey, golf, and other sports as added from time to time. Like fantasy leagues, all prediction-based games are currently provided free of charge and do not involve real-money entry fees, wagering, or cash prizes.</p>
+          <p>In addition to season-long fantasy leagues, Rivyls offers prediction-based games including bracket pools (predicting tournament outcomes), pick&rsquo;em pools (predicting game winners on a weekly basis), survivor pools (selecting one winner per week with elimination upon an incorrect pick), and roster pools (selecting a roster of participants across skill tiers with aggregate scoring based on real-world performance). These prediction-based games are available across multiple sports including but not limited to college football, college hockey, golf, and other sports as added from time to time. Like fantasy leagues, all prediction-based games are currently provided free of charge and do not involve real-money entry fees, wagering, or cash prizes.</p>
           <h3>4.2 Entertainment Purpose and Regulatory Classification</h3>
           <p>The Services are provided solely for entertainment, recreation, and amusement purposes. Rivyls is classified under NAICS Code 713990 (All Other Amusement and Recreation Industries) and operates exclusively as an entertainment and recreation service. The Services are not gambling, sports betting, wagering, or games of chance. Rivyls does not operate a sportsbook, casino, or any form of regulated gaming activity.</p>
           <p>Fantasy sports contests and prediction-based games offered through the Services are games of skill. The outcome of leagues, pools, and contests is determined predominantly by the knowledge, attention, experience, research, and skill of the participants in selecting and managing their drafted programs, making predictions, and analyzing matchups.</p>

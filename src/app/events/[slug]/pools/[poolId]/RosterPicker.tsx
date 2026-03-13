@@ -318,13 +318,6 @@ export function RosterPicker({
         )}
       </div>
 
-      {/* Limited mode info */}
-      {isLimitedMode && (
-        <div className="bg-info/10 border border-info/20 rounded-lg p-3 mb-4 text-sm text-info-text">
-          Limited pick mode — each golfer can be selected by up to {selectionCap} entries across the pool.
-        </div>
-      )}
-
       {/* Locked warning */}
       {isLocked && (
         <div className="bg-warning/10 border border-warning/20 rounded-lg p-3 mb-4 text-sm text-warning-text">

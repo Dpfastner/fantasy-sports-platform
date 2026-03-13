@@ -46,7 +46,7 @@ interface Game {
 
 interface Member {
   id: string
-  userId: string
+  userId: string | null
   displayName: string
   isActive: boolean
   submittedAt: string | null
@@ -709,7 +709,11 @@ export function PoolDetailClient({
               <div className="flex items-center gap-3">
                 <span className="text-text-muted text-sm w-6 text-right">{i + 1}</span>
                 <div>
-                  <Link href={`/profile/${member.userId}`} className="text-text-primary text-sm font-medium hover:underline">{member.displayName}</Link>
+                  {member.userId ? (
+                    <Link href={`/profile/${member.userId}`} className="text-text-primary text-sm font-medium hover:underline">{member.displayName}</Link>
+                  ) : (
+                    <span className="text-sm text-text-muted italic">{member.displayName}</span>
+                  )}
                   {!member.isActive && (
                     <span className="ml-2 text-xs text-danger-text">Eliminated</span>
                   )}

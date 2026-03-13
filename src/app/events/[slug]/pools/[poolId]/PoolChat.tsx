@@ -4,11 +4,11 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 
 interface ChatMessage {
   id: string
-  user_id: string
+  user_id: string | null
   display_name: string
   content: string
   created_at: string
-  reactions: { emoji: string; user_id: string }[]
+  reactions: { emoji: string; user_id: string | null }[]
 }
 
 const EMOJI_OPTIONS = ['\u{1F44D}', '\u{1F44E}', '\u{1F602}', '\u{1F525}', '\u{2764}\u{FE0F}', '\u{1F62E}', '\u{1F3D2}', '\u{1F3C6}', '\u{1F389}']
@@ -122,6 +122,7 @@ export function PoolChat({ poolId, userId }: PoolChatProps) {
           // Group reactions by emoji
           const reactionGroups: Record<string, string[]> = {}
           for (const r of msg.reactions) {
+            if (!r.user_id) continue
             if (!reactionGroups[r.emoji]) reactionGroups[r.emoji] = []
             reactionGroups[r.emoji].push(r.user_id)
           }
@@ -148,7 +149,7 @@ export function PoolChat({ poolId, userId }: PoolChatProps) {
                       key={emoji}
                       onClick={() => handleReaction(msg.id, emoji)}
                       className={`text-xs px-1.5 py-0.5 rounded-full border transition-colors ${
-                        users.includes(userId)
+                        userId != null && users.includes(userId)
                           ? 'border-brand/40 bg-brand/10'
                           : 'border-border bg-surface-inset hover:border-brand/20'
                       }`}

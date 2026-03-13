@@ -58,6 +58,18 @@ const FAQ_DATA: FaqCategory[] = [
         answer: 'You earn points for each correct pick. Points increase in later rounds — for example, 2 points for quarterfinals up to 16 points for the championship. The pool creator can choose from scoring presets (Standard, Upset Heavy, Final Four Focus) or set custom point values for each round.',
       },
       {
+        question: 'How do roster pools work?',
+        answer: 'In a roster pool, you build a team by selecting participants from different skill tiers (e.g., Tier A: top-ranked, Tier B: mid-ranked, Tier C: lower-ranked). Each tier has a set number of picks. Your best scores count toward your total — for example, best 5 of 7 in a golf roster. This format is used for tournaments like The Masters where individual performance is scored.',
+      },
+      {
+        question: 'How is golf scoring calculated in roster pools?',
+        answer: 'Golf roster pools use score-to-par (e.g., -5, E, +3). Your total is the sum of your best counting golfers\' scores-to-par. Lower is better — just like real golf. Scores update live during tournament rounds, and you can see round-by-round breakdowns (R1-R4) for each golfer in your roster.',
+      },
+      {
+        question: 'What are multi-format events?',
+        answer: 'Some tournaments offer multiple pool types under one event. For example, The Masters might have both pick\'em pools (predict matchup winners) and roster pools (build a golfer roster). You can join different pool types within the same event and compete separately in each.',
+      },
+      {
         question: 'What sports are available for events?',
         answer: 'Events are available across multiple sports including college hockey, golf, college football, and more as they\'re added. Each sport has its own tournaments and game formats.',
       },
