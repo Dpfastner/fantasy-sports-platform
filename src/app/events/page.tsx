@@ -2,16 +2,18 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { Header } from '@/components/Header'
 
-// Sport emoji map
-const sportIcon: Record<string, string> = {
-  hockey: '\uD83C\uDFD2',
-  golf: '\u26F3',
-  rugby: '\uD83C\uDFC9',
-  football: '\uD83C\uDFC8',
-  basketball: '\uD83C\uDFC0',
-  baseball: '\u26BE',
-  soccer: '\u26BD',
+// Sport metadata (matches Locker Room dashboard)
+const sportMeta: Record<string, { icon: string; label: string; borderColor: string }> = {
+  college_football: { icon: '\uD83C\uDFC8', label: 'Football', borderColor: 'border-l-orange-500' },
+  hockey: { icon: '\uD83C\uDFD2', label: 'Hockey', borderColor: 'border-l-blue-500' },
+  golf: { icon: '\u26F3', label: 'Golf', borderColor: 'border-l-green-500' },
+  rugby: { icon: '\uD83C\uDFC9', label: 'Rugby', borderColor: 'border-l-red-500' },
+  football: { icon: '\uD83C\uDFC8', label: 'Football', borderColor: 'border-l-orange-500' },
+  basketball: { icon: '\uD83C\uDFC0', label: 'Basketball', borderColor: 'border-l-amber-500' },
+  baseball: { icon: '\u26BE', label: 'Baseball', borderColor: 'border-l-red-500' },
+  soccer: { icon: '\u26BD', label: 'Soccer', borderColor: 'border-l-green-500' },
 }
+const defaultSportMeta = { icon: '\uD83C\uDFC8', label: 'Football', borderColor: 'border-l-orange-500' }
 
 const formatLabel: Record<string, string> = {
   bracket: 'Bracket',
@@ -107,25 +109,42 @@ export default async function EventsPage() {
             <p className="text-text-muted">Check back soon for upcoming tournaments and competitions.</p>
           </div>
         ) : (
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {tournaments.map((tournament) => {
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {[...tournaments]
+              .sort((a, b) => {
+                // Group by sport, then by start date
+                if (a.sport !== b.sport) {
+                  const labelA = (sportMeta[a.sport] || defaultSportMeta).label
+                  const labelB = (sportMeta[b.sport] || defaultSportMeta).label
+                  return labelA.localeCompare(labelB)
+                }
+                return new Date(a.starts_at).getTime() - new Date(b.starts_at).getTime()
+              })
+              .map((tournament) => {
               const startsAt = new Date(tournament.starts_at)
               const daysUntil = Math.ceil((startsAt.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
               const isJoined = userTournamentIds.has(tournament.id)
               const pools = poolCounts[tournament.id] || 0
-              const icon = sportIcon[tournament.sport] || '\uD83C\uDFC6'
+              const meta = sportMeta[tournament.sport] || defaultSportMeta
 
               return (
                 <Link
                   key={tournament.id}
                   href={`/events/${tournament.slug}`}
-                  className="bg-surface rounded-lg border border-border hover:border-brand/40 hover:shadow-md transition-all group"
+                  className={`bg-surface rounded-lg border border-border hover:border-brand/40 hover:shadow-md transition-all group border-l-4 ${meta.borderColor}`}
                 >
                   {/* Card Header */}
                   <div className="p-5 pb-3">
-                    <div className="flex items-start justify-between mb-3">
-                      <div className="flex items-center gap-2">
-                        <span className="text-2xl">{icon}</span>
+                    <div className="flex items-start justify-between mb-2">
+                      <div className="min-w-0 flex-1 flex items-center gap-2">
+                        <span className="text-2xl shrink-0">{meta.icon}</span>
+                        <div className="min-w-0">
+                          <h2 className="brand-h3 text-lg text-text-primary group-hover:text-brand transition-colors truncate">
+                            {tournament.name}
+                          </h2>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1.5 shrink-0 ml-2">
                         <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${statusStyles[tournament.status] || ''}`}>
                           {tournament.status === 'upcoming' && daysUntil > 0
                             ? `Starts in ${daysUntil}d`
@@ -133,18 +152,15 @@ export default async function EventsPage() {
                             ? 'Live'
                             : tournament.status}
                         </span>
+                        {isJoined && (
+                          <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-success/20 text-success-text">
+                            Joined
+                          </span>
+                        )}
                       </div>
-                      {isJoined && (
-                        <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-success/20 text-success-text">
-                          Joined
-                        </span>
-                      )}
                     </div>
 
-                    <h2 className="brand-h3 text-lg text-text-primary group-hover:text-brand transition-colors mb-1">
-                      {tournament.name}
-                    </h2>
-                    <p className="text-text-muted text-sm line-clamp-2">
+                    <p className="text-text-muted text-sm line-clamp-2 ml-9">
                       {tournament.description}
                     </p>
                   </div>
@@ -152,7 +168,9 @@ export default async function EventsPage() {
                   {/* Card Footer */}
                   <div className="px-5 py-3 border-t border-border-subtle flex items-center justify-between text-sm">
                     <div className="flex items-center gap-4 text-text-secondary">
-                      <span className="capitalize">{formatLabel[tournament.format] || tournament.format}</span>
+                      <span className={`text-xs font-medium px-2 py-0.5 rounded-full bg-accent/15 text-accent-text`}>
+                        {formatLabel[tournament.format] || tournament.format}
+                      </span>
                       <span>{pools} pool{pools !== 1 ? 's' : ''}</span>
                     </div>
                     <span className="text-text-muted text-xs">
