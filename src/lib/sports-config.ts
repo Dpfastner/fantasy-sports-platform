@@ -16,21 +16,43 @@ export const SPORTS: SportConfig[] = [
     shortName: 'CFB',
     icon: '🏈',
     description:
-      'Draft real college football programs, compete head-to-head with friends, and chase weekly prizes all season long.',
+      'Draft real college football programs and chase weekly prizes all season long.',
     status: 'active',
     seasonLabel: 'Season',
     tagline: 'Draft teams. Score points. Win your league.',
   },
   {
+    id: 'hockey',
+    name: 'Hockey',
+    shortName: 'Hockey',
+    icon: '🏒',
+    description:
+      'Bracket predictions for the Frozen Four and NCAA hockey tournaments.',
+    status: 'active',
+    seasonLabel: 'Tournament',
+    tagline: 'Fill your bracket. Predict the champion.',
+  },
+  {
     id: 'golf',
-    name: 'Masters Tournament',
+    name: 'Golf',
     shortName: 'Golf',
     icon: '⛳',
     description:
-      'Build your bracket of golfers and compete through the most prestigious tournament in golf.',
-    status: 'coming_soon',
+      'Build your roster and compete through the biggest tournaments in golf.',
+    status: 'active',
     seasonLabel: 'Tournament',
     tagline: 'Pick your golfers. Watch the leaderboard.',
+  },
+  {
+    id: 'rugby',
+    name: 'Rugby',
+    shortName: 'Rugby',
+    icon: '🏉',
+    description:
+      'Survivor and pick\'em leagues for the Six Nations Championship.',
+    status: 'active',
+    seasonLabel: 'Tournament',
+    tagline: 'Survive each round. Be the last one standing.',
   },
 ]
 

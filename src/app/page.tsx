@@ -145,7 +145,7 @@ export default async function Home() {
               })}
             </div>
           ) : (
-            <div className="grid md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div className="bg-surface-subtle p-5 rounded-lg border-l-4 border-l-orange-500">
                 <span className="text-2xl">🏈</span>
                 <h3 className="text-lg font-semibold mt-2">Football</h3>
@@ -160,6 +160,11 @@ export default async function Home() {
                 <span className="text-2xl">⛳</span>
                 <h3 className="text-lg font-semibold mt-2">Golf</h3>
                 <p className="text-text-secondary text-sm mt-1">Roster competitions for major golf tournaments</p>
+              </div>
+              <div className="bg-surface-subtle p-5 rounded-lg border-l-4 border-l-red-500">
+                <span className="text-2xl">🏉</span>
+                <h3 className="text-lg font-semibold mt-2">Rugby</h3>
+                <p className="text-text-secondary text-sm mt-1">Survivor and pick'em for the Six Nations</p>
               </div>
             </div>
           )}

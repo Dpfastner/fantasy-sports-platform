@@ -95,28 +95,24 @@ export default function WelcomePage() {
           <h2 className="brand-h2 text-2xl md:text-4xl text-text-primary text-center mb-12 md:mb-16">
             Pick Your Sport
           </h2>
-          <div className="grid md:grid-cols-2 gap-6 md:gap-8 max-w-3xl mx-auto">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 max-w-4xl mx-auto">
             {SPORTS.map((sport) => (
               <div
                 key={sport.id}
-                className={`rounded-xl p-6 md:p-8 border ${
+                className={`rounded-xl p-4 md:p-5 border text-center ${
                   sport.status === 'active'
                     ? 'bg-surface-subtle border-brand/40'
                     : 'bg-surface border-border opacity-70'
                 }`}
               >
-                <div className="flex items-center gap-3 mb-3">
-                  <span className="text-3xl">{sport.icon}</span>
-                  <div>
-                    <h3 className="brand-h3 text-xl text-text-primary">{sport.name}</h3>
-                    {sport.status === 'coming_soon' && (
-                      <span className="text-xs font-medium text-warning-text bg-warning-bg px-2 py-0.5 rounded-full">
-                        Coming Soon
-                      </span>
-                    )}
-                  </div>
-                </div>
-                <p className="text-text-secondary text-sm leading-relaxed">{sport.description}</p>
+                <span className="text-3xl block mb-2">{sport.icon}</span>
+                <h3 className="brand-h3 text-base md:text-lg text-text-primary mb-1">{sport.shortName}</h3>
+                {sport.status === 'coming_soon' && (
+                  <span className="text-xs font-medium text-warning-text bg-warning-bg px-2 py-0.5 rounded-full">
+                    Coming Soon
+                  </span>
+                )}
+                <p className="text-text-secondary text-xs leading-relaxed hidden md:block">{sport.description}</p>
               </div>
             ))}
           </div>

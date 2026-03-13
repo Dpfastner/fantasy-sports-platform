@@ -451,15 +451,18 @@ export default async function DashboardPage() {
     <div className="min-h-screen bg-gradient-to-b from-gradient-from to-gradient-to">
       <Header userName={profile?.display_name} userEmail={user.email} userId={user.id} />
 
-      <main className="container mx-auto px-4 py-8">
-        {queryFailed && (
-          <div className="bg-danger/10 border border-danger text-danger-text px-4 py-3 rounded-lg mb-6">
+      {/* Error Banner */}
+      {queryFailed && (
+        <div className="container mx-auto px-4 pt-4">
+          <div className="bg-danger/10 border border-danger text-danger-text px-4 py-3 rounded-lg">
             Something went wrong loading your data. Try refreshing the page. If the problem persists, check your internet connection.
           </div>
-        )}
+        </div>
+      )}
 
-        {/* Fan Zone — at the top */}
-        <div className="mb-8">
+      {/* Fan Zone */}
+      <section className="py-6">
+        <div className="container mx-auto px-4">
           <FanZoneWidget
             userSchool={userSchool}
             fanDistribution={fanDistribution}
@@ -470,9 +473,11 @@ export default async function DashboardPage() {
             userId={user.id}
           />
         </div>
+      </section>
 
-        {/* Locker Room Block */}
-        <div className="bg-surface rounded-xl p-6 border border-border/50 shadow-lg shadow-black/10">
+      {/* Locker Room */}
+      <section className="bg-surface py-8">
+        <div className="container mx-auto px-4">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
             <h1 className="text-3xl font-bold text-text-primary">Locker Room</h1>
             <div className="flex flex-wrap gap-3">
@@ -599,10 +604,12 @@ export default async function DashboardPage() {
             </div>
           )}
         </div>
+      </section>
 
-        {/* Upcoming Events Block */}
-        {featuredEvents.length > 0 && (
-          <div className="bg-surface-subtle rounded-xl p-6 mt-6 border border-border/50 shadow-lg shadow-black/10">
+      {/* Featured Events */}
+      {featuredEvents.length > 0 && (
+        <section className="bg-surface-subtle py-8">
+          <div className="container mx-auto px-4">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-xl font-bold text-text-primary">Featured Events</h2>
               {(allTournaments || []).length > 3 && (
@@ -673,11 +680,13 @@ export default async function DashboardPage() {
               })}
             </div>
           </div>
-        )}
+        </section>
+      )}
 
-        {/* Past / Completed / Dormant Block */}
-        {pastItems.length > 0 && (
-          <div className="bg-surface/60 rounded-xl p-6 mt-6 border border-border/50 shadow-lg shadow-black/10">
+      {/* Past & Completed */}
+      {pastItems.length > 0 && (
+        <section className="bg-surface/60 py-8">
+          <div className="container mx-auto px-4">
             <details>
               <summary className="cursor-pointer select-none text-text-secondary hover:text-text-primary transition-colors">
                 <span className="text-lg font-semibold">Past &amp; Completed ({pastItems.length})</span>
@@ -710,8 +719,8 @@ export default async function DashboardPage() {
               </div>
             </details>
           </div>
-        )}
-      </main>
+        </section>
+      )}
     </div>
   )
 }
