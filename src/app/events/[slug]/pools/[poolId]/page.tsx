@@ -306,6 +306,7 @@ export default async function PoolDetailPage({ params }: PageProps) {
       maxPossible,
       rank: idx + 1,
       roundsSurvived: survivorPickCounts[e.id] || 0,
+      tiebreakerPrediction: e.tiebreaker_prediction as { team1_score: number; team2_score: number } | null,
       primaryColor: (e as Record<string, unknown>).primary_color as string | null,
       secondaryColor: (e as Record<string, unknown>).secondary_color as string | null,
       imageUrl: (e as Record<string, unknown>).image_url as string | null,

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
+import { useConfirm } from '@/components/ConfirmDialog'
 import { getGamesForWeek, getSeasons, saveManualScores, clearManualOverrides } from './actions'
 
 interface GameRow {
@@ -36,6 +37,7 @@ interface SeasonOption {
 }
 
 export default function AdminScoresPage() {
+  const { confirm } = useConfirm()
   const [seasons, setSeasons] = useState<SeasonOption[]>([])
   const [seasonId, setSeasonId] = useState<string | null>(null)
   const [week, setWeek] = useState(1)
@@ -120,7 +122,13 @@ export default function AdminScoresPage() {
 
   const handleClearOverrides = async () => {
     if (!seasonId) return
-    if (!window.confirm('Clear all manual overrides for this week? ESPN data will be used on next sync.')) return
+    const confirmed = await confirm({
+      title: 'Clear Manual Overrides',
+      message: 'Clear all manual overrides for this week? ESPN data will be used on next sync.',
+      confirmLabel: 'Clear Overrides',
+      variant: 'danger',
+    })
+    if (!confirmed) return
 
     setMessage(null)
     const result = await clearManualOverrides(seasonId, week)

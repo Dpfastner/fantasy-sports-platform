@@ -70,7 +70,10 @@ export function EventPoolsClient({
   const [name, setName] = useState('')
   const [gameType, setGameType] = useState(allowedGameTypes?.[0] || tournamentFormat)
   const [visibility, setVisibility] = useState<'public' | 'private'>('private')
-  const [tiebreaker, setTiebreaker] = useState('none')
+  const effectiveGameType = isMultiFormat ? gameType : tournamentFormat
+  const [tiebreaker, setTiebreaker] = useState(
+    effectiveGameType === 'survivor' ? 'first_match_score' : 'none'
+  )
   const [maxEntries, setMaxEntries] = useState('')
   const [maxEntriesPerUser, setMaxEntriesPerUser] = useState('1')
 
@@ -241,7 +244,10 @@ export function EventPoolsClient({
                     <button
                       key={gt}
                       type="button"
-                      onClick={() => setGameType(gt)}
+                      onClick={() => {
+                        setGameType(gt)
+                        setTiebreaker(gt === 'survivor' ? 'first_match_score' : 'none')
+                      }}
                       className={`flex-1 text-sm py-1.5 rounded-md border transition-colors ${
                         gameType === gt
                           ? 'border-brand bg-brand/10 text-brand'

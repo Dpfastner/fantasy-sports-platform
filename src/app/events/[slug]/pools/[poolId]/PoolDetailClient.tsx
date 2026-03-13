@@ -54,6 +54,7 @@ interface Member {
   maxPossible: number
   rank: number | null
   roundsSurvived?: number
+  tiebreakerPrediction?: { team1_score: number; team2_score: number } | null
   primaryColor?: string | null
   secondaryColor?: string | null
   imageUrl?: string | null
@@ -507,6 +508,7 @@ export function PoolDetailClient({
               members={members}
               format={effectiveFormat}
               poolStatus={pool.status}
+              tiebreaker={pool.tiebreaker}
             />
           )}
 

@@ -4,6 +4,7 @@ import { useState, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
+import { useToast } from '@/components/Toast'
 import { track } from '@vercel/analytics'
 
 function SignUpForm() {
@@ -21,6 +22,7 @@ function SignUpForm() {
   const [success, setSuccess] = useState(false)
   const [loading, setLoading] = useState(false)
   const router = useRouter()
+  const { addToast } = useToast()
   const supabase = createClient()
 
   const handleSignUp = async (e: React.FormEvent) => {
@@ -126,7 +128,7 @@ function SignUpForm() {
                     options: { emailRedirectTo: resendRedirect },
                   })
                   if (!error) {
-                    alert('Confirmation email resent! Check your inbox.')
+                    addToast('Confirmation email resent! Check your inbox.', 'success')
                   }
                 }}
                 className="text-brand-text hover:underline"

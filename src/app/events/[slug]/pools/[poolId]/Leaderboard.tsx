@@ -12,6 +12,7 @@ interface Member {
   maxPossible: number
   rank: number | null
   roundsSurvived?: number
+  tiebreakerPrediction?: { team1_score: number; team2_score: number } | null
   primaryColor?: string | null
   secondaryColor?: string | null
   imageUrl?: string | null
@@ -21,6 +22,7 @@ interface LeaderboardProps {
   members: Member[]
   format: string
   poolStatus: string
+  tiebreaker?: string
 }
 
 function formatGolfScore(score: number): string {
@@ -29,9 +31,10 @@ function formatGolfScore(score: number): string {
   return String(score)
 }
 
-export function Leaderboard({ members, format, poolStatus }: LeaderboardProps) {
+export function Leaderboard({ members, format, poolStatus, tiebreaker }: LeaderboardProps) {
   const isRoster = format === 'roster'
   const isSurvivor = format === 'survivor'
+  const hasTiebreaker = tiebreaker && tiebreaker !== 'none'
 
   // Sort: active first, then by score (or rounds survived for survivor)
   const sorted = [...members].sort((a, b) => {
@@ -41,6 +44,17 @@ export function Leaderboard({ members, format, poolStatus }: LeaderboardProps) {
       const aRounds = a.roundsSurvived || 0
       const bRounds = b.roundsSurvived || 0
       if (aRounds !== bRounds) return bRounds - aRounds
+      // Tiebreaker: lower total predicted score = closer to conservative prediction
+      if (hasTiebreaker && a.tiebreakerPrediction && b.tiebreakerPrediction) {
+        const aTotal = a.tiebreakerPrediction.team1_score + a.tiebreakerPrediction.team2_score
+        const bTotal = b.tiebreakerPrediction.team1_score + b.tiebreakerPrediction.team2_score
+        if (aTotal !== bTotal) return aTotal - bTotal
+      }
+      // Members with a tiebreaker prediction rank above those without
+      if (hasTiebreaker) {
+        if (a.tiebreakerPrediction && !b.tiebreakerPrediction) return -1
+        if (!a.tiebreakerPrediction && b.tiebreakerPrediction) return 1
+      }
     } else {
       if (a.score !== b.score) return isRoster ? a.score - b.score : b.score - a.score
       if (!isRoster && a.maxPossible !== b.maxPossible) return b.maxPossible - a.maxPossible
@@ -65,7 +79,9 @@ export function Leaderboard({ members, format, poolStatus }: LeaderboardProps) {
           {/* Header */}
           <div className={`grid gap-2 px-3 py-2 bg-surface-inset border-b border-border text-xs text-text-muted uppercase tracking-wide ${
             isSurvivor
-              ? 'grid-cols-[2rem_1fr_4rem_4rem] sm:grid-cols-[2.5rem_1fr_5rem_5rem]'
+              ? hasTiebreaker
+                ? 'grid-cols-[2rem_1fr_3rem_3rem_3.5rem] sm:grid-cols-[2.5rem_1fr_4rem_4rem_5rem]'
+                : 'grid-cols-[2rem_1fr_4rem_4rem] sm:grid-cols-[2.5rem_1fr_5rem_5rem]'
               : showMaxPossible
               ? 'grid-cols-[2rem_1fr_3rem_3rem_5rem] sm:grid-cols-[2.5rem_1fr_4rem_4rem_6rem]'
               : 'grid-cols-[2rem_1fr_4rem_5rem] sm:grid-cols-[2.5rem_1fr_5rem_6rem]'
@@ -76,6 +92,7 @@ export function Leaderboard({ members, format, poolStatus }: LeaderboardProps) {
               <>
                 <span className="text-right">Rounds</span>
                 <span className="text-right">Status</span>
+                {hasTiebreaker && <span className="text-right">TB</span>}
               </>
             ) : (
               <>
@@ -95,7 +112,9 @@ export function Leaderboard({ members, format, poolStatus }: LeaderboardProps) {
                 key={member.id}
                 className={`grid gap-2 px-3 py-2.5 border-b border-border-subtle last:border-0 ${
                   isSurvivor
-                    ? 'grid-cols-[2rem_1fr_4rem_4rem] sm:grid-cols-[2.5rem_1fr_5rem_5rem]'
+                    ? hasTiebreaker
+                      ? 'grid-cols-[2rem_1fr_3rem_3rem_3.5rem] sm:grid-cols-[2.5rem_1fr_4rem_4rem_5rem]'
+                      : 'grid-cols-[2rem_1fr_4rem_4rem] sm:grid-cols-[2.5rem_1fr_5rem_5rem]'
                     : showMaxPossible
                     ? 'grid-cols-[2rem_1fr_3rem_3rem_5rem] sm:grid-cols-[2.5rem_1fr_4rem_4rem_6rem]'
                     : 'grid-cols-[2rem_1fr_4rem_5rem] sm:grid-cols-[2.5rem_1fr_5rem_6rem]'
@@ -128,6 +147,13 @@ export function Leaderboard({ members, format, poolStatus }: LeaderboardProps) {
                     }`}>
                       {member.isActive ? 'Alive' : 'Eliminated'}
                     </span>
+                    {hasTiebreaker && (
+                      <span className="text-right text-xs text-text-muted">
+                        {member.tiebreakerPrediction
+                          ? `${member.tiebreakerPrediction.team1_score}-${member.tiebreakerPrediction.team2_score}`
+                          : '—'}
+                      </span>
+                    )}
                   </>
                 ) : (
                   <>
