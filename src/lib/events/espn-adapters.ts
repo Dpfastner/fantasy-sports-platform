@@ -254,6 +254,8 @@ export interface ESPNRugbyMatch {
   winnerTeamCode: string | null
   displayClock?: string
   period?: number
+  round?: number
+  venue?: string
 }
 
 /**
@@ -438,6 +440,8 @@ export async function fetchRugbyMatchesSportsDb(
     let date = String(event.strTimestamp || event.dateEvent || '')
     if (date && !date.includes('T')) date = `${date}T00:00:00Z`
 
+    const roundNum = event.intRound != null ? parseInt(String(event.intRound)) : undefined
+
     matches.push({
       espnEventId: String(event.idEvent || ''),
       name: String(event.strEvent || `${homeTeamCode} vs ${awayTeamCode}`),
@@ -450,6 +454,8 @@ export async function fetchRugbyMatchesSportsDb(
       isComplete,
       isDraw,
       winnerTeamCode,
+      round: roundNum && !isNaN(roundNum) ? roundNum : undefined,
+      venue: event.strVenue ? String(event.strVenue) : undefined,
     })
   }
 
