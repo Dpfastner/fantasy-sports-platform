@@ -318,7 +318,6 @@ export function PoolDetailClient({
 
       addToast('Settings saved', 'success')
       router.refresh()
-      window.scrollTo({ top: 0, behavior: 'smooth' })
     } catch {
       addToast('Something went wrong', 'error')
     } finally {
@@ -725,7 +724,8 @@ export function PoolDetailClient({
                 {isCreator && member.userId !== userId && (
                   <button
                     onClick={async () => {
-                      if (!confirm(`Remove ${member.displayName} from the pool?`)) return
+                      const ok = await confirm({ title: 'Remove member', message: `Remove ${member.displayName} from the pool?`, variant: 'danger', confirmLabel: 'Remove' })
+                      if (!ok) return
                       try {
                         const res = await fetch(`/api/events/pools/${pool.id}/members/${member.id}`, { method: 'DELETE' })
                         if (res.ok) {
