@@ -30,6 +30,7 @@
 
   /* Brand swatches */
   --palette-tertiary: #F5A623;
+  --palette-neutral: #F7F8FA;
 
   /* Brand action */
   --palette-brand: #E8513D;
@@ -83,6 +84,7 @@
   --palette-text-muted: #9A8E78;
   --palette-text-inverse: #0E2218;
   --palette-tertiary: #F2E8D5;
+  --palette-neutral: #F2E8D5;
   --palette-brand: #C47A3A;
   --palette-brand-hover: #B06A2E;
   --palette-brand-text: #C47A3A;
@@ -124,6 +126,7 @@
   --palette-text-muted: #8B7BA0;
   --palette-text-inverse: #1A0F28;
   --palette-tertiary: #FAF5EE;
+  --palette-neutral: #FAF5EE;
   --palette-brand: #F59E0B;
   --palette-brand-hover: #D97706;
   --palette-brand-text: #F59E0B;
@@ -165,6 +168,7 @@
   --palette-text-muted: #6B7B7C;
   --palette-text-inverse: #FAF7F2;
   --palette-tertiary: #E07A3A;
+  --palette-neutral: #F0EBE1;
   --palette-brand: #3D5A80;
   --palette-brand-hover: #2C4A6E;
   --palette-brand-text: #3D5A80;
