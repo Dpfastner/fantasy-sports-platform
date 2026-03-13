@@ -1,5 +1,4 @@
 import { notFound, redirect } from 'next/navigation'
-import Link from 'next/link'
 import { createClient, createAdminClient } from '@/lib/supabase/server'
 import { Header } from '@/components/Header'
 import { PoolDetailClient } from './PoolDetailClient'
@@ -265,15 +264,6 @@ export default async function PoolDetailPage({ params }: PageProps) {
       />
 
       <main className="container mx-auto px-4 py-8">
-        {/* Breadcrumb */}
-        <div className="mb-4 flex items-center gap-2 text-sm text-text-muted">
-          <Link href="/events" className="hover:text-text-secondary transition-colors">Events</Link>
-          <span>/</span>
-          <Link href={`/events/${slug}`} className="hover:text-text-secondary transition-colors">{tournament.name}</Link>
-          <span>/</span>
-          <span className="text-text-secondary">{pool.name}</span>
-        </div>
-
         <PoolDetailClient
           pool={{
             id: pool.id,

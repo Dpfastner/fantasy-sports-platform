@@ -14,11 +14,9 @@ interface HeaderProps {
   userEmail?: string | null
   userId?: string | null
   showUserMenu?: boolean
-  /** @deprecated Use LeagueContext instead — will be removed in a future release */
-  children?: React.ReactNode
 }
 
-export function Header({ userName, userEmail, userId, showUserMenu = true, children }: HeaderProps) {
+export function Header({ userName, userEmail, userId, showUserMenu = true }: HeaderProps) {
   const displayName = userName || userEmail || 'User'
   const [profileOpen, setProfileOpen] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
@@ -53,21 +51,6 @@ export function Header({ userName, userEmail, userId, showUserMenu = true, child
         <Link href="/dashboard" className="text-2xl font-bold text-text-primary shrink-0">
           Rivyls
         </Link>
-
-        {/* Center nav */}
-        <nav className="hidden sm:flex items-center gap-4 text-sm">
-          <Link href="/dashboard" className="text-text-secondary hover:text-text-primary transition-colors">
-            Leagues
-          </Link>
-          <Link href="/events" className="text-text-secondary hover:text-text-primary transition-colors">
-            Events
-          </Link>
-        </nav>
-
-        {/* Legacy children (non-league pages) */}
-        {!leagueCtx && children && (
-          <div className="hidden sm:flex items-center gap-4">{children}</div>
-        )}
 
         {/* Right: League/Team dropdowns + Notification bell + Profile dropdown */}
         <div className="flex items-center gap-2 sm:gap-3 shrink-0">
@@ -131,20 +114,6 @@ export function Header({ userName, userEmail, userId, showUserMenu = true, child
                       </div>
                     )}
                     <Link
-                      href="/dashboard"
-                      className="block px-4 py-2 text-sm text-text-secondary hover:bg-surface-subtle hover:text-text-primary transition-colors"
-                      onClick={() => setProfileOpen(false)}
-                    >
-                      Dashboard
-                    </Link>
-                    <Link
-                      href="/events"
-                      className="block px-4 py-2 text-sm text-text-secondary hover:bg-surface-subtle hover:text-text-primary transition-colors"
-                      onClick={() => setProfileOpen(false)}
-                    >
-                      Events
-                    </Link>
-                    <Link
                       href="/profile"
                       className="block px-4 py-2 text-sm text-text-secondary hover:bg-surface-subtle hover:text-text-primary transition-colors"
                       onClick={() => setProfileOpen(false)}
@@ -157,13 +126,6 @@ export function Header({ userName, userEmail, userId, showUserMenu = true, child
                       onClick={() => setProfileOpen(false)}
                     >
                       Settings
-                    </Link>
-                    <Link
-                      href="/help"
-                      className="block px-4 py-2 text-sm text-text-secondary hover:bg-surface-subtle hover:text-text-primary transition-colors"
-                      onClick={() => setProfileOpen(false)}
-                    >
-                      Help
                     </Link>
                     <div className="border-t border-border my-1" />
                     <button

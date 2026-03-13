@@ -1,5 +1,4 @@
 import { notFound, redirect } from 'next/navigation'
-import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/server'
 import { Header } from '@/components/Header'
@@ -124,13 +123,6 @@ export default async function EventDetailPage({ params }: PageProps) {
       />
 
       <main className="container mx-auto px-4 py-8">
-        {/* Breadcrumb */}
-        <div className="mb-4">
-          <Link href="/events" className="text-text-muted hover:text-text-secondary text-sm transition-colors">
-            &larr; All Events
-          </Link>
-        </div>
-
         {/* Tournament Header */}
         <div className="bg-surface rounded-lg border border-border p-6 mb-6">
           <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
