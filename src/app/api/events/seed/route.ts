@@ -1005,6 +1005,52 @@ async function convertMSixNationsToSurvivor(admin: ReturnType<typeof createAdmin
       .neq('game_type', 'survivor')
       .select('id')
     if (pickemPools?.length) patches.push(`${pickemPools.length} pools→survivor`)
+
+    // Ensure pool weeks exist for all pools
+    const { data: allPools } = await admin
+      .from('event_pools')
+      .select('id')
+      .eq('tournament_id', tournament.id)
+    for (const pool of (allPools || [])) {
+      const { count } = await admin
+        .from('event_pool_weeks')
+        .select('id', { count: 'exact', head: true })
+        .eq('pool_id', pool.id)
+      if (!count || count === 0) {
+        // Create pool weeks from game data
+        const { data: games } = await admin
+          .from('event_games')
+          .select('round, status, starts_at')
+          .eq('tournament_id', tournament.id)
+          .order('starts_at')
+        const roundFirstKickoff = new Map<number, string>()
+        const roundAllComplete = new Map<number, boolean>()
+        for (const g of (games || [])) {
+          const match = g.round?.match(/round_(\d+)/)
+          if (!match) continue
+          const rn = parseInt(match[1])
+          const existing = roundFirstKickoff.get(rn)
+          if (!existing || g.starts_at < existing) roundFirstKickoff.set(rn, g.starts_at)
+          if (roundAllComplete.get(rn) !== false) {
+            roundAllComplete.set(rn, g.status === 'completed' || g.status === 'final')
+          }
+        }
+        const weekRows = []
+        for (let w = 1; w <= 5; w++) {
+          const kickoff = roundFirstKickoff.get(w)
+          const deadline = kickoff ? new Date(new Date(kickoff).getTime() - 60000).toISOString() : new Date().toISOString()
+          weekRows.push({
+            pool_id: pool.id,
+            week_number: w,
+            deadline,
+            resolution_status: roundAllComplete.get(w) === true ? 'resolved' : 'pending',
+          })
+        }
+        await admin.from('event_pool_weeks').insert(weekRows)
+        patches.push(`${weekRows.length} weeks created for pool ${pool.id}`)
+      }
+    }
+
     if (patches.length) {
       return NextResponse.json({ message: `Already survivor, patched: ${patches.join(', ')}`, id: tournament.id })
     }
@@ -1112,7 +1158,7 @@ async function convertMSixNationsToSurvivor(admin: ReturnType<typeof createAdmin
           pool_id: pool.id,
           week_number: w,
           deadline: weekDeadlines[w - 1] || new Date().toISOString(),
-          resolution_status: isResolved ? 'resolved' : 'unresolved',
+          resolution_status: isResolved ? 'resolved' : 'pending',
         })
       }
 
