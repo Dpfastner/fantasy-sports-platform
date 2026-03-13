@@ -330,116 +330,114 @@ export function SurvivorPicker({
                 <div className={`px-3 py-1.5 text-center border-b ${
                   isLive ? 'bg-danger/5 border-danger/20' : 'bg-surface-inset border-border'
                 }`}>
+                  <span className="text-[10px] text-text-muted">Game {game.gameNumber}</span>
                   {isLive ? (
-                    <div className="flex items-center justify-center gap-2">
+                    <div className="flex items-center justify-center gap-2 mt-0.5">
                       <span className="inline-flex items-center gap-1 text-[10px] font-medium text-danger-text">
                         <span className="w-1.5 h-1.5 bg-danger rounded-full animate-pulse" />
                         LIVE
                       </span>
                       {(game.period || game.clock) && (
                         <span className="text-[10px] text-text-muted">
-                          {game.period && `${game.period}`}{game.period && game.clock && ' · '}{game.clock && game.clock}
+                          {game.period}{game.period && game.clock && ' · '}{game.clock}
                         </span>
                       )}
                     </div>
                   ) : isFinal ? (
-                    <span className="text-[10px] font-medium text-text-muted">Final</span>
+                    <div className="text-[10px] font-medium text-text-muted mt-0.5">Final</div>
                   ) : (
-                    <span className="text-[10px] text-text-muted">
+                    <div className="text-[10px] text-text-muted mt-0.5">
                       {new Date(game.startsAt).toLocaleString('en-US', {
                         month: 'short', day: 'numeric',
                         hour: 'numeric', minute: '2-digit',
                       })}
-                    </span>
+                    </div>
                   )}
                 </div>
 
-                {/* Team 1 */}
-                <button
-                  type="button"
-                  disabled={!canInteract || p1Used || !game.participant1Id}
-                  onClick={() => game.participant1Id && setSelectedParticipant(p1Selected ? null : game.participant1Id)}
-                  className={`flex items-center w-full px-3 py-2.5 min-h-[44px] transition-colors text-left text-sm ${
-                    p1Selected ? 'bg-brand/10'
-                      : p1Won ? 'bg-success/5'
-                      : ''
-                  } ${
-                    p1Used ? 'opacity-40 cursor-not-allowed'
-                      : canInteract ? 'hover:bg-surface-subtle cursor-pointer'
-                      : 'cursor-default'
-                  }`}
-                >
-                  <div className={`flex items-center gap-2 flex-1 min-w-0 ${
-                    p1Won ? 'text-success-text font-medium'
-                      : isFinal && !p1Won ? 'opacity-60 text-text-secondary'
-                      : p1Selected ? 'text-brand font-medium'
-                      : 'text-text-primary'
-                  }`}>
-                    {p1?.logoUrl && <img src={p1.logoUrl} alt="" className="w-5 h-5 rounded-sm object-contain shrink-0" />}
-                    <span className={`truncate ${p1Used ? 'line-through' : ''}`}>{p1?.name || 'TBD'}</span>
+                {/* Horizontal matchup: Team 1 | vs | Team 2 */}
+                <div className="grid grid-cols-[1fr_auto_1fr] items-stretch">
+                  {/* Team 1 — left */}
+                  <button
+                    type="button"
+                    disabled={!canInteract || p1Used || !game.participant1Id}
+                    onClick={() => game.participant1Id && setSelectedParticipant(p1Selected ? null : game.participant1Id)}
+                    className={`flex flex-col items-center justify-center gap-1 p-3 min-h-[80px] transition-colors rounded-bl-lg ${
+                      p1Selected ? 'bg-brand/10 ring-1 ring-inset ring-brand'
+                        : p1Won ? 'bg-success/5'
+                        : p1Used ? 'bg-danger/5 opacity-40 cursor-not-allowed'
+                        : canInteract ? 'hover:bg-surface-subtle cursor-pointer'
+                        : 'cursor-default'
+                    }`}
+                  >
+                    {p1?.logoUrl && <img src={p1.logoUrl} alt="" className="w-8 h-8 rounded-sm object-contain" />}
+                    <span className={`text-xs font-medium text-center leading-tight ${
+                      p1Won ? 'text-success-text'
+                        : isFinal && !p1Won ? 'opacity-50 text-text-muted'
+                        : p1Selected ? 'text-brand'
+                        : p1Used ? 'text-text-muted line-through'
+                        : 'text-text-primary'
+                    }`}>
+                      {p1?.name || 'TBD'}
+                    </span>
+                    {(isLive || isFinal) && hasScores && (
+                      <span className={`text-lg font-mono font-bold tabular-nums ${
+                        isLive ? 'text-text-primary' : p1Won ? 'text-success-text' : 'text-text-muted'
+                      }`}>
+                        {game.participant1Score}
+                      </span>
+                    )}
                     {p1Won && (
-                      <svg className="w-3.5 h-3.5 text-success shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                      <svg className="w-4 h-4 text-success" fill="currentColor" viewBox="0 0 20 20">
                         <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                       </svg>
                     )}
+                    {p1Used && !isFinal && <span className="text-[9px] text-danger-text font-medium">Used</span>}
+                  </button>
+
+                  {/* Center divider */}
+                  <div className="flex items-center justify-center px-1">
+                    <span className="text-[10px] text-text-muted font-medium">vs</span>
                   </div>
-                  {p1Used && <span className="text-[10px] text-text-muted shrink-0 mr-2">Used</span>}
-                  {(isLive || isFinal) && hasScores && (
-                    <span className={`font-mono text-sm tabular-nums shrink-0 ${isLive ? 'text-text-primary font-semibold' : ''}`}>
-                      {game.participant1Score}
+
+                  {/* Team 2 — right */}
+                  <button
+                    type="button"
+                    disabled={!canInteract || p2Used || !game.participant2Id}
+                    onClick={() => game.participant2Id && setSelectedParticipant(p2Selected ? null : game.participant2Id)}
+                    className={`flex flex-col items-center justify-center gap-1 p-3 min-h-[80px] transition-colors rounded-br-lg ${
+                      p2Selected ? 'bg-brand/10 ring-1 ring-inset ring-brand'
+                        : p2Won ? 'bg-success/5'
+                        : p2Used ? 'bg-danger/5 opacity-40 cursor-not-allowed'
+                        : canInteract ? 'hover:bg-surface-subtle cursor-pointer'
+                        : 'cursor-default'
+                    }`}
+                  >
+                    {p2?.logoUrl && <img src={p2.logoUrl} alt="" className="w-8 h-8 rounded-sm object-contain" />}
+                    <span className={`text-xs font-medium text-center leading-tight ${
+                      p2Won ? 'text-success-text'
+                        : isFinal && !p2Won ? 'opacity-50 text-text-muted'
+                        : p2Selected ? 'text-brand'
+                        : p2Used ? 'text-text-muted line-through'
+                        : 'text-text-primary'
+                    }`}>
+                      {p2?.name || 'TBD'}
                     </span>
-                  )}
-                  {p1Selected && (
-                    <span className="w-2 h-2 rounded-full bg-brand shrink-0 ml-2" />
-                  )}
-                </button>
-
-                {/* vs divider */}
-                <div className="flex items-center px-3">
-                  <div className="flex-1 border-t border-border/50" />
-                  <span className="text-[10px] text-text-muted px-2">vs</span>
-                  <div className="flex-1 border-t border-border/50" />
-                </div>
-
-                {/* Team 2 */}
-                <button
-                  type="button"
-                  disabled={!canInteract || p2Used || !game.participant2Id}
-                  onClick={() => game.participant2Id && setSelectedParticipant(p2Selected ? null : game.participant2Id)}
-                  className={`flex items-center w-full px-3 py-2.5 min-h-[44px] transition-colors text-left text-sm ${
-                    p2Selected ? 'bg-brand/10'
-                      : p2Won ? 'bg-success/5'
-                      : ''
-                  } ${
-                    p2Used ? 'opacity-40 cursor-not-allowed'
-                      : canInteract ? 'hover:bg-surface-subtle cursor-pointer'
-                      : 'cursor-default'
-                  }`}
-                >
-                  <div className={`flex items-center gap-2 flex-1 min-w-0 ${
-                    p2Won ? 'text-success-text font-medium'
-                      : isFinal && !p2Won ? 'opacity-60 text-text-secondary'
-                      : p2Selected ? 'text-brand font-medium'
-                      : 'text-text-primary'
-                  }`}>
-                    {p2?.logoUrl && <img src={p2.logoUrl} alt="" className="w-5 h-5 rounded-sm object-contain shrink-0" />}
-                    <span className={`truncate ${p2Used ? 'line-through' : ''}`}>{p2?.name || 'TBD'}</span>
+                    {(isLive || isFinal) && hasScores && (
+                      <span className={`text-lg font-mono font-bold tabular-nums ${
+                        isLive ? 'text-text-primary' : p2Won ? 'text-success-text' : 'text-text-muted'
+                      }`}>
+                        {game.participant2Score}
+                      </span>
+                    )}
                     {p2Won && (
-                      <svg className="w-3.5 h-3.5 text-success shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                      <svg className="w-4 h-4 text-success" fill="currentColor" viewBox="0 0 20 20">
                         <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                       </svg>
                     )}
-                  </div>
-                  {p2Used && <span className="text-[10px] text-text-muted shrink-0 mr-2">Used</span>}
-                  {(isLive || isFinal) && hasScores && (
-                    <span className={`font-mono text-sm tabular-nums shrink-0 ${isLive ? 'text-text-primary font-semibold' : ''}`}>
-                      {game.participant2Score}
-                    </span>
-                  )}
-                  {p2Selected && (
-                    <span className="w-2 h-2 rounded-full bg-brand shrink-0 ml-2" />
-                  )}
-                </button>
+                    {p2Used && !isFinal && <span className="text-[9px] text-danger-text font-medium">Used</span>}
+                  </button>
+                </div>
               </div>
             )
           })}
