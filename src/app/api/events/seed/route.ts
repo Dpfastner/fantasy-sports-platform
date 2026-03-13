@@ -32,6 +32,8 @@ export async function POST(request: Request) {
         return await refreshGolfRankings(admin)
       case 'reseed-masters-games':
         return await reseedMastersGames(admin)
+      case 'update-masters-config':
+        return await updateMastersConfig(admin)
       case 'sync-hockey-logos':
         return await syncHockeyLogos(admin)
       case 'frozen-four-2026-schedule':
@@ -615,6 +617,51 @@ async function reseedMastersGames(admin: ReturnType<typeof createAdminClient>) {
     picksDeleted: existingGameIds.length > 0 ? 'associated picks removed' : 'no picks to remove',
     gamesCreated: 20,
     message: 'Masters games re-seeded: 20 head-to-head matchups (pick once for tournament).',
+  })
+}
+
+// ============================================
+// UPDATE MASTERS CONFIG
+// Fixes tournament format to 'multi' so Roster pools can be created.
+// Safe to re-run — just updates tournament metadata.
+// ============================================
+
+async function updateMastersConfig(admin: ReturnType<typeof createAdminClient>) {
+  const { data: tournament } = await admin
+    .from('event_tournaments')
+    .select('id, format, config')
+    .eq('slug', 'masters-2026')
+    .single()
+
+  if (!tournament) {
+    return NextResponse.json({ error: 'Masters tournament not found.' }, { status: 400 })
+  }
+
+  const { error } = await admin
+    .from('event_tournaments')
+    .update({
+      format: 'multi',
+      description: 'The 90th Masters Tournament at Augusta National. Create Pick\'em or Roster pools.',
+      config: {
+        ...(tournament.config as Record<string, unknown>),
+        allowed_game_types: ['pickem', 'roster'],
+        roster_tiers: {
+          A: { count: 2, owgr_min: 1, owgr_max: 15 },
+          B: { count: 2, owgr_min: 16, owgr_max: 30 },
+          C: { count: 3, owgr_min: 31 },
+        },
+      },
+    })
+    .eq('id', tournament.id)
+
+  if (error) throw error
+
+  return NextResponse.json({
+    success: true,
+    action: 'update-masters-config',
+    previousFormat: tournament.format,
+    newFormat: 'multi',
+    message: 'Masters tournament updated to multi-format. Roster and Pick\'em pools can now be created.',
   })
 }
 

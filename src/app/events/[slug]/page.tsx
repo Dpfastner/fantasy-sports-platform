@@ -206,22 +206,50 @@ export default async function EventDetailPage({ params }: PageProps) {
                   <span className="text-text-muted font-normal text-sm ml-2">({participants.length})</span>
                 </h3>
                 <div className="space-y-1.5 max-h-80 overflow-y-auto">
-                  {participants.map((p) => (
-                    <div key={p.id} className="flex items-center justify-between text-sm py-1">
-                      <div className="flex items-center gap-2">
-                        {p.seed && (
-                          <span className="text-text-muted w-5 text-right text-xs">{p.seed}</span>
-                        )}
-                        {p.logo_url && (
-                          <img src={p.logo_url} alt="" className="w-5 h-5 object-contain shrink-0" />
-                        )}
-                        <span className="text-text-primary">{p.name}</span>
+                  {participants.map((p) => {
+                    const meta = (p.metadata || {}) as Record<string, unknown>
+                    const countryCode = typeof meta.country_code === 'string' ? meta.country_code : null
+                    const country = typeof meta.country === 'string' ? meta.country : undefined
+                    const tier = typeof meta.tier === 'string' ? meta.tier : null
+                    return (
+                      <div key={p.id} className="flex items-center justify-between text-sm py-1">
+                        <div className="flex items-center gap-2">
+                          {p.seed && (
+                            <span className="text-text-muted w-5 text-right text-xs">{p.seed}</span>
+                          )}
+                          {p.logo_url && (
+                            <img src={p.logo_url} alt="" className="w-5 h-5 object-contain shrink-0" />
+                          )}
+                          {!p.logo_url && countryCode && (
+                            <img
+                              src={`https://flagcdn.com/24x18/${countryCode}.png`}
+                              alt={country || ''}
+                              title={country || ''}
+                              width={18}
+                              height={14}
+                              className="inline-block shrink-0 rounded-[2px]"
+                              loading="lazy"
+                            />
+                          )}
+                          <span className="text-text-primary">{p.name}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {tier && (
+                            <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${
+                              tier === 'A' ? 'bg-brand/15 text-brand' :
+                              tier === 'B' ? 'bg-warning/15 text-warning-text' :
+                              'bg-surface-inset text-text-muted'
+                            }`}>
+                              {tier}
+                            </span>
+                          )}
+                          {p.short_name && (
+                            <span className="text-text-muted text-xs">{p.short_name}</span>
+                          )}
+                        </div>
                       </div>
-                      {p.short_name && (
-                        <span className="text-text-muted text-xs">{p.short_name}</span>
-                      )}
-                    </div>
-                  ))}
+                    )
+                  })}
                 </div>
               </div>
             )}
