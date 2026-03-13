@@ -97,7 +97,25 @@ export async function DELETE() {
     // Delete league memberships
     await supabase.from('league_members').delete().eq('user_id', user.id)
 
-    // 3. Anonymize profile (keep row for referential integrity, clear PII)
+    // 4. Soft-delete event entries — preserve leaderboard history
+    await supabase
+      .from('event_entries')
+      .update({ display_name: 'Deleted Player', user_id: null, is_deleted: true })
+      .eq('user_id', user.id)
+
+    // Anonymize event pool creator
+    await supabase
+      .from('event_pools')
+      .update({ created_by: null })
+      .eq('created_by', user.id)
+
+    // Anonymize chat messages
+    await supabase
+      .from('event_pool_messages')
+      .update({ user_id: null })
+      .eq('user_id', user.id)
+
+    // 5. Anonymize profile (keep row for referential integrity, clear PII)
     await supabase
       .from('profiles')
       .update({

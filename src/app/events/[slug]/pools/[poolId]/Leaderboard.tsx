@@ -4,7 +4,7 @@ import Link from 'next/link'
 
 interface Member {
   id: string
-  userId: string
+  userId: string | null
   displayName: string
   isActive: boolean
   submittedAt: string | null
@@ -91,7 +91,11 @@ export function Leaderboard({ members, format, poolStatus }: LeaderboardProps) {
                   ) : member.primaryColor && member.primaryColor !== '#1a1a1a' ? (
                     <span className="w-5 h-5 rounded-full shrink-0 border border-border" style={{ backgroundColor: member.primaryColor }} />
                   ) : null}
-                  <Link href={`/profile/${member.userId}`} className="text-sm text-text-primary truncate hover:underline">{member.displayName}</Link>
+                  {member.userId ? (
+                    <Link href={`/profile/${member.userId}`} className="text-sm text-text-primary truncate hover:underline">{member.displayName}</Link>
+                  ) : (
+                    <span className="text-sm text-text-muted truncate italic">{member.displayName}</span>
+                  )}
                   {!member.isActive && format === 'survivor' && (
                     <span className="text-xs text-danger-text">Eliminated</span>
                   )}
