@@ -172,7 +172,9 @@ export function ScheduleView({ games, participants, format, tournamentId }: Sche
                     <div className="space-y-1.5">
                       {/* Team 1 */}
                       <div className={`flex items-center justify-between ${
-                        isFinal && game.winnerId === game.participant1Id ? 'text-text-primary font-medium' : 'text-text-secondary'
+                        isFinal && game.winnerId === game.participant1Id ? 'text-success-text font-medium'
+                          : isFinal && game.winnerId && game.winnerId !== game.participant1Id ? 'text-text-muted opacity-60'
+                          : 'text-text-secondary'
                       }`}>
                         <div className="flex items-center gap-2">
                           {p1?.seed && (
@@ -197,7 +199,9 @@ export function ScheduleView({ games, participants, format, tournamentId }: Sche
 
                       {/* Team 2 */}
                       <div className={`flex items-center justify-between ${
-                        isFinal && game.winnerId === game.participant2Id ? 'text-text-primary font-medium' : 'text-text-secondary'
+                        isFinal && game.winnerId === game.participant2Id ? 'text-success-text font-medium'
+                          : isFinal && game.winnerId && game.winnerId !== game.participant2Id ? 'text-text-muted opacity-60'
+                          : 'text-text-secondary'
                       }`}>
                         <div className="flex items-center gap-2">
                           {p2?.seed && (

@@ -49,6 +49,8 @@ export async function POST(request: Request) {
         return await updateWSixNationsConfig(admin)
       case 'fix-m-six-nations-rounds':
         return await fixMSixNationsRounds(admin)
+      case 'convert-m-six-nations-to-survivor':
+        return await convertMSixNationsToSurvivor(admin)
       case 'sync-hockey-logos':
         return await syncHockeyLogos(admin)
       case 'frozen-four-2026-schedule':
@@ -975,6 +977,143 @@ async function updateWSixNationsConfig(admin: ReturnType<typeof createAdminClien
   return NextResponse.json({ success: true, config: updatedConfig })
 }
 
+// Convert Men's Six Nations from pick'em to survivor format
+async function convertMSixNationsToSurvivor(admin: ReturnType<typeof createAdminClient>) {
+  const { data: tournament } = await admin
+    .from('event_tournaments')
+    .select('id, config, format')
+    .eq('slug', 'm-six-nations-2026')
+    .single()
+
+  if (!tournament) return NextResponse.json({ error: 'M Six Nations not found' }, { status: 404 })
+  if (tournament.format === 'survivor') {
+    // Still patch espn_league_id if missing
+    const cfg = (tournament.config || {}) as Record<string, unknown>
+    if (!cfg.espn_league_id) {
+      await admin
+        .from('event_tournaments')
+        .update({ config: { ...cfg, espn_league_id: '180659' }, updated_at: new Date().toISOString() })
+        .eq('id', tournament.id)
+      return NextResponse.json({ message: 'Already survivor, patched espn_league_id', id: tournament.id })
+    }
+    return NextResponse.json({ message: 'Already survivor format', id: tournament.id })
+  }
+
+  // Fetch fixtures to compute week deadlines
+  const matches = await fetchRugbyMatchesSportsDb('4714', '2026')
+  const roundFirstKickoff = new Map<number, Date>()
+  for (const m of matches) {
+    if (!m.round) continue
+    const kickoff = new Date(m.date)
+    const existing = roundFirstKickoff.get(m.round)
+    if (!existing || kickoff < existing) roundFirstKickoff.set(m.round, kickoff)
+  }
+  const weekDeadlines = [...roundFirstKickoff.entries()]
+    .sort(([a], [b]) => a - b)
+    .map(([, kickoff]) => new Date(kickoff.getTime() - 60_000).toISOString())
+
+  // Update tournament
+  const existingConfig = (tournament.config || {}) as Record<string, unknown>
+  const { error: tErr } = await admin
+    .from('event_tournaments')
+    .update({
+      format: 'survivor',
+      total_weeks: 5,
+      description: "Guinness Men's Six Nations 2026. Pick one team to win each round — if they lose, you're eliminated. Can't pick the same team twice.",
+      rules_text: `## How to Play\n\n1. **Pick one team each round** to win their match.\n2. If your team **wins**, you survive to the next round.\n3. If your team **loses or draws**, you're **eliminated**.\n4. **You can't pick the same team twice** — use them wisely!\n5. Last person standing wins.\n\n### Important\n- Picks lock 1 minute before the first kickoff of each round.\n- If you miss the deadline, you're automatically eliminated.\n- A draw counts as a loss (eliminates you).`,
+      config: {
+        ...existingConfig,
+        draw_eliminates: true,
+        strikes_allowed: 0,
+        espn_league_id: '180659',
+        week_deadlines: weekDeadlines,
+      },
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', tournament.id)
+
+  if (tErr) throw tErr
+
+  // Get all pools for this tournament
+  const { data: pools } = await admin
+    .from('event_pools')
+    .select('id')
+    .eq('tournament_id', tournament.id)
+
+  let picksDeleted = 0
+  let weeksCreated = 0
+
+  for (const pool of (pools || [])) {
+    // Delete existing pick'em picks (game_id based, incompatible with survivor)
+    const { data: entries } = await admin
+      .from('event_entries')
+      .select('id')
+      .eq('pool_id', pool.id)
+
+    const entryIds = (entries || []).map(e => e.id)
+    if (entryIds.length > 0) {
+      const { data: deleted } = await admin
+        .from('event_picks')
+        .delete()
+        .in('entry_id', entryIds)
+        .select('id')
+      picksDeleted += deleted?.length || 0
+
+      // Reset entry scores
+      await admin
+        .from('event_entries')
+        .update({ total_points: 0, updated_at: new Date().toISOString() })
+        .in('id', entryIds)
+    }
+
+    // Check if pool_weeks already exist
+    const { count: existingWeeks } = await admin
+      .from('event_pool_weeks')
+      .select('id', { count: 'exact', head: true })
+      .eq('pool_id', pool.id)
+
+    if (!existingWeeks || existingWeeks === 0) {
+      // Determine which rounds are already completed (have all games completed)
+      const { data: games } = await admin
+        .from('event_games')
+        .select('round, status')
+        .eq('tournament_id', tournament.id)
+
+      const roundStatus = new Map<string, boolean>()
+      for (const g of (games || [])) {
+        if (!g.round) continue
+        const allComplete = roundStatus.get(g.round) !== false && (g.status === 'completed' || g.status === 'final')
+        roundStatus.set(g.round, allComplete)
+      }
+
+      const weekRows = []
+      for (let w = 1; w <= 5; w++) {
+        const roundKey = `round_${w}`
+        const isResolved = roundStatus.get(roundKey) === true
+        weekRows.push({
+          pool_id: pool.id,
+          week_number: w,
+          deadline: weekDeadlines[w - 1] || new Date().toISOString(),
+          resolution_status: isResolved ? 'resolved' : 'unresolved',
+        })
+      }
+
+      await admin.from('event_pool_weeks').insert(weekRows)
+      weeksCreated += weekRows.length
+    }
+  }
+
+  return NextResponse.json({
+    success: true,
+    tournament_id: tournament.id,
+    format: 'survivor',
+    pools: pools?.length || 0,
+    picks_deleted: picksDeleted,
+    weeks_created: weeksCreated,
+    week_deadlines: weekDeadlines,
+  })
+}
+
 // Fix Men's Six Nations round/date/matchup assignments to match actual 2026 schedule
 async function fixMSixNationsRounds(admin: ReturnType<typeof createAdminClient>) {
   const { data: tournament } = await admin
@@ -1579,20 +1718,36 @@ async function seedMSixNations(admin: ReturnType<typeof createAdminClient>) {
   const endsAt = new Date(Math.max(...matchDates))
   endsAt.setDate(endsAt.getDate() + 1)
 
+  // Compute per-round deadlines (1 min before first kickoff)
+  const roundFirstKickoff = new Map<number, Date>()
+  for (const m of sportsDbMatches) {
+    if (!m.round) continue
+    const kickoff = new Date(m.date)
+    const existing = roundFirstKickoff.get(m.round)
+    if (!existing || kickoff < existing) roundFirstKickoff.set(m.round, kickoff)
+  }
+  const weekDeadlines = [...roundFirstKickoff.entries()]
+    .sort(([a], [b]) => a - b)
+    .map(([, kickoff]) => new Date(kickoff.getTime() - 60_000).toISOString())
+
   const { data: tournament, error: tErr } = await admin
     .from('event_tournaments')
     .insert({
       sport: 'rugby',
       name: `Men's Six Nations ${season}`,
       slug,
-      format: 'pickem',
+      format: 'survivor',
       status: 'upcoming',
-      description: `Guinness Men's Six Nations ${season}. Pick the winner of every match across 5 rounds. Earn bonus points for correctly predicting upsets.`,
-      rules_text: `## How to Play\n\n1. **Pick the winner of each match** before the round deadline.\n2. Earn **1 point** for each correct pick.\n3. Earn **2 bonus points** for correctly picking an upset (lower-seeded team wins).\n4. The player with the most points at the end of the tournament wins.\n\n### Deadlines\n- Picks lock 1 minute before the first kickoff of each round.\n- You can change your picks any time before the deadline.`,
+      total_weeks: roundFirstKickoff.size,
+      description: `Guinness Men's Six Nations ${season}. Pick one team to win each round — if they lose, you're eliminated. Can't pick the same team twice.`,
+      rules_text: `## How to Play\n\n1. **Pick one team each round** to win their match.\n2. If your team **wins**, you survive to the next round.\n3. If your team **loses or draws**, you're **eliminated**.\n4. **You can't pick the same team twice** — use them wisely!\n5. Last person standing wins.\n\n### Important\n- Picks lock 1 minute before the first kickoff of each round.\n- If you miss the deadline, you're automatically eliminated.\n- A draw counts as a loss (eliminates you).`,
       starts_at: startsAt.toISOString(),
       ends_at: endsAt.toISOString(),
       config: {
-        scoring: { correct_pick: 1, upset_bonus: 2 },
+        draw_eliminates: true,
+        strikes_allowed: 0,
+        espn_league_id: '180659',
+        week_deadlines: weekDeadlines,
       },
     })
     .select('id')

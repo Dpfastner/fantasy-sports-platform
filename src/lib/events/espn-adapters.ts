@@ -463,6 +463,72 @@ export async function fetchRugbyMatchesSportsDb(
 }
 
 // ============================================
+// Rugby Standings — ESPN Standings API
+// ============================================
+
+export interface RugbyStanding {
+  rank: number
+  teamCode: string
+  teamName: string
+  gamesPlayed: number
+  won: number
+  drawn: number
+  lost: number
+  pointsFor: number
+  pointsAgainst: number
+  pointsDifference: number
+  bonusPoints: number
+  points: number
+}
+
+export async function fetchRugbyStandings(espnLeagueId: string): Promise<RugbyStanding[]> {
+  const url = `https://site.api.espn.com/apis/v2/sports/rugby/${espnLeagueId}/standings`
+
+  try {
+    const response = await fetchWithTimeout(url, 15000)
+    if (!response.ok) {
+      console.error(`[espn-standings] HTTP ${response.status} for league ${espnLeagueId}`)
+      return []
+    }
+
+    const data = await response.json() as Record<string, unknown>
+    const children = (data.children || []) as Record<string, unknown>[]
+    if (!children.length) return []
+
+    const standings = children[0].standings as Record<string, unknown> || {}
+    const entries = (standings.entries || []) as Record<string, unknown>[]
+
+    return entries.map(entry => {
+      const team = entry.team as Record<string, unknown> || {}
+      const stats = (entry.stats || []) as Array<{ name: string; value: number }>
+
+      const getStat = (name: string): number => {
+        const s = stats.find(st => st.name === name)
+        return s ? s.value : 0
+      }
+
+      return {
+        rank: getStat('playoffSeed'),
+        teamCode: normalizeAbbreviation(String(team.abbreviation || '')),
+        teamName: String(team.displayName || ''),
+        gamesPlayed: getStat('gamesPlayed'),
+        won: getStat('gamesWon'),
+        drawn: getStat('gamesDrawn'),
+        lost: getStat('gamesLost'),
+        pointsFor: getStat('pointsFor'),
+        pointsAgainst: getStat('pointsAgainst'),
+        pointsDifference: getStat('pointsDifference'),
+        bonusPoints: getStat('bonusPoints'),
+        points: getStat('points'),
+      }
+    }).sort((a, b) => a.rank - b.rank)
+  } catch (err) {
+    console.error(`[espn-standings] Error:`, err instanceof Error ? err.message : err)
+    return []
+  }
+}
+
+// ============================================
 // Hockey (NCAA) adapter — Site API
 // ============================================
 

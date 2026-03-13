@@ -19,6 +19,9 @@ interface Game {
   gameNumber: number
   participant1Id: string | null
   participant2Id: string | null
+  participant1Score?: number | null
+  participant2Score?: number | null
+  winnerId?: string | null
   startsAt: string
   status: string
   result: Record<string, unknown> | null
@@ -107,6 +110,14 @@ export function SurvivorPicker({
     return games.filter(g => g.round === `Round ${weekNum}` || g.round === `round_${weekNum}`)
   }, [games, currentWeek])
 
+  // Map: find the game a picked participant was in for a given round
+  const findGameForPick = (weekNumber: number, participantId: string): Game | undefined => {
+    return games.find(g =>
+      (g.round === `Round ${weekNumber}` || g.round === `round_${weekNumber}`) &&
+      (g.participant1Id === participantId || g.participant2Id === participantId)
+    )
+  }
+
   const handleSubmit = async () => {
     if (!currentWeek || !selectedParticipant) return
 
@@ -192,34 +203,89 @@ export function SurvivorPicker({
             {poolWeeks
               .filter(w => w.week_number < currentWeek.week_number && picksByWeek[w.week_number])
               .map(w => {
-                const p = participantMap[picksByWeek[w.week_number]]
+                const pickedId = picksByWeek[w.week_number]
+                const p = participantMap[pickedId]
                 const resolved = w.resolution_status === 'resolved'
-                // If still active after this resolved week, the pick survived
-                const survived = resolved && isActive
+                const game = findGameForPick(w.week_number, pickedId)
+                const isFinal = game && (game.status === 'completed' || game.status === 'final')
+                const pickedWon = isFinal && game.winnerId === pickedId
+                const pickedLost = isFinal && game.winnerId != null && game.winnerId !== pickedId
+                const isDraw = isFinal && !game.winnerId
+
+                // Find opponent
+                const opponentId = game
+                  ? (game.participant1Id === pickedId ? game.participant2Id : game.participant1Id)
+                  : null
+                const opponent = opponentId ? participantMap[opponentId] : null
+
+                // Get scores oriented: picked team first
+                let pickedScore: number | null = null
+                let opponentScore: number | null = null
+                if (game && game.participant1Score != null && game.participant2Score != null) {
+                  if (game.participant1Id === pickedId) {
+                    pickedScore = game.participant1Score
+                    opponentScore = game.participant2Score
+                  } else {
+                    pickedScore = game.participant2Score
+                    opponentScore = game.participant1Score
+                  }
+                }
+
                 return (
                   <div
                     key={w.week_number}
-                    className={`flex items-center justify-between text-xs px-3 py-2 rounded-md border ${
-                      resolved
-                        ? 'border-success/30 bg-success/5'
+                    className={`px-3 py-2 rounded-md border text-xs ${
+                      pickedWon ? 'border-success/30 bg-success/5'
+                        : pickedLost || isDraw ? 'border-danger/30 bg-danger/5'
+                        : resolved ? 'border-success/30 bg-success/5'
                         : 'border-border bg-surface-inset'
                     }`}
                   >
-                    <div className="flex items-center gap-2">
-                      <span className="text-text-muted font-medium w-8">R{w.week_number}</span>
-                      {p?.logoUrl && (
-                        <img src={p.logoUrl} alt="" className="w-5 h-5 rounded-sm object-contain" />
-                      )}
-                      <span className="text-text-secondary">{p?.name || '?'}</span>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className="text-text-muted font-medium w-8">R{w.week_number}</span>
+                        {p?.logoUrl && (
+                          <img src={p.logoUrl} alt="" className="w-5 h-5 rounded-sm object-contain" />
+                        )}
+                        <span className={pickedWon ? 'text-success-text font-medium' : 'text-text-secondary'}>
+                          {p?.name || '?'}
+                        </span>
+                        {isFinal && pickedScore != null && opponentScore != null && (
+                          <span className="text-text-muted">
+                            {pickedScore} - {opponentScore}
+                          </span>
+                        )}
+                        {opponent && (
+                          <span className="text-text-muted">
+                            {isFinal ? 'vs' : 'vs'} {opponent.name}
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-1">
+                        {pickedWon && (
+                          <span className="flex items-center gap-1 text-success-text font-medium">
+                            <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clipRule="evenodd" />
+                            </svg>
+                            Win
+                          </span>
+                        )}
+                        {(pickedLost || isDraw) && (
+                          <span className="flex items-center gap-1 text-danger-text font-medium">
+                            <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.28 7.22a.75.75 0 00-1.06 1.06L8.94 10l-1.72 1.72a.75.75 0 101.06 1.06L10 11.06l1.72 1.72a.75.75 0 101.06-1.06L11.06 10l1.72-1.72a.75.75 0 00-1.06-1.06L10 8.94 8.28 7.22z" clipRule="evenodd" />
+                            </svg>
+                            {isDraw ? 'Draw' : 'Loss'}
+                          </span>
+                        )}
+                        {!isFinal && !resolved && (
+                          <span className="text-text-muted">Pending</span>
+                        )}
+                        {!isFinal && resolved && (
+                          <span className="text-text-muted">Pending</span>
+                        )}
+                      </div>
                     </div>
-                    {resolved && (
-                      <span className={`font-medium ${survived ? 'text-success-text' : 'text-danger-text'}`}>
-                        {survived ? 'W' : 'L'}
-                      </span>
-                    )}
-                    {!resolved && (
-                      <span className="text-text-muted">Pending</span>
-                    )}
                   </div>
                 )
               })}
@@ -235,16 +301,58 @@ export function SurvivorPicker({
             {currentRoundGames.map(game => {
               const p1 = game.participant1Id ? participantMap[game.participant1Id] : null
               const p2 = game.participant2Id ? participantMap[game.participant2Id] : null
+              const isFinal = game.status === 'completed' || game.status === 'final'
+              const isLive = game.status === 'live'
+              const hasScores = game.participant1Score != null && game.participant2Score != null
+              const p1Won = isFinal && game.winnerId === game.participant1Id
+              const p2Won = isFinal && game.winnerId === game.participant2Id
               return (
-                <div key={game.id} className="bg-surface-inset rounded-md p-2 text-sm flex items-center justify-between">
-                  <div className="flex items-center gap-1.5">
-                    {p1?.logoUrl && <img src={p1.logoUrl} alt="" className="w-4 h-4 rounded-sm object-contain" />}
-                    <span className="text-text-secondary">{p1?.name || 'TBD'}</span>
+                <div key={game.id} className={`rounded-md p-2.5 text-sm border ${
+                  isLive ? 'border-danger/30 bg-danger/5' : 'border-border bg-surface-inset'
+                }`}>
+                  {/* Status badge */}
+                  <div className="flex justify-end mb-1">
+                    {isLive && (
+                      <span className="text-[10px] font-medium text-danger-text bg-danger/10 px-1.5 py-0.5 rounded-full flex items-center gap-1">
+                        <span className="w-1.5 h-1.5 bg-danger rounded-full animate-pulse" />LIVE
+                      </span>
+                    )}
+                    {isFinal && <span className="text-[10px] text-text-muted">Final</span>}
+                    {!isFinal && !isLive && (
+                      <span className="text-[10px] text-text-muted">
+                        {new Date(game.startsAt).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}
+                      </span>
+                    )}
                   </div>
-                  <span className="text-text-muted text-xs">vs</span>
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-text-secondary">{p2?.name || 'TBD'}</span>
-                    {p2?.logoUrl && <img src={p2.logoUrl} alt="" className="w-4 h-4 rounded-sm object-contain" />}
+                  {/* Team 1 */}
+                  <div className={`flex items-center justify-between mb-1 ${p1Won ? 'text-success-text font-medium' : isFinal && !p1Won ? 'opacity-60' : ''}`}>
+                    <div className="flex items-center gap-1.5">
+                      {p1?.logoUrl && <img src={p1.logoUrl} alt="" className="w-4 h-4 rounded-sm object-contain" />}
+                      <span>{p1?.name || 'TBD'}</span>
+                      {p1Won && (
+                        <svg className="w-3.5 h-3.5 text-success" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                        </svg>
+                      )}
+                    </div>
+                    {(isLive || isFinal) && hasScores && (
+                      <span className="font-mono text-sm">{game.participant1Score}</span>
+                    )}
+                  </div>
+                  {/* Team 2 */}
+                  <div className={`flex items-center justify-between ${p2Won ? 'text-success-text font-medium' : isFinal && !p2Won ? 'opacity-60' : ''}`}>
+                    <div className="flex items-center gap-1.5">
+                      {p2?.logoUrl && <img src={p2.logoUrl} alt="" className="w-4 h-4 rounded-sm object-contain" />}
+                      <span>{p2?.name || 'TBD'}</span>
+                      {p2Won && (
+                        <svg className="w-3.5 h-3.5 text-success" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                        </svg>
+                      )}
+                    </div>
+                    {(isLive || isFinal) && hasScores && (
+                      <span className="font-mono text-sm">{game.participant2Score}</span>
+                    )}
                   </div>
                 </div>
               )
