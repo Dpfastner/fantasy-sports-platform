@@ -84,7 +84,7 @@
   --palette-text-muted: #9A8E78;
   --palette-text-inverse: #0E2218;
   --palette-tertiary: #F2E8D5;
-  --palette-neutral: #F2E8D5;
+  --palette-neutral: #FFFFFF;
   --palette-brand: #C47A3A;
   --palette-brand-hover: #B06A2E;
   --palette-brand-text: #C47A3A;
@@ -126,7 +126,7 @@
   --palette-text-muted: #8B7BA0;
   --palette-text-inverse: #1A0F28;
   --palette-tertiary: #FAF5EE;
-  --palette-neutral: #FAF5EE;
+  --palette-neutral: #FFFFFF;
   --palette-brand: #F59E0B;
   --palette-brand-hover: #D97706;
   --palette-brand-text: #F59E0B;
@@ -208,7 +208,7 @@
   --color-surface-inset: var(--palette-surface-inset);
 
   /* Brand swatches */
-  --color-neutral: var(--palette-neutral);
+  --color-card-neutral: var(--palette-neutral);
 
   /* Gradient endpoints */
   --color-gradient-from: var(--palette-gradient-from);

@@ -630,7 +630,7 @@ export default async function DashboardPage() {
                   <Link
                     key={tournament.id}
                     href={`/events/${tournament.slug}`}
-                    className={`bg-neutral rounded-lg hover:shadow-lg transition-all group border-l-4 ${meta.borderColor}`}
+                    className={`bg-card-neutral rounded-lg hover:shadow-lg transition-all group border-l-4 ${meta.borderColor}`}
                   >
                     <div className="p-5 pb-3">
                       <div className="flex items-start justify-between mb-2">
