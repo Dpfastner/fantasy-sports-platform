@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import * as Sentry from '@sentry/nextjs'
 import { createAdminClient } from '@/lib/supabase/server'
-import { fetchHockeyTeams, fetchGolfRankings, getCountryFlagCode } from '@/lib/events/espn-adapters'
+import { fetchHockeyTeams, fetchGolfRankings, fetchGolfField, getCountryFlagCode } from '@/lib/events/espn-adapters'
 
 // POST /api/events/seed
 // One-time admin endpoint to seed tournament data.
@@ -14,7 +14,8 @@ export async function POST(request: Request) {
   }
 
   try {
-    const { tournament } = await request.json()
+    const body = await request.json()
+    const { tournament } = body
     const admin = createAdminClient()
 
     switch (tournament) {
@@ -34,6 +35,8 @@ export async function POST(request: Request) {
         return await reseedMastersGames(admin)
       case 'update-masters-config':
         return await updateMastersConfig(admin)
+      case 'sync-golf-field':
+        return await syncGolfField(admin, body)
       case 'sync-hockey-logos':
         return await syncHockeyLogos(admin)
       case 'frozen-four-2026-schedule':
@@ -693,6 +696,167 @@ async function updateMastersConfig(admin: ReturnType<typeof createAdminClient>) 
     newFormat: 'multi',
     participantsFixed: fixed,
     message: 'Masters tournament updated to multi-format. Roster and Pick\'em pools can now be created.',
+  })
+}
+
+// ============================================
+// SYNC GOLF FIELD
+// Generic: fetches the full field from ESPN for any golf tournament.
+// 1. Tries ESPN scoreboard (field available ~week of tournament)
+// 2. Falls back to OWGR top N rankings
+// Adds new participants, updates existing ones with country/ranking data.
+// Body: { tournament: 'sync-golf-field', slug: 'masters-2026', topN?: 90 }
+// ============================================
+
+async function syncGolfField(
+  admin: ReturnType<typeof createAdminClient>,
+  body: Record<string, unknown>
+) {
+  const slug = body.slug as string
+  const topN = (body.topN as number) || 90
+
+  if (!slug) {
+    return NextResponse.json({ error: 'Missing slug parameter' }, { status: 400 })
+  }
+
+  const { data: tournament } = await admin
+    .from('event_tournaments')
+    .select('id, starts_at, config')
+    .eq('slug', slug)
+    .eq('sport', 'golf')
+    .single()
+
+  if (!tournament) {
+    return NextResponse.json({ error: `Golf tournament '${slug}' not found` }, { status: 404 })
+  }
+
+  // Get existing participants
+  const { data: existing } = await admin
+    .from('event_participants')
+    .select('id, name, seed, metadata')
+    .eq('tournament_id', tournament.id)
+
+  const existingByName: Record<string, { id: string; seed: number | null; metadata: Record<string, unknown> }> = {}
+  for (const p of existing || []) {
+    existingByName[p.name.toLowerCase()] = {
+      id: p.id,
+      seed: p.seed,
+      metadata: (p.metadata || {}) as Record<string, unknown>,
+    }
+  }
+
+  // Tier computation
+  const config = (tournament.config || {}) as Record<string, unknown>
+  const rosterTiers = config.roster_tiers as Record<string, { owgr_min: number; owgr_max?: number }> | undefined
+  const getTier = (owgr: number) => {
+    if (!rosterTiers) return owgr <= 15 ? 'A' : owgr <= 30 ? 'B' : 'C'
+    for (const [key, def] of Object.entries(rosterTiers)) {
+      if (owgr >= def.owgr_min && (!def.owgr_max || owgr <= def.owgr_max)) return key
+    }
+    return 'C'
+  }
+
+  // Strategy 1: Try ESPN scoreboard for published field
+  const startDate = tournament.starts_at?.split('T')[0] || ''
+  const espnField = startDate ? await fetchGolfField(startDate) : []
+
+  // Strategy 2: OWGR rankings (always available)
+  const owgrRankings = await fetchGolfRankings()
+  const owgrByName: Record<string, { rank: number; country: string }> = {}
+  for (const r of owgrRankings) {
+    owgrByName[r.name.toLowerCase()] = { rank: r.rank, country: r.country }
+  }
+
+  // Merge: ESPN field takes priority (has real field), OWGR fills in rankings
+  let added = 0
+  let updated = 0
+  let nextSeed = (existing || []).length + 1
+
+  // Process ESPN field golfers first (these are the actual tournament entrants)
+  const processedNames = new Set<string>()
+
+  for (const golfer of espnField) {
+    const nameKey = golfer.name.toLowerCase()
+    processedNames.add(nameKey)
+    const owgrData = owgrByName[nameKey]
+    const owgr = owgrData?.rank || null
+    const country = golfer.country || owgrData?.country || null
+    const countryCode = country ? getCountryFlagCode(country) : golfer.countryCode
+
+    const meta: Record<string, unknown> = {
+      ...(owgr ? { owgr } : {}),
+      ...(country ? { country } : {}),
+      ...(countryCode ? { country_code: countryCode } : {}),
+      ...(golfer.imageUrl ? { image_url: golfer.imageUrl } : {}),
+      tier: owgr ? getTier(owgr) : 'C',
+      espn_id: golfer.espnPlayerId,
+    }
+
+    const ex = existingByName[nameKey]
+    if (ex) {
+      // Update existing with fresh data
+      await admin
+        .from('event_participants')
+        .update({ metadata: { ...ex.metadata, ...meta }, updated_at: new Date().toISOString() })
+        .eq('id', ex.id)
+      updated++
+    } else {
+      // Add new participant
+      await admin.from('event_participants').insert({
+        tournament_id: tournament.id,
+        name: golfer.name,
+        seed: nextSeed++,
+        metadata: meta,
+      })
+      added++
+    }
+  }
+
+  // If ESPN field was empty, supplement with OWGR top N (not already in tournament)
+  if (espnField.length === 0) {
+    const rankedGolfers = owgrRankings.slice(0, topN)
+    for (const r of rankedGolfers) {
+      const nameKey = r.name.toLowerCase()
+      if (processedNames.has(nameKey)) continue
+      processedNames.add(nameKey)
+
+      const countryCode = getCountryFlagCode(r.country)
+      const meta: Record<string, unknown> = {
+        owgr: r.rank,
+        country: r.country,
+        ...(countryCode ? { country_code: countryCode } : {}),
+        tier: getTier(r.rank),
+      }
+
+      const ex = existingByName[nameKey]
+      if (ex) {
+        await admin
+          .from('event_participants')
+          .update({ metadata: { ...ex.metadata, ...meta }, updated_at: new Date().toISOString() })
+          .eq('id', ex.id)
+        updated++
+      } else {
+        await admin.from('event_participants').insert({
+          tournament_id: tournament.id,
+          name: r.name,
+          seed: nextSeed++,
+          metadata: meta,
+        })
+        added++
+      }
+    }
+  }
+
+  return NextResponse.json({
+    success: true,
+    action: 'sync-golf-field',
+    slug,
+    source: espnField.length > 0 ? 'espn-field' : 'owgr-rankings',
+    espnFieldSize: espnField.length,
+    owgrRankingsSize: owgrRankings.length,
+    added,
+    updated,
+    totalParticipants: (existing?.length || 0) + added,
   })
 }
 

@@ -618,6 +618,60 @@ export async function fetchGolfLeaderboard(
   return golfers.sort((a, b) => (a.position || 999) - (b.position || 999))
 }
 
+/**
+ * Fetch the full golf tournament field from ESPN.
+ * Uses the scoreboard API with a specific date to find the tournament,
+ * then extracts all competitors. Returns empty if field not yet published.
+ */
+export async function fetchGolfField(
+  tournamentDate: string // e.g., '2026-04-09'
+): Promise<ESPNGolfer[]> {
+  try {
+    const dateStr = tournamentDate.replace(/-/g, '')
+    const url = `${SITE_API_BASE}/golf/pga/scoreboard?dates=${dateStr}`
+
+    const res = await fetch(url, {
+      headers: { 'User-Agent': 'Rivyls/1.0' },
+      next: { revalidate: 3600 },
+    })
+    if (!res.ok) return []
+
+    const data = await res.json()
+    const events = (data.events || []) as Record<string, unknown>[]
+    const golfers: ESPNGolfer[] = []
+
+    for (const event of events) {
+      const competitions = (event.competitions || []) as Record<string, unknown>[]
+      for (const competition of competitions) {
+        const competitors = (competition.competitors || []) as Record<string, unknown>[]
+        for (const comp of competitors) {
+          const athlete = (comp.athlete || {}) as Record<string, unknown>
+          const countryName = String((athlete.flag as Record<string, unknown>)?.alt || '')
+
+          golfers.push({
+            espnPlayerId: String(athlete.id || comp.id || ''),
+            name: String(athlete.displayName || ''),
+            country: countryName,
+            countryCode: getCountryFlagCode(countryName),
+            position: (comp.order as number) || null,
+            score: null,
+            totalStrokes: null,
+            roundScores: [],
+            scoreToPar: null,
+            status: 'active',
+            imageUrl: (athlete.headshot as Record<string, unknown>)?.href as string || null,
+          })
+        }
+      }
+    }
+
+    return golfers
+  } catch (err) {
+    console.error('[espn-golf] Failed to fetch field:', err)
+    return []
+  }
+}
+
 // ============================================
 // Golf OWGR Rankings — HTML scrape from ESPN
 // ============================================
