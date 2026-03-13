@@ -109,6 +109,32 @@ export default async function AdminAnalyticsPage() {
   const draftCompletionRate = totalDrafts > 0 ? Math.round((draftsCompleted / totalDrafts) * 100) : 0
   const waitlistConversionRate = waitlistTotal > 0 ? Math.round((waitlistConverted / waitlistTotal) * 100) : 0
 
+  // Favorite schools
+  const { data: schoolProfiles } = await supabase
+    .from('profiles')
+    .select('favorite_school_id, schools(name)')
+    .not('favorite_school_id', 'is', null)
+
+  const schoolCounts: Record<string, { name: string; count: number }> = {}
+  for (const p of (schoolProfiles || [])) {
+    const sp = p as unknown as { favorite_school_id: string; schools: { name: string } | null }
+    if (sp.favorite_school_id) {
+      const existing = schoolCounts[sp.favorite_school_id]
+      if (existing) {
+        existing.count++
+      } else {
+        schoolCounts[sp.favorite_school_id] = { name: sp.schools?.name || 'Unknown', count: 1 }
+      }
+    }
+  }
+
+  const favoriteSchools = Object.entries(schoolCounts)
+    .map(([school_id, { name, count }]) => ({ school_id, school_name: name, count }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 15)
+
+  const totalFavoriteSchools = schoolProfiles?.length || 0
+
   // Commissioner metrics
   const { data: leagueData } = await supabase
     .from('leagues')
@@ -158,6 +184,8 @@ export default async function AdminAnalyticsPage() {
       eventRecentActivity={eventRecentActivity}
       commissioners={commissioners}
       recentActivity={recentActivity}
+      favoriteSchools={favoriteSchools}
+      totalFavoriteSchools={totalFavoriteSchools}
     />
   )
 }

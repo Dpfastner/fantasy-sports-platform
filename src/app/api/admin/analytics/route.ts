@@ -148,6 +148,27 @@ async function fetchMetricData(admin: any, metric: string, cutoff: string | null
       return { rows: data || [], count, columns: ['entry_id', 'participant_id', 'picked_at'] }
     }
 
+    case 'favorite_schools': {
+      const { data } = await admin.from('profiles').select('favorite_school_id').not('favorite_school_id', 'is', null)
+      // Count by school
+      const schoolCounts: Record<string, number> = {}
+      for (const row of (data || [])) {
+        const sid = (row as { favorite_school_id: string }).favorite_school_id
+        schoolCounts[sid] = (schoolCounts[sid] || 0) + 1
+      }
+      // Fetch school names
+      const schoolIds = Object.keys(schoolCounts)
+      let schoolNames: Record<string, string> = {}
+      if (schoolIds.length > 0) {
+        const { data: schools } = await admin.from('schools').select('id, name').in('id', schoolIds)
+        for (const s of (schools || [])) schoolNames[s.id] = s.name
+      }
+      const rows = Object.entries(schoolCounts)
+        .map(([id, count]) => ({ school: schoolNames[id] || id, fans: count }))
+        .sort((a, b) => b.fans - a.fans)
+      return { rows, count: rows.length, columns: ['school', 'fans'] }
+    }
+
     default:
       throw new Error(`Unknown metric: ${metric}`)
   }

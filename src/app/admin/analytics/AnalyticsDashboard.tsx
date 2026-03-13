@@ -29,6 +29,7 @@ const METRIC_LABELS: Record<string, string> = {
   event_pools: 'Event Pools',
   event_entries: 'Event Entries',
   event_picks: 'Event Picks',
+  favorite_schools: 'Favorite Schools',
 }
 
 const COLUMN_LABELS: Record<string, string> = {
@@ -59,6 +60,8 @@ const COLUMN_LABELS: Record<string, string> = {
   entry_id: 'Entry ID',
   participant_id: 'Participant',
   picked_at: 'Picked At',
+  school: 'School',
+  fans: 'Fans',
 }
 
 function StatCard({ label, value, sub, metric, onClick }: StatCardProps) {
@@ -201,6 +204,146 @@ function DetailPanel({ metric, onClose }: DetailPanelProps) {
   )
 }
 
+// ---- Tournament Detail Panel ----
+
+interface TournamentDetail {
+  tournament: { id: string; name: string; sport: string; format: string; status: string; starts_at: string }
+  pools: Array<{
+    id: string; name: string; gameType: string | null; visibility: string; status: string
+    createdAt: string; entries: number; submitted: number
+  }>
+  stats: {
+    totalPools: number; totalEntries: number; totalSubmitted: number
+    participants: number; totalGames: number; completedGames: number; liveGames: number; totalPicks: number
+  }
+  recentActivity: Array<{ action: string; created_at: string; user_id: string | null; details: Record<string, unknown> }>
+}
+
+function TournamentDetailPanel({ tournamentId, onClose }: { tournamentId: string; onClose: () => void }) {
+  const [data, setData] = useState<TournamentDetail | null>(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    setLoading(true)
+    fetch(`/api/admin/analytics/tournament?id=${tournamentId}`)
+      .then(r => r.ok ? r.json() : null)
+      .then(d => { setData(d); setLoading(false) })
+      .catch(() => setLoading(false))
+  }, [tournamentId])
+
+  return (
+    <div className="fixed inset-0 z-50 flex justify-end" onClick={onClose}>
+      <div className="absolute inset-0 bg-black/40" />
+      <div
+        className="relative w-full max-w-3xl bg-page border-l border-border shadow-xl overflow-hidden flex flex-col animate-in slide-in-from-right duration-200"
+        onClick={e => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between px-6 py-4 border-b border-border bg-surface">
+          <div>
+            <h2 className="text-lg font-semibold text-text-primary">{data?.tournament.name || 'Loading...'}</h2>
+            {data && (
+              <p className="text-sm text-text-muted capitalize">{data.tournament.sport} &middot; {data.tournament.format} &middot; {data.tournament.status}</p>
+            )}
+          </div>
+          <button onClick={onClose} className="text-text-muted hover:text-text-primary p-1">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        <div className="flex-1 overflow-auto">
+          {loading ? (
+            <div className="flex items-center justify-center py-12">
+              <div className="w-6 h-6 border-2 border-brand border-t-transparent rounded-full animate-spin" />
+            </div>
+          ) : !data ? (
+            <div className="text-center py-12 text-text-muted">Failed to load</div>
+          ) : (
+            <div className="p-6 space-y-6">
+              {/* Stats grid */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <div className="bg-surface rounded-lg p-3">
+                  <p className="text-text-muted text-xs">Pools</p>
+                  <p className="text-xl font-bold text-text-primary">{data.stats.totalPools}</p>
+                </div>
+                <div className="bg-surface rounded-lg p-3">
+                  <p className="text-text-muted text-xs">Entries</p>
+                  <p className="text-xl font-bold text-text-primary">{data.stats.totalEntries}</p>
+                  <p className="text-text-secondary text-xs">{data.stats.totalSubmitted} submitted</p>
+                </div>
+                <div className="bg-surface rounded-lg p-3">
+                  <p className="text-text-muted text-xs">Participants</p>
+                  <p className="text-xl font-bold text-text-primary">{data.stats.participants}</p>
+                </div>
+                <div className="bg-surface rounded-lg p-3">
+                  <p className="text-text-muted text-xs">Games</p>
+                  <p className="text-xl font-bold text-text-primary">{data.stats.completedGames}/{data.stats.totalGames}</p>
+                  {data.stats.liveGames > 0 && <p className="text-success-text text-xs">{data.stats.liveGames} live</p>}
+                </div>
+              </div>
+
+              {/* Pools table */}
+              <div>
+                <h3 className="text-sm font-semibold text-text-primary mb-2">Pools</h3>
+                <div className="bg-surface rounded-lg overflow-hidden">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="text-left text-text-muted border-b border-border text-xs uppercase tracking-wide">
+                        <th className="px-3 py-2">Name</th>
+                        <th className="px-3 py-2">Type</th>
+                        <th className="px-3 py-2">Status</th>
+                        <th className="px-3 py-2 text-right">Entries</th>
+                        <th className="px-3 py-2 text-right">Submitted</th>
+                        <th className="px-3 py-2">Created</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-border-subtle">
+                      {data.pools.map(p => (
+                        <tr key={p.id} className="hover:bg-surface-inset/30">
+                          <td className="px-3 py-2 text-text-primary font-medium">{p.name}</td>
+                          <td className="px-3 py-2 text-text-secondary capitalize">{p.gameType || '—'}</td>
+                          <td className="px-3 py-2">
+                            <span className={`px-1.5 py-0.5 rounded text-xs font-medium ${
+                              p.status === 'open' ? 'bg-success/20 text-success-text' :
+                              p.status === 'locked' ? 'bg-warning/20 text-warning-text' :
+                              'bg-surface-inset text-text-muted'
+                            }`}>{p.status}</span>
+                          </td>
+                          <td className="px-3 py-2 text-text-primary text-right">{p.entries}</td>
+                          <td className="px-3 py-2 text-text-primary text-right">{p.submitted}</td>
+                          <td className="px-3 py-2 text-text-muted whitespace-nowrap">
+                            {new Date(p.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              {/* Recent activity */}
+              {data.recentActivity.length > 0 && (
+                <div>
+                  <h3 className="text-sm font-semibold text-text-primary mb-2">Recent Activity</h3>
+                  <div className="bg-surface rounded-lg divide-y divide-border-subtle overflow-hidden">
+                    {data.recentActivity.map((a, i) => (
+                      <div key={i} className="px-3 py-2 flex items-center justify-between">
+                        <span className="text-text-primary text-sm font-mono">{a.action}</span>
+                        <span className="text-text-muted text-xs">{new Date(a.created_at).toLocaleString()}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ---- Main Dashboard Component ----
 
 interface Tournament {
@@ -246,10 +389,13 @@ interface AnalyticsDashboardProps {
   eventRecentActivity: EventActivity[]
   commissioners: Commissioner[]
   recentActivity: ActivityRow[]
+  favoriteSchools: Array<{ school_id: string; school_name: string; count: number }>
+  totalFavoriteSchools: number
 }
 
 export function AnalyticsDashboard(props: AnalyticsDashboardProps) {
   const [activeMetric, setActiveMetric] = useState<string | null>(null)
+  const [activeTournament, setActiveTournament] = useState<string | null>(null)
 
   const openDetail = (metric: string) => setActiveMetric(metric)
   const closeDetail = () => setActiveMetric(null)
@@ -304,7 +450,7 @@ export function AnalyticsDashboard(props: AnalyticsDashboardProps) {
                 </thead>
                 <tbody>
                   {props.eventTournaments.map((t) => (
-                    <tr key={t.id} className="border-b border-border-subtle">
+                    <tr key={t.id} className="border-b border-border-subtle hover:bg-surface-inset/50 cursor-pointer transition-colors" onClick={() => setActiveTournament(t.id)}>
                       <td className="px-4 py-3 text-text-primary">{t.name}</td>
                       <td className="px-4 py-3 text-text-secondary text-sm capitalize">{t.sport}</td>
                       <td className="px-4 py-3 text-text-secondary text-sm capitalize">{t.format}</td>
@@ -370,6 +516,36 @@ export function AnalyticsDashboard(props: AnalyticsDashboardProps) {
               )}
             </div>
           </div>
+        </section>
+
+        {/* Favorite Schools */}
+        <section className="mb-8">
+          <h2 className="text-xl font-semibold text-text-primary mb-4">Favorite Schools</h2>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+            <StatCard label="Users with Favorite" value={props.totalFavoriteSchools} metric="favorite_schools" onClick={openDetail} />
+          </div>
+          {props.favoriteSchools.length > 0 && (
+            <div className="bg-surface rounded-lg overflow-hidden">
+              <table className="w-full">
+                <thead>
+                  <tr className="text-left text-text-secondary border-b border-border">
+                    <th className="px-4 py-3 font-medium">#</th>
+                    <th className="px-4 py-3 font-medium">School</th>
+                    <th className="px-4 py-3 font-medium text-right">Fans</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {props.favoriteSchools.map((s, i) => (
+                    <tr key={s.school_id} className="border-b border-border-subtle">
+                      <td className="px-4 py-3 text-text-muted text-sm">{i + 1}</td>
+                      <td className="px-4 py-3 text-text-primary">{s.school_name}</td>
+                      <td className="px-4 py-3 text-text-primary font-medium text-right">{s.count}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </section>
 
         {/* Commissioner Metrics */}
@@ -474,6 +650,11 @@ export function AnalyticsDashboard(props: AnalyticsDashboardProps) {
       {/* Detail Panel */}
       {activeMetric && (
         <DetailPanel metric={activeMetric} onClose={closeDetail} />
+      )}
+
+      {/* Tournament Detail Panel */}
+      {activeTournament && (
+        <TournamentDetailPanel tournamentId={activeTournament} onClose={() => setActiveTournament(null)} />
       )}
     </div>
   )
