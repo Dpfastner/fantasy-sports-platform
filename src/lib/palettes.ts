@@ -15,6 +15,9 @@ export interface PaletteColors {
   neutral: string
   base: string
 
+  // Card text (dark text for light card backgrounds)
+  cardTextMuted: string
+
   // Surfaces
   page: string
   pageAlt: string
@@ -91,6 +94,7 @@ export const palettes: PaletteDefinition[] = [
       tertiary: '#F5A623',
       neutral: '#F7F8FA',
       base: '#0D1520',
+      cardTextMuted: '#3D4F66',
 
       // Surfaces
       page: '#0D1520',
@@ -156,6 +160,7 @@ export const palettes: PaletteDefinition[] = [
       tertiary: '#F2E8D5',
       neutral: '#FFFFFF',
       base: '#0E2218',
+      cardTextMuted: '#5C5040',
 
       // Surfaces
       page: '#0E2218',
@@ -221,6 +226,7 @@ export const palettes: PaletteDefinition[] = [
       tertiary: '#FAF5EE',
       neutral: '#FFFFFF',
       base: '#1A0F28',
+      cardTextMuted: '#4A3D5C',
 
       // Surfaces
       page: '#1A0F28',
@@ -286,6 +292,7 @@ export const palettes: PaletteDefinition[] = [
       tertiary: '#E07A3A',
       neutral: '#F0EBE1',
       base: '#2C3E50',
+      cardTextMuted: '#5D6D7E',
 
       // Surfaces
       page: '#FAF7F2',
@@ -360,7 +367,7 @@ export function paletteToCSSVars(palette: PaletteDefinition): Record<string, str
     '--palette-tertiary': colors.tertiary,
     '--palette-neutral': colors.neutral,
     '--palette-card-text': colors.base,
-    '--palette-card-text-muted': colors.textSecondary,
+    '--palette-card-text-muted': colors.cardTextMuted,
     '--palette-border': colors.border,
     '--palette-border-subtle': colors.borderSubtle,
     '--palette-text-primary': colors.textPrimary,
