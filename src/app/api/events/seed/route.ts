@@ -996,12 +996,13 @@ async function convertMSixNationsToSurvivor(admin: ReturnType<typeof createAdmin
     // Patch any remaining config/pool issues
     const cfg = (tournament.config || {}) as Record<string, unknown>
     const patches: string[] = []
-    if (!cfg.espn_league_id) {
+    if (!cfg.espn_league_id || !cfg.score_source) {
       await admin
         .from('event_tournaments')
-        .update({ config: { ...cfg, espn_league_id: '180659' }, updated_at: new Date().toISOString() })
+        .update({ config: { ...cfg, espn_league_id: '180659', score_source: 'sportsdb', sportsdb_league_id: '4714' }, updated_at: new Date().toISOString() })
         .eq('id', tournament.id)
-      patches.push('espn_league_id')
+      if (!cfg.espn_league_id) patches.push('espn_league_id')
+      if (!cfg.score_source) patches.push('score_source', 'sportsdb_league_id')
     }
     // Fix any pools still set to pickem
     const { data: pickemPools } = await admin
@@ -1089,6 +1090,8 @@ async function convertMSixNationsToSurvivor(admin: ReturnType<typeof createAdmin
         ...existingConfig,
         draw_eliminates: true,
         strikes_allowed: 0,
+        score_source: 'sportsdb',
+        sportsdb_league_id: '4714',
         espn_league_id: '180659',
         week_deadlines: weekDeadlines,
       },
@@ -1816,6 +1819,8 @@ async function seedMSixNations(admin: ReturnType<typeof createAdminClient>) {
       config: {
         draw_eliminates: true,
         strikes_allowed: 0,
+        score_source: 'sportsdb',
+        sportsdb_league_id: '4714',
         espn_league_id: '180659',
         week_deadlines: weekDeadlines,
       },
@@ -1865,6 +1870,7 @@ async function seedMSixNations(admin: ReturnType<typeof createAdminClient>) {
     tournament_id: tournament.id,
     game_number: i + 1,
     round: m.round ? `round_${m.round}` : 'other',
+    week_number: m.round || null,
     participant_1_id: codeToId[m.homeTeamCode],
     participant_2_id: codeToId[m.awayTeamCode],
     starts_at: m.date,
