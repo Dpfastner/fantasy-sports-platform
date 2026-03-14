@@ -262,36 +262,95 @@ export interface ESPNRugbyMatch {
  * Fetch Six Nations fixtures and scores from ESPN Site API.
  * Uses the scoreboard endpoint which returns scores (unlike Core API).
  */
+/**
+ * Fetch rugby matches from ESPN Core API.
+ *
+ * Uses the Core API (sports.core.api.espn.com) which reliably supports
+ * rugby Six Nations — ported from the working rugby-survivor project.
+ *
+ * Flow: events?dates= → event refs → event detail → status + per-team scores
+ */
 export async function fetchRugbyMatches(
   dates: string[],
   supabase: SupabaseClient | null = null
 ): Promise<ESPNRugbyMatch[]> {
   const config = ESPN_SPORTS.rugby
+  const rugbyBase = `${CORE_API_BASE}/rugby/leagues/${config.coreLeagueId}`
   const matches: ESPNRugbyMatch[] = []
   const seenEventIds = new Set<string>()
 
+  // ESPN team ID → our team code (with IRE→IRL normalization)
+  const espnTeamIdMap: Record<string, string> = {
+    '1': 'ENG', '2': 'SCO', '3': 'IRL', '4': 'WAL', '9': 'FRA', '20': 'ITA',
+  }
+
   for (const dateStr of dates) {
     try {
-      const url = `${SITE_API_BASE}/${config.siteApiPath}/scoreboard?dates=${dateStr}`
-      const { data } = await monitoredEventFetch(
-        supabase,
-        `events/rugby/six-nations/scoreboard?dates=${dateStr}`,
-        url,
-        validateSiteScoreboardResponse
-      )
+      // Step 1: Get event refs for this date
+      const eventsUrl = `${rugbyBase}/events?dates=${dateStr}`
+      const eventsRes = await fetchWithTimeout(eventsUrl, 15000)
+      if (!eventsRes.ok) {
+        console.error(`[espn-rugby] Events HTTP ${eventsRes.status} for date ${dateStr}`)
+        continue
+      }
+      const eventsData = await eventsRes.json() as { items?: { $ref: string }[] }
+      const eventRefs = eventsData.items || []
 
-      const events = (data as Record<string, unknown>).events as Record<string, unknown>[] || []
+      // Log to health tracking
+      if (supabase) {
+        const hash = hashResponseStructure(eventsData)
+        await logApiHealth(
+          supabase,
+          `events/rugby/core/events?dates=${dateStr}`,
+          eventsRes.status,
+          0,
+          eventRefs.length > 0,
+          hash,
+          eventRefs.length === 0 ? ['No event refs returned'] : [],
+        )
+      }
 
-      for (const event of events) {
+      // Step 2: Fetch each event's details
+      for (const ref of eventRefs) {
         try {
-          const eventId = event.id as string
-          if (seenEventIds.has(eventId)) continue
+          const eventRes = await fetchWithTimeout(ref.$ref, 10000)
+          if (!eventRes.ok) continue
+          const eventData = await eventRes.json() as Record<string, unknown>
+
+          const eventId = String(eventData.id || '')
+          if (!eventId || seenEventIds.has(eventId)) continue
           seenEventIds.add(eventId)
 
-          const competitions = event.competitions as Record<string, unknown>[] || []
+          const competitions = eventData.competitions as Record<string, unknown>[] || []
           const competition = competitions[0]
           if (!competition) continue
 
+          // Step 3: Fetch status separately (more reliable for live data)
+          let isComplete = false
+          let isLive = false
+          let displayClock: string | undefined
+          let period: number | undefined
+
+          try {
+            const statusUrl = `${rugbyBase}/events/${eventId}/competitions/${eventId}/status`
+            const statusRes = await fetchWithTimeout(statusUrl, 10000)
+            if (statusRes.ok) {
+              const statusData = await statusRes.json() as Record<string, unknown>
+              const statusType = statusData.type as Record<string, unknown> || {}
+              isComplete = statusType.completed === true
+              isLive = statusType.state === 'in'
+              displayClock = (statusData.displayClock as string) || undefined
+              period = (statusData.period as number) || undefined
+            }
+          } catch {
+            // Fall back to competition-level status
+            const compStatus = competition.status as Record<string, unknown> || {}
+            const compType = compStatus.type as Record<string, unknown> || {}
+            isComplete = compType.completed === true
+            isLive = compType.state === 'in'
+          }
+
+          // Step 4: Get teams and scores
           const competitors = competition.competitors as Record<string, unknown>[] || []
           let homeTeamCode = ''
           let awayTeamCode = ''
@@ -299,12 +358,28 @@ export async function fetchRugbyMatches(
           let awayScore: number | null = null
 
           for (const comp of competitors) {
-            const team = comp.team as Record<string, unknown> || {}
-            const abbr = normalizeAbbreviation((team.abbreviation as string) || '')
-            const teamCode = config.teamMap[team.id as string] || abbr
-            const score = comp.score != null ? parseInt(comp.score as string) : null
+            const teamRef = comp.team as Record<string, unknown> || {}
+            const teamId = String(teamRef.id || '')
+            const teamCode = espnTeamIdMap[teamId] || normalizeAbbreviation(String(teamRef.abbreviation || ''))
+            const isHome = comp.homeAway === 'home'
 
-            if (comp.homeAway === 'home') {
+            // Try fetching score from Core API endpoint (most reliable for live)
+            let score: number | null = null
+            if (isLive || isComplete) {
+              try {
+                const scoreUrl = `${rugbyBase}/events/${eventId}/competitions/${eventId}/competitors/${teamId}/score`
+                const scoreRes = await fetchWithTimeout(scoreUrl, 5000)
+                if (scoreRes.ok) {
+                  const scoreData = await scoreRes.json() as { value?: number }
+                  score = scoreData.value ?? null
+                }
+              } catch {
+                // Fall back to competitor-level score
+                score = comp.score != null ? parseInt(String(comp.score)) : null
+              }
+            }
+
+            if (isHome) {
               homeTeamCode = teamCode
               homeScore = score
             } else {
@@ -315,12 +390,7 @@ export async function fetchRugbyMatches(
 
           if (!homeTeamCode || !awayTeamCode) continue
 
-          const status = competition.status as Record<string, unknown> || {}
-          const statusType = status.type as Record<string, unknown> || {}
-          const isComplete = statusType.completed === true
-          const isLive = statusType.state === 'in' || statusType.name === 'STATUS_IN_PROGRESS'
           const isDraw = isComplete && homeScore !== null && awayScore !== null && homeScore === awayScore
-
           let winnerTeamCode: string | null = null
           if (isComplete && homeScore !== null && awayScore !== null) {
             if (homeScore > awayScore) winnerTeamCode = homeTeamCode
@@ -329,8 +399,8 @@ export async function fetchRugbyMatches(
 
           matches.push({
             espnEventId: eventId,
-            name: (event.name as string) || `${homeTeamCode} vs ${awayTeamCode}`,
-            date: event.date as string,
+            name: (eventData.name as string) || `${homeTeamCode} vs ${awayTeamCode}`,
+            date: (eventData.date as string) || '',
             homeTeamCode,
             awayTeamCode,
             homeScore,
@@ -339,8 +409,8 @@ export async function fetchRugbyMatches(
             isComplete,
             isDraw,
             winnerTeamCode,
-            displayClock: (status.displayClock as string) || undefined,
-            period: (status.period as number) || undefined,
+            displayClock,
+            period,
           })
         } catch {
           continue
