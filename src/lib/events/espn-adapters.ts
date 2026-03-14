@@ -358,9 +358,9 @@ export async function fetchRugbyMatches(
           let awayScore: number | null = null
 
           for (const comp of competitors) {
-            const teamRef = comp.team as Record<string, unknown> || {}
-            const teamId = String(teamRef.id || '')
-            const teamCode = espnTeamIdMap[teamId] || normalizeAbbreviation(String(teamRef.abbreviation || ''))
+            // Core API: team ID is on comp.id directly; comp.team is a $ref link, not inlined
+            const teamId = String(comp.id || '')
+            const teamCode = espnTeamIdMap[teamId] || normalizeAbbreviation(String(teamId))
             const isHome = comp.homeAway === 'home'
 
             // Try fetching score from Core API endpoint (most reliable for live)
