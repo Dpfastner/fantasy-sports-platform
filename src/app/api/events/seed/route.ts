@@ -996,13 +996,16 @@ async function convertMSixNationsToSurvivor(admin: ReturnType<typeof createAdmin
     // Patch any remaining config/pool issues
     const cfg = (tournament.config || {}) as Record<string, unknown>
     const patches: string[] = []
-    if (!cfg.espn_league_id || !cfg.score_source) {
+    // Remove stale score_source if present (ESPN is the live source, not TheSportsDB)
+    if (!cfg.espn_league_id || cfg.score_source) {
+      const { score_source: _, sportsdb_league_id: __, ...rest } = cfg
+      const patchedConfig = { ...rest, espn_league_id: '180659' }
       await admin
         .from('event_tournaments')
-        .update({ config: { ...cfg, espn_league_id: '180659', score_source: 'sportsdb', sportsdb_league_id: '4714' }, updated_at: new Date().toISOString() })
+        .update({ config: patchedConfig, updated_at: new Date().toISOString() })
         .eq('id', tournament.id)
       if (!cfg.espn_league_id) patches.push('espn_league_id')
-      if (!cfg.score_source) patches.push('score_source', 'sportsdb_league_id')
+      if (cfg.score_source) patches.push('removed_score_source')
     }
     // Fix any pools still set to pickem
     const { data: pickemPools } = await admin
@@ -1090,8 +1093,6 @@ async function convertMSixNationsToSurvivor(admin: ReturnType<typeof createAdmin
         ...existingConfig,
         draw_eliminates: true,
         strikes_allowed: 0,
-        score_source: 'sportsdb',
-        sportsdb_league_id: '4714',
         espn_league_id: '180659',
         week_deadlines: weekDeadlines,
       },
@@ -1819,8 +1820,6 @@ async function seedMSixNations(admin: ReturnType<typeof createAdminClient>) {
       config: {
         draw_eliminates: true,
         strikes_allowed: 0,
-        score_source: 'sportsdb',
-        sportsdb_league_id: '4714',
         espn_league_id: '180659',
         week_deadlines: weekDeadlines,
       },

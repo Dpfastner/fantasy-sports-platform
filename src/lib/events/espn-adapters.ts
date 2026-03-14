@@ -272,7 +272,7 @@ export async function fetchRugbyMatches(
 
   for (const dateStr of dates) {
     try {
-      const url = `${SITE_API_BASE}/rugby/${config.coreLeagueId}/scoreboard?dates=${dateStr}`
+      const url = `${SITE_API_BASE}/${config.siteApiPath}/scoreboard?dates=${dateStr}`
       const { data } = await monitoredEventFetch(
         supabase,
         `events/rugby/six-nations/scoreboard?dates=${dateStr}`,
