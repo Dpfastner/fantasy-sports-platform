@@ -6,6 +6,9 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { useToast } from '@/components/Toast'
 
+import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core'
+import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
 import { DraftChat } from '@/components/DraftChat'
 import { trackActivity } from '@/app/actions/activity'
 import { track } from '@vercel/analytics'
@@ -59,6 +62,93 @@ interface LeagueSettings {
   max_school_selections_total: number
   max_school_selections_per_team: number
   draft_date: string | null
+}
+
+// ── Sortable Draft Order Components ──────────────────────────
+
+function SortableTeamItem({ team, index, totalTeams, onMoveTeam }: {
+  team: Team
+  index: number
+  totalTeams: number
+  onMoveTeam: (id: string, dir: 'up' | 'down') => void
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: team.id })
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  }
+
+  return (
+    <div ref={setNodeRef} style={style} className="flex items-center gap-3 bg-surface-subtle p-3 rounded">
+      <button
+        {...attributes}
+        {...listeners}
+        className="cursor-grab active:cursor-grabbing text-text-muted hover:text-text-primary p-1 touch-none"
+        aria-label="Drag to reorder"
+      >
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <circle cx="9" cy="5" r="1.5" fill="currentColor" /><circle cx="15" cy="5" r="1.5" fill="currentColor" />
+          <circle cx="9" cy="12" r="1.5" fill="currentColor" /><circle cx="15" cy="12" r="1.5" fill="currentColor" />
+          <circle cx="9" cy="19" r="1.5" fill="currentColor" /><circle cx="15" cy="19" r="1.5" fill="currentColor" />
+        </svg>
+      </button>
+      <span className="text-text-secondary font-mono w-6">{index + 1}.</span>
+      <span className="text-text-primary flex-1">{team.name}</span>
+      <div className="flex gap-1">
+        <button
+          onClick={() => onMoveTeam(team.id, 'up')}
+          disabled={index === 0}
+          className="text-text-secondary hover:text-text-primary disabled:opacity-30 disabled:cursor-not-allowed p-1"
+        >
+          ▲
+        </button>
+        <button
+          onClick={() => onMoveTeam(team.id, 'down')}
+          disabled={index === totalTeams - 1}
+          className="text-text-secondary hover:text-text-primary disabled:opacity-30 disabled:cursor-not-allowed p-1"
+        >
+          ▼
+        </button>
+      </div>
+    </div>
+  )
+}
+
+function DraftOrderSortable({ teams, onMoveTeam, onDragEnd }: {
+  teams: Team[]
+  onMoveTeam: (id: string, dir: 'up' | 'down') => void
+  onDragEnd: (event: DragEndEvent) => void
+}) {
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  )
+
+  return (
+    <div className="max-w-md mx-auto bg-surface rounded-lg p-4">
+      <h3 className="text-text-primary font-semibold mb-3">Set Draft Order</h3>
+      <p className="text-text-secondary text-sm mb-4">
+        Drag to reorder or use the arrows.
+      </p>
+      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
+        <SortableContext items={teams.map(t => t.id)} strategy={verticalListSortingStrategy}>
+          <div className="space-y-2">
+            {teams.map((team, index) => (
+              <SortableTeamItem
+                key={team.id}
+                team={team}
+                index={index}
+                totalTeams={teams.length}
+                onMoveTeam={onMoveTeam}
+              />
+            ))}
+          </div>
+        </SortableContext>
+      </DndContext>
+    </div>
+  )
 }
 
 export default function DraftRoomPage() {
@@ -1155,29 +1245,41 @@ export default function DraftRoomPage() {
 
     if (newIndex < 0 || newIndex >= sortedTeams.length) return
 
-    // Swap positions
-    const teamA = sortedTeams[currentIndex]
-    const teamB = sortedTeams[newIndex]
-    const posA = teamA.draft_position || currentIndex + 1
-    const posB = teamB.draft_position || newIndex + 1
+    const reordered = arrayMove(sortedTeams, currentIndex, newIndex)
+    await saveDraftOrder(reordered)
+  }
 
-    // Update in database
-    await supabase
-      .from('fantasy_teams')
-      .update({ draft_position: posB })
-      .eq('id', teamA.id)
-
-    await supabase
-      .from('fantasy_teams')
-      .update({ draft_position: posA })
-      .eq('id', teamB.id)
-
-    // Update local state
-    setTeams(prevTeams => prevTeams.map(t => {
-      if (t.id === teamA.id) return { ...t, draft_position: posB }
-      if (t.id === teamB.id) return { ...t, draft_position: posA }
-      return t
+  // Save full draft order to database
+  const saveDraftOrder = async (orderedTeams: typeof teams) => {
+    // Optimistic local update
+    setTeams(prev => prev.map(t => {
+      const idx = orderedTeams.findIndex(ot => ot.id === t.id)
+      return idx >= 0 ? { ...t, draft_position: idx + 1 } : t
     }))
+
+    // Persist all positions
+    const updates = orderedTeams.map((t, i) =>
+      supabase.from('fantasy_teams').update({ draft_position: i + 1 }).eq('id', t.id)
+    )
+    const results = await Promise.all(updates)
+    const failed = results.some(r => r.error)
+    if (failed) {
+      addToast('Failed to save draft order', 'error')
+    }
+  }
+
+  // Drag-and-drop handler
+  const handleDraftOrderDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event
+    if (!over || active.id === over.id) return
+
+    const sortedTeams = [...teams].sort((a, b) => (a.draft_position || 999) - (b.draft_position || 999))
+    const oldIndex = sortedTeams.findIndex(t => t.id === active.id)
+    const newIndex = sortedTeams.findIndex(t => t.id === over.id)
+    if (oldIndex === -1 || newIndex === -1) return
+
+    const reordered = arrayMove(sortedTeams, oldIndex, newIndex)
+    saveDraftOrder(reordered)
   }
 
   // Pause/Resume draft
@@ -2063,41 +2165,11 @@ export default function DraftRoomPage() {
 
               {/* Manual Draft Order Setup */}
               {isCommissioner && settings?.draft_order_type === 'manual' && teams.length >= 1 && (
-                <div className="max-w-md mx-auto bg-surface rounded-lg p-4">
-                  <h3 className="text-text-primary font-semibold mb-3">Set Draft Order</h3>
-                  <p className="text-text-secondary text-sm mb-4">
-                    Use the arrows to reorder teams.
-                  </p>
-                  <div className="space-y-2">
-                    {[...teams]
-                      .sort((a, b) => (a.draft_position || 999) - (b.draft_position || 999))
-                      .map((team, index) => (
-                        <div
-                          key={team.id}
-                          className="flex items-center gap-3 bg-surface p-3 rounded"
-                        >
-                          <span className="text-text-secondary font-mono w-6">{index + 1}.</span>
-                          <span className="text-text-primary flex-1">{team.name}</span>
-                          <div className="flex gap-1">
-                            <button
-                              onClick={() => handleMoveTeam(team.id, 'up')}
-                              disabled={index === 0}
-                              className="text-text-secondary hover:text-text-primary disabled:opacity-30 disabled:cursor-not-allowed p-1"
-                            >
-                              ▲
-                            </button>
-                            <button
-                              onClick={() => handleMoveTeam(team.id, 'down')}
-                              disabled={index === teams.length - 1}
-                              className="text-text-secondary hover:text-text-primary disabled:opacity-30 disabled:cursor-not-allowed p-1"
-                            >
-                              ▼
-                            </button>
-                          </div>
-                        </div>
-                      ))}
-                  </div>
-                </div>
+                <DraftOrderSortable
+                  teams={[...teams].sort((a, b) => (a.draft_position || 999) - (b.draft_position || 999))}
+                  onMoveTeam={handleMoveTeam}
+                  onDragEnd={handleDraftOrderDragEnd}
+                />
               )}
 
               {/* Random Order Info */}

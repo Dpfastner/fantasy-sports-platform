@@ -71,9 +71,9 @@ function SchoolChip({ school, onRemove, variant }: {
   )
 }
 
-// ── Inline Picker ──────────────────────────────────────────
+// ── Roster List (always visible) ──────────────────────────────
 
-function InlinePicker({ schools, selectedIds, disabledIds, onToggle, variant, search, onSearchChange, schoolPointsMap, rankingsMap, schoolRecordsMap }: {
+function RosterList({ schools, selectedIds, disabledIds, onToggle, variant, search, onSearchChange, schoolPointsMap, rankingsMap, schoolRecordsMap }: {
   schools: RosterSchool[]
   selectedIds: Set<string>
   disabledIds: Set<string>
@@ -92,9 +92,9 @@ function InlinePicker({ schools, selectedIds, disabledIds, onToggle, variant, se
   )
 
   const colors = {
-    giving: { selected: 'bg-danger/20 border-danger/50', check: 'bg-danger border-danger' },
-    receiving: { selected: 'bg-success/20 border-success/50', check: 'bg-success border-success' },
-    dropping: { selected: 'bg-warning/20 border-warning/50', check: 'bg-warning border-warning' },
+    giving: { selected: 'bg-danger/20 border-l-danger', check: 'bg-danger border-danger' },
+    receiving: { selected: 'bg-success/20 border-l-success', check: 'bg-success border-success' },
+    dropping: { selected: 'bg-warning/20 border-l-warning', check: 'bg-warning border-warning' },
   }
 
   const getRecord = (schoolId: string) => {
@@ -103,16 +103,15 @@ function InlinePicker({ schools, selectedIds, disabledIds, onToggle, variant, se
   }
 
   return (
-    <div className="border border-border rounded-lg overflow-hidden bg-surface">
+    <div className="flex flex-col min-h-0">
       <input
         type="text"
         value={search}
         onChange={(e) => onSearchChange(e.target.value)}
-        placeholder="Search schools..."
-        className="w-full px-3 py-2 bg-surface border-b border-border text-text-primary text-sm placeholder:text-text-muted outline-none"
-        autoFocus
+        placeholder="Search..."
+        className="w-full px-3 py-2 bg-surface border border-border rounded-t-lg text-text-primary text-sm placeholder:text-text-muted outline-none"
       />
-      <div className="max-h-48 overflow-y-auto">
+      <div className="flex-1 overflow-y-auto border border-t-0 border-border rounded-b-lg bg-surface max-h-[45vh]">
         {filtered.length === 0 ? (
           <p className="px-3 py-4 text-text-muted text-sm text-center">No matching schools</p>
         ) : filtered.map(school => {
@@ -125,12 +124,12 @@ function InlinePicker({ schools, selectedIds, disabledIds, onToggle, variant, se
               key={school.schoolId}
               onClick={() => !disabled && onToggle(school.schoolId)}
               disabled={disabled}
-              className={`w-full flex items-center gap-2.5 px-3 py-2 text-left transition-colors ${
+              className={`w-full flex items-center gap-2 px-3 py-2 text-left transition-colors border-l-2 ${
                 disabled
-                  ? 'opacity-30 cursor-not-allowed'
+                  ? 'opacity-30 cursor-not-allowed border-l-transparent'
                   : selected
-                    ? colors[variant].selected
-                    : 'hover:bg-surface-subtle'
+                    ? `${colors[variant].selected}`
+                    : 'hover:bg-surface-subtle border-l-transparent'
               }`}
             >
               <div className={`w-4 h-4 rounded border-2 flex items-center justify-center flex-shrink-0 ${
@@ -150,10 +149,10 @@ function InlinePicker({ schools, selectedIds, disabledIds, onToggle, variant, se
                   {rank && <span className="text-[10px] text-brand-text font-bold">#{rank}</span>}
                   <span className="text-sm font-medium text-text-primary truncate">{school.schoolName}</span>
                 </div>
+                <span className="text-[11px] text-text-muted">
+                  {disabled ? 'Already owned' : `${school.conference} · ${getRecord(school.schoolId)} · ${points} pts`}
+                </span>
               </div>
-              <span className="text-[11px] text-text-muted whitespace-nowrap">
-                {disabled ? 'Already owned' : `${school.conference} · ${getRecord(school.schoolId)} · ${points} pts`}
-              </span>
             </button>
           )
         })}
@@ -185,15 +184,11 @@ export default function TradeProposalModal({
   const [dropIds, setDropIds] = useState<Set<string>>(new Set())
   const [message, setMessage] = useState('')
   const [submitting, setSubmitting] = useState(false)
-
-  // Picker visibility
-  const [showGivingPicker, setShowGivingPicker] = useState(false)
-  const [showReceivingPicker, setShowReceivingPicker] = useState(false)
   const [givingSearch, setGivingSearch] = useState('')
   const [receivingSearch, setReceivingSearch] = useState('')
   const [dropSearch, setDropSearch] = useState('')
 
-  // Disabled sets (schools already on the other roster) — must be above early return (Rules of Hooks)
+  // Disabled sets — must be above early return (Rules of Hooks)
   const myRosterSchoolIds = useMemo(() => new Set(myRoster.map(s => s.schoolId)), [myRoster])
   const partnerRosterSchoolIds = useMemo(() => new Set(partnerRoster.map(s => s.schoolId)), [partnerRoster])
 
@@ -308,10 +303,10 @@ export default function TradeProposalModal({
       {/* Backdrop */}
       <div className="absolute inset-0 bg-black/60" onClick={onClose} />
 
-      {/* Modal */}
-      <div className="relative bg-page border border-border rounded-xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto">
+      {/* Modal — wider to fit side-by-side rosters */}
+      <div className="relative bg-page border border-border rounded-xl shadow-2xl w-full max-w-5xl max-h-[90vh] flex flex-col">
         {/* Header */}
-        <div className="sticky top-0 bg-page border-b border-border px-6 py-4 flex items-center justify-between z-10">
+        <div className="bg-page border-b border-border px-6 py-4 flex items-center justify-between flex-shrink-0 rounded-t-xl">
           <h2 className="text-xl font-bold text-text-primary">
             {counterToTrade ? 'Counter Trade' : `Trade with ${partnerTeam.name}`}
           </h2>
@@ -322,7 +317,7 @@ export default function TradeProposalModal({
 
         {/* Counter-offer context */}
         {counterToTrade?.message && (
-          <div className="mx-6 mt-4 bg-info/10 border border-info/30 rounded-lg px-4 py-3">
+          <div className="mx-6 mt-4 bg-info/10 border border-info/30 rounded-lg px-4 py-3 flex-shrink-0">
             <p className="text-xs text-text-secondary">
               <span className="font-semibold">Message from {counterToTrade.proposerTeamName}:</span>{' '}
               <span className="italic">&ldquo;{counterToTrade.message}&rdquo;</span>
@@ -330,83 +325,74 @@ export default function TradeProposalModal({
           </div>
         )}
 
-        <div className="p-6 space-y-5">
-          {/* Two-column chip builder */}
-          <div className="grid md:grid-cols-2 gap-4">
-            {/* You Give */}
-            <div>
-              <h3 className="text-xs font-semibold text-danger-text uppercase tracking-wide mb-2">You Give</h3>
-              <div className="min-h-[44px] bg-surface-inset rounded-lg p-2 flex flex-wrap gap-1.5">
-                {givingCount === 0 && !showGivingPicker && (
-                  <span className="text-text-muted text-xs py-1">No schools selected</span>
-                )}
-                {Array.from(givingIds).map(id => {
-                  const school = findMySchool(id)
-                  return school ? (
-                    <SchoolChip key={id} school={school} onRemove={() => { toggleGiving(id); setDropIds(new Set()) }} variant="giving" />
-                  ) : null
-                })}
-                <button
-                  onClick={() => { setShowGivingPicker(!showGivingPicker); setShowReceivingPicker(false); setGivingSearch('') }}
-                  className="inline-flex items-center gap-1 px-2 py-1 text-xs text-brand-text hover:bg-brand/10 rounded-full transition-colors"
-                >
-                  + Add
-                </button>
-              </div>
-              {showGivingPicker && (
-                <div className="mt-2">
-                  <InlinePicker
-                    schools={myRoster}
-                    selectedIds={givingIds}
-                    disabledIds={partnerRosterSchoolIds}
-                    onToggle={toggleGiving}
-                    variant="giving"
-                    search={givingSearch}
-                    onSearchChange={setGivingSearch}
-                    schoolPointsMap={schoolPointsMap}
-                    rankingsMap={rankingsMap}
-                    schoolRecordsMap={schoolRecordsMap}
-                  />
+        {/* Scrollable body */}
+        <div className="flex-1 overflow-y-auto p-6 space-y-5 min-h-0">
+          {/* Selected chips summary */}
+          {(givingCount > 0 || receivingCount > 0) && (
+            <div className="grid md:grid-cols-2 gap-3">
+              <div>
+                <p className="text-[10px] font-semibold text-danger-text uppercase tracking-wide mb-1">You Give ({givingCount})</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {Array.from(givingIds).map(id => {
+                    const school = findMySchool(id)
+                    return school ? (
+                      <SchoolChip key={id} school={school} onRemove={() => { toggleGiving(id); setDropIds(new Set()) }} variant="giving" />
+                    ) : null
+                  })}
                 </div>
-              )}
+              </div>
+              <div>
+                <p className="text-[10px] font-semibold text-success-text uppercase tracking-wide mb-1">You Receive ({receivingCount})</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {Array.from(receivingIds).map(id => {
+                    const school = findPartnerSchool(id)
+                    return school ? (
+                      <SchoolChip key={id} school={school} onRemove={() => { toggleReceiving(id); setDropIds(new Set()) }} variant="receiving" />
+                    ) : null
+                  })}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Side-by-side rosters — always visible */}
+          <div className="grid md:grid-cols-2 gap-4">
+            {/* My Roster */}
+            <div className="flex flex-col min-h-0">
+              <h3 className="text-xs font-semibold text-danger-text uppercase tracking-wide mb-2">
+                {myTeam.name}&apos;s Roster — tap to give
+              </h3>
+              <RosterList
+                schools={myRoster}
+                selectedIds={givingIds}
+                disabledIds={partnerRosterSchoolIds}
+                onToggle={toggleGiving}
+                variant="giving"
+                search={givingSearch}
+                onSearchChange={setGivingSearch}
+                schoolPointsMap={schoolPointsMap}
+                rankingsMap={rankingsMap}
+                schoolRecordsMap={schoolRecordsMap}
+              />
             </div>
 
-            {/* You Receive */}
-            <div>
-              <h3 className="text-xs font-semibold text-success-text uppercase tracking-wide mb-2">You Receive</h3>
-              <div className="min-h-[44px] bg-surface-inset rounded-lg p-2 flex flex-wrap gap-1.5">
-                {receivingCount === 0 && !showReceivingPicker && (
-                  <span className="text-text-muted text-xs py-1">No schools selected</span>
-                )}
-                {Array.from(receivingIds).map(id => {
-                  const school = findPartnerSchool(id)
-                  return school ? (
-                    <SchoolChip key={id} school={school} onRemove={() => { toggleReceiving(id); setDropIds(new Set()) }} variant="receiving" />
-                  ) : null
-                })}
-                <button
-                  onClick={() => { setShowReceivingPicker(!showReceivingPicker); setShowGivingPicker(false); setReceivingSearch('') }}
-                  className="inline-flex items-center gap-1 px-2 py-1 text-xs text-brand-text hover:bg-brand/10 rounded-full transition-colors"
-                >
-                  + Add
-                </button>
-              </div>
-              {showReceivingPicker && (
-                <div className="mt-2">
-                  <InlinePicker
-                    schools={partnerRoster}
-                    selectedIds={receivingIds}
-                    disabledIds={myRosterSchoolIds}
-                    onToggle={toggleReceiving}
-                    variant="receiving"
-                    search={receivingSearch}
-                    onSearchChange={setReceivingSearch}
-                    schoolPointsMap={schoolPointsMap}
-                    rankingsMap={rankingsMap}
-                    schoolRecordsMap={schoolRecordsMap}
-                  />
-                </div>
-              )}
+            {/* Partner Roster */}
+            <div className="flex flex-col min-h-0">
+              <h3 className="text-xs font-semibold text-success-text uppercase tracking-wide mb-2">
+                {partnerTeam.name}&apos;s Roster — tap to receive
+              </h3>
+              <RosterList
+                schools={partnerRoster}
+                selectedIds={receivingIds}
+                disabledIds={myRosterSchoolIds}
+                onToggle={toggleReceiving}
+                variant="receiving"
+                search={receivingSearch}
+                onSearchChange={setReceivingSearch}
+                schoolPointsMap={schoolPointsMap}
+                rankingsMap={rankingsMap}
+                schoolRecordsMap={schoolRecordsMap}
+              />
             </div>
           </div>
 
@@ -425,7 +411,7 @@ export default function TradeProposalModal({
                   ) : null
                 })}
               </div>
-              <InlinePicker
+              <RosterList
                 schools={droppableSchools}
                 selectedIds={dropIds}
                 disabledIds={new Set()}
@@ -475,8 +461,8 @@ export default function TradeProposalModal({
           </div>
         </div>
 
-        {/* Actions */}
-        <div className="sticky bottom-0 bg-page border-t border-border px-6 py-4 flex gap-3">
+        {/* Actions — sticky footer */}
+        <div className="bg-page border-t border-border px-6 py-4 flex gap-3 flex-shrink-0 rounded-b-xl">
           <button
             onClick={onClose}
             className="flex-1 px-4 py-3 bg-surface hover:bg-surface-subtle text-text-primary rounded-lg font-medium transition-colors"

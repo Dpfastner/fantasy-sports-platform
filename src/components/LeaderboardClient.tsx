@@ -463,7 +463,7 @@ export default function LeaderboardClient({
                         return winners?.find(w => w.teamId === team.id)
                       }
                       const hasAnyWins = regularWeeks.some(week => getWinForWeek(week))
-                      const hpStickyBgColor = isCurrentUser ? 'var(--palette-highlight-row)' : hasAnyWins ? 'var(--palette-highlight-special)' : 'var(--palette-surface-subtle)'
+                      const hpStickyBgColor = isCurrentUser ? 'var(--palette-sticky-bg-highlight)' : hasAnyWins ? 'var(--palette-sticky-bg-highlight)' : 'var(--palette-sticky-bg)'
                       return (
                         <tr
                           key={team.id}

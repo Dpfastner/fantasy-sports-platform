@@ -176,7 +176,7 @@ function DetailPanel({ metric, onClose }: DetailPanelProps) {
             <div className="text-center py-12 text-text-muted">No data for this period</div>
           ) : (
             <table className="w-full text-sm">
-              <thead className="sticky top-0 bg-surface-inset">
+              <thead className="sticky top-0" style={{ backgroundColor: 'var(--palette-sticky-bg)' }}>
                 <tr>
                   {data.columns.map(col => (
                     <th key={col} className="text-left px-4 py-2.5 text-text-muted font-medium text-xs uppercase tracking-wide">
