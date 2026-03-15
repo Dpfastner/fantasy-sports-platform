@@ -1993,7 +1993,7 @@ export default function DraftRoomPage() {
         </div>
 
         {/* Center Panel - Draft History */}
-        <div className={`${mobileTab === 'history' ? 'flex' : 'hidden'} md:flex flex-1 flex-col border-r border-border`}>
+        <div className={`${mobileTab === 'history' ? 'flex' : 'hidden'} md:flex flex-1 flex-col border-r border-border overflow-y-auto`}>
           {/* Draft Status Messages */}
           {draft?.status === 'not_started' && (
             <div className="p-6">

@@ -357,7 +357,7 @@ export default function LeaderboardClient({
                 {teams.map((team, index) => {
                   const isCurrentUser = team.user_id === currentUserId
                   const teamWeekly = weeklyPointsMap.get(team.id)
-                  const stickyBgColor = isCurrentUser ? 'var(--palette-highlight-row)' : 'var(--palette-surface-subtle)'
+                  const stickyBgColor = isCurrentUser ? 'var(--palette-sticky-bg-highlight)' : 'var(--palette-sticky-bg)'
                   return (
                     <tr
                       key={team.id}
@@ -634,7 +634,7 @@ export default function LeaderboardClient({
                   const teamWeekly = weeklyPointsMap.get(team.id)
 
                   // Solid background color for sticky cells - CSS variables for palette compatibility
-                  const stickyBgColor = isCurrentUser ? 'var(--palette-highlight-row)' : 'var(--palette-surface-subtle)'
+                  const stickyBgColor = isCurrentUser ? 'var(--palette-sticky-bg-highlight)' : 'var(--palette-sticky-bg)'
 
                   return (
                     <tr

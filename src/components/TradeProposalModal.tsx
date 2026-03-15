@@ -193,6 +193,10 @@ export default function TradeProposalModal({
   const [receivingSearch, setReceivingSearch] = useState('')
   const [dropSearch, setDropSearch] = useState('')
 
+  // Disabled sets (schools already on the other roster) — must be above early return (Rules of Hooks)
+  const myRosterSchoolIds = useMemo(() => new Set(myRoster.map(s => s.schoolId)), [myRoster])
+  const partnerRosterSchoolIds = useMemo(() => new Set(partnerRoster.map(s => s.schoolId)), [partnerRoster])
+
   if (!isOpen) return null
 
   const givingCount = givingIds.size
@@ -201,10 +205,6 @@ export default function TradeProposalModal({
   const rosterAfterTrade = myRoster.length + netGain - dropIds.size
   const dropsNeeded = Math.max(0, myRoster.length + netGain - maxRosterSize)
   const needsDrops = dropsNeeded > 0
-
-  // Disabled sets (schools already on the other roster)
-  const myRosterSchoolIds = useMemo(() => new Set(myRoster.map(s => s.schoolId)), [myRoster])
-  const partnerRosterSchoolIds = useMemo(() => new Set(partnerRoster.map(s => s.schoolId)), [partnerRoster])
 
   // Schools available for dropping
   const droppableSchools = myRoster.filter(

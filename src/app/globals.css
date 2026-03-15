@@ -64,6 +64,10 @@
   --palette-highlight-special: rgba(245, 166, 35, 0.15);
   --palette-live-indicator: #22C55E;
 
+  /* Sticky column backgrounds (must be fully opaque for horizontal scroll) */
+  --palette-sticky-bg: #1E293B;
+  --palette-sticky-bg-highlight: #2B1E1A;
+
   /* Backward compat */
   --background: var(--palette-page);
   --foreground: var(--palette-text-primary);
@@ -111,6 +115,8 @@
   --palette-highlight-row: rgba(196, 122, 58, 0.1);
   --palette-highlight-special: rgba(212, 162, 58, 0.15);
   --palette-live-indicator: #4ADE80;
+  --palette-sticky-bg: #1A3C2A;
+  --palette-sticky-bg-highlight: #2A3020;
 }
 
 /* --- Royal Gambit (Option E) --- */
@@ -155,6 +161,8 @@
   --palette-highlight-row: rgba(245, 158, 11, 0.1);
   --palette-highlight-special: rgba(231, 76, 111, 0.15);
   --palette-live-indicator: #4ADE80;
+  --palette-sticky-bg: #2A1A3E;
+  --palette-sticky-bg-highlight: #302018;
 }
 
 /* --- Warm Kickoff (Option H) — Light theme --- */
@@ -199,6 +207,8 @@
   --palette-highlight-row: rgba(61, 90, 128, 0.08);
   --palette-highlight-special: rgba(224, 122, 58, 0.1);
   --palette-live-indicator: #16A34A;
+  --palette-sticky-bg: #FFFFFF;
+  --palette-sticky-bg-highlight: #EEF2F7;
 }
 
 /* ============================================================

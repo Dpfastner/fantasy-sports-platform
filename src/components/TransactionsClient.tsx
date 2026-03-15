@@ -794,9 +794,10 @@ export default function TransactionsClient({
                       <p className="text-text-muted text-xs font-medium uppercase tracking-wide mb-2">Unavailable ({unavailableSchools.length})</p>
                       <div className="space-y-2">
                         {unavailableSchools.map((school) => (
-                          <div
+                          <button
                             key={school.id}
-                            className="w-full flex items-center justify-between p-3 bg-surface-subtle rounded-lg opacity-60"
+                            onClick={() => addToast(`${school.name} is unavailable — you already have ${maxSelectionsPerSchool} player(s) from this school`, 'info')}
+                            className="w-full flex items-center justify-between p-3 bg-surface-subtle rounded-lg opacity-60 cursor-pointer hover:opacity-70 transition-opacity text-left"
                           >
                             <div className="flex items-center gap-3">
                               <WatchlistStar
@@ -817,7 +818,7 @@ export default function TransactionsClient({
                               </div>
                             </div>
                             <p className="text-text-muted text-xs">{maxSelectionsPerSchool}/{maxSelectionsPerSchool} taken</p>
-                          </div>
+                          </button>
                         ))}
                       </div>
                     </div>
