@@ -56,7 +56,7 @@ export default function RootLayout({
       >
         <Providers>
           <div className="flex-1 flex">
-            <div className="flex-1 flex flex-col min-w-0">
+            <div className="flex-1 flex flex-col min-w-0 md:pl-6 lg:pl-10">
               {children}
             </div>
             <ChatSidebar />
