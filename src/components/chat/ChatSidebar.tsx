@@ -1,5 +1,6 @@
 'use client'
 
+import { usePathname } from 'next/navigation'
 import { useChatContext } from '@/contexts/ChatContext'
 import { ChannelList } from './ChannelList'
 import { ChatMessages } from './ChatMessages'
@@ -7,12 +8,14 @@ import { ChatInput } from './ChatInput'
 
 export function ChatSidebar() {
   const ctx = useChatContext()
+  const pathname = usePathname()
+
   if (!ctx) return null
 
   const { isOpen, activeChannel, setActiveChannel, userId } = ctx
 
-  // Desktop sidebar — hidden on mobile (MobileChatPeek handles mobile)
-  if (!isOpen) return null
+  // Hide for unauthenticated users and on draft pages (draft has its own chat)
+  if (!userId || !isOpen || pathname?.includes('/draft')) return null
 
   return (
     <aside className="hidden md:flex w-[320px] shrink-0 border-l border-border bg-surface flex-col sticky top-[53px] max-h-[calc(100vh-53px)] overflow-hidden">

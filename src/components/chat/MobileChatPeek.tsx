@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { usePathname } from 'next/navigation'
 import { useChatContext } from '@/contexts/ChatContext'
 import { ChannelList } from './ChannelList'
 import { ChatMessages } from './ChatMessages'
@@ -8,6 +9,7 @@ import { ChatInput } from './ChatInput'
 
 export function MobileChatPeek() {
   const ctx = useChatContext()
+  const pathname = usePathname()
   const [latestPreview, setLatestPreview] = useState<string>('')
 
   // Fetch a latest message preview for the peek bar
@@ -23,6 +25,9 @@ export function MobileChatPeek() {
   }, [ctx?.channels, ctx?.activeChannel])
 
   if (!ctx) return null
+
+  // Hide for unauthenticated users and on draft pages (draft has its own chat)
+  if (!ctx.userId || pathname?.includes('/draft')) return null
 
   const { isMobileExpanded, setIsMobileExpanded, activeChannel, setActiveChannel, userId } = ctx
 
