@@ -3,6 +3,8 @@ import { createClient } from '@/lib/supabase/server'
 import { LeagueContextProvider } from '@/contexts/LeagueContext'
 import type { LeagueSummary, TeamSummary } from '@/contexts/LeagueContext'
 import { DormantRouteGuard } from '@/components/DormantRouteGuard'
+import { getCurrentWeek } from '@/lib/week'
+import { getLeagueYear } from '@/lib/league-helpers'
 
 interface LayoutProps {
   children: React.ReactNode
@@ -27,7 +29,7 @@ export default async function LeagueLayout({ children, params }: LayoutProps) {
   ] = await Promise.all([
     supabase
       .from('leagues')
-      .select('id, name, status, sports(name, slug)')
+      .select('id, name, status, sports(name, slug), seasons(year, name)')
       .eq('id', leagueId)
       .single(),
     supabase
@@ -85,6 +87,9 @@ export default async function LeagueLayout({ children, params }: LayoutProps) {
 
   const isDormant = (currentLeague as Record<string, unknown>).status === 'dormant'
 
+  const seasonYear = getLeagueYear(currentLeague.seasons)
+  const currentWeek = await getCurrentWeek(seasonYear, sportSlug)
+
   const contextValue = {
     currentLeague: {
       id: leagueId,
@@ -96,6 +101,8 @@ export default async function LeagueLayout({ children, params }: LayoutProps) {
     userTeam,
     isCommissioner,
     isDormant,
+    currentWeek,
+    sportSlug,
   }
 
   return (

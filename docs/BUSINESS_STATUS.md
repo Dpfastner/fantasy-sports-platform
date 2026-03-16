@@ -165,12 +165,10 @@ These insights should guide every product, design, and business decision:
 | Phase | Feature | Notes |
 |-------|---------|-------|
 | 33 | Email Notifications | Blocked until DNS transfer (Apr 21, 2026) |
-| 43B | Business Doc Updates | This update |
-| 43D | Social Features | @Mentions, recap cards, GIF support, trash talk |
-| 43E | PWA & Mobile App | Installable web app, then Capacitor wrapper |
 | 36d | Multi-Sport Season Engine | Full season leagues for CBB, Hockey, Baseball, Volleyball |
-| 44 | Ads Infrastructure | Non-intrusive ads on free tier (Year 2) |
-| 45 | Native Mobile App | React Native / Expo (Year 2-3) |
+| 45 | Ads Infrastructure | Non-intrusive ads on free tier (Year 2) |
+| 46 | Mobile App | PWA + Capacitor, then React Native / Expo (Year 2) |
+| 47 | Cross-Sport League Continuity | Continue leagues across NCAA sports (Year 1-2) |
 
 ---
 

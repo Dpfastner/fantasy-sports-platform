@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useLeagueContext } from '@/contexts/LeagueContext'
+import { POSTSEASON_START } from '@/lib/constants/season'
 
 interface LeagueNavProps {
   leagueId: string
@@ -10,16 +11,17 @@ interface LeagueNavProps {
   isCommissioner?: boolean
 }
 
-const NAV_ITEMS = [
+const BASE_NAV_ITEMS = [
   { label: 'Overview', path: '' },
   { label: 'My Team', path: '/team' },
   { label: 'Records', path: '/stats' },
   { label: 'Schedule', path: '/schedule' },
   { label: 'Add/Drop', path: '/transactions' },
-  { label: 'Bracket', path: '/bracket' },
   { label: 'History', path: '/history' },
   { label: 'League Settings', path: '/settings' },
 ]
+
+const BRACKET_NAV_ITEM = { label: 'Bracket', path: '/bracket' }
 
 const DORMANT_NAV_ITEMS = [
   { label: 'Overview', path: '' },
@@ -32,8 +34,15 @@ export function LeagueNav({ leagueId }: LeagueNavProps) {
   const leagueCtx = useLeagueContext()
   const isCommissioner = leagueCtx?.isCommissioner ?? false
   const isDormant = leagueCtx?.isDormant ?? false
+  const currentWeek = leagueCtx?.currentWeek ?? 0
 
-  const items = isDormant ? DORMANT_NAV_ITEMS : NAV_ITEMS
+  // Show Bracket nav item only during postseason
+  const showBracket = currentWeek >= POSTSEASON_START
+  const activeNavItems = showBracket
+    ? [...BASE_NAV_ITEMS.slice(0, 5), BRACKET_NAV_ITEM, ...BASE_NAV_ITEMS.slice(5)]
+    : BASE_NAV_ITEMS
+
+  const items = isDormant ? DORMANT_NAV_ITEMS : activeNavItems
 
   return (
     <nav className="bg-surface/80 backdrop-blur-md border-b border-border sticky top-0 z-30">

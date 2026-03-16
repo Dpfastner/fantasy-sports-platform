@@ -198,7 +198,7 @@ export default async function Home() {
               </div>
               <h4 className="font-semibold mb-2">Compete &amp; Win</h4>
               <p className="text-text-secondary text-sm">
-                Track live scores, climb the leaderboard, and talk trash with your rivals
+                Track live scores, climb the rivalry board, and talk trash with your rivals
               </p>
             </div>
           </div>

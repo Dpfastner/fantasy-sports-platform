@@ -429,7 +429,7 @@ export default async function LeaguePage({ params }: PageProps) {
               </div>
             )}
 
-            {/* Leaderboard (only when draft IS completed) */}
+            {/* Rivalry Board (only when draft IS completed) */}
             {isDraftComplete && teams && teams.length > 0 && (
               <div id="standings" className="bg-surface rounded-lg p-4 md:p-6">
                 <div className="flex items-center justify-end gap-2 mb-4">

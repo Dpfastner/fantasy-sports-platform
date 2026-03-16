@@ -209,7 +209,7 @@ export function PoolDetailClient({
       : effectiveFormat === 'roster'
         ? (((pool.scoringRules?.draft_mode as string) === 'snake_draft' || (pool.scoringRules?.draft_mode as string) === 'linear_draft') ? 'Draft Room' : 'My Roster')
       : 'My Picks', requiresMember: true },
-    { key: 'schedule', label: effectiveFormat === 'roster' ? 'Leaderboard' : 'Schedule' },
+    { key: 'schedule', label: effectiveFormat === 'roster' ? 'Rivalry Board' : 'Schedule' },
     { key: 'members', label: `Members (${members.length})` },
     ...(isCreator ? [{ key: 'settings' as Tab, label: 'Settings' }] : []),
   ]
@@ -369,8 +369,8 @@ export function PoolDetailClient({
           {/* Announcements */}
           <PoolAnnouncements poolId={pool.id} isCreator={isCreator} />
 
-          {/* Leaderboard */}
-          <ErrorBoundary sectionName="Leaderboard">
+          {/* Rivalry Board */}
+          <ErrorBoundary sectionName="Rivalry Board">
           {effectiveFormat === 'roster' ? (
             <RosterLeaderboard
               members={members}
@@ -568,7 +568,7 @@ export function PoolDetailClient({
               })}
             {participants.every(p => p.metadata?.score_to_par == null) && (
               <div className="p-6 text-center text-text-muted text-sm">
-                No scores yet. Leaderboard will update when the tournament begins.
+                No scores yet. Rivalry board will update when the tournament begins.
               </div>
             )}
           </div>

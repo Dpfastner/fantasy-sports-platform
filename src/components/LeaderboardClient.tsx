@@ -58,6 +58,8 @@ interface LeaderboardClientProps {
   settings: LeagueSettings | null
   userName?: string | null
   userEmail?: string | null
+  /** Sport slug for multi-sport week labels. Defaults to college_football (CFB). */
+  sportSlug?: string
 }
 
 interface IdealTeamSchool {
@@ -92,6 +94,7 @@ export default function LeaderboardClient({
   settings,
   userName,
   userEmail,
+  sportSlug: _sportSlug = 'college_football',
 }: LeaderboardClientProps) {
   const [teams, setTeams] = useState<TeamData[]>(initialTeams)
   const [weeklyPoints, setWeeklyPoints] = useState<WeeklyPoints[]>(initialWeeklyPoints)
@@ -289,7 +292,7 @@ export default function LeaderboardClient({
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
           <div>
             <h2 className="text-xl font-semibold text-text-primary flex items-center gap-2">
-              Leaderboard
+              Rivalry Board
               {isLive && (
                 <span className="flex items-center gap-1 text-xs font-normal text-success-text">
                   <span className="w-2 h-2 bg-live-indicator rounded-full animate-pulse"></span>
@@ -581,7 +584,7 @@ export default function LeaderboardClient({
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-6 md:mb-8">
           <div>
             <h1 className="text-2xl md:text-3xl font-bold text-text-primary flex items-center gap-2 md:gap-3">
-              Leaderboard
+              Rivalry Board
               {isLive && (
                 <span className="flex items-center gap-1 md:gap-2 text-xs md:text-sm font-normal text-success-text">
                   <span className="w-2 h-2 bg-live-indicator rounded-full animate-pulse"></span>

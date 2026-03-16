@@ -188,9 +188,6 @@ Based on the business evaluation and current platform state (Phases 0-42, Platfo
 ### Phase 43D: Social Features
 - @Mentions in chat, weekly recap cards, trash talk prompts, GIF support
 
-### Phase 43E: PWA & Mobile App
-- PWA manifest + service worker (installable web app), then Capacitor wrapper
-
 ### Phase 36d: Multi-Sport Season Engine (Summer 2026)
 - Full season leagues for Men's/Women's CBB, NCAA Hockey, College Baseball, Women's Volleyball
 
