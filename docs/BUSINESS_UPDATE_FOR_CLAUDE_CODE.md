@@ -1,34 +1,49 @@
 # Rivyls — Business Strategy Update for Development Planning
 
-> **Date:** March 11, 2026
+> **Date:** March 15, 2026
 > **From:** Claude Chat (Business/Strategy instance)
 > **To:** Claude Code (Development instance)
 > **Purpose:** This document explains recent business decisions, strategic shifts, and new priorities that should inform what gets built next and how the platform evolves.
 
 ---
 
-## What Happened
+## Core Identity (Guide All Decisions With This)
 
-The business side has completed a full evaluation of the platform (Phases 0-31) against the original business plan, marketing strategy, financial projections, and competitive landscape. Several significant strategic shifts came out of that analysis. This document captures those shifts so development priorities can be adjusted accordingly.
+**What Rivyls Is:** Fantasy sports for college football fans — instead of drafting individual players, you draft the schools you already care about, so you never have to root against your own team.
+
+**Brand Palette — Royal Gambit (default):**
+- Deep Purple (primary): `#2A1A3E`
+- Amber (accent): `#F59E0B`
+- Off-White (background): `#FAF5EE`
+- Soft Lavender (secondary surface): `#E8E0F0`
+- Dark Plum (dark mode / headers): `#1A0F2E`
+
+**9 Insights That Guide Every Decision:**
+1. Divided loyalty is the unlock — the core mechanic, not a feature
+2. The commissioner is the actual customer — win them, win the league
+3. Social connection IS the product — scoring enables it
+4. Trust is the widest open lane — every point traceable, always transparent
+5. College football space is unoccupied by anyone who cares
+6. Simplicity expands the market — can a first-timer use it without reading anything?
+7. Off-season is existential — multi-sport solves it
+8. Word of mouth before season ends is the only Year 1 metric
+9. Multi-season history is the moat — build for it from Day 1
 
 ---
 
-## 1. CRITICAL: Age Gate Must Change from 13+ to 18+
+## What Happened
 
-**Priority: IMMEDIATE — before any public marketing begins**
+The business side completed a full evaluation of the platform against the original business plan, marketing strategy, financial projections, and competitive landscape. Several significant strategic shifts came out of that analysis. This document captures those shifts so development priorities can be adjusted accordingly.
 
-The platform currently enforces a 13+ age requirement. Every business document, legal analysis, and competitor comparison specifies 18+. Every relevant competitor (Sleeper, PrizePicks, DraftKings, Underdog) requires 18+. The fantasy sports industry standard is 18+ because:
+**Status as of March 15, 2026:** Phases 0-42, Platform Audit, 43A (multi-sport abstraction), and 43C (platform simplification) are all complete and deployed. Most items from this document have been addressed. Remaining: accessibility audit, load testing, email notifications (blocked on DNS transfer Apr 21).
 
-- Users discuss and manage off-platform financial arrangements (entry fees, prizes)
-- Future paid-entry contests will require 18+ in every state
-- The NAICS 713990 classification is safer with 18+
-- Investors and attorneys will flag this immediately
+---
 
-**What to change:**
-- Signup flow age gate: require 18+
-- Terms of Service: update all age references from 13 to 18
-- Privacy Policy: update "children's privacy" section to reflect 18+ (not 13+)
-- Any validation logic that checks age
+## 1. DONE: Age Gate Changed from 13+ to 18+
+
+**Status: DONE** (Phase 32)
+
+The platform age gate has been updated from 13+ to 18+ across signup flow, Terms of Service, and Privacy Policy.
 
 ---
 
@@ -69,48 +84,23 @@ These create entirely new game modes that justify a subscription because they're
 
 ---
 
-## 3. ESPN API Is a Single Point of Failure — Build Resilience
+## 3. DONE: ESPN API Resilience
 
-The entire scoring system depends on ESPN's undocumented public API endpoints. ESPN could change, rate-limit, or shut down these endpoints at any time without notice. If this happens during a Saturday with 100+ leagues watching live scores, the platform goes dark.
+**Status: Items 1-2 DONE** (Platform Audit + Phase 32). Item 3 remains for future consideration.
 
-**Build these (in priority order):**
-
-1. **API Response Monitoring** — automated alerting when ESPN responses change format, return errors, or stop returning data. Log response structure hashes and alert when they change. This gives early warning before users notice.
-
-2. **Admin-Only Manual Score Override** — if ESPN goes down, the platform admin (D) can manually enter final game scores from the admin dashboard. The override should:
-   - Be accessible ONLY from the existing admin dashboard (not commissioner panels)
-   - Allow entering W/L result and final score for any game
-   - Automatically recalculate league points for ALL leagues based on manual entries
-   - Show a visual indicator on affected games that scores were manually entered
-   - Be reversible if ESPN data comes back (admin can re-sync from ESPN)
-   - Commissioners should NOT have access to edit scores — one update from admin pushes correct data to every league
-
-3. **Backup Data Source Research** — investigate SportsDataIO, The Odds API, or CBS Sports API as fallback providers. Don't integrate yet, but know what the fallback plan is and estimate integration effort.
+1. ~~**API Response Monitoring**~~ — DONE. Sentry error tracking added to all 21 sync routes. Rate limiting on 17 routes.
+2. ~~**Admin-Only Manual Score Override**~~ — DONE. Admin dashboard has manual score entry with automatic league point recalculation.
+3. **Backup Data Source Research** — Not yet started. Investigate SportsDataIO, The Odds API, or CBS Sports API as fallback providers when time permits.
 
 ---
 
-## 4. Build a FAQ / Help Center Before Launch
+## 4. DONE: FAQ / Help Center
 
-**Priority: Before any public marketing**
+**Status: DONE** (Phase 32)
 
-With 1,000 users and 100 commissioners, support volume will be real. A comprehensive self-service help page handles 60-70% of questions without human intervention.
+Built at `/help` with 40+ FAQs organized in 7 categories (Getting Started, Leagues, Drafts, Scoring, Roster Management, Trading, Events & Prediction Games). Linked from footer and settings. Searchable accordion layout.
 
-**Build a /help page covering:**
-- How to create a league (commissioner flow)
-- How to join a league (invite code flow)
-- How drafts work (snake, linear, timer, auto-pick, pause/resume)
-- Scoring rules explained (with examples of how points are calculated)
-- How add/drops work (limits, deadlines)
-- How trading works (propose, accept, reject, veto)
-- How double points works
-- How weekly high points works
-- Commissioner tools (announcements, settings, member management)
-- Account settings and deletion
-- Common troubleshooting (can't join league, draft timer issues, score discrepancy)
-
-**Design:** Organized by category, searchable. Could be a simple accordion/FAQ layout or a dedicated help page with sections. Link to it from the footer of every page and from the user settings menu.
-
-**Future enhancement:** Layer a Claude-powered AI chatbot on top of this FAQ content to handle natural language questions. But the static FAQ comes first.
+**Future enhancement:** Layer a Claude-powered AI chatbot on top of this FAQ content (Phase 41b — deferred until Anthropic API key is set up).
 
 ---
 
@@ -144,20 +134,18 @@ Calculate expected data growth for 1,000 users over a 23-week season:
 
 ---
 
-## 7. Multi-Sport Architecture (Phase 32 — Planning)
+## 7. DONE: Multi-Sport Architecture
 
-The business plan calls for multi-sport expansion to address seasonality:
-- College football: August–January
-- College basketball: November–April (fills the gap)
-- College baseball: February–June
-- Future: NHL, international rugby, FIFA World Cup, Olympics
+**Status: Foundation DONE** (Phase 43A). Full season engine is Phase 36d (Summer 2026).
 
-Phase 32 should design the **abstract scoring architecture** that makes adding a new sport a configuration task, not a code rewrite. Key considerations:
-- Sport-agnostic league settings (sport_id, scoring_rules per sport)
-- Different draft pool structures per sport (134 FBS football schools vs different sets for other sports)
-- Different season lengths, week structures, and playoff formats
-- Shared infrastructure: drafts, trading, chat, notifications, OG images
-- The `seasons` table already has season_id — make sure new sports can have their own seasons
+The multi-sport abstraction layer is built:
+- **Sport Scoring Registry** (`src/lib/scoring/sport-scoring-registry.ts`) — `SportScoringConfig` interface with fields + presets per sport. CFB registered with 21 fields and 4 presets.
+- **Sport Season Config** (`src/lib/constants/sport-seasons.ts`) — `SportSeasonConfig` interface with week definitions, labels, types per sport. CFB registered with week 0-22.
+- **SportCalculator interface** + calculator router (`src/lib/points/index.ts`) — dispatches to correct sport calculator by slug.
+- **JSONB scoring** — `scoring_values JSONB` column on `league_settings` for sport-agnostic storage (migration 055).
+- **Event system** — bracket, pick'em, survivor engines already handle Hockey, Golf, Rugby events.
+
+Adding a new sport is now a configuration task (register in scoring + season registries, implement SportCalculator).
 
 ---
 
@@ -177,41 +165,39 @@ The revised financial model includes modest ad revenue as a third revenue stream
 
 ## 9. Revised Development Priority Order
 
-Based on the business evaluation, here's the recommended priority for what to build next:
+Based on the business evaluation and current platform state (Phases 0-42, Platform Audit, 43A, 43C complete):
 
-### Before Launch (March–July 2026)
-1. Age gate update (13+ → 18+) — 1 hour
-2. FAQ / Help Center page — 1-2 days
-3. ESPN API monitoring — 1-2 days
-4. Manual score override for commissioners — 2-3 days
-5. Accessibility quick audit — 1 day
-6. Load testing — 1-2 days
-7. Supabase storage estimation — 1 hour
+### Done (Pre-Launch)
+- ~~Age gate update (13+ → 18+)~~ — DONE
+- ~~FAQ / Help Center page~~ — DONE (40+ FAQs, 7 categories)
+- ~~ESPN API monitoring~~ — DONE (Sentry on all sync routes)
+- ~~Manual score override~~ — DONE (admin dashboard)
+- ~~Push notifications~~ — DONE (Phase 34, browser push with VAPID)
+- ~~Multi-sport abstraction~~ — DONE (Phase 43A)
+- ~~Platform simplification~~ — DONE (Phase 43C, progressive disclosure)
+
+### Remaining Before Launch (March–July 2026)
+1. Accessibility quick audit — 1 day
+2. Load testing — 1-2 days
+3. Supabase storage estimation — 1 hour
 
 ### Phase 33: Email Notifications (After April 21 DNS transfer)
-- Transactional emails via Resend: password reset, draft reminders, trade proposals, weekly recaps, pre-season commissioner reminders
+- Transactional emails via Resend: password reset, draft reminders, trade proposals, weekly recaps
 - Unsubscribe links on all non-transactional emails (CAN-SPAM)
 
-### Phase 34: Push Notifications
-- Browser push for real-time draft alerts, gameday scoring, trade activity
+### Phase 43D: Social Features
+- @Mentions in chat, weekly recap cards, trash talk prompts, GIF support
+
+### Phase 43E: PWA & Mobile App
+- PWA manifest + service worker (installable web app), then Capacitor wrapper
+
+### Phase 36d: Multi-Sport Season Engine (Summer 2026)
+- Full season leagues for Men's/Women's CBB, NCAA Hockey, College Baseball, Women's Volleyball
 
 ### Phase 35: Pro Tier (Year 2)
-- AI Draft Assistant (populate program_analytics, build recommendation engine)
-- Season Projections (weekly probability model)
-- Transaction Intelligence (add/drop recommendations)
-- Live Game Insights (real-time smart notifications)
-- Head-to-Head Weekly Matchup mode
-- Conference-Specific League format
-- Ad infrastructure (free tier shows ads, Pro removes them)
-- Stripe integration for subscription billing
-
-### Phase 36: Multi-Sport Architecture (Year 2)
-- Abstract scoring by sport
-- College basketball as first expansion sport
-
-### Phase 37: Mobile App (Year 2-3)
-- iOS/Android native app
-- Push notifications (native)
+- AI Draft Assistant, Season Projections, Transaction Intelligence, Live Game Insights
+- Head-to-Head Weekly Matchup mode, Conference-Specific League format
+- Ad infrastructure + Stripe integration
 
 ---
 
@@ -234,16 +220,16 @@ Rivyls is the **only** platform that drafts programs instead of individual playe
 
 ---
 
-## Summary of Immediate Actions
+## Summary of Remaining Actions
 
 | # | Task | Effort | Priority |
 |---|------|--------|----------|
-| 1 | ~~Age gate 13+ → 18+ (signup, ToS, privacy)~~ Already 18+ | Done | COMPLETE |
-| 2 | FAQ / Help Center at /help | 1-2 days | HIGH |
-| 3 | ESPN API monitoring/alerting | 1-2 days | HIGH |
-| 4 | Manual score override for admin | 2-3 days | HIGH |
+| ~~1~~ | ~~Age gate 13+ → 18+~~ | ~~DONE~~ | ~~DONE~~ |
+| ~~2~~ | ~~FAQ / Help Center~~ | ~~DONE~~ | ~~DONE~~ |
+| ~~3~~ | ~~ESPN API monitoring~~ | ~~DONE~~ | ~~DONE~~ |
+| ~~4~~ | ~~Manual score override~~ | ~~DONE~~ | ~~DONE~~ |
 | 5 | Accessibility audit (color palettes, keyboard nav) | 1 day | MEDIUM |
 | 6 | Load testing (drafts, gameday scoring) | 1-2 days | MEDIUM |
 | 7 | Supabase storage growth estimation | 1 hour | LOW |
 
-After these, Phase 33 (email notifications) is next once DNS transfers on April 21.
+Phase 33 (email notifications) is next once DNS transfers on April 21, 2026.
