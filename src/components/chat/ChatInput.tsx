@@ -154,44 +154,42 @@ export function ChatInput({ channelType, channelEntityId }: ChatInputProps) {
   }
 
   return (
-    <div className="p-3 border-t border-border relative">
-      {error && (
-        <div className="mb-2 p-2 bg-danger/10 border border-danger rounded text-danger text-xs">
-          {error}
-        </div>
-      )}
-
+    <div className="border-t border-border flex flex-col">
       {/* Trash Talk picker */}
       {showTrashTalk && (
-        <TrashTalkPicker
-          onSelect={(prompt) => {
-            setInput(prompt)
-            setShowTrashTalk(false)
-            inputRef.current?.focus()
-          }}
-          onClose={() => setShowTrashTalk(false)}
-        />
+        <div className="max-h-48 overflow-y-auto border-b border-border">
+          <TrashTalkPicker
+            onSelect={(prompt) => {
+              setInput(prompt)
+              setShowTrashTalk(false)
+              inputRef.current?.focus()
+            }}
+            onClose={() => setShowTrashTalk(false)}
+          />
+        </div>
       )}
 
       {/* GIF picker */}
       {showGifPicker && (
-        <GifPicker
-          onSelect={(gifUrl) => {
-            setInput(gifUrl)
-            setShowGifPicker(false)
-            // Auto-send GIF
-            setTimeout(() => {
-              const sendBtn = document.querySelector('[data-chat-send]') as HTMLButtonElement
-              sendBtn?.click()
-            }, 50)
-          }}
-          onClose={() => setShowGifPicker(false)}
-        />
+        <div className="max-h-64 overflow-y-auto border-b border-border">
+          <GifPicker
+            onSelect={(gifUrl) => {
+              setInput(gifUrl)
+              setShowGifPicker(false)
+              // Auto-send GIF
+              setTimeout(() => {
+                const sendBtn = document.querySelector('[data-chat-send]') as HTMLButtonElement
+                sendBtn?.click()
+              }, 50)
+            }}
+            onClose={() => setShowGifPicker(false)}
+          />
+        </div>
       )}
 
       {/* @Mention dropdown */}
       {mentionQuery !== null && filteredMembers.length > 0 && (
-        <div className="absolute bottom-full left-3 right-3 mb-1 bg-surface border border-border rounded-lg shadow-lg max-h-40 overflow-y-auto z-10">
+        <div className="max-h-40 overflow-y-auto border-b border-border bg-surface">
           {filteredMembers.map((m, i) => (
             <button
               key={m.id}
@@ -208,14 +206,20 @@ export function ChatInput({ channelType, channelEntityId }: ChatInputProps) {
         </div>
       )}
 
-      <div className="flex gap-1.5 items-center">
+      {error && (
+        <div className="mx-3 mt-2 p-2 bg-danger/10 border border-danger rounded text-danger text-xs">
+          {error}
+        </div>
+      )}
+
+      <div className="flex gap-1.5 items-center p-3">
         <input
           ref={inputRef}
           type="text"
           value={input}
           onChange={e => handleInputChange(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder="Type a message... (@mention)"
+          placeholder="Message..."
           maxLength={500}
           disabled={sending}
           className="flex-1 px-3 py-2 bg-surface-inset border border-border rounded-lg text-text-primary text-sm placeholder:text-text-muted disabled:opacity-50"

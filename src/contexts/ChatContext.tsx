@@ -39,7 +39,7 @@ const SIDEBAR_OPEN_KEY = 'rivyls_chat_open'
 // ── Provider ───────────────────────────────────────────────
 
 export function ChatContextProvider({ children }: { children: ReactNode }) {
-  const [isOpen, setIsOpenState] = useState(false)
+  const [isOpen, setIsOpenState] = useState(true)
   const [isMobileExpanded, setIsMobileExpanded] = useState(false)
   const [activeChannel, setActiveChannel] = useState<Channel | null>(null)
   const [channels, setChannels] = useState<Channel[]>([])
@@ -56,7 +56,7 @@ export function ChatContextProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     try {
       const stored = localStorage.getItem(SIDEBAR_OPEN_KEY)
-      if (stored === '1') setIsOpenState(true)
+      if (stored === '0') setIsOpenState(false)
     } catch {}
 
     const supabase = createClient()

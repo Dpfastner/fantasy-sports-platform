@@ -12,7 +12,6 @@ import { RosterDraftRoom } from './RosterDraftRoom'
 import { Leaderboard } from './Leaderboard'
 import { RosterLeaderboard } from './RosterLeaderboard'
 import { PoolActivityFeed } from './PoolActivityFeed'
-import { OpenChatButton } from '@/components/chat/OpenChatButton'
 import { PoolAnnouncements } from './PoolAnnouncements'
 import { ScheduleView } from './ScheduleView'
 import { ShareButton } from '@/components/ShareButton'
@@ -390,22 +389,6 @@ export function PoolDetailClient({
           )}
           </ErrorBoundary>
 
-          {/* Chat — now in sidebar */}
-          {hasAnyEntry && (
-            <ErrorBoundary sectionName="Chat">
-            <div className="bg-surface rounded-lg p-4 md:p-6">
-              <h2 className="text-lg font-semibold text-text-primary mb-3">Pool Chat</h2>
-              <OpenChatButton
-                channel={{
-                  id: `pool:${pool.id}`,
-                  type: 'pool',
-                  name: pool.name,
-                  entityId: pool.id,
-                }}
-              />
-            </div>
-            </ErrorBoundary>
-          )}
 
           {/* Activity Feed */}
           <ErrorBoundary sectionName="Activity Feed">

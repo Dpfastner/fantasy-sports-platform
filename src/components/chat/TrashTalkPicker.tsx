@@ -16,7 +16,7 @@ export function TrashTalkPicker({ onSelect, onClose }: TrashTalkPickerProps) {
   }, [])
 
   return (
-    <div className="absolute bottom-full left-3 right-3 mb-1 bg-surface border border-border rounded-lg shadow-lg z-10 max-h-60 overflow-y-auto">
+    <div className="bg-surface">
       <div className="flex items-center justify-between px-3 py-2 border-b border-border">
         <span className="text-xs font-semibold text-text-primary">Trash Talk</span>
         <div className="flex items-center gap-2">

@@ -8,7 +8,6 @@ import LeaderboardClient from '@/components/LeaderboardClient'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { AnnouncementsManager } from '@/components/AnnouncementsManager'
 import { LeagueActivityFeed } from '@/components/LeagueActivityFeed'
-import { OpenChatButton } from '@/components/chat/OpenChatButton'
 import { SandboxWeekSelector } from '@/components/SandboxWeekSelector'
 import { ShareButton } from '@/components/ShareButton'
 import { InviteCodeCard } from '@/components/InviteCodeCard'
@@ -472,22 +471,6 @@ export default async function LeaguePage({ params }: PageProps) {
               </div>
             )}
 
-            {/* League Chat — now in sidebar */}
-            {(settings?.show_chat !== false) && (
-              <ErrorBoundary sectionName="league-chat">
-                <div className="bg-surface rounded-lg p-4 md:p-6">
-                  <h2 className="text-lg font-semibold text-text-primary mb-3">League Chat</h2>
-                  <OpenChatButton
-                    channel={{
-                      id: `league:${id}`,
-                      type: 'league',
-                      name: league.name,
-                      entityId: id,
-                    }}
-                  />
-                </div>
-              </ErrorBoundary>
-            )}
 
             {/* League Activity Feed (bottom) */}
             {(settings?.show_activity_feed !== false) && (
