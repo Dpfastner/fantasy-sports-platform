@@ -1,5 +1,10 @@
 @import "tailwindcss";
 
+/* Header height — used by LeagueNav sticky offset and sidebar top position */
+:root {
+  --header-h: 41px;
+}
+
 /* Chat sidebar offset — pushes page content left when sidebar is open (md+ only) */
 /* Header and footer break out to full viewport width via negative margin */
 /* All margin transitions sync with sidebar slide (300ms) */

@@ -45,7 +45,7 @@ export function LeagueNav({ leagueId }: LeagueNavProps) {
   const items = isDormant ? DORMANT_NAV_ITEMS : activeNavItems
 
   return (
-    <nav className="bg-surface/80 backdrop-blur-md border-b border-border sticky top-0 z-30">
+    <nav className="bg-surface/80 backdrop-blur-md border-b border-border sticky top-[var(--header-h)] z-30">
       <div className="container mx-auto px-4 relative">
         <div className="flex gap-1 overflow-x-auto scrollbar-hide">
           {items.map(({ label, path }) => {
