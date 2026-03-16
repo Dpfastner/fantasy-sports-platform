@@ -15,7 +15,7 @@ export function ChatSidebar() {
   if (!isOpen) return null
 
   return (
-    <aside className="hidden md:flex w-[320px] shrink-0 border-l border-border bg-surface flex-col max-h-screen sticky top-0 overflow-hidden">
+    <aside className="hidden md:flex w-[320px] shrink-0 border-l border-border bg-surface flex-col sticky top-[53px] max-h-[calc(100vh-53px)] overflow-hidden">
       {/* Header */}
       <div className="px-3 py-2 border-b border-border flex items-center justify-between">
         {activeChannel ? (
