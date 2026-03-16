@@ -1,6 +1,7 @@
 import { cookies } from 'next/headers'
 import { getEnvironment } from './env'
 import { getSeasonStartDate, MAX_WEEK } from './constants/season'
+import { getSeasonConfigForSport } from './constants/sport-seasons'
 
 export const WEEK_OVERRIDE_COOKIE = 'sandbox_week_override'
 export const DATE_OVERRIDE_COOKIE = 'sandbox_date_override'
@@ -18,12 +19,32 @@ const DAY_OFFSETS: Record<string, number> = {
 }
 
 /**
+ * Get the season start date and max week for a given sport.
+ * Defaults to CFB if no sport specified.
+ */
+function getSeasonParams(seasonYear: number, sportSlug: string = 'cfb') {
+  if (sportSlug === 'cfb') {
+    // Use existing CFB constants for backward compatibility
+    return { seasonStart: getSeasonStartDate(seasonYear), maxWeek: MAX_WEEK }
+  }
+  const config = getSeasonConfigForSport(sportSlug)
+  if (!config) {
+    // Fall back to CFB if sport not found
+    return { seasonStart: getSeasonStartDate(seasonYear), maxWeek: MAX_WEEK }
+  }
+  const seasonStart = new Date(Date.UTC(seasonYear, config.startMonth, config.startDay))
+  return { seasonStart, maxWeek: config.totalWeeks }
+}
+
+/**
  * Calculate the current week based on the season start date
  * In sandbox/development, allows override via cookie
  *
  * NOTE: This is a server-only function. Do not import in client components.
  */
-export async function getCurrentWeek(seasonYear: number): Promise<number> {
+export async function getCurrentWeek(seasonYear: number, sportSlug: string = 'cfb'): Promise<number> {
+  const { seasonStart, maxWeek } = getSeasonParams(seasonYear, sportSlug)
+
   // Check for sandbox/development week override
   const env = getEnvironment()
   if (env === 'sandbox' || env === 'development') {
@@ -31,16 +52,15 @@ export async function getCurrentWeek(seasonYear: number): Promise<number> {
     const override = cookieStore.get(WEEK_OVERRIDE_COOKIE)
     if (override?.value) {
       const overrideWeek = parseInt(override.value, 10)
-      if (!isNaN(overrideWeek) && overrideWeek >= 0 && overrideWeek <= MAX_WEEK) {
+      if (!isNaN(overrideWeek) && overrideWeek >= 0 && overrideWeek <= maxWeek) {
         return overrideWeek
       }
     }
   }
 
   // Calculate current week based on date (use UTC to avoid timezone drift)
-  const seasonStart = getSeasonStartDate(seasonYear)
   const weeksDiff = Math.floor((Date.now() - seasonStart.getTime()) / (7 * 24 * 60 * 60 * 1000))
-  return Math.max(0, Math.min(weeksDiff + 1, MAX_WEEK))
+  return Math.max(0, Math.min(weeksDiff + 1, maxWeek))
 }
 
 /**
@@ -50,7 +70,9 @@ export async function getCurrentWeek(seasonYear: number): Promise<number> {
  *
  * NOTE: This is a server-only function. Do not import in client components.
  */
-export async function getSimulatedDate(seasonYear: number): Promise<Date> {
+export async function getSimulatedDate(seasonYear: number, sportSlug: string = 'cfb'): Promise<Date> {
+  const { seasonStart, maxWeek } = getSeasonParams(seasonYear, sportSlug)
+
   const env = getEnvironment()
   if (env === 'sandbox' || env === 'development') {
     const cookieStore = await cookies()
@@ -62,13 +84,10 @@ export async function getSimulatedDate(seasonYear: number): Promise<Date> {
       const week = parseInt(weekOverride.value, 10)
       const dayKey = dayOverride.value.toLowerCase()
 
-      if (!isNaN(week) && week >= 0 && week <= MAX_WEEK && DAY_OFFSETS[dayKey] !== undefined) {
+      if (!isNaN(week) && week >= 0 && week <= maxWeek && DAY_OFFSETS[dayKey] !== undefined) {
         // Calculate the Monday of the given week
-        // Season starts August 24, Week 0 is that week
-        const seasonStart = getSeasonStartDate(seasonYear)
-        // Find the Monday of week 0 (could be before Aug 24)
+        // Season starts at configured date, Week 0 is that week
         const dayOfWeek = seasonStart.getDay() // 0 = Sunday, 1 = Monday, etc.
-        const daysUntilMonday = dayOfWeek === 0 ? 1 : (8 - dayOfWeek) % 7
         const week0Monday = new Date(seasonStart)
         week0Monday.setDate(seasonStart.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1))
 
@@ -109,7 +128,7 @@ export async function getSimulatedDate(seasonYear: number): Promise<Date> {
  * Get both current week and simulated date in one call
  * Useful for components that need both values
  */
-export async function getWeekAndDate(seasonYear: number): Promise<{
+export async function getWeekAndDate(seasonYear: number, sportSlug: string = 'cfb'): Promise<{
   currentWeek: number
   simulatedDate: Date
   dayOverride: string | null
@@ -126,8 +145,8 @@ export async function getWeekAndDate(seasonYear: number): Promise<{
   }
 
   const [currentWeek, simulatedDate] = await Promise.all([
-    getCurrentWeek(seasonYear),
-    getSimulatedDate(seasonYear),
+    getCurrentWeek(seasonYear, sportSlug),
+    getSimulatedDate(seasonYear, sportSlug),
   ])
 
   return { currentWeek, simulatedDate, dayOverride }

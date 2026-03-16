@@ -38,6 +38,7 @@ export default function CreateLeaguePage() {
   const [favoriteSchoolId, setFavoriteSchoolId] = useState<string | null>(null)
   const [hasExistingFavorite, setHasExistingFavorite] = useState(false)
   const [showPreview, setShowPreview] = useState(false)
+  const [showCustomize, setShowCustomize] = useState(false)
   const [touched, setTouched] = useState<Record<string, boolean>>({})
   const router = useRouter()
   const { confirm } = useConfirm()
@@ -295,6 +296,7 @@ export default function CreateLeaguePage() {
               </div>
             )}
 
+            {/* 1. League Name */}
             <div className="mb-6">
               <label htmlFor="name" className="block text-text-secondary mb-2">
                 League Name *
@@ -313,21 +315,7 @@ export default function CreateLeaguePage() {
               {fieldErrors.name && <p className="text-danger-text text-xs mt-1">{fieldErrors.name}</p>}
             </div>
 
-            <div className="mb-6">
-              <label htmlFor="description" className="block text-text-secondary mb-2">
-                Description (optional)
-              </label>
-              <textarea
-                id="description"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                rows={3}
-                maxLength={500}
-                className="w-full px-4 py-3 bg-surface border border-border rounded-lg text-text-primary placeholder-text-muted focus:outline-none focus:border-brand resize-none"
-                placeholder="Tell your friends what this league is about..."
-              />
-            </div>
-
+            {/* 2. Team Name */}
             <div className="mb-6">
               <label htmlFor="teamName" className="block text-text-secondary mb-2">
                 Your Team Name *
@@ -344,65 +332,32 @@ export default function CreateLeaguePage() {
                 placeholder="e.g., The Gridiron Gang"
               />
               {fieldErrors.teamName && <p className="text-danger-text text-xs mt-1">{fieldErrors.teamName}</p>}
+            </div>
+
+            {/* 3. Max Teams */}
+            <div className="mb-6">
+              <label htmlFor="maxTeams" className="block text-text-secondary mb-2">
+                Maximum Teams
+              </label>
+              <input
+                type="number"
+                id="maxTeams"
+                value={maxTeams}
+                onChange={(e) => {
+                  const val = parseInt(e.target.value) || 1
+                  setMaxTeams(Math.min(30, Math.max(1, val)))
+                }}
+                min={1}
+                max={30}
+                className="w-full px-4 py-3 bg-surface border border-border rounded-lg text-text-primary focus:outline-none focus:border-brand"
+              />
               <p className="text-text-muted text-sm mt-1">
-                As the commissioner, you'll need a team to participate in the draft
+                Enter a number between 1-30
               </p>
             </div>
 
-            {!hasExistingFavorite && sportId && (
-              <div className="mb-6">
-                <SchoolPicker
-                  value={favoriteSchoolId}
-                  onChange={setFavoriteSchoolId}
-                  label={`Your Favorite ${sports.find(s => s.id === sportId)?.name || ''} Team`}
-                />
-              </div>
-            )}
-
-            <div className="grid md:grid-cols-2 gap-6 mb-6">
-              <div>
-                <label htmlFor="sport" className="block text-text-secondary mb-2">
-                  Sport *
-                </label>
-                <select
-                  id="sport"
-                  value={sportId}
-                  onChange={(e) => setSportId(e.target.value)}
-                  required
-                  className="w-full px-4 py-3 bg-surface border border-border rounded-lg text-text-primary focus:outline-none focus:border-brand"
-                >
-                  <option value="">Select a sport</option>
-                  {sports.map((sport) => (
-                    <option key={sport.id} value={sport.id}>
-                      {sport.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label htmlFor="maxTeams" className="block text-text-secondary mb-2">
-                  Maximum Teams
-                </label>
-                <input
-                  type="number"
-                  id="maxTeams"
-                  value={maxTeams}
-                  onChange={(e) => {
-                    const val = parseInt(e.target.value) || 1
-                    setMaxTeams(Math.min(30, Math.max(1, val)))
-                  }}
-                  min={1}
-                  max={30}
-                  className="w-full px-4 py-3 bg-surface border border-border rounded-lg text-text-primary focus:outline-none focus:border-brand"
-                />
-                <p className="text-text-muted text-sm mt-1">
-                  Enter a number between 1-30
-                </p>
-              </div>
-            </div>
-
-            <div className="mb-8">
+            {/* 4. Public/Private */}
+            <div className="mb-6">
               <label className="flex items-center gap-3 cursor-pointer">
                 <input
                   type="checkbox"
@@ -415,6 +370,73 @@ export default function CreateLeaguePage() {
               <p className="text-text-muted text-sm mt-1 ml-8">
                 Public leagues can be found by anyone. Private leagues require an invite code.
               </p>
+            </div>
+
+            {/* 5. Favorite School (optional) */}
+            {!hasExistingFavorite && sportId && (
+              <div className="mb-6">
+                <SchoolPicker
+                  value={favoriteSchoolId}
+                  onChange={setFavoriteSchoolId}
+                  label={`Your Favorite ${sports.find(s => s.id === sportId)?.name || ''} Team (optional)`}
+                />
+              </div>
+            )}
+
+            {/* Defaults one-liner */}
+            <p className="text-text-muted text-sm mb-6">
+              Standard scoring · Snake draft · Change anytime in Settings
+            </p>
+
+            {/* Customize expander — Description, Sport selector */}
+            <div className="mb-8">
+              <button
+                type="button"
+                onClick={() => setShowCustomize(!showCustomize)}
+                className="text-brand-text text-sm font-medium hover:underline"
+              >
+                {showCustomize ? 'Hide options' : 'Customize'} &mdash; description, sport
+              </button>
+              {showCustomize && (
+                <div className="mt-4 space-y-6 border-t border-border pt-4">
+                  <div>
+                    <label htmlFor="description" className="block text-text-secondary mb-2">
+                      Description (optional)
+                    </label>
+                    <textarea
+                      id="description"
+                      value={description}
+                      onChange={(e) => setDescription(e.target.value)}
+                      rows={3}
+                      maxLength={500}
+                      className="w-full px-4 py-3 bg-surface border border-border rounded-lg text-text-primary placeholder-text-muted focus:outline-none focus:border-brand resize-none"
+                      placeholder="Tell your friends what this league is about..."
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="sport" className="block text-text-secondary mb-2">
+                      Sport
+                    </label>
+                    <select
+                      id="sport"
+                      value={sportId}
+                      onChange={(e) => setSportId(e.target.value)}
+                      required
+                      className="w-full px-4 py-3 bg-surface border border-border rounded-lg text-text-primary focus:outline-none focus:border-brand"
+                    >
+                      <option value="">Select a sport</option>
+                      {sports.map((sport) => (
+                        <option key={sport.id} value={sport.id}>
+                          {sport.name}
+                        </option>
+                      ))}
+                    </select>
+                    <p className="text-text-muted text-sm mt-1">
+                      Defaults to College Football
+                    </p>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Preview Panel (#24) */}

@@ -54,6 +54,11 @@ export default function CommissionerToolsPage() {
   )
   const [leagueSubTab, setLeagueSubTab] = useState<LeagueSubTab>('basic')
 
+  // Quick/Advanced mode — auto-advance if commissioner has customized settings
+  const [settingsMode, setSettingsMode] = useState<'quick' | 'advanced'>(
+    searchParams.get('tab') ? 'advanced' : 'quick'
+  )
+
   // Trade veto state
   const [userName, setUserName] = useState<string | undefined>(undefined)
   const [userEmail, setUserEmail] = useState<string | undefined>(undefined)
@@ -156,7 +161,12 @@ export default function CommissionerToolsPage() {
         if (settingsData) {
           setSettings(settingsData as LeagueSettings)
           setSavedSettingsJson(JSON.stringify(settingsData))
-          setSelectedPreset(detectPreset(settingsData))
+          const detected = detectPreset(settingsData)
+          setSelectedPreset(detected)
+          // Auto-show advanced if commissioner has customized scoring
+          if (detected === 'custom') {
+            setSettingsMode('advanced')
+          }
         }
 
         // Load teams for draft order reordering
@@ -674,7 +684,97 @@ export default function CommissionerToolsPage() {
             </div>
           )}
 
-          {/* Main Tab Navigation */}
+          {/* Quick / Advanced Mode Toggle */}
+          {settingsMode === 'quick' && settings && league && (
+            <div className="space-y-6 mb-8">
+              {/* Quick Setup Card */}
+              <section className="bg-surface rounded-lg p-6">
+                <h2 className="text-xl font-semibold text-text-primary mb-1">Quick Setup</h2>
+                <p className="text-text-secondary text-sm mb-6">The essentials for your league.</p>
+
+                <div className="space-y-5">
+                  {/* Scoring Preset */}
+                  <div>
+                    <label className="block text-text-secondary text-sm mb-1.5">Scoring Preset</label>
+                    <div className="flex items-center gap-3">
+                      <span className="text-text-primary font-medium capitalize">{selectedPreset}</span>
+                      <button
+                        onClick={() => { setSettingsMode('advanced'); setActiveTab('league'); setLeagueSubTab('scoring') }}
+                        className="text-brand-text text-sm hover:underline"
+                      >
+                        Customize
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Draft Type */}
+                  <div>
+                    <label className="block text-text-secondary text-sm mb-1.5">Draft Type</label>
+                    <div className="flex items-center gap-3">
+                      <span className="text-text-primary font-medium capitalize">{settings.draft_type || 'Snake'}</span>
+                      <button
+                        onClick={() => { setSettingsMode('advanced'); setActiveTab('draft') }}
+                        className="text-brand-text text-sm hover:underline"
+                      >
+                        Change
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Draft Date */}
+                  <div>
+                    <label className="block text-text-secondary text-sm mb-1.5">Draft Date</label>
+                    <div className="flex items-center gap-3">
+                      <span className="text-text-primary font-medium">
+                        {settings.draft_date
+                          ? new Date(settings.draft_date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })
+                          : 'Not scheduled'}
+                      </span>
+                      <button
+                        onClick={() => { setSettingsMode('advanced'); setActiveTab('draft') }}
+                        className="text-brand-text text-sm hover:underline"
+                      >
+                        {settings.draft_date ? 'Change' : 'Set'}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Max Teams */}
+                  <div>
+                    <label className="block text-text-secondary text-sm mb-1.5">Max Teams</label>
+                    <div className="flex items-center gap-3">
+                      <span className="text-text-primary font-medium">{league.max_teams}</span>
+                      <button
+                        onClick={() => { setSettingsMode('advanced'); setActiveTab('league'); setLeagueSubTab('basic') }}
+                        className="text-brand-text text-sm hover:underline"
+                      >
+                        Change
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </section>
+
+              {/* Show All Settings Button */}
+              <button
+                onClick={() => setSettingsMode('advanced')}
+                className="w-full py-3 text-sm text-text-secondary hover:text-text-primary border border-border rounded-lg hover:bg-surface transition-colors"
+              >
+                Show All Settings
+              </button>
+            </div>
+          )}
+
+          {/* Main Tab Navigation (Advanced mode) */}
+          {settingsMode === 'advanced' && (
+          <>
+          {/* Back to Quick Setup link */}
+          <button
+            onClick={() => setSettingsMode('quick')}
+            className="text-sm text-text-muted hover:text-text-secondary mb-4 transition-colors"
+          >
+            &larr; Back to Quick Setup
+          </button>
           <div className="flex gap-1 mb-6 bg-surface p-1 rounded-lg">
             {[
               { id: 'league' as TabType, label: 'League Settings' },
@@ -799,7 +899,7 @@ export default function CommissionerToolsPage() {
                   {/* Show Announcements */}
                   <div className="flex items-center justify-between p-4 bg-surface-inset rounded-lg">
                     <div>
-                      <label className="text-text-primary font-medium">League Announcements</label>
+                      <label className="text-text-primary font-medium">Bulletin Board</label>
                       <p className="text-text-secondary text-sm mt-1">Post updates and news for your league members</p>
                     </div>
                     <button
@@ -873,6 +973,9 @@ export default function CommissionerToolsPage() {
                 </div>
               </section>
             </div>
+          )}
+
+          </>
           )}
 
           {/* Back Button */}

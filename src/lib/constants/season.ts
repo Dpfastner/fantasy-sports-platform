@@ -1,10 +1,16 @@
 // ============================================
 // Season and week constants for CFB fantasy
+// Values sourced from sport-seasons config registry.
+// All exports preserved for backward compatibility.
 // ============================================
 
+import { getSeasonConfigForSport } from './sport-seasons'
+
+const cfb = getSeasonConfigForSport('cfb')!
+
 // Season start date (August 24 UTC, Week 0)
-export const SEASON_START_MONTH = 7 // August (0-indexed)
-export const SEASON_START_DAY = 24
+export const SEASON_START_MONTH = cfb.startMonth // 7 = August (0-indexed)
+export const SEASON_START_DAY = cfb.startDay
 
 // Week number constants
 export const WEEK_ZERO = 0
@@ -17,11 +23,11 @@ export const WEEK_CFP_QF = 19
 export const WEEK_CFP_SF = 20
 export const WEEK_CHAMPIONSHIP = 21
 export const WEEK_HEISMAN = 22
-export const MAX_WEEK = 22
-export const POSTSEASON_START = WEEK_CONF_CHAMPS
+export const MAX_WEEK = cfb.totalWeeks
+export const POSTSEASON_START = cfb.postseasonStartWeek
 
 // Number of regular-season columns shown in roster grid (weeks 0–16)
-export const REGULAR_WEEK_COUNT = 17
+export const REGULAR_WEEK_COUNT = cfb.regularSeasonWeeks
 
 // All special/postseason week numbers
 export const SPECIAL_WEEKS = [
@@ -35,38 +41,15 @@ export const SPECIAL_WEEKS = [
 ] as const
 
 // Event bonus weeks (weeks where special event scoring applies)
-export const EVENT_BONUS_WEEKS = [
-  WEEK_CONF_CHAMPS,
-  WEEK_BOWLS,
-  WEEK_CFP_R1,
-  WEEK_CFP_QF,
-  WEEK_CFP_SF,
-  WEEK_CHAMPIONSHIP,
-  WEEK_HEISMAN,
-] as const
+export const EVENT_BONUS_WEEKS = cfb.eventBonusWeeks
 
-// Roster grid special columns configuration
-export const ROSTER_SPECIAL_COLUMNS = [
-  { week: WEEK_BOWLS, label: 'Bowl', color: 'bg-green-600/20', textColor: 'text-green-400' },
-  { week: WEEK_CFP_R1, label: 'R1', color: 'bg-orange-600/20', textColor: 'text-orange-400' },
-  { week: WEEK_CFP_QF, label: 'QF', color: 'bg-orange-600/20', textColor: 'text-orange-400' },
-  { week: WEEK_CFP_SF, label: 'SF', color: 'bg-orange-600/20', textColor: 'text-orange-400' },
-  { week: WEEK_CHAMPIONSHIP, label: 'NC', color: 'bg-yellow-600/20', textColor: 'text-yellow-400' },
-  { week: WEEK_HEISMAN, label: 'H', color: 'bg-amber-600/20', textColor: 'text-amber-400' },
-] as const
+// Roster grid special columns configuration — sourced from registry
+export const ROSTER_SPECIAL_COLUMNS = cfb.rosterSpecialColumns
 
-// Week label maps for different contexts
-export const LEADERBOARD_WEEK_LABELS: Record<number, string> = {
-  [WEEK_BOWLS]: 'Bowls',
-  [WEEK_CFP_R1]: 'CFP',
-  [WEEK_CFP_QF]: 'Natty',
-}
+// Week label maps for different contexts — sourced from registry
+export const LEADERBOARD_WEEK_LABELS: Record<number, string> = cfb.leaderboardLabels
 
-export const SCHEDULE_WEEK_LABELS: Record<number, string> = {
-  [WEEK_CONF_CHAMPS]: 'Conf Champ',
-  [WEEK_ARMY_NAVY]: 'Week 16',
-  [WEEK_BOWLS]: 'Bowl',
-}
+export const SCHEDULE_WEEK_LABELS: Record<number, string> = cfb.scheduleLabels
 
 /**
  * Get a human-readable label for a week number.
@@ -95,7 +78,7 @@ export function getSeasonStartDate(year: number): Date {
 
 /**
  * Calculate the current week number from a timestamp.
- * Returns 0–22. Does not check sandbox overrides (see week.ts for that).
+ * Returns 0–MAX_WEEK. Does not check sandbox overrides (see week.ts for that).
  */
 export function calculateCurrentWeek(year: number, now: number = Date.now()): number {
   const seasonStart = getSeasonStartDate(year)

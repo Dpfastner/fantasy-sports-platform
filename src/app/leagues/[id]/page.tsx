@@ -8,7 +8,7 @@ import LeaderboardClient from '@/components/LeaderboardClient'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { AnnouncementsManager } from '@/components/AnnouncementsManager'
 import { LeagueActivityFeed } from '@/components/LeagueActivityFeed'
-import { LeagueChat } from '@/components/LeagueChat'
+import { OpenChatButton } from '@/components/chat/OpenChatButton'
 import { SandboxWeekSelector } from '@/components/SandboxWeekSelector'
 import { ShareButton } from '@/components/ShareButton'
 import { InviteCodeCard } from '@/components/InviteCodeCard'
@@ -20,6 +20,7 @@ import { getLeagueYear } from '@/lib/league-helpers'
 import { buildShareUrl } from '@/lib/share'
 import { SITE_URL } from '@/lib/og/constants'
 import { DormantLeagueView } from '@/components/DormantLeagueView'
+import { FirstVisitExplainer } from '@/components/FirstVisitExplainer'
 
 // Force dynamic rendering to ensure fresh data from database
 export const dynamic = 'force-dynamic'
@@ -297,62 +298,7 @@ export default async function LeaguePage({ params }: PageProps) {
     display_name: e.user_id ? activityProfiles[e.user_id] || null : null,
   }))
 
-  // Get chat messages for league (last 50)
-  let chatMessages: { id: string; message: string; created_at: string; user_id: string; display_name: string }[] = []
-  if (settings?.show_chat !== false) {
-    const { data: messagesData } = await supabase
-      .from('league_messages')
-      .select('id, message, created_at, user_id')
-      .eq('league_id', id)
-      .order('created_at', { ascending: false })
-      .limit(50)
-
-    if (messagesData && messagesData.length > 0) {
-      const chatUserIds = [...new Set(messagesData.map(m => m.user_id))]
-      let chatProfiles: Record<string, string> = {}
-      const { data: chatProfilesData } = await supabase
-        .from('profiles')
-        .select('id, display_name, email')
-        .in('id', chatUserIds)
-      if (chatProfilesData) {
-        chatProfiles = Object.fromEntries(
-          chatProfilesData.map(p => [p.id, p.display_name || p.email?.split('@')[0] || 'Unknown'])
-        )
-      }
-      chatMessages = messagesData.reverse().map(m => ({
-        ...m,
-        display_name: chatProfiles[m.user_id] || 'Unknown',
-      }))
-    }
-  }
-
-  // Get reactions for chat messages
-  let chatReactions: Record<string, { emoji: string; count: number; reacted: boolean }[]> = {}
-  if (chatMessages.length > 0) {
-    const messageIds = chatMessages.map(m => m.id)
-    const { data: reactionsData } = await supabase
-      .from('league_message_reactions')
-      .select('message_id, user_id, emoji')
-      .in('message_id', messageIds)
-
-    if (reactionsData && reactionsData.length > 0) {
-      // Group by message_id + emoji, track if current user reacted
-      const grouped: Record<string, Record<string, { count: number; reacted: boolean }>> = {}
-      for (const r of reactionsData) {
-        if (!grouped[r.message_id]) grouped[r.message_id] = {}
-        if (!grouped[r.message_id][r.emoji]) grouped[r.message_id][r.emoji] = { count: 0, reacted: false }
-        grouped[r.message_id][r.emoji].count++
-        if (r.user_id === user.id) grouped[r.message_id][r.emoji].reacted = true
-      }
-      for (const [msgId, emojis] of Object.entries(grouped)) {
-        chatReactions[msgId] = Object.entries(emojis).map(([emoji, data]) => ({
-          emoji,
-          count: data.count,
-          reacted: data.reacted,
-        }))
-      }
-    }
-  }
+  // Chat is now handled by the global sidebar — no server-side fetch needed
 
   // Get double picks count for user's team
   let doublePicksUsed = 0
@@ -364,51 +310,6 @@ export default async function LeaguePage({ params }: PageProps) {
       .eq('season_id', league.season_id)
     doublePicksUsed = count || 0
   }
-
-  // Get archived seasons for League History widget
-  const { data: leagueSeasonsData } = await supabase
-    .from('league_seasons')
-    .select('id, season_year, champion_user_id, final_standings, archived_at')
-    .eq('league_id', id)
-    .order('season_year', { ascending: false })
-    .limit(3)
-
-  // Get champion display names
-  const championIds = [...new Set((leagueSeasonsData || []).map(s => s.champion_user_id).filter(Boolean))] as string[]
-  let championNames: Record<string, string> = {}
-  if (championIds.length > 0) {
-    const { data: championProfiles } = await supabase
-      .from('profiles')
-      .select('id, display_name, email')
-      .in('id', championIds)
-    if (championProfiles) {
-      championNames = Object.fromEntries(
-        championProfiles.map(p => [p.id, p.display_name || p.email?.split('@')[0] || 'Unknown'])
-      )
-    }
-  }
-
-  const leagueSeasons = (leagueSeasonsData || []).map(s => {
-    // Try profile lookup first, then fall back to final_standings data
-    let championName: string | null = s.champion_user_id ? championNames[s.champion_user_id] || null : null
-    let championUserName: string | null = null
-    let championPoints: number | null = null
-    if (s.final_standings) {
-      const fs = s.final_standings as Record<string, unknown>
-      if (fs.version === 2) {
-        const standings = fs.standings as { teamName: string; userName: string; totalPoints: number }[]
-        if (!championName) championName = standings?.[0]?.teamName || null
-        championUserName = standings?.[0]?.userName || null
-        championPoints = standings?.[0]?.totalPoints ?? null
-      } else if (Array.isArray(s.final_standings)) {
-        const arr = s.final_standings as { teamName: string; userName: string; totalPoints: number }[]
-        if (!championName) championName = arr?.[0]?.teamName || null
-        championUserName = arr?.[0]?.userName || null
-        championPoints = arr?.[0]?.totalPoints ?? null
-      }
-    }
-    return { ...s, championName, championUserName, championPoints }
-  })
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gradient-from to-gradient-to">
@@ -436,6 +337,9 @@ export default async function LeaguePage({ params }: PageProps) {
         </div>
 
 
+        {/* First-visit inline explainer */}
+        {membership && <FirstVisitExplainer leagueId={id} />}
+
         {/* Invite Code (Commissioner only) */}
         {isCommissioner && (
           <InviteCodeCard
@@ -449,17 +353,17 @@ export default async function LeaguePage({ params }: PageProps) {
         <div className="grid lg:grid-cols-4 gap-6">
           {/* Main Content - 3 columns */}
           <div className="lg:col-span-3 space-y-6">
-            {/* League Announcements (top, above leaderboard) */}
+            {/* Bulletin Board (top, above leaderboard) */}
             {(settings?.show_announcements !== false) && (
               <ErrorBoundary sectionName="announcements">
                 <div id="announcements" className="bg-surface rounded-lg p-4 md:p-6">
                   <div className="flex items-center justify-between mb-4">
-                    <h2 className="text-lg font-semibold text-text-primary">League Announcements</h2>
+                    <h2 className="text-lg font-semibold text-text-primary">Bulletin Board</h2>
                     {isCommissioner && (
                       <Link
                         href={`/leagues/${id}/settings?tab=misc`}
                         className="text-text-muted hover:text-text-secondary transition-colors"
-                        title="Announcement Settings"
+                        title="Bulletin Board Settings"
                       >
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
@@ -568,30 +472,18 @@ export default async function LeaguePage({ params }: PageProps) {
               </div>
             )}
 
-            {/* League Chat (between leaderboard and activity feed) */}
+            {/* League Chat — now in sidebar */}
             {(settings?.show_chat !== false) && (
               <ErrorBoundary sectionName="league-chat">
                 <div className="bg-surface rounded-lg p-4 md:p-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <h2 className="text-lg font-semibold text-text-primary">League Chat</h2>
-                    {isCommissioner && (
-                      <Link
-                        href={`/leagues/${id}/settings?tab=misc`}
-                        className="text-text-muted hover:text-text-secondary transition-colors"
-                        title="Chat Settings"
-                      >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                        </svg>
-                      </Link>
-                    )}
-                  </div>
-                  <LeagueChat
-                    leagueId={id}
-                    currentUserId={user.id}
-                    initialMessages={chatMessages}
-                    initialReactions={chatReactions}
+                  <h2 className="text-lg font-semibold text-text-primary mb-3">League Chat</h2>
+                  <OpenChatButton
+                    channel={{
+                      id: `league:${id}`,
+                      type: 'league',
+                      name: league.name,
+                      entityId: id,
+                    }}
                   />
                 </div>
               </ErrorBoundary>
@@ -696,26 +588,32 @@ export default async function LeaguePage({ params }: PageProps) {
               </div>
             )}
 
-            {/* League Info - Compact */}
+            {/* League Details — Dynamic + Compact */}
             <div className="bg-surface rounded-lg p-4">
-              <h2 className="text-sm font-semibold text-text-secondary uppercase tracking-wide mb-3">League Info</h2>
-              <div className="space-y-2 text-xs">
+              <h2 className="text-sm font-semibold text-text-secondary uppercase tracking-wide mb-3">League Details</h2>
+
+              {/* Dynamic items — live game state */}
+              <div className="space-y-2 text-xs mb-3">
                 <div className="flex justify-between">
                   <span className="text-text-secondary">Teams</span>
                   <span className="text-text-primary">{teams?.length || 0} / {league.max_teams}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-text-secondary">Schools per Team</span>
-                  <span className="text-text-primary">{settings?.schools_per_team || 12}</span>
+                  <span className="text-text-secondary">Draft</span>
+                  <span className="text-text-primary">
+                    {isDraftComplete
+                      ? 'Complete'
+                      : settings?.draft_date
+                        ? new Date(settings.draft_date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })
+                        : 'Not scheduled'}
+                  </span>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-text-secondary">School Limit (League)</span>
-                  <span className="text-text-primary">{settings?.max_school_selections_total || 3}x max</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-text-secondary">Draft Type</span>
-                  <span className="text-text-primary capitalize">{settings?.draft_type || 'Snake'}</span>
-                </div>
+                {settings?.trade_deadline && (
+                  <div className="flex justify-between">
+                    <span className="text-text-secondary">Trade Deadline</span>
+                    <span className="text-text-primary">{new Date(settings.trade_deadline + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
+                  </div>
+                )}
                 {settings?.entry_fee && settings.entry_fee > 0 && (
                   <div className="flex justify-between">
                     <span className="text-text-secondary">Entry Fee</span>
@@ -728,111 +626,53 @@ export default async function LeaguePage({ params }: PageProps) {
                     <span className="text-success-text font-medium">${settings.prize_pool}</span>
                   </div>
                 )}
-                {settings?.high_points_enabled && (
-                  <div className="flex justify-between items-start">
-                    <span className="text-text-secondary" title="Each week, the team with the most points wins this bonus prize">High Points <span className="text-text-muted">(weekly bonus)</span></span>
-                    <span className="text-warning-text">${settings.high_points_weekly_amount}/wk</span>
-                  </div>
-                )}
-                {settings?.double_points_enabled && (
-                  <div className="flex justify-between">
-                    <span className="text-text-secondary">Double Points</span>
-                    <span className="text-info-text">Enabled</span>
-                  </div>
-                )}
-                <div className="flex justify-between">
-                  <span className="text-text-secondary">Add/Drops</span>
-                  <span className="text-text-primary">{settings?.max_add_drops_per_season || 50} per season</span>
-                </div>
-                {settings?.trades_enabled && (
-                  <div className="flex justify-between">
-                    <span className="text-text-secondary">Trades</span>
-                    <span className="text-text-primary">{settings.max_trades_per_season || 10} per season</span>
-                  </div>
-                )}
-                {settings?.trade_deadline && (
-                  <div className="flex justify-between">
-                    <span className="text-text-secondary">Trade Deadline</span>
-                    <span className="text-text-primary">{new Date(settings.trade_deadline + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
-                  </div>
-                )}
               </div>
-            </div>
 
-            {/* Key Dates */}
-            <div className="bg-surface rounded-lg p-4">
-              <h2 className="text-sm font-semibold text-text-secondary uppercase tracking-wide mb-3">Key Dates</h2>
-              <div className="space-y-3 text-xs">
-                <div className="flex items-start gap-2">
-                  <div className="w-2 h-2 mt-1 bg-warning rounded-full flex-shrink-0"></div>
-                  <div>
-                    <p className="text-text-primary font-medium">Heisman Trophy</p>
-                    <p className="text-text-secondary">Dec 14, {year}</p>
+              {/* Expandable full details */}
+              <details className="group">
+                <summary className="text-xs text-brand-text cursor-pointer hover:underline list-none flex items-center gap-1">
+                  <svg className="w-3 h-3 transition-transform group-open:rotate-90" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                  </svg>
+                  More details
+                </summary>
+                <div className="space-y-2 text-xs mt-3 pt-3 border-t border-border">
+                  <div className="flex justify-between">
+                    <span className="text-text-secondary">Schools per Team</span>
+                    <span className="text-text-primary">{settings?.schools_per_team || 12}</span>
                   </div>
-                </div>
-                <div className="flex items-start gap-2">
-                  <div className="w-2 h-2 mt-1 bg-accent rounded-full flex-shrink-0"></div>
-                  <div>
-                    <p className="text-text-primary font-medium">College Football Playoffs</p>
-                    <p className="text-text-secondary">Dec 20, {year} - Jan 10, {year + 1}</p>
+                  <div className="flex justify-between">
+                    <span className="text-text-secondary">School Limit</span>
+                    <span className="text-text-primary">{settings?.max_school_selections_total || 3}x max</span>
                   </div>
-                </div>
-                <div className="flex items-start gap-2">
-                  <div className="w-2 h-2 mt-1 bg-danger rounded-full flex-shrink-0"></div>
-                  <div>
-                    <p className="text-text-primary font-medium">National Championship</p>
-                    <p className="text-text-secondary">Jan 20, {year + 1}</p>
+                  <div className="flex justify-between">
+                    <span className="text-text-secondary">Draft Type</span>
+                    <span className="text-text-primary capitalize">{settings?.draft_type || 'Snake'}</span>
                   </div>
+                  <div className="flex justify-between">
+                    <span className="text-text-secondary">Add/Drops</span>
+                    <span className="text-text-primary">{settings?.max_add_drops_per_season || 50} per season</span>
+                  </div>
+                  {settings?.trades_enabled && (
+                    <div className="flex justify-between">
+                      <span className="text-text-secondary">Trades</span>
+                      <span className="text-text-primary">{settings.max_trades_per_season || 10} per season</span>
+                    </div>
+                  )}
+                  {settings?.high_points_enabled && (
+                    <div className="flex justify-between">
+                      <span className="text-text-secondary">High Points</span>
+                      <span className="text-warning-text">${settings.high_points_weekly_amount}/wk</span>
+                    </div>
+                  )}
+                  {settings?.double_points_enabled && (
+                    <div className="flex justify-between">
+                      <span className="text-text-secondary">Double Points</span>
+                      <span className="text-info-text">Enabled</span>
+                    </div>
+                  )}
                 </div>
-              </div>
-            </div>
-
-            {/* League History */}
-            <div className="bg-surface rounded-lg p-4">
-              <div className="flex items-center justify-between mb-3">
-                <h2 className="text-sm font-semibold text-text-secondary uppercase tracking-wide">League History</h2>
-                <Link
-                  href={`/leagues/${id}/history`}
-                  className="text-xs text-brand-text hover:text-brand-text/80 transition-colors"
-                >
-                  View All &rarr;
-                </Link>
-              </div>
-              {leagueSeasons.length === 0 ? (
-                <p className="text-text-muted text-xs">No past seasons yet</p>
-              ) : (
-                <div className="space-y-3">
-                  {leagueSeasons.map(season => (
-                    <Link
-                      key={season.id}
-                      href={`/leagues/${id}/history?season=${season.season_year}`}
-                      className="block hover:bg-surface-subtle rounded -mx-2 px-2 py-1 transition-colors"
-                    >
-                      <div className="flex items-center gap-2 text-xs">
-                        <span className="shrink-0">🏆</span>
-                        <span className="text-text-primary font-medium">
-                          {season.season_year - 1}-{season.season_year}
-                        </span>
-                      </div>
-                      {(season.championUserName || season.championName) && (
-                        <div className="ml-6 text-xs text-text-secondary">
-                          {season.championUserName && season.championName && season.championUserName !== season.championName ? (
-                            <>
-                              <span className="font-medium">{season.championUserName}</span>
-                              <span className="text-text-muted"> — {season.championName}</span>
-                            </>
-                          ) : (
-                            <span>{season.championName}</span>
-                          )}
-                          {season.championPoints != null && (
-                            <span className="text-text-muted"> — {season.championPoints} pts</span>
-                          )}
-                        </div>
-                      )}
-                    </Link>
-                  ))}
-                </div>
-              )}
+              </details>
             </div>
           </div>
         </div>

@@ -306,28 +306,8 @@ function JoinLeagueForm() {
             </Link>
           </div>
 
-          <h1 className="text-3xl font-bold text-text-primary mb-2">Join</h1>
-          <p className="text-text-secondary mb-6">Join with an invite code or browse open leagues and events.</p>
-
-          {/* Mode toggle */}
-          <div className="flex gap-1 border-b border-border mb-6">
-            <button
-              onClick={() => setJoinMode('code')}
-              className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
-                joinMode === 'code' ? 'border-brand text-brand' : 'border-transparent text-text-muted hover:text-text-secondary'
-              }`}
-            >
-              Invite Code
-            </button>
-            <button
-              onClick={() => setJoinMode('browse')}
-              className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
-                joinMode === 'browse' ? 'border-brand text-brand' : 'border-transparent text-text-muted hover:text-text-secondary'
-              }`}
-            >
-              Browse Open
-            </button>
-          </div>
+          <h1 className="text-3xl font-bold text-text-primary mb-2">Join a League</h1>
+          <p className="text-text-secondary mb-6">Enter the invite code from your commissioner.</p>
 
           {joinMode === 'browse' && (
             <div className="mb-8">
@@ -413,34 +393,6 @@ function JoinLeagueForm() {
                   )}
                 </div>
               )}
-            </div>
-          )}
-
-          {joinMode === 'code' && !leaguePreview && (
-            <div className="flex items-center gap-2 mb-6">
-              <div className={`flex items-center gap-1.5 text-sm text-brand-text font-semibold`}>
-                <span className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold bg-brand text-text-primary">1</span>
-                Find League
-              </div>
-              <div className="w-8 h-px bg-border" />
-              <div className="flex items-center gap-1.5 text-sm text-text-muted">
-                <span className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold bg-surface-subtle text-text-muted">2</span>
-                Join &amp; Name Team
-              </div>
-            </div>
-          )}
-
-          {joinMode === 'code' && leaguePreview && (
-            <div className="flex items-center gap-2 mb-6">
-              <div className="flex items-center gap-1.5 text-sm text-text-muted">
-                <span className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold bg-success text-text-primary">{'\u2713'}</span>
-                Find League
-              </div>
-              <div className="w-8 h-px bg-border" />
-              <div className="flex items-center gap-1.5 text-sm text-brand-text font-semibold">
-                <span className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold bg-brand text-text-primary">2</span>
-                Join &amp; Name Team
-              </div>
             </div>
           )}
 
@@ -575,6 +527,29 @@ function JoinLeagueForm() {
               </form>
             )}
           </div>}
+
+          {/* Browse link — below invite code form */}
+          {joinMode === 'code' && (
+            <p className="text-center text-sm text-text-muted mt-4">
+              Or{' '}
+              <button
+                onClick={() => setJoinMode('browse')}
+                className="text-brand-text hover:underline"
+              >
+                browse open leagues and events
+              </button>
+            </p>
+          )}
+
+          {/* Back to invite code link when browsing */}
+          {joinMode === 'browse' && (
+            <button
+              onClick={() => setJoinMode('code')}
+              className="text-sm text-text-muted hover:text-text-secondary mb-4 transition-colors"
+            >
+              &larr; Back to invite code
+            </button>
+          )}
         </div>
       </main>
     </div>

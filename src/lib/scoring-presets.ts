@@ -1,5 +1,12 @@
 // Scoring preset definitions for league settings
-// Each preset defines all 21 scoring fields that commissioners can customize
+// Each preset defines all scoring fields that commissioners can customize.
+// CFB fields and presets are sourced from the sport scoring registry.
+
+import {
+  getScoringConfigForSport,
+  getScoringFieldKeysForSport,
+  type SportScoringPreset,
+} from '@/lib/scoring/sport-scoring-registry'
 
 export type ScoringPresetKey = 'standard' | 'conservative' | 'aggressive' | 'chaos' | 'custom'
 
@@ -37,140 +44,23 @@ export interface ScoringPreset {
   values: ScoringPresetValues
 }
 
-const STANDARD_VALUES: ScoringPresetValues = {
-  points_win: 1,
-  points_conference_game: 1,
-  points_over_50: 1,
-  points_shutout: 1,
-  points_ranked_25: 1,
-  points_ranked_10: 2,
-  points_loss: 0,
-  points_conference_game_loss: 0,
-  points_over_50_loss: 0,
-  points_shutout_loss: 0,
-  points_ranked_25_loss: 0,
-  points_ranked_10_loss: 0,
-  points_conference_championship_win: 10,
-  points_conference_championship_loss: 0,
-  points_heisman_winner: 10,
-  points_bowl_appearance: 3,
-  points_playoff_first_round: 3,
-  points_playoff_quarterfinal: 4,
-  points_playoff_semifinal: 5,
-  points_championship_win: 20,
-  points_championship_loss: 6,
+// Build presets from registry
+const cfbConfig = getScoringConfigForSport('cfb')!
+
+function registryPresetToTyped(preset: SportScoringPreset): ScoringPreset {
+  return {
+    key: preset.key as ScoringPresetKey,
+    label: preset.label,
+    description: preset.description,
+    values: preset.values as unknown as ScoringPresetValues,
+  }
 }
 
-const CONSERVATIVE_VALUES: ScoringPresetValues = {
-  points_win: 1,
-  points_conference_game: 1,
-  points_over_50: 1,
-  points_shutout: 1,
-  points_ranked_25: 1,
-  points_ranked_10: 2,
-  points_loss: 0,
-  points_conference_game_loss: 0,
-  points_over_50_loss: 0,
-  points_shutout_loss: 0,
-  points_ranked_25_loss: 0,
-  points_ranked_10_loss: 0,
-  points_conference_championship_win: 5,
-  points_conference_championship_loss: 0,
-  points_heisman_winner: 5,
-  points_bowl_appearance: 3,
-  points_playoff_first_round: 3,
-  points_playoff_quarterfinal: 4,
-  points_playoff_semifinal: 5,
-  points_championship_win: 10,
-  points_championship_loss: 6,
-}
+export const SCORING_PRESETS: ScoringPreset[] = cfbConfig.presets.map(registryPresetToTyped)
 
-const AGGRESSIVE_VALUES: ScoringPresetValues = {
-  points_win: 2,
-  points_conference_game: 1.5,
-  points_over_50: 1.5,
-  points_shutout: 1.5,
-  points_ranked_25: 2,
-  points_ranked_10: 3,
-  points_loss: -1,
-  points_conference_game_loss: -0.5,
-  points_over_50_loss: 0,
-  points_shutout_loss: -1,
-  points_ranked_25_loss: 0,
-  points_ranked_10_loss: 0,
-  points_conference_championship_win: 15,
-  points_conference_championship_loss: -3,
-  points_heisman_winner: 15,
-  points_bowl_appearance: 5,
-  points_playoff_first_round: 5,
-  points_playoff_quarterfinal: 6,
-  points_playoff_semifinal: 8,
-  points_championship_win: 30,
-  points_championship_loss: -5,
-}
-
-const CHAOS_VALUES: ScoringPresetValues = {
-  points_win: 1,
-  points_conference_game: 2,
-  points_over_50: 2,
-  points_shutout: 2,
-  points_ranked_25: 2,
-  points_ranked_10: 4,
-  points_loss: -2,
-  points_conference_game_loss: -1,
-  points_over_50_loss: 1,
-  points_shutout_loss: -2,
-  points_ranked_25_loss: 1,
-  points_ranked_10_loss: 1.5,
-  points_conference_championship_win: 20,
-  points_conference_championship_loss: -5,
-  points_heisman_winner: 20,
-  points_bowl_appearance: 6,
-  points_playoff_first_round: 6,
-  points_playoff_quarterfinal: 8,
-  points_playoff_semifinal: 10,
-  points_championship_win: 40,
-  points_championship_loss: -10,
-}
-
-export const SCORING_PRESETS: ScoringPreset[] = [
-  {
-    key: 'standard',
-    label: 'Standard',
-    description: 'Balanced scoring with no loss penalties. Great for first-time leagues.',
-    values: STANDARD_VALUES,
-  },
-  {
-    key: 'conservative',
-    label: 'Conservative',
-    description: 'Lower bonuses keep scores tight. Wins matter most, fewer blowout swings.',
-    values: CONSERVATIVE_VALUES,
-  },
-  {
-    key: 'aggressive',
-    label: 'Aggressive',
-    description: 'Higher bonuses and loss penalties. Every game matters — bad weeks hurt.',
-    values: AGGRESSIVE_VALUES,
-  },
-  {
-    key: 'chaos',
-    label: 'Chaos Mode',
-    description: 'Massive swings. Upsets rewarded, losses punished hard. Not for the faint of heart.',
-    values: CHAOS_VALUES,
-  },
-]
-
-// All scoring field keys that presets control
-export const SCORING_FIELD_KEYS: (keyof ScoringPresetValues)[] = [
-  'points_win', 'points_conference_game', 'points_over_50', 'points_shutout',
-  'points_ranked_25', 'points_ranked_10',
-  'points_loss', 'points_conference_game_loss', 'points_over_50_loss',
-  'points_shutout_loss', 'points_ranked_25_loss', 'points_ranked_10_loss',
-  'points_conference_championship_win', 'points_conference_championship_loss',
-  'points_heisman_winner', 'points_bowl_appearance',
-  'points_playoff_first_round', 'points_playoff_quarterfinal', 'points_playoff_semifinal',
-  'points_championship_win', 'points_championship_loss',
-]
+// All scoring field keys that presets control — sourced from registry
+export const SCORING_FIELD_KEYS: (keyof ScoringPresetValues)[] =
+  getScoringFieldKeysForSport('cfb') as (keyof ScoringPresetValues)[]
 
 /** Check if current settings match a known preset */
 export function detectPreset(settings: Record<string, unknown>): ScoringPresetKey {
@@ -187,4 +77,13 @@ export function detectPreset(settings: Record<string, unknown>): ScoringPresetKe
 export function getPresetValues(key: ScoringPresetKey): ScoringPresetValues | null {
   const preset = SCORING_PRESETS.find((p) => p.key === key)
   return preset?.values ?? null
+}
+
+/**
+ * Get presets for a specific sport. Returns typed presets with Record<string, number> values.
+ * Use this for sport-agnostic contexts where ScoringPresetValues type isn't needed.
+ */
+export function getPresetsForSportSlug(sportSlug: string): SportScoringPreset[] {
+  const config = getScoringConfigForSport(sportSlug)
+  return config?.presets ?? []
 }

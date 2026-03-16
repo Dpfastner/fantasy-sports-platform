@@ -52,120 +52,179 @@ export function LeagueScoringSettings({
         </p>
       </div>
 
-      {/* Regular Game Scoring */}
-      <div className="mb-8">
-        <h3 className="text-lg font-medium text-brand-text mb-4">Regular Game Points</h3>
-        <div className="grid grid-cols-2 gap-4">
-          <div className="space-y-4">
-            <h4 className="text-sm font-medium text-success-text">Wins</h4>
+      {/* Preset Summary — shown when a preset is active (not Custom) */}
+      {selectedPreset !== 'custom' && (
+        <div className="mb-6">
+          <h3 className="text-sm font-medium text-text-secondary mb-3">Scoring Summary</h3>
+          <div className="grid grid-cols-2 gap-x-6 gap-y-1 text-sm">
             {[
-              { label: 'Base Win Points', field: 'points_win' },
-              { label: 'Conference Game Bonus', field: 'points_conference_game' },
-              { label: 'Score Over 50 Bonus', field: 'points_over_50' },
-              { label: 'Shutout Bonus', field: 'points_shutout' },
-              { label: 'Beat Ranked Top 25', field: 'points_ranked_25' },
-              { label: 'Beat Ranked Top 10', field: 'points_ranked_10' },
-            ].map(({ label, field }) => (
-              <div key={field}>
-                <label className="block text-text-secondary mb-1 text-sm">{label}</label>
-                <input
-                  type="number"
-                  step="0.5"
-                  value={settings[field as keyof LeagueSettings] as number}
-                  onChange={(e) => updateScoringField(field, parseFloat(e.target.value) || 0)}
-                  className="w-full px-3 py-2 bg-surface border border-border rounded text-text-primary text-sm"
-                />
+              { label: 'Win', field: 'points_win' },
+              { label: 'Loss', field: 'points_loss' },
+              { label: 'Conference Game', field: 'points_conference_game' },
+              { label: 'Conference Game (L)', field: 'points_conference_game_loss' },
+              { label: '50+ Points', field: 'points_over_50' },
+              { label: 'Shutout', field: 'points_shutout' },
+              { label: 'Beat Top 10', field: 'points_ranked_10' },
+              { label: 'Beat Top 25', field: 'points_ranked_25' },
+            ].map(({ label, field }) => {
+              const val = settings[field as keyof LeagueSettings] as number
+              if (val === 0) return null
+              return (
+                <div key={field} className="flex justify-between py-0.5">
+                  <span className="text-text-muted">{label}</span>
+                  <span className={`font-medium ${val > 0 ? 'text-success-text' : 'text-danger-text'}`}>
+                    {val > 0 ? '+' : ''}{val}
+                  </span>
+                </div>
+              )
+            })}
+          </div>
+          <div className="mt-3 pt-3 border-t border-border-subtle">
+            <h4 className="text-xs font-medium text-text-muted mb-2 uppercase tracking-wide">Special Events</h4>
+            <div className="grid grid-cols-2 gap-x-6 gap-y-1 text-sm">
+              {[
+                { label: 'Conf Championship Win', field: 'points_conference_championship_win' },
+                { label: 'Heisman Winner', field: 'points_heisman_winner' },
+                { label: 'Bowl Appearance', field: 'points_bowl_appearance' },
+                { label: 'CFP First Round', field: 'points_playoff_first_round' },
+                { label: 'CFP Quarterfinal', field: 'points_playoff_quarterfinal' },
+                { label: 'CFP Semifinal', field: 'points_playoff_semifinal' },
+                { label: 'Championship Win', field: 'points_championship_win' },
+                { label: 'Championship Loss', field: 'points_championship_loss' },
+              ].map(({ label, field }) => {
+                const val = settings[field as keyof LeagueSettings] as number
+                if (val === 0) return null
+                return (
+                  <div key={field} className="flex justify-between py-0.5">
+                    <span className="text-text-muted">{label}</span>
+                    <span className={`font-medium ${val > 0 ? 'text-success-text' : 'text-danger-text'}`}>
+                      {val > 0 ? '+' : ''}{val}
+                    </span>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Full Scoring Fields — only shown when Custom is selected */}
+      {selectedPreset === 'custom' && (
+        <>
+          <div className="mb-8">
+            <h3 className="text-lg font-medium text-brand-text mb-4">Regular Game Points</h3>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-4">
+                <h4 className="text-sm font-medium text-success-text">Wins</h4>
+                {[
+                  { label: 'Base Win Points', field: 'points_win' },
+                  { label: 'Conference Game Bonus', field: 'points_conference_game' },
+                  { label: 'Score Over 50 Bonus', field: 'points_over_50' },
+                  { label: 'Shutout Bonus', field: 'points_shutout' },
+                  { label: 'Beat Ranked Top 25', field: 'points_ranked_25' },
+                  { label: 'Beat Ranked Top 10', field: 'points_ranked_10' },
+                ].map(({ label, field }) => (
+                  <div key={field}>
+                    <label className="block text-text-secondary mb-1 text-sm">{label}</label>
+                    <input
+                      type="number"
+                      step="0.5"
+                      value={settings[field as keyof LeagueSettings] as number}
+                      onChange={(e) => updateScoringField(field, parseFloat(e.target.value) || 0)}
+                      className="w-full px-3 py-2 bg-surface border border-border rounded text-text-primary text-sm"
+                    />
+                  </div>
+                ))}
               </div>
-            ))}
+
+              <div className="space-y-4">
+                <h4 className="text-sm font-medium text-danger-text">Losses</h4>
+                {[
+                  { label: 'Base Loss Points', field: 'points_loss' },
+                  { label: 'Conference Game Loss', field: 'points_conference_game_loss' },
+                  { label: 'Lose by 50+ Points', field: 'points_over_50_loss' },
+                  { label: 'Get Shut Out', field: 'points_shutout_loss' },
+                  { label: 'Lose to Ranked Top 25', field: 'points_ranked_25_loss' },
+                  { label: 'Lose to Ranked Top 10', field: 'points_ranked_10_loss' },
+                ].map(({ label, field }) => (
+                  <div key={field}>
+                    <label className="block text-text-secondary mb-1 text-sm">{label}</label>
+                    <input
+                      type="number"
+                      step="0.5"
+                      value={settings[field as keyof LeagueSettings] as number}
+                      onChange={(e) => updateScoringField(field, parseFloat(e.target.value) || 0)}
+                      className="w-full px-3 py-2 bg-surface border border-border rounded text-text-primary text-sm"
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
 
-          <div className="space-y-4">
-            <h4 className="text-sm font-medium text-danger-text">Losses</h4>
-            {[
-              { label: 'Base Loss Points', field: 'points_loss' },
-              { label: 'Conference Game Loss', field: 'points_conference_game_loss' },
-              { label: 'Lose by 50+ Points', field: 'points_over_50_loss' },
-              { label: 'Get Shut Out', field: 'points_shutout_loss' },
-              { label: 'Lose to Ranked Top 25', field: 'points_ranked_25_loss' },
-              { label: 'Lose to Ranked Top 10', field: 'points_ranked_10_loss' },
-            ].map(({ label, field }) => (
-              <div key={field}>
-                <label className="block text-text-secondary mb-1 text-sm">{label}</label>
-                <input
-                  type="number"
-                  step="0.5"
-                  value={settings[field as keyof LeagueSettings] as number}
-                  onChange={(e) => updateScoringField(field, parseFloat(e.target.value) || 0)}
-                  className="w-full px-3 py-2 bg-surface border border-border rounded text-text-primary text-sm"
-                />
-              </div>
-            ))}
+          <div className="border-t border-border pt-6">
+            <h3 className="text-lg font-medium text-info-text mb-4">Special Events</h3>
+            <div className="grid grid-cols-2 gap-4">
+              {[
+                { label: 'Conference Championship Win', field: 'points_conference_championship_win' },
+                { label: 'Conference Championship Loss', field: 'points_conference_championship_loss' },
+                { label: 'Heisman Winner', field: 'points_heisman_winner' },
+                { label: 'Bowl Appearance', field: 'points_bowl_appearance' },
+              ].map(({ label, field }) => (
+                <div key={field}>
+                  <label className="block text-text-secondary mb-1 text-sm">{label}</label>
+                  <input
+                    type="number"
+                    step="0.5"
+                    value={settings[field as keyof LeagueSettings] as number}
+                    onChange={(e) => updateScoringField(field, parseFloat(e.target.value) || 0)}
+                    className="w-full px-3 py-2 bg-surface border border-border rounded text-text-primary text-sm"
+                  />
+                </div>
+              ))}
+            </div>
+
+            <h4 className="text-md font-medium text-warning-text mt-6 mb-3">Playoff Points</h4>
+            <div className="grid grid-cols-3 gap-4">
+              {[
+                { label: 'First Round', field: 'points_playoff_first_round' },
+                { label: 'Quarterfinal', field: 'points_playoff_quarterfinal' },
+                { label: 'Semifinal', field: 'points_playoff_semifinal' },
+              ].map(({ label, field }) => (
+                <div key={field}>
+                  <label className="block text-text-secondary mb-1 text-sm">{label}</label>
+                  <input
+                    type="number"
+                    step="0.5"
+                    value={settings[field as keyof LeagueSettings] as number}
+                    onChange={(e) => updateScoringField(field, parseFloat(e.target.value) || 0)}
+                    className="w-full px-3 py-2 bg-surface border border-border rounded text-text-primary text-sm"
+                  />
+                </div>
+              ))}
+            </div>
+
+            <h4 className="text-md font-medium text-accent-text mt-6 mb-3">National Championship</h4>
+            <div className="grid grid-cols-2 gap-4">
+              {[
+                { label: 'Championship Win', field: 'points_championship_win' },
+                { label: 'Championship Loss', field: 'points_championship_loss' },
+              ].map(({ label, field }) => (
+                <div key={field}>
+                  <label className="block text-text-secondary mb-1 text-sm">{label}</label>
+                  <input
+                    type="number"
+                    step="0.5"
+                    value={settings[field as keyof LeagueSettings] as number}
+                    onChange={(e) => updateScoringField(field, parseFloat(e.target.value) || 0)}
+                    className="w-full px-3 py-2 bg-surface border border-border rounded text-text-primary text-sm"
+                  />
+                </div>
+              ))}
+            </div>
           </div>
-        </div>
-      </div>
-
-      {/* Special Events */}
-      <div className="border-t border-border pt-6">
-        <h3 className="text-lg font-medium text-info-text mb-4">Special Events</h3>
-        <div className="grid grid-cols-2 gap-4">
-          {[
-            { label: 'Conference Championship Win', field: 'points_conference_championship_win' },
-            { label: 'Conference Championship Loss', field: 'points_conference_championship_loss' },
-            { label: 'Heisman Winner', field: 'points_heisman_winner' },
-            { label: 'Bowl Appearance', field: 'points_bowl_appearance' },
-          ].map(({ label, field }) => (
-            <div key={field}>
-              <label className="block text-text-secondary mb-1 text-sm">{label}</label>
-              <input
-                type="number"
-                step="0.5"
-                value={settings[field as keyof LeagueSettings] as number}
-                onChange={(e) => updateScoringField(field, parseFloat(e.target.value) || 0)}
-                className="w-full px-3 py-2 bg-surface border border-border rounded text-text-primary text-sm"
-              />
-            </div>
-          ))}
-        </div>
-
-        <h4 className="text-md font-medium text-warning-text mt-6 mb-3">Playoff Points</h4>
-        <div className="grid grid-cols-3 gap-4">
-          {[
-            { label: 'First Round', field: 'points_playoff_first_round' },
-            { label: 'Quarterfinal', field: 'points_playoff_quarterfinal' },
-            { label: 'Semifinal', field: 'points_playoff_semifinal' },
-          ].map(({ label, field }) => (
-            <div key={field}>
-              <label className="block text-text-secondary mb-1 text-sm">{label}</label>
-              <input
-                type="number"
-                step="0.5"
-                value={settings[field as keyof LeagueSettings] as number}
-                onChange={(e) => updateScoringField(field, parseFloat(e.target.value) || 0)}
-                className="w-full px-3 py-2 bg-surface border border-border rounded text-text-primary text-sm"
-              />
-            </div>
-          ))}
-        </div>
-
-        <h4 className="text-md font-medium text-accent-text mt-6 mb-3">National Championship</h4>
-        <div className="grid grid-cols-2 gap-4">
-          {[
-            { label: 'Championship Win', field: 'points_championship_win' },
-            { label: 'Championship Loss', field: 'points_championship_loss' },
-          ].map(({ label, field }) => (
-            <div key={field}>
-              <label className="block text-text-secondary mb-1 text-sm">{label}</label>
-              <input
-                type="number"
-                step="0.5"
-                value={settings[field as keyof LeagueSettings] as number}
-                onChange={(e) => updateScoringField(field, parseFloat(e.target.value) || 0)}
-                className="w-full px-3 py-2 bg-surface border border-border rounded text-text-primary text-sm"
-              />
-            </div>
-          ))}
-        </div>
-      </div>
+        </>
+      )}
 
       {isCommissioner && (
         <div className="flex gap-3 mt-6">

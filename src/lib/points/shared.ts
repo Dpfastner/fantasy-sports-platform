@@ -3,6 +3,39 @@
  * Safe to import from both server and client code.
  */
 
+import type { SupabaseClient } from '@supabase/supabase-js'
+
+// --- Sport Calculator Interface ---
+// All sport-specific calculators implement this interface.
+// The router in points/index.ts dispatches to the correct calculator by sport slug.
+
+export interface SportCalculator {
+  readonly sportSlug: string
+  calculateWeeklySchoolPoints(
+    seasonId: string,
+    weekNumber: number,
+    supabase?: SupabaseClient
+  ): Promise<{ calculated: number; errors: string[] }>
+  calculateFantasyTeamPoints(
+    leagueId: string,
+    weekNumber: number,
+    supabase?: SupabaseClient
+  ): Promise<{ teamsUpdated: number; highPointsWinner: string | null; errors: string[] }>
+  calculateAllPoints(
+    seasonId: string,
+    weekNumber: number,
+    supabase?: SupabaseClient
+  ): Promise<{
+    schoolPointsCalculated: number
+    leaguesProcessed: number
+    teamsUpdated: number
+    errors: string[]
+  }>
+}
+
+/** JSONB-based scoring values type (sport-agnostic) */
+export type ScoringValues = Record<string, number>
+
 export interface LeagueSettings {
   // Win scoring
   points_win: number
