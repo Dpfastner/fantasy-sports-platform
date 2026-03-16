@@ -1,9 +1,23 @@
 @import "tailwindcss";
 
-/* Chat sidebar offset — pushes all content left when sidebar is open (md+ only) */
+/* Chat sidebar offset — pushes page content left when sidebar is open (md+ only) */
+/* Header and footer break out to full viewport width via negative margin */
+/* All margin transitions sync with sidebar slide (300ms) */
 @media (min-width: 768px) {
+  body {
+    transition: margin-right 300ms ease-in-out;
+  }
   body.chat-sidebar-open {
     margin-right: 320px;
+  }
+  header, footer {
+    transition: margin-right 300ms ease-in-out;
+  }
+  body.chat-sidebar-open header {
+    margin-right: -320px;
+  }
+  body.chat-sidebar-open footer {
+    margin-right: -320px;
   }
 }
 

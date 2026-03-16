@@ -50,7 +50,7 @@ export function Header({ userName, userEmail, userId, showUserMenu = true }: Hea
   }
 
   return (
-    <header className="bg-surface/50 border-b border-border relative z-20">
+    <header className="bg-surface/50 border-b border-border relative z-40">
       <div className="container mx-auto px-4 py-3 flex items-center justify-between gap-4">
         {/* Left: Logo */}
         <Link href="/dashboard" className="text-2xl font-bold text-text-primary shrink-0">
