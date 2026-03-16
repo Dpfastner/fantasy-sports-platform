@@ -12,6 +12,7 @@ interface Announcement {
   pinned: boolean
   created_at: string
   commissioner_id: string
+  scheduled_at?: string | null
 }
 
 interface AnnouncementsManagerProps {
@@ -33,7 +34,7 @@ export function AnnouncementsManager({
   const [announcements, setAnnouncements] = useState(initialAnnouncements)
   const [showForm, setShowForm] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
-  const [form, setForm] = useState({ title: '', body: '', pinned: false })
+  const [form, setForm] = useState({ title: '', body: '', pinned: false, scheduled_at: '' })
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -45,16 +46,21 @@ export function AnnouncementsManager({
       const res = await fetchWithRetry(`/api/leagues/${leagueId}/announcements`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form),
+        body: JSON.stringify({
+          title: form.title,
+          body: form.body,
+          pinned: form.pinned,
+          scheduled_at: form.scheduled_at || null,
+        }),
       })
       const data = await res.json()
-      if (!res.ok) throw new Error(data.error || 'Failed to create announcement')
+      if (!res.ok) throw new Error(data.error || 'Failed to create post')
       setAnnouncements(prev => [data.announcement, ...prev])
-      setForm({ title: '', body: '', pinned: false })
+      setForm({ title: '', body: '', pinned: false, scheduled_at: '' })
       setShowForm(false)
       router.refresh()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to create announcement')
+      setError(err instanceof Error ? err.message : 'Failed to create post')
     } finally {
       setSaving(false)
     }
@@ -73,7 +79,7 @@ export function AnnouncementsManager({
       if (!res.ok) throw new Error(data.error || 'Failed to update announcement')
       setAnnouncements(prev => prev.map(a => a.id === id ? data.announcement : a))
       setEditingId(null)
-      setForm({ title: '', body: '', pinned: false })
+      setForm({ title: '', body: '', pinned: false, scheduled_at: '' })
       router.refresh()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to update announcement')
@@ -113,13 +119,13 @@ export function AnnouncementsManager({
 
   const startEdit = (a: Announcement) => {
     setEditingId(a.id)
-    setForm({ title: a.title, body: a.body, pinned: a.pinned })
+    setForm({ title: a.title, body: a.body, pinned: a.pinned, scheduled_at: a.scheduled_at || '' })
     setShowForm(false)
   }
 
   const cancelEdit = () => {
     setEditingId(null)
-    setForm({ title: '', body: '', pinned: false })
+    setForm({ title: '', body: '', pinned: false, scheduled_at: '' })
   }
 
   const formatDate = (dateStr: string) => {
@@ -173,7 +179,7 @@ export function AnnouncementsManager({
                     maxLength={2000}
                     rows={3}
                     className="w-full px-3 py-2 bg-surface border border-border rounded-lg text-text-primary text-sm placeholder:text-text-muted resize-none"
-                    placeholder="Write your announcement..."
+                    placeholder="Write your post..."
                   />
                   <div className="flex items-center justify-between">
                     <label className="flex items-center gap-2 text-xs text-text-secondary cursor-pointer">
@@ -217,10 +223,15 @@ export function AnnouncementsManager({
                       </svg>
                     )}
                     <h3 className="text-sm font-semibold text-text-primary truncate">{a.title}</h3>
+                    {a.scheduled_at && new Date(a.scheduled_at) > new Date() && (
+                      <span className="text-[10px] px-1.5 py-0.5 bg-warning/20 text-warning rounded-full shrink-0">
+                        Scheduled
+                      </span>
+                    )}
                   </div>
                   <p className="text-text-secondary text-sm whitespace-pre-wrap">{a.body}</p>
                   <p className="text-text-muted text-xs mt-2">
-                    — <a href={`/profile/${a.commissioner_id}`} className="hover:underline">{commName}</a>, {formatDate(a.created_at)}
+                    — <a href={`/profile/${a.commissioner_id}`} className="hover:underline">{commName}</a>, {a.scheduled_at && new Date(a.scheduled_at) > new Date() ? `publishes ${formatDate(a.scheduled_at)}` : formatDate(a.created_at)}
                   </p>
                 </div>
                 <div className="flex items-center gap-1 shrink-0">
@@ -275,8 +286,8 @@ export function AnnouncementsManager({
           </div>
           <p className="text-text-secondary text-sm">
             {isCommissioner
-              ? 'Post announcements here to keep your league members informed. Click below to create your first announcement.'
-              : 'League announcements from your commissioner will appear here. Stay tuned!'}
+              ? 'Post updates here to keep your league members informed. Click below to create your first post.'
+              : 'Bulletin board posts from your commissioner will appear here. Stay tuned!'}
           </p>
         </div>
       )}
@@ -302,9 +313,9 @@ export function AnnouncementsManager({
                 maxLength={2000}
                 rows={3}
                 className="w-full px-3 py-2 bg-surface border border-border rounded-lg text-text-primary text-sm placeholder:text-text-muted resize-none"
-                placeholder="Write your announcement..."
+                placeholder="Write your post..."
               />
-              <div className="flex items-center justify-between">
+              <div className="flex flex-wrap items-center gap-3">
                 <label className="flex items-center gap-2 text-xs text-text-secondary cursor-pointer">
                   <input
                     type="checkbox"
@@ -314,21 +325,40 @@ export function AnnouncementsManager({
                   />
                   Pin to top
                 </label>
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => { setShowForm(false); setForm({ title: '', body: '', pinned: false }) }}
-                    className="px-3 py-1.5 text-text-secondary text-xs rounded-lg hover:bg-surface-subtle transition-colors"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    onClick={handleCreate}
-                    disabled={saving || !form.title.trim() || !form.body.trim()}
-                    className="px-3 py-1.5 bg-brand hover:bg-brand-hover disabled:bg-brand/50 text-text-primary text-xs font-medium rounded-lg transition-colors"
-                  >
-                    {saving ? 'Posting...' : 'Post Announcement'}
-                  </button>
+                <div className="flex items-center gap-1.5">
+                  <label className="text-xs text-text-secondary">Schedule:</label>
+                  <input
+                    type="datetime-local"
+                    value={form.scheduled_at}
+                    onChange={e => setForm(prev => ({ ...prev, scheduled_at: e.target.value }))}
+                    min={new Date().toISOString().slice(0, 16)}
+                    className="px-2 py-1 bg-surface border border-border rounded text-text-primary text-xs"
+                  />
+                  {form.scheduled_at && (
+                    <button
+                      onClick={() => setForm(prev => ({ ...prev, scheduled_at: '' }))}
+                      className="text-text-muted hover:text-text-secondary text-xs"
+                      title="Clear schedule"
+                    >
+                      Clear
+                    </button>
+                  )}
                 </div>
+              </div>
+              <div className="flex items-center justify-end gap-2">
+                <button
+                  onClick={() => { setShowForm(false); setForm({ title: '', body: '', pinned: false, scheduled_at: '' }) }}
+                  className="px-3 py-1.5 text-text-secondary text-xs rounded-lg hover:bg-surface-subtle transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleCreate}
+                  disabled={saving || !form.title.trim() || !form.body.trim()}
+                  className="px-3 py-1.5 bg-brand hover:bg-brand-hover disabled:bg-brand/50 text-text-primary text-xs font-medium rounded-lg transition-colors"
+                >
+                  {saving ? 'Posting...' : form.scheduled_at ? 'Schedule' : 'Post'}
+                </button>
               </div>
             </div>
           </div>
@@ -337,7 +367,7 @@ export function AnnouncementsManager({
             onClick={() => setShowForm(true)}
             className="w-full p-3 text-left text-text-muted text-sm rounded-lg border border-dashed border-border hover:border-brand hover:text-brand-text transition-colors"
           >
-            Post an announcement...
+            Post to bulletin board...
           </button>
         )
       )}

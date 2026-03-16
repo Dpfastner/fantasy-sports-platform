@@ -7,6 +7,8 @@ import { PaletteProvider } from './PaletteProvider'
 import PaletteSwitcher from './PaletteSwitcher'
 import ReportIssue from './ReportIssue'
 import TosGate from './TosGate'
+import { ChatContextProvider } from '@/contexts/ChatContext'
+import { MobileChatPeek } from './chat/MobileChatPeek'
 import { createClient } from '@/lib/supabase/client'
 
 const PUSH_PROMPTED_KEY = 'rivyls_push_prompted'
@@ -80,7 +82,10 @@ export function Providers({ children }: ProvidersProps) {
     <PaletteProvider>
       <ToastProvider>
         <ConfirmProvider>
-          {children}
+          <ChatContextProvider>
+            {children}
+            <MobileChatPeek />
+          </ChatContextProvider>
           <PaletteSwitcher />
           <ReportIssue />
           <TosGate />

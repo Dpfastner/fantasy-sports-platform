@@ -5,6 +5,7 @@ import "./globals.css";
 import { Providers } from "@/components/Providers";
 import EnvironmentBadge from "@/components/EnvironmentBadge";
 import Footer from "@/components/Footer";
+import { ChatSidebar } from "@/components/chat/ChatSidebar";
 
 const montserrat = Montserrat({
   variable: "--font-montserrat",
@@ -54,8 +55,11 @@ export default function RootLayout({
         className={`${montserrat.variable} ${inter.variable} antialiased flex flex-col min-h-screen`}
       >
         <Providers>
-          <div className="flex-1">
-            {children}
+          <div className="flex-1 flex">
+            <div className="flex-1 flex flex-col min-w-0">
+              {children}
+            </div>
+            <ChatSidebar />
           </div>
           <Footer />
           <EnvironmentBadge />

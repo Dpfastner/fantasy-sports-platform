@@ -155,15 +155,15 @@ const FAQ_DATA: FaqCategory[] = [
     items: [
       {
         question: 'What can commissioners do?',
-        answer: 'Commissioners have full control over their league: set scoring rules, configure draft settings, manage members (invite, remove), post announcements, veto trades, appoint co-commissioners, and manage season settings. Commissioners cannot edit scores — only the platform admin can override scores if needed.',
+        answer: 'Commissioners have full control over their league: set scoring rules, configure draft settings, manage members (invite, remove), post to the bulletin board, veto trades, appoint co-commissioners, and manage season settings. Commissioners cannot edit scores — only the platform admin can override scores if needed.',
       },
       {
         question: 'What is a co-commissioner?',
         answer: 'Commissioners can promote any member to co-commissioner. Co-commissioners have the same management powers as the commissioner, which is useful for sharing league administration duties.',
       },
       {
-        question: 'How do league announcements work?',
-        answer: 'Commissioners can post announcements that appear at the top of the league page. All members receive a notification when a new announcement is posted. Use these for rule reminders, trade deadline warnings, or weekly updates.',
+        question: 'How does the Bulletin Board work?',
+        answer: 'Commissioners can post to the Bulletin Board, which appears at the top of the league page. All members receive a notification when a new post is published. Use it for rule reminders, trade deadline warnings, weekly updates, or schedule posts in advance.',
       },
       {
         question: 'Can I run my league again next season?',

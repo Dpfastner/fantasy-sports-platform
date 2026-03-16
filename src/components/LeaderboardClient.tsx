@@ -7,6 +7,7 @@ import { Header } from '@/components/Header'
 import { useToast } from '@/components/Toast'
 import { ensureContrast } from '@/lib/color-utils'
 import { fetchWithRetry } from '@/lib/api/fetch'
+import { ShareButton } from '@/components/ShareButton'
 import {
   REGULAR_WEEK_COUNT,
   POSTSEASON_START,
@@ -305,13 +306,27 @@ export default function LeaderboardClient({
               )}
             </p>
           </div>
-          {settings?.high_points_enabled && (
-            <div className="bg-highlight-special border border-warning rounded-lg px-3 py-1.5 self-start">
-              <span className="text-warning-text text-xs">
-                High Points: ${settings.high_points_weekly_amount}/week
-              </span>
-            </div>
-          )}
+          <div className="flex items-center gap-2 self-start">
+            {settings?.high_points_enabled && (
+              <div className="bg-highlight-special border border-warning rounded-lg px-3 py-1.5">
+                <span className="text-warning-text text-xs">
+                  High Points: ${settings.high_points_weekly_amount}/week
+                </span>
+              </div>
+            )}
+            {currentWeek > 1 && (
+              <ShareButton
+                shareData={{
+                  title: `${leagueName || 'League'} — Week ${currentWeek} Recap`,
+                  text: `Check out the Week ${currentWeek} standings!`,
+                  url: `${typeof window !== 'undefined' ? window.location.origin : ''}/leagues/${leagueId}/leaderboard`,
+                }}
+                ogImageUrl={`/api/og/recap?leagueId=${leagueId}&week=${currentWeek}`}
+                label="Share Recap"
+                className="text-xs"
+              />
+            )}
+          </div>
         </div>
 
         {/* All-zeros encouragement */}
@@ -583,13 +598,26 @@ export default function LeaderboardClient({
               )}
             </p>
           </div>
-          {settings?.high_points_enabled && (
-            <div className="bg-highlight-special border border-warning rounded-lg px-3 md:px-4 py-1.5 md:py-2 self-start sm:self-auto">
-              <span className="text-warning-text text-xs md:text-sm">
-                High Points: ${settings.high_points_weekly_amount}/week
-              </span>
-            </div>
-          )}
+          <div className="flex items-center gap-2 self-start sm:self-auto">
+            {settings?.high_points_enabled && (
+              <div className="bg-highlight-special border border-warning rounded-lg px-3 md:px-4 py-1.5 md:py-2">
+                <span className="text-warning-text text-xs md:text-sm">
+                  High Points: ${settings.high_points_weekly_amount}/week
+                </span>
+              </div>
+            )}
+            {currentWeek > 1 && (
+              <ShareButton
+                shareData={{
+                  title: `${leagueName || 'League'} — Week ${currentWeek} Recap`,
+                  text: `Check out the Week ${currentWeek} standings!`,
+                  url: `${typeof window !== 'undefined' ? window.location.origin : ''}/leagues/${leagueId}/leaderboard`,
+                }}
+                ogImageUrl={`/api/og/recap?leagueId=${leagueId}&week=${currentWeek}`}
+                label="Share Recap"
+              />
+            )}
+          </div>
         </div>
 
         {/* Main Standings Table */}

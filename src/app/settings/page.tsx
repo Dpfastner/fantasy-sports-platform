@@ -612,7 +612,7 @@ export default function SettingsPage() {
               <NotificationToggle label="Game Results" description="Weekly score updates when games are completed" checked={inappGameResults} onChange={setInappGameResults} />
               <NotificationToggle label="Trade Notifications" description="Trade proposals, acceptances, rejections, vetoes, and expirations" checked={inappTrades} onChange={setInappTrades} />
               <NotificationToggle label="Transaction Confirmations" description="Confirmation when add/drop transactions are processed" checked={inappTransactions} onChange={setInappTransactions} />
-              <NotificationToggle label="League Announcements" description="Updates posted by your league commissioners" checked={inappAnnouncements} onChange={setInappAnnouncements} />
+              <NotificationToggle label="Bulletin Board" description="Updates posted by your league commissioners" checked={inappAnnouncements} onChange={setInappAnnouncements} />
               <NotificationToggle label="Chat Mentions" description="When someone mentions you in league chat" checked={inappChatMentions} onChange={setInappChatMentions} />
               <NotificationToggle label="League Activity" description="Members joining your league and other league events" checked={inappLeagueActivity} onChange={setInappLeagueActivity} />
             </NotificationCategory>
@@ -682,7 +682,7 @@ export default function SettingsPage() {
                   <NotificationToggle label="Game Results" description="Weekly score updates when games are completed" checked={pushGameResults} onChange={setPushGameResults} />
                   <NotificationToggle label="Trade Notifications" description="Trade proposals, acceptances, rejections, vetoes, and expirations" checked={pushTrades} onChange={setPushTrades} />
                   <NotificationToggle label="Transaction Confirmations" description="Confirmation when add/drop transactions are processed" checked={pushTransactions} onChange={setPushTransactions} />
-                  <NotificationToggle label="League Announcements" description="Updates posted by your league commissioners" checked={pushAnnouncements} onChange={setPushAnnouncements} />
+                  <NotificationToggle label="Bulletin Board" description="Updates posted by your league commissioners" checked={pushAnnouncements} onChange={setPushAnnouncements} />
                   <NotificationToggle label="Chat Mentions" description="When someone mentions you in league chat" checked={pushChatMentions} onChange={setPushChatMentions} />
                   <NotificationToggle label="League Activity" description="Members joining your league and other league events" checked={pushLeagueActivity} onChange={setPushLeagueActivity} />
                 </>
@@ -704,7 +704,7 @@ export default function SettingsPage() {
               <NotificationToggle label="Game Results" description="Weekly score updates when games are completed" checked={emailGameResults} onChange={setEmailGameResults} />
               <NotificationToggle label="Draft Reminders" description="Reminders when your draft is about to start" checked={emailDraftReminders} onChange={setEmailDraftReminders} />
               <NotificationToggle label="Transaction Confirmations" description="Confirmation when add/drop transactions are processed" checked={emailTransactionConfirmations} onChange={setEmailTransactionConfirmations} />
-              <NotificationToggle label="League Announcements" description="Updates from your league commissioners" checked={emailLeagueAnnouncements} onChange={setEmailLeagueAnnouncements} />
+              <NotificationToggle label="Bulletin Board" description="Updates from your league commissioners" checked={emailLeagueAnnouncements} onChange={setEmailLeagueAnnouncements} />
             </NotificationCategory>
           </div>
 

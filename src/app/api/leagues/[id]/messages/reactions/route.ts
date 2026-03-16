@@ -8,6 +8,64 @@ import { createRateLimiter, getClientIp } from '@/lib/api/rate-limit'
 
 const limiter = createRateLimiter({ windowMs: 60_000, max: 60 })
 
+// GET — reaction detail: who reacted with what
+export async function GET(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id: leagueId } = await params
+    const url = new URL(request.url)
+    const messageId = url.searchParams.get('messageId')
+
+    if (!messageId) {
+      return NextResponse.json({ error: 'messageId required' }, { status: 400 })
+    }
+
+    const authResult = await requireAuth()
+    if (authResult instanceof NextResponse) return authResult
+    const { user } = authResult
+
+    const isMember = await verifyLeagueMembership(user.id, leagueId)
+    if (!isMember) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    }
+
+    const supabase = createAdminClient()
+
+    const { data: reactions } = await supabase
+      .from('league_message_reactions')
+      .select('emoji, user_id')
+      .eq('message_id', messageId)
+
+    // Get display names
+    const userIds = [...new Set((reactions || []).map(r => r.user_id))]
+    let profiles: Record<string, string> = {}
+    if (userIds.length > 0) {
+      const { data: profilesData } = await supabase
+        .from('profiles')
+        .select('id, display_name, email')
+        .in('id', userIds)
+      if (profilesData) {
+        profiles = Object.fromEntries(
+          profilesData.map(p => [p.id, p.display_name || p.email?.split('@')[0] || 'Unknown'])
+        )
+      }
+    }
+
+    const detail = (reactions || []).map(r => ({
+      emoji: r.emoji,
+      userId: r.user_id,
+      displayName: profiles[r.user_id] || 'Unknown',
+    }))
+
+    return NextResponse.json({ reactions: detail })
+  } catch (error) {
+    Sentry.captureException(error)
+    return NextResponse.json({ error: 'Failed to fetch reaction details' }, { status: 500 })
+  }
+}
+
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }

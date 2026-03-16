@@ -12,10 +12,13 @@ export async function GET(
   try {
     const { poolId } = await params
     const admin = createAdminClient()
+    const supabase = await createServerClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    const currentUserId = user?.id || ''
 
     const { data: messages } = await admin
       .from('event_pool_messages')
-      .select('id, user_id, content, created_at')
+      .select('id, user_id, content, created_at, pinned_at, pinned_by')
       .eq('pool_id', poolId)
       .order('created_at', { ascending: true })
       .limit(200)
@@ -31,27 +34,38 @@ export async function GET(
       profileMap = Object.fromEntries((profiles || []).map(p => [p.id, p.display_name]))
     }
 
-    // Get reactions
+    // Get reactions (grouped by message + emoji with counts)
     const messageIds = (messages || []).map(m => m.id)
-    let reactionMap: Record<string, { emoji: string; user_id: string }[]> = {}
+    const reactions: Record<string, { emoji: string; count: number; reacted: boolean }[]> = {}
     if (messageIds.length > 0) {
-      const { data: reactions } = await admin
+      const { data: reactionRows } = await admin
         .from('event_pool_message_reactions')
         .select('message_id, emoji, user_id')
         .in('message_id', messageIds)
 
-      for (const r of reactions || []) {
-        if (!reactionMap[r.message_id]) reactionMap[r.message_id] = []
-        reactionMap[r.message_id].push({ emoji: r.emoji, user_id: r.user_id })
+      const grouped: Record<string, Record<string, { count: number; reacted: boolean }>> = {}
+      for (const r of reactionRows || []) {
+        if (!grouped[r.message_id]) grouped[r.message_id] = {}
+        if (!grouped[r.message_id][r.emoji]) grouped[r.message_id][r.emoji] = { count: 0, reacted: false }
+        grouped[r.message_id][r.emoji].count++
+        if (r.user_id === currentUserId) grouped[r.message_id][r.emoji].reacted = true
+      }
+      for (const [msgId, emojis] of Object.entries(grouped)) {
+        reactions[msgId] = Object.entries(emojis).map(([emoji, data]) => ({ emoji, ...data }))
       }
     }
 
     return NextResponse.json({
       messages: (messages || []).map(m => ({
-        ...m,
+        id: m.id,
+        user_id: m.user_id,
+        message: m.content,
+        created_at: m.created_at,
+        pinned_at: m.pinned_at,
+        pinned_by: m.pinned_by,
         display_name: profileMap[m.user_id] || 'Unknown',
-        reactions: reactionMap[m.id] || [],
       })),
+      reactions,
     })
   } catch (err) {
     console.error('Pool messages fetch error:', err)

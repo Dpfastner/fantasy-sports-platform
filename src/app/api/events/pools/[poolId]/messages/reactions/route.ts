@@ -5,6 +5,54 @@ import { createRateLimiter, getClientIp } from '@/lib/api/rate-limit'
 
 const limiter = createRateLimiter({ windowMs: 60_000, max: 30 })
 
+// GET — reaction detail: who reacted with what
+export async function GET(
+  request: Request,
+  { params }: { params: Promise<{ poolId: string }> }
+) {
+  try {
+    await params
+    const url = new URL(request.url)
+    const messageId = url.searchParams.get('messageId')
+
+    if (!messageId) {
+      return NextResponse.json({ error: 'messageId required' }, { status: 400 })
+    }
+
+    const admin = createAdminClient()
+
+    const { data: reactions } = await admin
+      .from('event_pool_message_reactions')
+      .select('emoji, user_id')
+      .eq('message_id', messageId)
+
+    const userIds = [...new Set((reactions || []).map(r => r.user_id))]
+    let profiles: Record<string, string> = {}
+    if (userIds.length > 0) {
+      const { data: profilesData } = await admin
+        .from('profiles')
+        .select('id, display_name, email')
+        .in('id', userIds)
+      if (profilesData) {
+        profiles = Object.fromEntries(
+          profilesData.map(p => [p.id, p.display_name || p.email?.split('@')[0] || 'Unknown'])
+        )
+      }
+    }
+
+    const detail = (reactions || []).map(r => ({
+      emoji: r.emoji,
+      userId: r.user_id,
+      displayName: profiles[r.user_id] || 'Unknown',
+    }))
+
+    return NextResponse.json({ reactions: detail })
+  } catch (error) {
+    Sentry.captureException(error)
+    return NextResponse.json({ error: 'Failed to fetch reaction details' }, { status: 500 })
+  }
+}
+
 export async function POST(
   request: Request,
   { params }: { params: Promise<{ poolId: string }> }

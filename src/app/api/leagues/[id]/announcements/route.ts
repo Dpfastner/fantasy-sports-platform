@@ -29,12 +29,28 @@ export async function GET(
 
     const supabase = createAdminClient()
 
-    const { data: announcements, error } = await supabase
+    // Check if user is commissioner (to show scheduled posts)
+    const { data: membershipData } = await supabase
+      .from('league_members')
+      .select('role')
+      .eq('league_id', leagueId)
+      .eq('user_id', user.id)
+      .single()
+    const isCommissioner = membershipData?.role === 'commissioner' || membershipData?.role === 'co_commissioner'
+
+    let query = supabase
       .from('league_announcements')
-      .select('id, title, body, pinned, created_at, updated_at, commissioner_id')
+      .select('id, title, body, pinned, created_at, updated_at, commissioner_id, scheduled_at')
       .eq('league_id', leagueId)
       .order('pinned', { ascending: false })
       .order('created_at', { ascending: false })
+
+    // Non-commissioners only see published posts (scheduled_at is null or in the past)
+    if (!isCommissioner) {
+      query = query.or('scheduled_at.is.null,scheduled_at.lte.' + new Date().toISOString())
+    }
+
+    const { data: announcements, error } = await query
 
     if (error) {
       return NextResponse.json(
@@ -89,6 +105,15 @@ export async function POST(
     if (!validation.success) return validation.response
 
     const { title, body, pinned } = validation.data
+    const scheduledAt = rawBody.scheduled_at || null
+
+    // Validate scheduled_at if provided
+    if (scheduledAt) {
+      const schedDate = new Date(scheduledAt)
+      if (isNaN(schedDate.getTime()) || schedDate <= new Date()) {
+        return NextResponse.json({ error: 'Scheduled date must be in the future' }, { status: 400 })
+      }
+    }
 
     // Content moderation check
     const titleCheck = checkContent(title)
@@ -108,13 +133,14 @@ export async function POST(
         title,
         body,
         pinned,
+        scheduled_at: scheduledAt,
       })
       .select()
       .single()
 
     if (error) {
       return NextResponse.json(
-        { error: 'Failed to create announcement', details: error.message },
+        { error: 'Failed to create post', details: error.message },
         { status: 500 }
       )
     }
@@ -126,14 +152,17 @@ export async function POST(
       details: { announcementId: announcement.id, title },
     })
 
-    notifyLeagueMembers({
-      leagueId,
-      excludeUserId: user.id,
-      type: 'announcement_posted',
-      title: 'New Announcement',
-      body: title,
-      data: { leagueId, announcementId: announcement.id },
-    })
+    // Only notify for immediate posts (not scheduled)
+    if (!scheduledAt) {
+      notifyLeagueMembers({
+        leagueId,
+        excludeUserId: user.id,
+        type: 'announcement_posted',
+        title: 'New Bulletin Board Post',
+        body: title,
+        data: { leagueId, announcementId: announcement.id },
+      })
+    }
 
     return NextResponse.json({ success: true, announcement })
   } catch (error) {

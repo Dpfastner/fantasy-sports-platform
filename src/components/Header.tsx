@@ -7,6 +7,7 @@ import { createClient } from '@/lib/supabase/client'
 import { useConfirm } from './ConfirmDialog'
 import { NotificationBell } from './NotificationBell'
 import { useLeagueContext } from '@/contexts/LeagueContext'
+import { useChatContext } from '@/contexts/ChatContext'
 import { LeagueDropdown } from './header/LeagueDropdown'
 import { TeamDropdown } from './header/TeamDropdown'
 
@@ -24,6 +25,7 @@ export function Header({ userName, userEmail, userId, showUserMenu = true }: Hea
   const router = useRouter()
   const { confirm } = useConfirm()
   const leagueCtx = useLeagueContext()
+  const chatCtx = useChatContext()
 
   // Close on outside click
   useEffect(() => {
@@ -76,6 +78,20 @@ export function Header({ userName, userEmail, userId, showUserMenu = true }: Hea
 
           {showUserMenu && (
             <>
+              {userId && chatCtx && (
+                <button
+                  onClick={() => chatCtx.setIsOpen(!chatCtx.isOpen)}
+                  className="relative p-2 text-text-secondary hover:text-text-primary transition-colors hidden md:block"
+                  title="Toggle chat"
+                >
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                  </svg>
+                  {Object.values(chatCtx.unreadCounts).reduce((a, b) => a + b, 0) > 0 && (
+                    <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-brand rounded-full" />
+                  )}
+                </button>
+              )}
               {userId && <NotificationBell userId={userId} />}
               <div className="relative" ref={dropdownRef}>
                 <button

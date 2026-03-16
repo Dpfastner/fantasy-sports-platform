@@ -7,6 +7,7 @@ import { chatMessageSchema } from '@/lib/api/schemas'
 import { createRateLimiter, getClientIp } from '@/lib/api/rate-limit'
 import { logActivity } from '@/lib/activity'
 import { checkContent } from '@/lib/moderation/word-filter'
+import { createNotification } from '@/lib/notifications'
 
 const limiter = createRateLimiter({ windowMs: 60_000, max: 30 })
 
@@ -30,7 +31,7 @@ export async function GET(
 
     const { data: messages, error } = await supabase
       .from('league_messages')
-      .select('id, message, created_at, user_id')
+      .select('id, message, created_at, user_id, pinned_at, pinned_by')
       .eq('league_id', leagueId)
       .order('created_at', { ascending: false })
       .limit(50)
@@ -57,13 +58,36 @@ export async function GET(
       }
     }
 
+    // Fetch reactions for these messages
+    const messageIds = (messages || []).map(m => m.id)
+    let reactions: Record<string, { emoji: string; count: number; reacted: boolean }[]> = {}
+    if (messageIds.length > 0) {
+      const { data: reactionRows } = await supabase
+        .from('league_message_reactions')
+        .select('message_id, emoji, user_id')
+        .in('message_id', messageIds)
+
+      if (reactionRows) {
+        const grouped: Record<string, Record<string, { count: number; reacted: boolean }>> = {}
+        for (const r of reactionRows) {
+          if (!grouped[r.message_id]) grouped[r.message_id] = {}
+          if (!grouped[r.message_id][r.emoji]) grouped[r.message_id][r.emoji] = { count: 0, reacted: false }
+          grouped[r.message_id][r.emoji].count++
+          if (r.user_id === user.id) grouped[r.message_id][r.emoji].reacted = true
+        }
+        for (const [msgId, emojis] of Object.entries(grouped)) {
+          reactions[msgId] = Object.entries(emojis).map(([emoji, data]) => ({ emoji, ...data }))
+        }
+      }
+    }
+
     // Return in chronological order (oldest first)
     const enriched = (messages || []).reverse().map(m => ({
       ...m,
       display_name: profiles[m.user_id] || 'Unknown',
     }))
 
-    return NextResponse.json({ messages: enriched })
+    return NextResponse.json({ messages: enriched, reactions })
   } catch (error) {
     Sentry.captureException(error)
     console.error('Messages GET error:', error)
@@ -130,6 +154,36 @@ export async function POST(
       action: 'chat.message_sent',
       details: { messageId: newMessage.id },
     })
+
+    // Parse @mentions and send notifications
+    const mentionPattern = /@\[([^\]]+)\]\(([^)]+)\)/g
+    let mentionMatch
+    const hasMentions = mentionPattern.test(message)
+    if (hasMentions) {
+      // Get sender's display name
+      const { data: senderProfile } = await supabase
+        .from('profiles')
+        .select('display_name, email')
+        .eq('id', user.id)
+        .single()
+      const senderName = senderProfile?.display_name || senderProfile?.email?.split('@')[0] || 'Someone'
+
+      mentionPattern.lastIndex = 0
+      while ((mentionMatch = mentionPattern.exec(message)) !== null) {
+        const mentionedName = mentionMatch[1]
+        const mentionedUserId = mentionMatch[2]
+        if (mentionedUserId !== user.id) {
+          createNotification({
+            userId: mentionedUserId,
+            leagueId,
+            type: 'chat_mention',
+            title: 'You were mentioned in chat',
+            body: `${senderName} mentioned you: "${message.slice(0, 100)}"`,
+            data: { mentionedBy: user.id, mentionedName, messageId: newMessage.id },
+          })
+        }
+      }
+    }
 
     return NextResponse.json({ success: true, message: newMessage })
   } catch (error) {
