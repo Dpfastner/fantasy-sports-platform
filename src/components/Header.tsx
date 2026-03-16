@@ -22,10 +22,19 @@ export function Header({ userName, userEmail, userId, showUserMenu = true }: Hea
   const displayName = userName || userEmail || 'User'
   const [profileOpen, setProfileOpen] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
+  const headerRef = useRef<HTMLElement>(null)
   const router = useRouter()
   const { confirm } = useConfirm()
   const leagueCtx = useLeagueContext()
   const chatCtx = useChatContext()
+
+  // Set --header-h CSS variable so LeagueNav and sidebar align below header
+  useEffect(() => {
+    if (headerRef.current) {
+      const h = headerRef.current.offsetHeight
+      document.documentElement.style.setProperty('--header-h', `${h}px`)
+    }
+  }, [])
 
   // Close on outside click
   useEffect(() => {
@@ -50,7 +59,7 @@ export function Header({ userName, userEmail, userId, showUserMenu = true }: Hea
   }
 
   return (
-    <header className="bg-surface border-b border-border sticky top-0 z-40">
+    <header ref={headerRef} className="bg-surface border-b border-border sticky top-0 z-40">
       <div className="container mx-auto px-4 py-3 flex items-center justify-between gap-4">
         {/* Left: Logo */}
         <Link href="/dashboard" className="text-2xl font-bold text-text-primary shrink-0">
