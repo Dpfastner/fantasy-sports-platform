@@ -1,5 +1,6 @@
 'use client'
 
+import { useState, useEffect } from 'react'
 import { usePathname } from 'next/navigation'
 import { useChatContext } from '@/contexts/ChatContext'
 import { ChannelList } from './ChannelList'
@@ -9,8 +10,15 @@ import { ChatInput } from './ChatInput'
 export function ChatSidebar() {
   const ctx = useChatContext()
   const pathname = usePathname()
+  const [mounted, setMounted] = useState(false)
 
-  if (!ctx) return null
+  // Delay render until after first paint so sidebar doesn't flash before page content
+  useEffect(() => {
+    const id = requestAnimationFrame(() => setMounted(true))
+    return () => cancelAnimationFrame(id)
+  }, [])
+
+  if (!ctx || !mounted) return null
 
   const { isOpen, setIsOpen, activeChannel, setActiveChannel, userId, unreadCounts } = ctx
 
@@ -43,8 +51,8 @@ export function ChatSidebar() {
 
       {/* Sidebar — always rendered, slides via translate */}
       <aside
-        className={`hidden md:flex w-[320px] fixed right-0 top-[41px] bottom-0
-          border-l border-border bg-surface flex-col z-30 overflow-hidden
+        className={`hidden md:flex w-[320px] fixed right-0 top-0 bottom-0
+          border-l border-border bg-surface flex-col z-20 overflow-hidden pt-[41px]
           transition-transform duration-300 ease-in-out
           ${isOpen ? 'translate-x-0' : 'translate-x-full'}`}
       >
