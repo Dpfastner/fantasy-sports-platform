@@ -43,7 +43,7 @@ export function ChatSidebar() {
 
       {/* Sidebar — always rendered, slides via translate */}
       <aside
-        className={`hidden md:flex w-[320px] fixed right-0 top-[45px] bottom-0
+        className={`hidden md:flex w-[320px] fixed right-0 top-[41px] bottom-0
           border-l border-border bg-surface flex-col z-30 overflow-hidden
           transition-transform duration-300 ease-in-out
           ${isOpen ? 'translate-x-0' : 'translate-x-full'}`}
