@@ -18,6 +18,19 @@ export function ChatSidebar() {
     return () => cancelAnimationFrame(id)
   }, [])
 
+  // Measure footer height so sidebar stops above it
+  useEffect(() => {
+    const footer = document.querySelector('footer')
+    if (!footer) return
+    const update = () => {
+      document.documentElement.style.setProperty('--footer-h', `${footer.offsetHeight}px`)
+    }
+    update()
+    const ro = new ResizeObserver(update)
+    ro.observe(footer)
+    return () => ro.disconnect()
+  }, [mounted])
+
   if (!ctx || !mounted) return null
 
   const { isOpen, setIsOpen, activeChannel, setActiveChannel, userId, unreadCounts } = ctx
@@ -51,13 +64,13 @@ export function ChatSidebar() {
 
       {/* Sidebar — always rendered, slides via translate */}
       <aside
-        className={`hidden md:flex w-[320px] fixed right-0 top-[var(--header-h)] bottom-0
+        className={`hidden md:flex w-[320px] fixed right-0 top-[var(--header-h)] bottom-[var(--footer-h,0px)]
           border-l border-border bg-surface flex-col z-30 overflow-hidden
           transition-transform duration-300 ease-in-out
           ${isOpen ? 'translate-x-0' : 'translate-x-full'}`}
       >
         {/* Sidebar header */}
-        <div className="px-4 py-2.5 border-b border-border flex items-center justify-between shrink-0">
+        <div className="px-4 py-[11px] border-b border-border flex items-center justify-between shrink-0">
           {activeChannel ? (
             <div className="flex items-center gap-2 min-w-0">
               <button

@@ -3,6 +3,7 @@
 /* Header height — set dynamically by Header.tsx, fallback for SSR */
 :root {
   --header-h: 53px;
+  --footer-h: 0px;
 }
 
 /* Chat sidebar offset — pushes page content left when sidebar is open (md+ only) */
