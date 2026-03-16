@@ -57,7 +57,7 @@ export function ChatSidebar() {
           ${isOpen ? 'translate-x-0' : 'translate-x-full'}`}
       >
         {/* Sidebar header */}
-        <div className="px-4 py-3 border-b border-border flex items-center justify-between shrink-0">
+        <div className="px-4 py-2.5 border-b border-border flex items-center justify-between shrink-0">
           {activeChannel ? (
             <div className="flex items-center gap-2 min-w-0">
               <button
