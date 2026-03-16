@@ -55,13 +55,11 @@ export default function RootLayout({
         className={`${montserrat.variable} ${inter.variable} antialiased flex flex-col min-h-screen`}
       >
         <Providers>
-          <div className="flex-1 flex">
-            <div className="flex-1 flex flex-col min-w-0 md:pl-6 lg:pl-10">
-              {children}
-            </div>
-            <ChatSidebar />
+          <div className="flex-1 flex flex-col min-w-0">
+            {children}
           </div>
           <Footer />
+          <ChatSidebar />
           <EnvironmentBadge />
           <Analytics />
         </Providers>

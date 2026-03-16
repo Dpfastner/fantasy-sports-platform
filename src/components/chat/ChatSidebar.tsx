@@ -18,9 +18,9 @@ export function ChatSidebar() {
   if (!userId || !isOpen || pathname?.includes('/draft')) return null
 
   return (
-    <aside className="hidden md:flex w-[320px] shrink-0 border-l border-border bg-surface flex-col sticky top-0 max-h-screen overflow-hidden">
-      {/* Sidebar header — matches main header height (py-3 px-4) */}
-      <div className="px-4 py-3 border-b border-border bg-surface/50 flex items-center justify-between shrink-0">
+    <aside className="hidden md:flex w-[320px] fixed right-0 top-0 bottom-0 border-l border-border bg-surface flex-col z-30 overflow-hidden">
+      {/* Sidebar header */}
+      <div className="px-4 py-2 border-b border-border flex items-center justify-between shrink-0">
         {activeChannel ? (
           <div className="flex items-center gap-2 min-w-0">
             <button

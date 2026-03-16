@@ -139,6 +139,13 @@ export function ChatContextProvider({ children }: { children: ReactNode }) {
     refreshChannels()
   }, [refreshChannels])
 
+  // Toggle body class for sidebar margin (used by CSS to offset content)
+  useEffect(() => {
+    const shouldShow = isOpen && !!userId
+    document.body.classList.toggle('chat-sidebar-open', shouldShow)
+    return () => { document.body.classList.remove('chat-sidebar-open') }
+  }, [isOpen, userId])
+
   return (
     <ChatContext.Provider value={{
       isOpen,

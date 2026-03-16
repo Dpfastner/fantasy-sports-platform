@@ -1,5 +1,12 @@
 @import "tailwindcss";
 
+/* Chat sidebar offset — pushes all content left when sidebar is open (md+ only) */
+@media (min-width: 768px) {
+  body.chat-sidebar-open {
+    margin-right: 320px;
+  }
+}
+
 /* ============================================================
    Palette System — CSS Variables
 
