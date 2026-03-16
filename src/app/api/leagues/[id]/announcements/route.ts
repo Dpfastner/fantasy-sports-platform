@@ -107,11 +107,11 @@ export async function POST(
     const { title, body, pinned } = validation.data
     const scheduledAt = rawBody.scheduled_at || null
 
-    // Validate scheduled_at if provided
+    // Validate scheduled_at if provided (must be at least 1 minute in the future)
     if (scheduledAt) {
       const schedDate = new Date(scheduledAt)
-      if (isNaN(schedDate.getTime()) || schedDate <= new Date()) {
-        return NextResponse.json({ error: 'Scheduled date must be in the future' }, { status: 400 })
+      if (isNaN(schedDate.getTime()) || schedDate.getTime() <= Date.now() + 60_000) {
+        return NextResponse.json({ error: 'Scheduled date must be at least 1 minute in the future' }, { status: 400 })
       }
     }
 

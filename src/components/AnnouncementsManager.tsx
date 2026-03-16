@@ -50,7 +50,7 @@ export function AnnouncementsManager({
           title: form.title,
           body: form.body,
           pinned: form.pinned,
-          scheduled_at: form.scheduled_at || null,
+          scheduled_at: form.scheduled_at ? new Date(form.scheduled_at).toISOString() : null,
         }),
       })
       const data = await res.json()
