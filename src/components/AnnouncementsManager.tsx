@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { ReportContentButton } from '@/components/ReportContentButton'
 import { fetchWithRetry } from '@/lib/api/fetch'
@@ -32,6 +32,15 @@ export function AnnouncementsManager({
 }: AnnouncementsManagerProps) {
   const router = useRouter()
   const [announcements, setAnnouncements] = useState(initialAnnouncements)
+  const [, setNow] = useState(Date.now())
+
+  // Re-render every 30s so scheduled posts transition from "Scheduled" to published
+  const hasScheduled = announcements.some(a => a.scheduled_at && new Date(a.scheduled_at) > new Date())
+  useEffect(() => {
+    if (!hasScheduled) return
+    const id = setInterval(() => setNow(Date.now()), 30_000)
+    return () => clearInterval(id)
+  }, [hasScheduled])
   const [showForm, setShowForm] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [form, setForm] = useState({ title: '', body: '', pinned: false, scheduled_at: '' })
@@ -231,7 +240,7 @@ export function AnnouncementsManager({
                   </div>
                   <p className="text-text-secondary text-sm whitespace-pre-wrap">{a.body}</p>
                   <p className="text-text-muted text-xs mt-2">
-                    — <a href={`/profile/${a.commissioner_id}`} className="hover:underline">{commName}</a>, {a.scheduled_at && new Date(a.scheduled_at) > new Date() ? `publishes ${formatDate(a.scheduled_at)}` : formatDate(a.created_at)}
+                    — <a href={`/profile/${a.commissioner_id}`} className="hover:underline">{commName}</a>, {a.scheduled_at && new Date(a.scheduled_at) > new Date() ? `publishes ${formatDate(a.scheduled_at)}` : formatDate(a.scheduled_at || a.created_at)}
                   </p>
                 </div>
                 <div className="flex items-center gap-1 shrink-0">
