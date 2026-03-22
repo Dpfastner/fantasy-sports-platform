@@ -138,13 +138,16 @@ export function ChatSidebar() {
               {/* Channel dropdown */}
               {showChannelDropdown && (
                 <div className="absolute left-0 top-full mt-1 w-[280px] bg-surface border border-border rounded-lg shadow-lg z-50 max-h-72 overflow-y-auto">
-                  {(['league', 'pool', 'dm'] as Channel['type'][]).map(type => {
-                    const items = channels.filter(ch => ch.type === type)
+                  {([
+                    { label: 'Competitions', types: ['league', 'pool'] as Channel['type'][] },
+                    { label: 'Direct Messages', types: ['dm'] as Channel['type'][] },
+                  ]).map(({ label, types }) => {
+                    const items = channels.filter(ch => types.includes(ch.type))
                     if (items.length === 0) return null
                     return (
-                      <div key={type}>
+                      <div key={label}>
                         <div className="px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-text-muted">
-                          {type === 'league' ? 'Leagues' : type === 'pool' ? 'Pools' : 'Direct Messages'}
+                          {label}
                         </div>
                         {items.map(ch => {
                           const isActive = activeChannel?.id === ch.id
@@ -159,7 +162,7 @@ export function ChatSidebar() {
                                   : 'text-text-secondary hover:bg-surface-subtle hover:text-text-primary'
                               }`}
                             >
-                              <span className="text-xs">{TYPE_ICONS[type]}</span>
+                              <span className="text-xs">{TYPE_ICONS[ch.type]}</span>
                               <span className="flex-1 truncate">{ch.name}</span>
                               {unread > 0 && (
                                 <span className="bg-brand text-text-primary text-[10px] font-bold rounded-full px-1.5 py-0.5 min-w-[18px] text-center">

@@ -3,17 +3,17 @@
 import { useState, useEffect } from 'react'
 import { useChatContext, Channel } from '@/contexts/ChatContext'
 
-const TYPE_LABELS: Record<Channel['type'], string> = {
-  league: 'Leagues',
-  pool: 'Pools',
-  dm: 'Direct Messages',
-}
-
 const TYPE_ICONS: Record<Channel['type'], string> = {
   league: '🏈',
   pool: '🏆',
   dm: '💬',
 }
+
+// Two display groups: Competitions (leagues + pools) and Direct Messages
+const SECTIONS = [
+  { key: 'competitions', label: 'Competitions', types: ['league', 'pool'] as Channel['type'][] },
+  { key: 'dm', label: 'Direct Messages', types: ['dm'] as Channel['type'][] },
+]
 
 interface MemberOption {
   id: string
@@ -32,13 +32,9 @@ export function ChannelList() {
 
   const { channels, activeChannel, setActiveChannel, unreadCounts, userId, refreshChannels } = ctx
 
-  const grouped = channels.reduce<Record<Channel['type'], Channel[]>>((acc, ch) => {
-    if (!acc[ch.type]) acc[ch.type] = []
-    acc[ch.type].push(ch)
-    return acc
-  }, {} as Record<Channel['type'], Channel[]>)
-
-  const typeOrder: Channel['type'][] = ['league', 'pool', 'dm']
+  // Group channels by section
+  const getChannelsForSection = (types: Channel['type'][]) =>
+    channels.filter(ch => types.includes(ch.type))
 
   // Fetch league members when DM picker opens
   const openNewDm = async () => {
@@ -105,17 +101,18 @@ export function ChannelList() {
 
   return (
     <div className="flex-1 overflow-y-auto">
-      {typeOrder.map(type => {
-        const items = grouped[type]
+      {SECTIONS.map(({ key, label, types }) => {
+        const items = getChannelsForSection(types)
+        const isDm = key === 'dm'
         // Always show DM section (even if empty) so the + button is accessible
-        if (type !== 'dm' && (!items || items.length === 0)) return null
+        if (!isDm && items.length === 0) return null
         return (
-          <div key={type}>
+          <div key={key}>
             <div className="px-3 py-2 flex items-center justify-between">
               <span className="text-[10px] font-semibold uppercase tracking-wider text-text-muted">
-                {TYPE_LABELS[type]}
+                {label}
               </span>
-              {type === 'dm' && (
+              {isDm && (
                 <button
                   onClick={() => showNewDm ? setShowNewDm(false) : openNewDm()}
                   className="p-0.5 text-text-muted hover:text-text-primary transition-colors"
@@ -129,7 +126,7 @@ export function ChannelList() {
             </div>
 
             {/* New DM picker */}
-            {type === 'dm' && showNewDm && (
+            {isDm && showNewDm && (
               <div className="mx-2 mb-2 border border-border rounded-lg bg-surface-inset overflow-hidden">
                 <input
                   type="text"
@@ -162,7 +159,7 @@ export function ChannelList() {
               </div>
             )}
 
-            {items && items.map(ch => {
+            {items.map(ch => {
               const isActive = activeChannel?.id === ch.id
               const unread = unreadCounts[ch.id] || 0
               return (
@@ -175,7 +172,7 @@ export function ChannelList() {
                       : 'text-text-secondary hover:bg-surface-subtle hover:text-text-primary'
                   }`}
                 >
-                  <span className="text-xs">{TYPE_ICONS[type]}</span>
+                  <span className="text-xs">{TYPE_ICONS[ch.type]}</span>
                   <span className="flex-1 truncate">{ch.name}</span>
                   {unread > 0 && (
                     <span className="bg-brand text-text-primary text-[10px] font-bold rounded-full px-1.5 py-0.5 min-w-[18px] text-center">
