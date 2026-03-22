@@ -20,7 +20,9 @@ export function ChatSidebar() {
   const [mounted, setMounted] = useState(false)
   const [displayName, setDisplayName] = useState<string>('You')
   const [showChannelDropdown, setShowChannelDropdown] = useState(false)
+  const [dropdownPos, setDropdownPos] = useState<{ top: number; left: number } | null>(null)
   const dropdownRef = useRef<HTMLDivElement>(null)
+  const triggerRef = useRef<HTMLButtonElement>(null)
   const sendRef = useRef<((msg: ChatMessage) => void) | null>(null)
 
   // Delay render until after first paint so sidebar doesn't flash before page content
@@ -107,7 +109,7 @@ export function ChatSidebar() {
       {/* Sidebar — always rendered, slides via translate */}
       <aside
         className={`hidden md:flex w-[320px] fixed right-0 top-[var(--header-h)] bottom-[var(--footer-h,0px)]
-          border-l border-border bg-surface flex-col z-30
+          border-l border-border bg-surface flex-col z-30 overflow-hidden
           transition-transform duration-300 ease-in-out
           ${isOpen ? 'translate-x-0' : 'translate-x-full'}`}
       >
@@ -126,7 +128,16 @@ export function ChatSidebar() {
               </button>
               {/* Channel name as dropdown trigger */}
               <button
-                onClick={() => setShowChannelDropdown(!showChannelDropdown)}
+                ref={triggerRef}
+                onClick={() => {
+                  if (showChannelDropdown) {
+                    setShowChannelDropdown(false)
+                  } else {
+                    const rect = triggerRef.current?.getBoundingClientRect()
+                    if (rect) setDropdownPos({ top: rect.bottom + 4, left: rect.left })
+                    setShowChannelDropdown(true)
+                  }
+                }}
                 className="flex items-center gap-1 min-w-0 hover:text-brand-text transition-colors"
               >
                 <span className="text-sm font-semibold text-text-primary truncate">{activeChannel.name}</span>
@@ -135,9 +146,12 @@ export function ChatSidebar() {
                 </svg>
               </button>
 
-              {/* Channel dropdown */}
-              {showChannelDropdown && (
-                <div className="absolute left-0 top-full mt-1 w-[280px] bg-surface border border-border rounded-lg shadow-lg z-50 max-h-72 overflow-y-auto">
+              {/* Channel dropdown — fixed positioning to escape sidebar overflow-hidden */}
+              {showChannelDropdown && dropdownPos && (
+                <div
+                  className="fixed w-[280px] bg-surface border border-border rounded-lg shadow-lg z-50 max-h-72 overflow-y-auto"
+                  style={{ top: dropdownPos.top, left: dropdownPos.left }}
+                >
                   {([
                     { label: 'Competitions', types: ['league', 'pool'] as Channel['type'][] },
                     { label: 'Direct Messages', types: ['dm'] as Channel['type'][] },
@@ -194,7 +208,7 @@ export function ChatSidebar() {
 
         {/* Body */}
         {activeChannel && userId ? (
-          <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
+          <div className="flex-1 flex flex-col min-h-0">
             <ChatMessages
               channelType={activeChannel.type}
               channelEntityId={activeChannel.entityId}
