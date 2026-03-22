@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import * as Sentry from '@sentry/nextjs'
 import { createAdminClient } from '@/lib/supabase/server'
 import { fetchHockeyTeams, fetchGolfRankings, fetchGolfField, getCountryFlagCode, fetchRugbyMatches, fetchRugbyMatchesSportsDb } from '@/lib/events/espn-adapters'
+import { getTier as getTierFromOwgr } from '@/lib/events/tiers'
 import { createRateLimiter, getClientIp } from '@/lib/api/rate-limit'
 
 const limiter = createRateLimiter({ windowMs: 60_000, max: 5 })
@@ -351,14 +352,6 @@ async function seedMasters(admin: ReturnType<typeof createAdminClient>) {
 
   if (tErr) throw tErr
 
-  // Compute tier from OWGR: A = 1-15, B = 16-30, C = 31+
-  const getTier = (owgr?: number) => {
-    if (!owgr) return 'C' // past champions without OWGR go to Tier C
-    if (owgr <= 15) return 'A'
-    if (owgr <= 30) return 'B'
-    return 'C'
-  }
-
   // Auto-fetch OWGR rankings from ESPN
   const espnRankings = await fetchGolfRankings()
   const rankingsByName: Record<string, { rank: number; country: string }> = {}
@@ -432,7 +425,7 @@ async function seedMasters(admin: ReturnType<typeof createAdminClient>) {
         ...(g.note ? { note: g.note } : {}),
         ...(country ? { country } : {}),
         ...(countryCode ? { country_code: countryCode } : {}),
-        tier: getTier(owgr),
+        tier: owgr ? getTierFromOwgr(owgr) : 'C',
       },
     }
   })
@@ -507,13 +500,6 @@ async function refreshGolfRankings(admin: ReturnType<typeof createAdminClient>) 
     return NextResponse.json({ error: 'No golf tournaments found' }, { status: 404 })
   }
 
-  const getTier = (owgr?: number) => {
-    if (!owgr) return 'C'
-    if (owgr <= 15) return 'A'
-    if (owgr <= 30) return 'B'
-    return 'C'
-  }
-
   // Build lookup by lowercase name
   const rankingsByName: Record<string, { rank: number; country: string }> = {}
   for (const r of rankings) {
@@ -539,7 +525,7 @@ async function refreshGolfRankings(admin: ReturnType<typeof createAdminClient>) 
       const updatedMeta = {
         ...existingMeta,
         owgr: found.rank,
-        tier: getTier(found.rank),
+        tier: getTierFromOwgr(found.rank),
         country: found.country,
         ...(countryCode ? { country_code: countryCode } : {}),
       }
@@ -765,16 +751,9 @@ async function syncGolfField(
     }
   }
 
-  // Tier computation
+  // Tier computation — use tournament config tiers if available, else defaults
   const config = (tournament.config || {}) as Record<string, unknown>
   const rosterTiers = config.roster_tiers as Record<string, { owgr_min: number; owgr_max?: number }> | undefined
-  const getTier = (owgr: number) => {
-    if (!rosterTiers) return owgr <= 15 ? 'A' : owgr <= 30 ? 'B' : 'C'
-    for (const [key, def] of Object.entries(rosterTiers)) {
-      if (owgr >= def.owgr_min && (!def.owgr_max || owgr <= def.owgr_max)) return key
-    }
-    return 'C'
-  }
 
   // Strategy 1: Try ESPN scoreboard for published field
   const startDate = tournament.starts_at?.split('T')[0] || ''
@@ -808,7 +787,7 @@ async function syncGolfField(
       ...(country ? { country } : {}),
       ...(countryCode ? { country_code: countryCode } : {}),
       ...(golfer.imageUrl ? { image_url: golfer.imageUrl } : {}),
-      tier: owgr ? getTier(owgr) : 'C',
+      tier: owgr ? getTierFromOwgr(owgr, rosterTiers) : 'C',
       espn_id: golfer.espnPlayerId,
     }
 
@@ -845,7 +824,7 @@ async function syncGolfField(
         owgr: r.rank,
         country: r.country,
         ...(countryCode ? { country_code: countryCode } : {}),
-        tier: getTier(r.rank),
+        tier: getTierFromOwgr(r.rank, rosterTiers),
       }
 
       const ex = existingByName[nameKey]

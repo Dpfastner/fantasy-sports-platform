@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useToast } from '@/components/Toast'
 import { useConfirm } from '@/components/ConfirmDialog'
+import { EntryAvatar } from '@/components/EntryAvatar'
 
 interface Member {
   id: string
@@ -36,11 +37,7 @@ export function MembersTab({ members, poolId, isCreator, userId }: MembersTabPro
         >
           <div className="flex items-center gap-3">
             <span className="text-text-muted text-sm w-6 text-right">{i + 1}</span>
-            {member.imageUrl ? (
-              <img src={member.imageUrl} alt="" className="w-5 h-5 rounded-full object-cover shrink-0" />
-            ) : member.primaryColor && member.primaryColor !== '#1a1a1a' ? (
-              <span className="w-5 h-5 rounded-full shrink-0 border border-border" style={{ backgroundColor: member.primaryColor }} />
-            ) : null}
+            <EntryAvatar imageUrl={member.imageUrl} primaryColor={member.primaryColor} showBorder />
             <div>
               {member.userId ? (
                 <Link href={`/profile/${member.userId}`} className="text-text-primary text-sm font-medium hover:underline">{member.displayName}</Link>

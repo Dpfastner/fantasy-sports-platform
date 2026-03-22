@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useToast } from '@/components/Toast'
 import { track } from '@vercel/analytics'
 import { formatGolfScore } from '@/lib/events/shared'
+import { DEFAULT_TIERS, TIER_COLORS, getTier, CountryFlag } from '@/lib/events/tiers'
 import { createClient } from '@/lib/supabase/client'
 
 interface Participant {
@@ -57,35 +58,6 @@ interface RosterDraftRoomProps {
   scoringRules: Record<string, unknown>
 }
 
-function CountryFlag({ country, countryCode }: { country?: string; countryCode?: string }) {
-  if (!countryCode) return null
-  return (
-    <img
-      src={`https://flagcdn.com/24x18/${countryCode}.png`}
-      alt={country || ''}
-      title={country || ''}
-      width={18}
-      height={14}
-      className="inline-block shrink-0 rounded-[2px]"
-      loading="lazy"
-    />
-  )
-}
-
-const TIER_COLORS: Record<string, { bg: string; text: string }> = {
-  A: { bg: 'bg-success/10', text: 'text-success-text' },
-  B: { bg: 'bg-info/10', text: 'text-info-text' },
-  C: { bg: 'bg-warning/10', text: 'text-warning-text' },
-}
-
-function getTierForOwgr(owgr: number, tiers: Record<string, { owgr_min: number; owgr_max?: number }>): string {
-  for (const [key, tier] of Object.entries(tiers)) {
-    const inMin = owgr >= tier.owgr_min
-    const inMax = tier.owgr_max ? owgr <= tier.owgr_max : true
-    if (inMin && inMax) return key
-  }
-  return '?'
-}
 
 export function RosterDraftRoom({
   poolId,
@@ -108,7 +80,7 @@ export function RosterDraftRoom({
 
   const tiers = useMemo(() => {
     const t = scoringRules.tiers as Record<string, { count: number; owgr_min: number; owgr_max?: number }> | undefined
-    return t || { A: { count: 2, owgr_min: 1, owgr_max: 15 }, B: { count: 2, owgr_min: 16, owgr_max: 30 }, C: { count: 3, owgr_min: 31 } }
+    return t || DEFAULT_TIERS
   }, [scoringRules])
 
   const entryMap = useMemo(() => {
@@ -205,7 +177,7 @@ export function RosterDraftRoom({
         ...p,
         participantName: participant?.name || 'Unknown',
         entryName: entryMap[p.entry_id] || 'Unknown',
-        tier: getTierForOwgr(owgr, tiers),
+        tier: getTier(owgr, tiers),
       }
     })
   }, [picks, participants, entryMap, tiers])

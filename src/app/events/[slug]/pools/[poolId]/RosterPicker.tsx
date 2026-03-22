@@ -6,6 +6,7 @@ import { useToast } from '@/components/Toast'
 import { trackEventActivity } from '@/app/actions/activity'
 import { track } from '@vercel/analytics'
 import { formatGolfScore } from '@/lib/events/shared'
+import { DEFAULT_TIERS, TIER_COLORS, CountryFlag, type RosterTier } from '@/lib/events/tiers'
 
 interface Participant {
   id: string
@@ -23,12 +24,6 @@ interface UserPick {
   weekNumber: number | null
 }
 
-interface TierConfig {
-  count: number
-  owgr_min: number
-  owgr_max?: number
-}
-
 interface RosterPickerProps {
   entryId: string
   tournamentId: string
@@ -43,32 +38,6 @@ interface RosterPickerProps {
   selectionCounts?: Record<string, number>
 }
 
-const DEFAULT_TIERS: Record<string, TierConfig> = {
-  A: { count: 2, owgr_min: 1, owgr_max: 15 },
-  B: { count: 2, owgr_min: 16, owgr_max: 30 },
-  C: { count: 3, owgr_min: 31 },
-}
-
-function CountryFlag({ country, countryCode }: { country?: string; countryCode?: string }) {
-  if (!countryCode) return null
-  return (
-    <img
-      src={`https://flagcdn.com/24x18/${countryCode}.png`}
-      alt={country || ''}
-      title={country || ''}
-      width={18}
-      height={14}
-      className="inline-block shrink-0 rounded-[2px]"
-      loading="lazy"
-    />
-  )
-}
-
-const TIER_COLORS: Record<string, { bg: string; text: string; border: string }> = {
-  A: { bg: 'bg-success/10', text: 'text-success-text', border: 'border-success/30' },
-  B: { bg: 'bg-info/10', text: 'text-info-text', border: 'border-info/30' },
-  C: { bg: 'bg-warning/10', text: 'text-warning-text', border: 'border-warning/30' },
-}
 
 export function RosterPicker({
   entryId,
@@ -88,7 +57,7 @@ export function RosterPicker({
   // Parse tier config from scoring_rules or use defaults
   const tiers = useMemo(() => {
     const sr = scoringRules || {}
-    const tierConfig = sr.tiers as Record<string, TierConfig> | undefined
+    const tierConfig = sr.tiers as Record<string, RosterTier> | undefined
     return tierConfig && Object.keys(tierConfig).length > 0 ? tierConfig : DEFAULT_TIERS
   }, [scoringRules])
 

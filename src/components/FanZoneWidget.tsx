@@ -1,5 +1,6 @@
 'use client'
 
+import { useState, useEffect } from 'react'
 import { Pennant } from './Pennant'
 import { CopyButton } from './CopyButton'
 import { ShareButton } from './ShareButton'
@@ -38,6 +39,48 @@ export function FanZoneWidget({
   displayName,
   userId,
 }: FanZoneWidgetProps) {
+  const [dismissed, setDismissed] = useState(false)
+
+  useEffect(() => {
+    if (typeof window !== 'undefined' && localStorage.getItem('rivyls_fan_zone_dismissed') === '1') {
+      setDismissed(true)
+    }
+  }, [])
+
+  const handleDismiss = () => {
+    setDismissed(true)
+    localStorage.setItem('rivyls_fan_zone_dismissed', '1')
+  }
+
+  const handleRestore = () => {
+    setDismissed(false)
+    localStorage.removeItem('rivyls_fan_zone_dismissed')
+  }
+
+  if (dismissed) {
+    return (
+      <button
+        onClick={handleRestore}
+        className="text-sm text-text-muted hover:text-brand transition-colors flex items-center gap-1.5"
+      >
+        <span className="text-base">🏈</span>
+        <span>Show Fan Zone</span>
+      </button>
+    )
+  }
+
+  const dismissButton = (
+    <button
+      onClick={handleDismiss}
+      className="ml-auto p-1 text-text-muted hover:text-text-primary transition-colors"
+      title="Dismiss Fan Zone"
+    >
+      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+      </svg>
+    </button>
+  )
+
   // No school set — show CTA
   if (!userSchool) {
     return (
@@ -45,6 +88,7 @@ export function FanZoneWidget({
         <div className="flex items-center gap-2 mb-3">
           <span className="text-2xl">🏈</span>
           <h2 className="text-lg font-semibold text-text-primary">Fan Zone</h2>
+          {dismissButton}
         </div>
         <p className="text-text-secondary text-sm mb-4">
           Pick your team to join the rivalry! Set your favorite FBS team and see how your school stacks up against the competition.
@@ -72,6 +116,7 @@ export function FanZoneWidget({
       <div className="flex items-center gap-2 mb-4">
         <span className="text-2xl">🏈</span>
         <h2 className="text-lg font-semibold text-text-primary">Fan Zone</h2>
+        {dismissButton}
       </div>
 
       <div className="flex flex-col md:flex-row gap-6">

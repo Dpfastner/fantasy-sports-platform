@@ -8,6 +8,7 @@ import { useConfirm } from './ConfirmDialog'
 import { NotificationBell } from './NotificationBell'
 import { useLeagueContext } from '@/contexts/LeagueContext'
 import { useChatContext } from '@/contexts/ChatContext'
+import { HeaderSchoolBadge } from './HeaderSchoolBadge'
 import { LeagueDropdown } from './header/LeagueDropdown'
 import { TeamDropdown } from './header/TeamDropdown'
 
@@ -84,6 +85,8 @@ export function Header({ userName, userEmail, userId, showUserMenu = true }: Hea
               )}
             </div>
           )}
+
+          {userId && <HeaderSchoolBadge userId={userId} />}
 
           {showUserMenu && (
             <>

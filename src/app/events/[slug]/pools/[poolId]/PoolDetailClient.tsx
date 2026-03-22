@@ -4,15 +4,12 @@ import { useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { useToast } from '@/components/Toast'
-import { BracketPicker } from './BracketPicker'
-import { SurvivorPicker } from './SurvivorPicker'
-import { PickemPicker } from './PickemPicker'
-import { RosterPicker } from './RosterPicker'
-import { RosterDraftRoom } from './RosterDraftRoom'
+import { GamePicker } from './GamePicker'
 import { Leaderboard } from './Leaderboard'
 import { RosterLeaderboard } from './RosterLeaderboard'
 import { PoolActivityFeed } from './PoolActivityFeed'
 import { PoolAnnouncements } from './PoolAnnouncements'
+import { EntryAvatar } from '@/components/EntryAvatar'
 import { ScheduleView } from './ScheduleView'
 import { ShareButton } from '@/components/ShareButton'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
@@ -412,11 +409,7 @@ export function PoolDetailClient({
                       : 'border-border text-text-muted hover:text-text-secondary'
                   }`}
                 >
-                  {entry.imageUrl ? (
-                    <img src={entry.imageUrl} alt="" className="w-4 h-4 rounded-full object-cover shrink-0" />
-                  ) : entry.primaryColor && entry.primaryColor !== '#1a1a1a' ? (
-                    <span className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: entry.primaryColor }} />
-                  ) : null}
+                  <EntryAvatar imageUrl={entry.imageUrl} primaryColor={entry.primaryColor} size="sm" />
                   {entry.displayName || `Entry ${i + 1}`}
                 </button>
               ))}
@@ -431,78 +424,19 @@ export function PoolDetailClient({
             </div>
           )}
 
-          {effectiveFormat === 'bracket' && (
-            <BracketPicker
-              entryId={activeEntry.id}
-              tournamentId={tournament.id}
-              poolId={pool.id}
-              poolStatus={pool.status}
-              games={games}
-              participants={participants}
-              existingPicks={activeEntryPicks}
-              tiebreakerType={pool.tiebreaker}
-              existingTiebreaker={activeEntry.tiebreakerPrediction}
-              submittedAt={activeEntry.submittedAt}
-              scoringRules={pool.scoringRules}
-            />
-          )}
-          {effectiveFormat === 'survivor' && (
-            <SurvivorPicker
-              entryId={activeEntry.id}
-              tournamentId={tournament.id}
-              poolId={pool.id}
-              poolStatus={pool.status}
-              participants={participants}
-              existingPicks={activeEntryPicks}
-              poolWeeks={poolWeeks}
-              isActive={activeEntry.isActive}
-              games={games}
-            />
-          )}
-          {effectiveFormat === 'pickem' && (
-            <PickemPicker
-              entryId={activeEntry.id}
-              tournamentId={tournament.id}
-              poolId={pool.id}
-              poolStatus={pool.status}
-              games={games}
-              participants={participants}
-              existingPicks={activeEntryPicks}
-              submittedAt={activeEntry.submittedAt}
-            />
-          )}
-          {effectiveFormat === 'roster' && (
-            (() => {
-              const draftMode = (pool.scoringRules?.draft_mode as string) || 'open'
-              if (draftMode === 'snake_draft' || draftMode === 'linear_draft') {
-                return (
-                  <RosterDraftRoom
-                    poolId={pool.id}
-                    tournamentId={tournament.id}
-                    participants={participants}
-                    entries={members.map(m => ({ id: m.id, displayName: m.displayName }))}
-                    userEntryId={activeEntry.id}
-                    isCreator={isCreator}
-                    scoringRules={pool.scoringRules}
-                  />
-                )
-              }
-              return (
-                <RosterPicker
-                  entryId={activeEntry.id}
-                  tournamentId={tournament.id}
-                  poolId={pool.id}
-                  poolStatus={pool.status}
-                  participants={participants}
-                  existingPicks={activeEntryPicks}
-                  submittedAt={activeEntry.submittedAt}
-                  scoringRules={pool.scoringRules}
-                  deadline={pool.deadline}
-                  selectionCounts={rosterSelectionCounts}
-                />
-              )
-            })()
-          )}
+          <GamePicker
+            format={effectiveFormat}
+            pool={pool}
+            tournament={tournament}
+            activeEntry={activeEntry}
+            participants={participants}
+            games={games}
+            existingPicks={activeEntryPicks}
+            poolWeeks={poolWeeks}
+            members={members}
+            isCreator={isCreator}
+            rosterSelectionCounts={rosterSelectionCounts}
+          />
         </div>
       )}
 

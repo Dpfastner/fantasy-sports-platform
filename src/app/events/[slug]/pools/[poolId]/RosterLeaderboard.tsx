@@ -3,6 +3,8 @@
 import { useState, useMemo } from 'react'
 import Link from 'next/link'
 import { formatGolfScore } from '@/lib/events/shared'
+import { DEFAULT_TIERS, TIER_COLORS, getTier, type RosterTier } from '@/lib/events/tiers'
+import { EntryAvatar } from '@/components/EntryAvatar'
 
 interface Member {
   id: string
@@ -27,12 +29,6 @@ interface Participant {
   metadata?: Record<string, unknown>
 }
 
-interface TierConfig {
-  count: number
-  owgr_min: number
-  owgr_max?: number
-}
-
 interface RosterLeaderboardProps {
   members: Member[]
   participants: Participant[]
@@ -41,24 +37,6 @@ interface RosterLeaderboardProps {
   allRosterPicks?: Record<string, string[]>
 }
 
-const TIER_COLORS: Record<string, { bg: string; text: string }> = {
-  A: { bg: 'bg-success/10', text: 'text-success-text' },
-  B: { bg: 'bg-info/10', text: 'text-info-text' },
-  C: { bg: 'bg-warning/10', text: 'text-warning-text' },
-}
-
-const DEFAULT_TIERS: Record<string, TierConfig> = {
-  A: { count: 2, owgr_min: 1, owgr_max: 15 },
-  B: { count: 2, owgr_min: 16, owgr_max: 30 },
-  C: { count: 3, owgr_min: 31 },
-}
-
-function getTier(owgr: number, tiers: Record<string, TierConfig>): string {
-  for (const [key, def] of Object.entries(tiers)) {
-    if (owgr >= def.owgr_min && (!def.owgr_max || owgr <= def.owgr_max)) return key
-  }
-  return 'C'
-}
 
 export function RosterLeaderboard({
   members,
@@ -70,7 +48,7 @@ export function RosterLeaderboard({
   const [expandedId, setExpandedId] = useState<string | null>(null)
 
   const tiers = useMemo(() => {
-    const t = scoringRules?.tiers as Record<string, TierConfig> | undefined
+    const t = scoringRules?.tiers as Record<string, RosterTier> | undefined
     return t && Object.keys(t).length > 0 ? t : DEFAULT_TIERS
   }, [scoringRules])
 
@@ -178,11 +156,7 @@ export function RosterLeaderboard({
                     {rank}
                   </span>
                   <div className="min-w-0 flex items-center gap-2">
-                    {member.imageUrl ? (
-                      <img src={member.imageUrl} alt="" className="w-5 h-5 rounded-full object-cover shrink-0" />
-                    ) : member.primaryColor && member.primaryColor !== '#1a1a1a' ? (
-                      <span className="w-5 h-5 rounded-full shrink-0 border border-border" style={{ backgroundColor: member.primaryColor }} />
-                    ) : null}
+                    <EntryAvatar imageUrl={member.imageUrl} primaryColor={member.primaryColor} showBorder />
                     {member.userId ? (
                       <Link
                         href={`/profile/${member.userId}`}

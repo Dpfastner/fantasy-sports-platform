@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import { EntryAvatar } from '@/components/EntryAvatar'
 
 interface Member {
   id: string
@@ -126,11 +127,7 @@ export function Leaderboard({ members, format, poolStatus, tiebreaker }: Leaderb
                   {rank}
                 </span>
                 <div className="min-w-0 flex items-center gap-2">
-                  {member.imageUrl ? (
-                    <img src={member.imageUrl} alt="" className="w-5 h-5 rounded-full object-cover shrink-0" />
-                  ) : member.primaryColor && member.primaryColor !== '#1a1a1a' ? (
-                    <span className="w-5 h-5 rounded-full shrink-0 border border-border" style={{ backgroundColor: member.primaryColor }} />
-                  ) : null}
+                  <EntryAvatar imageUrl={member.imageUrl} primaryColor={member.primaryColor} showBorder />
                   {member.userId ? (
                     <Link href={`/profile/${member.userId}`} className="text-sm text-text-primary truncate hover:underline">{member.displayName}</Link>
                   ) : (
