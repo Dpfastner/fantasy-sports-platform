@@ -117,7 +117,7 @@ function PennantVariant({ school, colors, s }: { school: PennantSchool; colors: 
 /** Variant B — Vertical hanging banner with 3D fabric effect */
 function BannerVariant({ school, colors, size }: { school: PennantSchool; colors: ResolvedColors; size: 'xs' | 'sm' | 'md' | 'lg' }) {
   const dims = {
-    xs: { width: 36, minHeight: 64, logo: 14, text: 'text-[8px]', ripples: 2 },
+    xs: { width: 36, minHeight: 64, logo: 14, text: 'text-[6px]', ripples: 2 },
     sm: { width: 56, minHeight: 100, logo: 20, text: 'text-[10px]', ripples: 3 },
     md: { width: 72, minHeight: 140, logo: 28, text: 'text-xs', ripples: 4 },
     lg: { width: 88, minHeight: 180, logo: 36, text: 'text-sm', ripples: 5 },
@@ -264,6 +264,8 @@ function BannerVariant({ school, colors, size }: { school: PennantSchool; colors
             className={`${d.text} font-bold text-center mt-1 leading-tight`}
             style={{
               color: colors.textColor,
+              writingMode: d.width < 72 ? 'vertical-rl' : undefined,
+              textOrientation: d.width < 72 ? 'mixed' : undefined,
               textShadow: '0 1px 2px rgba(0,0,0,0.3)',
             }}
           >
