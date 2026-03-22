@@ -24,6 +24,7 @@ export function ChatInput({ channelType, channelEntityId }: ChatInputProps) {
   const [showTrashTalk, setShowTrashTalk] = useState(false)
   const [showGifPicker, setShowGifPicker] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
+  const mentionsRef = useRef<Map<string, string>>(new Map())
 
   // Fetch members for @mention autocomplete
   useEffect(() => {
@@ -82,8 +83,8 @@ export function ChatInput({ channelType, channelEntityId }: ChatInputProps) {
 
     const before = input.slice(0, atIdx)
     const after = input.slice(cursorPos)
-    const mention = `@[${member.display_name}](${member.id})`
-    setInput(before + mention + ' ' + after)
+    setInput(before + '@' + member.display_name + ' ' + after)
+    mentionsRef.current.set(member.display_name, member.id)
     setMentionQuery(null)
 
     // Refocus input
@@ -107,15 +108,22 @@ export function ChatInput({ channelType, channelEntityId }: ChatInputProps) {
       url = `/api/conversations/${channelEntityId}/messages`
     }
 
+    // Convert clean @displayName to @[displayName](id) for the API
+    let message = trimmed
+    mentionsRef.current.forEach((id, name) => {
+      message = message.replace(new RegExp(`@${name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'g'), `@[${name}](${id})`)
+    })
+
     try {
       const res = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: trimmed }),
+        body: JSON.stringify({ message }),
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Failed to send message')
       setInput('')
+      mentionsRef.current.clear()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to send message')
     } finally {
