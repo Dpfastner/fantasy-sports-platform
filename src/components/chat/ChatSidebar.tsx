@@ -220,11 +220,11 @@ export function ChatSidebar() {
           style={{ top: dropdownPos.top, left: dropdownPos.left }}
         >
           {([
-            { label: 'Competitions', types: ['league', 'pool'] as Channel['type'][] },
-            { label: 'Direct Messages', types: ['dm'] as Channel['type'][] },
-          ]).map(({ label, types }) => {
+            { label: 'Competitions', types: ['league', 'pool'] as Channel['type'][], alwaysShow: false },
+            { label: 'Direct Messages', types: ['dm'] as Channel['type'][], alwaysShow: true },
+          ]).map(({ label, types, alwaysShow }) => {
             const items = channels.filter(ch => types.includes(ch.type))
-            if (items.length === 0) return null
+            if (!alwaysShow && items.length === 0) return null
             return (
               <div key={label}>
                 <div className="px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-text-muted">
@@ -253,6 +253,20 @@ export function ChatSidebar() {
                     </button>
                   )
                 })}
+                {alwaysShow && (
+                  <button
+                    onClick={() => {
+                      setShowChannelDropdown(false)
+                      setActiveChannel(null) // go to channel list where DM picker lives
+                    }}
+                    className="w-full flex items-center gap-2 px-3 py-1.5 text-left text-sm text-text-muted hover:text-text-primary hover:bg-surface-subtle transition-colors"
+                  >
+                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+                    </svg>
+                    <span>New Message</span>
+                  </button>
+                )}
               </div>
             )
           })}
