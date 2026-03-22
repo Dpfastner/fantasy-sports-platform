@@ -12,9 +12,12 @@ interface MemberOption {
 interface ChatInputProps {
   channelType: 'league' | 'pool' | 'dm'
   channelEntityId: string
+  currentUserId?: string
+  currentDisplayName?: string
+  onMessageSent?: (msg: { id: string; message: string; created_at: string; user_id: string; display_name: string }) => void
 }
 
-export function ChatInput({ channelType, channelEntityId }: ChatInputProps) {
+export function ChatInput({ channelType, channelEntityId, currentUserId, currentDisplayName, onMessageSent }: ChatInputProps) {
   const [input, setInput] = useState('')
   const [sending, setSending] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -124,6 +127,16 @@ export function ChatInput({ channelType, channelEntityId }: ChatInputProps) {
       if (!res.ok) throw new Error(data.error || 'Failed to send message')
       setInput('')
       mentionsRef.current.clear()
+      // Optimistically add message to the list so it appears immediately
+      if (onMessageSent && data.message && currentUserId) {
+        onMessageSent({
+          id: data.message.id,
+          message: data.message.message,
+          created_at: data.message.created_at,
+          user_id: currentUserId,
+          display_name: currentDisplayName || 'You',
+        })
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to send message')
     } finally {

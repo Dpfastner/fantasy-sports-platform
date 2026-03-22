@@ -72,6 +72,7 @@ interface ChatMessagesProps {
   channelEntityId: string
   currentUserId: string
   isCommissioner?: boolean
+  onSendRef?: React.MutableRefObject<((msg: ChatMessage) => void) | null>
 }
 
 function formatTimeAgo(dateStr: string): string {
@@ -87,7 +88,7 @@ function formatTimeAgo(dateStr: string): string {
   return new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
 }
 
-export function ChatMessages({ channelType, channelEntityId, currentUserId, isCommissioner }: ChatMessagesProps) {
+export function ChatMessages({ channelType, channelEntityId, currentUserId, isCommissioner, onSendRef }: ChatMessagesProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [reactions, setReactions] = useState<Record<string, ReactionData[]>>({})
   const [pickerOpenFor, setPickerOpenFor] = useState<string | null>(null)
@@ -102,6 +103,16 @@ export function ChatMessages({ channelType, channelEntityId, currentUserId, isCo
       containerRef.current.scrollTop = containerRef.current.scrollHeight
     }
   }, [])
+
+  // Expose addMessage so ChatInput can optimistically insert sent messages
+  useEffect(() => {
+    if (onSendRef) {
+      onSendRef.current = (msg: ChatMessage) => {
+        setMessages(prev => prev.some(m => m.id === msg.id) ? prev : [...prev, msg])
+      }
+    }
+    return () => { if (onSendRef) onSendRef.current = null }
+  }, [onSendRef])
 
   // Fetch messages on mount or channel change
   useEffect(() => {
