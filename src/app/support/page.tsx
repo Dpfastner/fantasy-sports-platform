@@ -115,7 +115,7 @@ export default function SupportPage() {
                   href={amount.href}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex flex-col items-center min-w-[120px] bg-brand hover:bg-brand-hover text-text-primary font-semibold rounded-lg px-6 py-4 text-center transition-colors"
+                  className="flex flex-col items-center min-w-[120px] bg-surface hover:bg-surface-hover text-text-primary font-semibold rounded-lg px-6 py-4 text-center transition-colors border border-border"
                 >
                   <span className="text-lg">{amount.label}</span>
                   <span className="text-xs font-normal opacity-80">
