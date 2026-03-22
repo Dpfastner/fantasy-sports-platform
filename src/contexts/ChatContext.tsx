@@ -1,6 +1,7 @@
 'use client'
 
-import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react'
+import { createContext, useContext, useState, useEffect, useCallback, useRef, ReactNode } from 'react'
+import { usePathname } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 
 // ── Types ──────────────────────────────────────────────────
@@ -138,6 +139,16 @@ export function ChatContextProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     refreshChannels()
   }, [refreshChannels])
+
+  // Re-fetch channels on page navigation so new DMs/leagues appear
+  const pathname = usePathname()
+  const prevPathname = useRef(pathname)
+  useEffect(() => {
+    if (pathname !== prevPathname.current) {
+      prevPathname.current = pathname
+      refreshChannels()
+    }
+  }, [pathname, refreshChannels])
 
   // Toggle body class for sidebar margin (used by CSS to offset content)
   useEffect(() => {
