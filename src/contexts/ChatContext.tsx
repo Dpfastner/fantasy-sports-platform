@@ -106,32 +106,20 @@ export function ChatContextProvider({ children }: { children: ReactNode }) {
       }
     })
 
-    // Fetch DM conversations
-    const { data: convMembers } = await supabase
-      .from('conversation_members')
-      .select('conversation_id')
-      .eq('user_id', userId)
-
+    // Fetch DM conversations via API (avoids RLS complexity with browser client)
     let dmChannels: Channel[] = []
-    if (convMembers && convMembers.length > 0) {
-      const convIds = convMembers.map((cm: { conversation_id: string }) => cm.conversation_id)
-      // Get other members' names
-      const { data: otherMembers } = await supabase
-        .from('conversation_members')
-        .select('conversation_id, user_id, profiles(display_name, email)')
-        .in('conversation_id', convIds)
-        .neq('user_id', userId)
-
-      dmChannels = (otherMembers || []).map((om: { conversation_id: string; user_id: string; profiles: { display_name: string | null; email: string } | { display_name: string | null; email: string }[] | null }) => {
-        const profile = Array.isArray(om.profiles) ? om.profiles[0] : om.profiles
-        return {
-          id: `dm:${om.conversation_id}`,
+    try {
+      const dmRes = await fetch('/api/conversations')
+      if (dmRes.ok) {
+        const dmData = await dmRes.json()
+        dmChannels = (dmData.conversations || []).map((c: { id: string; partnerName: string }) => ({
+          id: `dm:${c.id}`,
           type: 'dm' as const,
-          name: profile?.display_name || profile?.email?.split('@')[0] || 'User',
-          entityId: om.conversation_id,
-        }
-      })
-    }
+          name: c.partnerName,
+          entityId: c.id,
+        }))
+      }
+    } catch { /* skip — DMs just won't appear */ }
 
     setChannels([...leagueChannels, ...poolChannels, ...dmChannels])
   }, [userId])
