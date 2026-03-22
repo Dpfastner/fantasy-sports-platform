@@ -107,7 +107,7 @@ export function ChatSidebar() {
       {/* Sidebar — always rendered, slides via translate */}
       <aside
         className={`hidden md:flex w-[320px] fixed right-0 top-[var(--header-h)] bottom-[var(--footer-h,0px)]
-          border-l border-border bg-surface flex-col z-30 overflow-hidden
+          border-l border-border bg-surface flex-col z-30
           transition-transform duration-300 ease-in-out
           ${isOpen ? 'translate-x-0' : 'translate-x-full'}`}
       >
@@ -194,7 +194,7 @@ export function ChatSidebar() {
 
         {/* Body */}
         {activeChannel && userId ? (
-          <div className="flex-1 flex flex-col min-h-0">
+          <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
             <ChatMessages
               channelType={activeChannel.type}
               channelEntityId={activeChannel.entityId}
