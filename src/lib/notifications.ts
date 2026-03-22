@@ -136,8 +136,8 @@ function buildNotificationUrl(
     }
     case 'support_response': {
       const reportId = data?.reportId as string
-      if (reportId) return `${base}/support/${reportId}`
-      return `${base}/support`
+      if (reportId) return `${base}/tickets/${reportId}`
+      return `${base}/tickets`
     }
     default:
       return `${base}/dashboard`

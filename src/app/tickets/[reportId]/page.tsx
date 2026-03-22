@@ -37,7 +37,7 @@ export default async function SupportTicketPage({
     .single()
 
   if (!ticket || ticket.user_id !== user.id) {
-    redirect('/support')
+    redirect('/tickets')
   }
 
   // Fetch responses
@@ -50,7 +50,7 @@ export default async function SupportTicketPage({
   return (
     <div className="min-h-screen bg-gradient-to-b from-gradient-from to-gradient-to">
       <main className="container mx-auto px-4 py-8 max-w-3xl">
-        <Link href="/support" className="text-sm text-brand-text hover:underline mb-4 inline-block">
+        <Link href="/tickets" className="text-sm text-brand-text hover:underline mb-4 inline-block">
           &larr; Back to tickets
         </Link>
 

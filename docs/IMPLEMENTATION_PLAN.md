@@ -2,7 +2,7 @@
 
 > **Platform Name**: Rivyls (rivyls.com)
 > **Current Sport**: College Football (base for multi-sport expansion)
-> **Last Updated**: March 15, 2026 (Phases 0-32, 34, 36a-c, 37-42, Platform Audit, 43A-D, 44 complete)
+> **Last Updated**: March 22, 2026 (Phases 0-32, 34, 36a-c, 37-42, Platform Audit, 43A-D, 44, 44b complete)
 > **Audit Date**: February 27, 2026 (full codebase audit of Phases 0-21)
 
 ---
@@ -1803,6 +1803,7 @@ This breaks leagues mid-season. A team vanishing from the leaderboard with all h
 | **Phase 43C** ✅ | Platform Simplification | **Progressive disclosure across 6 areas**: (1) League creation — 5 fields + "Customize" expander (was 9 fields). (2) Scoring settings — preset summary view, 21 fields only shown for Custom. (3) Settings page — Quick Setup mode (scoring preset, draft type/date, max teams) with "Show All Settings" to reveal full tabs; auto-advances to advanced if custom scoring. (4) League join — invite code primary view, browse as text link below, step indicators removed. (5) League detail sidebar — 3 static cards (League Info, Key Dates, League History) collapsed to 1 dynamic card with `<details>` expander. (6) First-visit explainer — dismissible localStorage one-liner on league page. No features removed; social features stay visible. | ✅ Mar 15, 2026 |
 | **Phase 43D** ✅ | Social Features | Chat sidebar, DMs, @mentions with notifications, GIPHY integration, trash talk prompts, reaction detail view, commissioner message pinning, native Web Share API, bulletin board with scheduled posts, weekly recap share. Migrations 056-057. | ✅ Mar 15, 2026 |
 | **Phase 44** ✅ | Game Audit — Rivalry Board, Nav Cleanup | Renamed "Leaderboard" → "Rivalry Board" across all user-facing text (LeaderboardClient, PoolDetailClient tabs, landing page, share copy). Bracket nav item hidden during regular season, shown postseason only (Week 15+) via LeagueContext `currentWeek`. Added `sportSlug` prop to LeaderboardClient for future multi-sport. Added `currentWeek` and `sportSlug` to LeagueContext. Event format audit confirmed RosterPicker tier config already reads from `scoring_rules` JSONB. | ✅ Mar 15, 2026 |
+| **Phase 44b** ✅ | Support Page (Voluntary Contributions) | Moved support ticket system from `/support` → `/tickets` (updated 4 references: `ReportIssue.tsx` toast, `notifications.ts` deep-links, `[reportId]` redirect + back link). Created `/support` page — voluntary contributions via Stripe Payment Links (external URLs, no backend). 6 sections: header, legal disclaimer callout (border-l brand), "Where your support goes" 2×2 card grid, $3/$5/$10/Custom amount buttons, alternative support (ShareButton reuse), tax disclaimer. Env vars `NEXT_PUBLIC_STRIPE_SUPPORT_3/5/10/CUSTOM` with graceful disabled fallback when not set. Footer link "Support Rivyls" added. No auth required, palette-aware, no "donation" language (NAICS 713990 positioning). | ✅ Mar 22, 2026 |
 | **Phase 45** | Ads Infrastructure | Non-intrusive ads on free tier (footer banners, interstitials between pages — NOT during drafts or live scoring). Pro users see no ads. Ad impression tracking for revenue reporting. | Year 2 |
 | **Phase 46** | Mobile App | PWA manifest + service worker (installable web app), then Capacitor wrapper for App Store ($99/yr Apple + $25 Google). Full native iOS/Android via Expo + React Native for Year 2-3. Native push, offline support, App Store presence. | Year 2 |
 | **Phase 47** | Cross-Sport League Continuity | Commissioners continue leagues into next NCAA sport (CFB → CBB → Hockey → Baseball). Migration: `sport_slug` on `league_seasons`, `original_sport_id` on `leagues`. New `/api/leagues/[id]/continue` route. Mid-season entry allowed. Multi-sport history display with sport icons per archived season. | Year 1-2 |
@@ -1896,4 +1897,4 @@ The platform is classified as recreation/entertainment, NOT gambling. This means
 
 ---
 
-*Last Updated: March 13, 2026 (Phases 0-42 + Platform Audit COMPLETE)*
+*Last Updated: March 22, 2026 (Phases 0-44b COMPLETE)*

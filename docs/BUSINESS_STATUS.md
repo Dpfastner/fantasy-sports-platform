@@ -1,6 +1,6 @@
 # Rivyls — Business & Platform Status Reference
 
-> **Last updated:** March 15, 2026
+> **Last updated:** March 22, 2026
 > **Purpose:** Shared context document between Claude Chat (business/strategy) and Claude Code (development). Informs architecture decisions, feature flags, and business model constraints.
 
 ---
@@ -56,7 +56,7 @@ These insights should guide every product, design, and business decision:
 
 ## Platform Status (Production at rivyls.com)
 
-### Completed — Phases 0-42 + Platform Audit + 43A + 43C, all deployed:
+### Completed — Phases 0-44b + Platform Audit, all deployed:
 
 **Foundation & Core (Phases 0-10):**
 - Supabase + Next.js setup, full auth system
@@ -146,12 +146,17 @@ These insights should guide every product, design, and business decision:
 - League detail sidebar: 3 cards → 1 dynamic compact card
 - First-visit explainer: dismissible one-liner for new members
 
+**Phases 43D, 44, 44b — Social, Game Audit, Support Page:**
+- Phase 43D: Chat sidebar, DMs, @mentions, GIPHY, trash talk prompts, reaction details, pinning, Web Share, bulletin board, weekly recaps
+- Phase 44: "Leaderboard" → "Rivalry Board" rename, bracket nav visibility by season, sportSlug/currentWeek context
+- Phase 44b: `/support` page for voluntary contributions via Stripe Payment Links (no backend). Moved ticket system to `/tickets`. Env var fallback for pre-Stripe setup. Footer "Support Rivyls" link. NAICS 713990 language compliance (no "donation")
+
 ### Platform Metrics:
 | Metric | Value |
 |--------|-------|
 | Database Tables | 60+ |
 | API Routes | 73 |
-| Pages | 43 |
+| Pages | 44 |
 | Components | 63 |
 | Automated Tests | 149 |
 | Migrations | 62 |

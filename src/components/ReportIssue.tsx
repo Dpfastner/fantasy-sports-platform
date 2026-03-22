@@ -36,7 +36,7 @@ export default function ReportIssue() {
         throw new Error('Failed to submit report')
       }
 
-      addToast('Report submitted! View your tickets at /support', 'success')
+      addToast('Report submitted! View your tickets at /tickets', 'success')
       setDescription('')
       setIsOpen(false)
     } catch {
