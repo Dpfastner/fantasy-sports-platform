@@ -20,6 +20,7 @@ export function ChatSidebar() {
   const [mounted, setMounted] = useState(false)
   const [displayName, setDisplayName] = useState<string>('You')
   const [showChannelDropdown, setShowChannelDropdown] = useState(false)
+  const [pendingDmPicker, setPendingDmPicker] = useState(false)
   const [dropdownPos, setDropdownPos] = useState<{ top: number; left: number } | null>(null)
   const dropdownRef = useRef<HTMLDivElement>(null)
   const triggerRef = useRef<HTMLButtonElement>(null)
@@ -112,6 +113,7 @@ export function ChatSidebar() {
   const handleChannelSwitch = (ch: Channel) => {
     setActiveChannel(ch)
     setShowChannelDropdown(false)
+    setPendingDmPicker(false)
   }
 
   return (
@@ -208,7 +210,7 @@ export function ChatSidebar() {
             />
           </div>
         ) : (
-          <ChannelList />
+          <ChannelList autoOpenDmPicker={pendingDmPicker} />
         )}
       </aside>
 
@@ -257,7 +259,8 @@ export function ChatSidebar() {
                   <button
                     onClick={() => {
                       setShowChannelDropdown(false)
-                      setActiveChannel(null) // go to channel list where DM picker lives
+                      setPendingDmPicker(true)
+                      setActiveChannel(null) // go to channel list with DM picker auto-opened
                     }}
                     className="w-full flex items-center gap-2 px-3 py-1.5 text-left text-sm text-text-muted hover:text-text-primary hover:bg-surface-subtle transition-colors"
                   >

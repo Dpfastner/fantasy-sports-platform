@@ -20,13 +20,14 @@ interface MemberOption {
   display_name: string
 }
 
-export function ChannelList() {
+export function ChannelList({ autoOpenDmPicker }: { autoOpenDmPicker?: boolean } = {}) {
   const ctx = useChatContext()
-  const [showNewDm, setShowNewDm] = useState(false)
+  const [showNewDm, setShowNewDm] = useState(!!autoOpenDmPicker)
   const [dmSearch, setDmSearch] = useState('')
   const [dmMembers, setDmMembers] = useState<MemberOption[]>([])
   const [dmLoading, setDmLoading] = useState(false)
   const [dmCreating, setDmCreating] = useState(false)
+  const [autoTriggered, setAutoTriggered] = useState(false)
 
   if (!ctx) return null
 
@@ -94,6 +95,14 @@ export function ChannelList() {
     } catch { /* skip */ }
     setDmCreating(false)
   }
+
+  // Auto-open DM picker when triggered from dropdown's "+ New Message"
+  useEffect(() => {
+    if (autoOpenDmPicker && !autoTriggered) {
+      setAutoTriggered(true)
+      openNewDm()
+    }
+  }, [autoOpenDmPicker, autoTriggered])
 
   const filteredDmMembers = dmSearch
     ? dmMembers.filter(m => m.display_name.toLowerCase().includes(dmSearch.toLowerCase()))
