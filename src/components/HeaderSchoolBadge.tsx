@@ -1,11 +1,14 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { SchoolPicker } from './SchoolPicker'
 import { Pennant } from './Pennant'
 import { CopyButton } from './CopyButton'
 import Link from 'next/link'
+
+type BadgeStyle = 'ribbon' | 'banner' | 'ring'
 
 interface SchoolData {
   name: string
@@ -15,6 +18,8 @@ interface SchoolData {
 }
 
 export function HeaderSchoolBadge({ userId }: { userId: string }) {
+  const searchParams = useSearchParams()
+  const badgeStyle = (searchParams.get('badge') as BadgeStyle) || 'banner'
   const [school, setSchool] = useState<SchoolData | null>(null)
   const [schoolId, setSchoolId] = useState<string | null>(null)
   const [fanCount, setFanCount] = useState(0)
@@ -122,16 +127,34 @@ export function HeaderSchoolBadge({ userId }: { userId: string }) {
     )
   }
 
-  // School set — show pennant badge
+  // School set — show badge (style controlled by ?badge= query param)
+  const trigger = badgeStyle === 'ribbon' ? (
+    <Pennant school={school} size="xs" variant="ribbon" interactive onClick={() => setIsOpen(!isOpen)} />
+  ) : badgeStyle === 'ring' ? (
+    <button onClick={() => setIsOpen(!isOpen)} className="hover:opacity-80 transition-opacity" title={school.name}>
+      {school.logo_url ? (
+        <img
+          src={school.logo_url}
+          alt={school.name}
+          className="w-6 h-6 rounded-full object-contain"
+          style={{ border: `2px solid ${school.primary_color}` }}
+        />
+      ) : (
+        <span
+          className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold"
+          style={{ backgroundColor: school.primary_color, color: school.secondary_color, border: `2px solid ${school.secondary_color}` }}
+        >
+          {school.name.charAt(0)}
+        </span>
+      )}
+    </button>
+  ) : (
+    <Pennant school={school} size="xxs" variant="banner" interactive onClick={() => setIsOpen(!isOpen)} />
+  )
+
   return (
     <div className="relative hidden sm:block" ref={ref}>
-      <Pennant
-        school={school}
-        size="xs"
-        variant="banner"
-        interactive
-        onClick={() => setIsOpen(!isOpen)}
-      />
+      {trigger}
 
       {isOpen && (
         <div className="absolute right-0 top-full mt-2 w-64 bg-surface border border-border rounded-lg shadow-lg py-3 z-50">
