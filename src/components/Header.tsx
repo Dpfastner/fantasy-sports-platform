@@ -29,12 +29,19 @@ export function Header({ userName, userEmail, userId, showUserMenu = true }: Hea
   const leagueCtx = useLeagueContext()
   const chatCtx = useChatContext()
 
-  // Set --header-h CSS variable so LeagueNav and sidebar align below header
+  // Set --header-h CSS variable so sidebar aligns below header
+  // Uses ResizeObserver so it updates when HeaderSchoolBadge loads async
   useEffect(() => {
-    if (headerRef.current) {
-      const h = headerRef.current.offsetHeight
-      document.documentElement.style.setProperty('--header-h', `${h}px`)
+    if (!headerRef.current) return
+    const update = () => {
+      if (headerRef.current) {
+        document.documentElement.style.setProperty('--header-h', `${headerRef.current.offsetHeight}px`)
+      }
     }
+    update()
+    const ro = new ResizeObserver(update)
+    ro.observe(headerRef.current)
+    return () => ro.disconnect()
   }, [])
 
   // Close on outside click
