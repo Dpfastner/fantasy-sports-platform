@@ -131,7 +131,7 @@ export function HeaderSchoolBadge({ userId }: { userId: string }) {
   const trigger = badgeStyle === 'ribbon' ? (
     <Pennant school={school} size="xs" variant="ribbon" interactive onClick={() => setIsOpen(!isOpen)} />
   ) : badgeStyle === 'ring' ? (
-    <button onClick={() => setIsOpen(!isOpen)} className="hover:opacity-80 transition-opacity" title={school.name}>
+    <button onClick={() => setIsOpen(!isOpen)} className="flex items-center justify-center hover:opacity-80 transition-opacity" title={school.name}>
       {school.logo_url ? (
         <img
           src={school.logo_url}
