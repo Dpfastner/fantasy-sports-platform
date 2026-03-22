@@ -36,18 +36,26 @@ const cards = [
   {
     title: 'Servers & hosting',
     description: 'Database, API, live scoring infrastructure',
+    borderColor: 'border-l-brand',
+    bgColor: 'bg-brand-subtle',
   },
   {
     title: 'New features',
     description: 'Multi-sport expansion, mobile app, tools',
+    borderColor: 'border-l-accent',
+    bgColor: 'bg-accent-subtle',
   },
   {
     title: 'Keeping it free',
     description: 'No entry fees, no house edge, no paywall',
+    borderColor: 'border-l-success',
+    bgColor: 'bg-success-subtle',
   },
   {
     title: 'Game day reliability',
     description: 'Live scoring, real-time drafts, zero downtime',
+    borderColor: 'border-l-info',
+    bgColor: 'bg-info-subtle',
   },
 ]
 
@@ -94,7 +102,7 @@ export default function SupportPage() {
             {cards.map((card) => (
               <div
                 key={card.title}
-                className="bg-surface rounded-lg border border-border p-5"
+                className={`rounded-lg border border-border p-5 border-l-4 ${card.borderColor} ${card.bgColor}`}
               >
                 <h3 className="font-semibold text-text-primary mb-1">
                   {card.title}
@@ -115,7 +123,7 @@ export default function SupportPage() {
                   href={amount.href}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex flex-col items-center min-w-[120px] bg-surface hover:bg-surface-hover text-text-primary font-semibold rounded-lg px-6 py-4 text-center transition-colors border border-border"
+                  className="flex flex-col items-center min-w-[120px] bg-brand hover:bg-brand-hover text-text-primary font-semibold rounded-lg px-6 py-4 text-center transition-colors"
                 >
                   <span className="text-lg">{amount.label}</span>
                   <span className="text-xs font-normal opacity-80">
