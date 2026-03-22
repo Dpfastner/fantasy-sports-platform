@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { SchoolPicker } from './SchoolPicker'
+import { Pennant } from './Pennant'
 import { CopyButton } from './CopyButton'
 import Link from 'next/link'
 
@@ -121,49 +122,23 @@ export function HeaderSchoolBadge({ userId }: { userId: string }) {
     )
   }
 
-  // School set — show badge
+  // School set — show pennant badge
   return (
     <div className="relative hidden sm:block" ref={ref}>
-      <button
+      <Pennant
+        school={school}
+        size="xs"
+        variant="banner"
+        interactive
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-1.5 hover:opacity-80 transition-opacity"
-        title={school.name}
-      >
-        {school.logo_url ? (
-          <img
-            src={school.logo_url}
-            alt={school.name}
-            className="w-7 h-7 rounded-full object-contain"
-            style={{ backgroundColor: school.primary_color }}
-          />
-        ) : (
-          <span
-            className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold"
-            style={{ backgroundColor: school.primary_color, color: school.secondary_color }}
-          >
-            {school.name.charAt(0)}
-          </span>
-        )}
-      </button>
+      />
 
       {isOpen && (
         <div className="absolute right-0 top-full mt-2 w-64 bg-surface border border-border rounded-lg shadow-lg py-3 z-50">
           {/* School info */}
           <div className="px-4 pb-3 border-b border-border">
-            <div className="flex items-center gap-2 mb-1">
-              {school.logo_url ? (
-                <img src={school.logo_url} alt="" className="w-5 h-5 rounded-full object-contain" style={{ backgroundColor: school.primary_color }} />
-              ) : (
-                <span
-                  className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold"
-                  style={{ backgroundColor: school.primary_color, color: school.secondary_color }}
-                >
-                  {school.name.charAt(0)}
-                </span>
-              )}
-              <span className="text-sm font-semibold text-text-primary">{school.name}</span>
-            </div>
-            <p className="text-xs text-text-muted">{fanCount} fan{fanCount !== 1 ? 's' : ''} on Rivyls</p>
+            <Pennant school={school} size="xs" variant="pennant" />
+            <p className="text-xs text-text-muted mt-1.5">{fanCount} fan{fanCount !== 1 ? 's' : ''} on Rivyls</p>
           </div>
 
           {/* Referral */}
