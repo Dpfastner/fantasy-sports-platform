@@ -19,10 +19,10 @@ interface PennantProps {
 }
 
 const SIZES = {
-  xs: { width: 80, height: 32, logo: 12, text: 'text-[9px]', gap: 'gap-0.5' },
-  sm: { width: 120, height: 48, logo: 16, text: 'text-xs', gap: 'gap-1' },
-  md: { width: 200, height: 64, logo: 24, text: 'text-sm', gap: 'gap-2' },
-  lg: { width: 280, height: 80, logo: 32, text: 'text-base', gap: 'gap-2.5' },
+  xs: { minWidth: 80, height: 32, logo: 12, text: 'text-[9px]', gap: 'gap-0.5' },
+  sm: { minWidth: 120, height: 48, logo: 16, text: 'text-xs', gap: 'gap-1' },
+  md: { minWidth: 200, height: 64, logo: 24, text: 'text-sm', gap: 'gap-2' },
+  lg: { minWidth: 280, height: 80, logo: 32, text: 'text-base', gap: 'gap-2.5' },
 } as const
 
 /**
@@ -94,16 +94,16 @@ function PennantVariant({ school, colors, s }: { school: PennantSchool; colors: 
       <div
         className="animate-pennant-wave origin-top-left"
         style={{
-          width: s.width,
+          minWidth: s.minWidth,
           height: s.height,
           backgroundColor: colors.bgColor,
           clipPath: 'polygon(0 0, 100% 0, 85% 50%, 100% 100%, 0 100%)',
         }}
       >
-        <div className={`flex items-center ${s.gap} h-full px-2`}>
+        <div className={`flex items-center ${s.gap} h-full px-2 pr-[18%]`}>
           <SchoolLogo school={school} size={s.logo} />
           <span
-            className={`${s.text} font-bold truncate`}
+            className={`${s.text} font-bold whitespace-nowrap`}
             style={{ color: colors.textColor }}
           >
             {school.name}
@@ -117,10 +117,10 @@ function PennantVariant({ school, colors, s }: { school: PennantSchool; colors: 
 /** Variant B — Vertical hanging banner with 3D fabric effect */
 function BannerVariant({ school, colors, size }: { school: PennantSchool; colors: ResolvedColors; size: 'xs' | 'sm' | 'md' | 'lg' }) {
   const dims = {
-    xs: { width: 36, height: 64, logo: 14, text: 'text-[8px]', ripples: 2 },
-    sm: { width: 56, height: 100, logo: 20, text: 'text-[10px]', ripples: 3 },
-    md: { width: 72, height: 140, logo: 28, text: 'text-xs', ripples: 4 },
-    lg: { width: 88, height: 180, logo: 36, text: 'text-sm', ripples: 5 },
+    xs: { width: 36, minHeight: 64, logo: 14, text: 'text-[8px]', ripples: 2 },
+    sm: { width: 56, minHeight: 100, logo: 20, text: 'text-[10px]', ripples: 3 },
+    md: { width: 72, minHeight: 140, logo: 28, text: 'text-xs', ripples: 4 },
+    lg: { width: 88, minHeight: 180, logo: 36, text: 'text-sm', ripples: 5 },
   }
   const d = dims[size]
 
@@ -141,7 +141,7 @@ function BannerVariant({ school, colors, size }: { school: PennantSchool; colors
         className="animate-banner-unfurl origin-top relative overflow-hidden"
         style={{
           width: d.width,
-          height: d.height,
+          minHeight: d.minHeight,
           transformStyle: 'preserve-3d',
         }}
       >
@@ -283,7 +283,7 @@ function RibbonVariant({ school, colors, s }: { school: PennantSchool; colors: R
     <div
       className="animate-ribbon-flutter inline-flex items-center relative"
       style={{
-        width: s.width,
+        minWidth: s.minWidth,
         height: s.height * 0.7,
       }}
     >
@@ -299,7 +299,7 @@ function RibbonVariant({ school, colors, s }: { school: PennantSchool; colors: R
       <div className={`relative z-10 flex items-center ${s.gap} w-full justify-center px-4`}>
         <SchoolLogo school={school} size={s.logo} />
         <span
-          className={`${s.text} font-bold truncate`}
+          className={`${s.text} font-bold whitespace-nowrap`}
           style={{ color: colors.textColor }}
         >
           {school.name}
