@@ -19,7 +19,7 @@ interface PennantProps {
 }
 
 const SIZES = {
-  xs: { minWidth: 80, height: 32, logo: 12, text: 'text-[9px]', gap: 'gap-0.5' },
+  xs: { minWidth: 80, height: 32, logo: 12, text: 'text-[7px]', gap: 'gap-0.5' },
   sm: { minWidth: 120, height: 48, logo: 16, text: 'text-xs', gap: 'gap-1' },
   md: { minWidth: 200, height: 64, logo: 24, text: 'text-sm', gap: 'gap-2' },
   lg: { minWidth: 280, height: 80, logo: 32, text: 'text-base', gap: 'gap-2.5' },
