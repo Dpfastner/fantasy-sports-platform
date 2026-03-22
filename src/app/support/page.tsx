@@ -66,7 +66,7 @@ export default function SupportPage() {
     <div className="min-h-screen bg-page text-text-primary">
       {/* Nav */}
       <nav className="sticky top-0 z-40 bg-page/90 backdrop-blur-sm border-b border-border-subtle">
-        <div className="max-w-[620px] mx-auto px-4 md:px-8 py-4 flex items-center justify-between">
+        <div className="max-w-3xl mx-auto px-4 md:px-8 py-4 flex items-center justify-between">
           <Link href="/" className="brand-nav text-xl tracking-wide">
             RIVYLS
           </Link>
@@ -75,7 +75,7 @@ export default function SupportPage() {
       </nav>
 
       {/* Content */}
-      <main className="max-w-[620px] mx-auto px-4 md:px-8 py-10">
+      <main className="max-w-3xl mx-auto px-4 md:px-8 py-10">
         {/* Section 1: Header */}
         <div className="mb-8">
           <h1 className="text-2xl font-bold mb-3">Support Rivyls</h1>
