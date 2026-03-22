@@ -128,7 +128,7 @@ export function HeaderSchoolBadge({ userId }: { userId: string }) {
       <Pennant
         school={school}
         size="xs"
-        variant="banner"
+        variant="pennant"
         interactive
         onClick={() => setIsOpen(!isOpen)}
       />
