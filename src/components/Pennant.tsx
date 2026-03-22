@@ -138,7 +138,7 @@ function BannerVariant({ school, colors, size }: { school: PennantSchool; colors
       />
       {/* Banner body — 3D fabric with perspective */}
       <div
-        className="animate-banner-unfurl origin-top relative overflow-hidden"
+        className="animate-banner-unfurl origin-top relative"
         style={{
           width: d.width,
           minHeight: d.minHeight,
@@ -258,14 +258,12 @@ function BannerVariant({ school, colors, size }: { school: PennantSchool; colors
         />
 
         {/* Content */}
-        <div className="relative z-10 flex flex-col items-center justify-center h-full px-1 py-2">
+        <div className="relative z-10 flex flex-col items-center justify-center min-h-full px-1 py-2">
           <SchoolLogo school={school} size={d.logo} />
           <span
             className={`${d.text} font-bold text-center mt-1 leading-tight`}
             style={{
               color: colors.textColor,
-              writingMode: d.width < 72 ? 'vertical-rl' : undefined,
-              textOrientation: d.width < 72 ? 'mixed' : undefined,
               textShadow: '0 1px 2px rgba(0,0,0,0.3)',
             }}
           >
