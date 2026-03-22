@@ -93,8 +93,6 @@ export function Header({ userName, userEmail, userId, showUserMenu = true }: Hea
             </div>
           )}
 
-          {userId && <HeaderSchoolBadge userId={userId} />}
-
           {showUserMenu && (
             <>
               {userId && chatCtx && (
@@ -112,6 +110,7 @@ export function Header({ userName, userEmail, userId, showUserMenu = true }: Hea
                 </button>
               )}
               {userId && <NotificationBell userId={userId} />}
+              {userId && <HeaderSchoolBadge userId={userId} />}
               <div className="relative" ref={dropdownRef}>
                 <button
                   onClick={() => setProfileOpen(!profileOpen)}
