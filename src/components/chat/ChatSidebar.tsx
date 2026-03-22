@@ -58,17 +58,47 @@ export function ChatSidebar() {
       })
   }, [ctx?.userId])
 
-  // Close dropdown on outside click
+  // Close dropdown on outside click (checks both dropdown and trigger)
   useEffect(() => {
     if (!showChannelDropdown) return
     function handleClick(e: MouseEvent) {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+      const target = e.target as Node
+      if (
+        dropdownRef.current && !dropdownRef.current.contains(target) &&
+        triggerRef.current && !triggerRef.current.contains(target)
+      ) {
         setShowChannelDropdown(false)
       }
     }
     document.addEventListener('mousedown', handleClick)
     return () => document.removeEventListener('mousedown', handleClick)
   }, [showChannelDropdown])
+
+  // Auto-select channel based on current page
+  useEffect(() => {
+    if (!ctx || ctx.channels.length === 0 || !pathname) return
+
+    // Match /leagues/[id]...
+    const leagueMatch = pathname.match(/^\/leagues\/([^/]+)/)
+    if (leagueMatch) {
+      const leagueId = leagueMatch[1]
+      // Only auto-select if not already viewing this league's chat
+      if (ctx.activeChannel?.type === 'league' && ctx.activeChannel?.entityId === leagueId) return
+      const ch = ctx.channels.find(c => c.type === 'league' && c.entityId === leagueId)
+      if (ch) ctx.setActiveChannel(ch)
+      return
+    }
+
+    // Match /events/.../pools/[poolId]...
+    const poolMatch = pathname.match(/\/pools\/([^/]+)/)
+    if (poolMatch) {
+      const poolId = poolMatch[1]
+      if (ctx.activeChannel?.type === 'pool' && ctx.activeChannel?.entityId === poolId) return
+      const ch = ctx.channels.find(c => c.type === 'pool' && c.entityId === poolId)
+      if (ch) ctx.setActiveChannel(ch)
+      return
+    }
+  }, [pathname, ctx?.channels.length])
 
   if (!ctx || !mounted) return null
 
@@ -116,7 +146,7 @@ export function ChatSidebar() {
         {/* Sidebar header */}
         <div className="px-4 py-[11px] border-b border-border flex items-center justify-between shrink-0">
           {activeChannel ? (
-            <div className="flex items-center gap-2 min-w-0 relative" ref={dropdownRef}>
+            <div className="flex items-center gap-2 min-w-0">
               <button
                 onClick={() => setActiveChannel(null)}
                 className="p-1 text-text-muted hover:text-text-primary transition-colors shrink-0"
@@ -145,52 +175,6 @@ export function ChatSidebar() {
                   <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
                 </svg>
               </button>
-
-              {/* Channel dropdown — fixed positioning to escape sidebar overflow-hidden */}
-              {showChannelDropdown && dropdownPos && (
-                <div
-                  className="fixed w-[280px] bg-surface border border-border rounded-lg shadow-lg z-50 max-h-72 overflow-y-auto"
-                  style={{ top: dropdownPos.top, left: dropdownPos.left }}
-                >
-                  {([
-                    { label: 'Competitions', types: ['league', 'pool'] as Channel['type'][] },
-                    { label: 'Direct Messages', types: ['dm'] as Channel['type'][] },
-                  ]).map(({ label, types }) => {
-                    const items = channels.filter(ch => types.includes(ch.type))
-                    if (items.length === 0) return null
-                    return (
-                      <div key={label}>
-                        <div className="px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-text-muted">
-                          {label}
-                        </div>
-                        {items.map(ch => {
-                          const isActive = activeChannel?.id === ch.id
-                          const unread = unreadCounts[ch.id] || 0
-                          return (
-                            <button
-                              key={ch.id}
-                              onClick={() => handleChannelSwitch(ch)}
-                              className={`w-full flex items-center gap-2 px-3 py-1.5 text-left text-sm transition-colors ${
-                                isActive
-                                  ? 'bg-brand/15 text-text-primary'
-                                  : 'text-text-secondary hover:bg-surface-subtle hover:text-text-primary'
-                              }`}
-                            >
-                              <span className="text-xs">{TYPE_ICONS[ch.type]}</span>
-                              <span className="flex-1 truncate">{ch.name}</span>
-                              {unread > 0 && (
-                                <span className="bg-brand text-text-primary text-[10px] font-bold rounded-full px-1.5 py-0.5 min-w-[18px] text-center">
-                                  {unread > 99 ? '99+' : unread}
-                                </span>
-                              )}
-                            </button>
-                          )
-                        })}
-                      </div>
-                    )
-                  })}
-                </div>
-              )}
             </div>
           ) : (
             <span className="text-sm font-semibold text-text-primary">Chat</span>
@@ -227,6 +211,53 @@ export function ChatSidebar() {
           <ChannelList />
         )}
       </aside>
+
+      {/* Channel dropdown — rendered OUTSIDE the aside so transform doesn't trap it */}
+      {showChannelDropdown && dropdownPos && isOpen && (
+        <div
+          ref={dropdownRef}
+          className="fixed w-[280px] bg-surface border border-border rounded-lg shadow-lg z-50 max-h-72 overflow-y-auto"
+          style={{ top: dropdownPos.top, left: dropdownPos.left }}
+        >
+          {([
+            { label: 'Competitions', types: ['league', 'pool'] as Channel['type'][] },
+            { label: 'Direct Messages', types: ['dm'] as Channel['type'][] },
+          ]).map(({ label, types }) => {
+            const items = channels.filter(ch => types.includes(ch.type))
+            if (items.length === 0) return null
+            return (
+              <div key={label}>
+                <div className="px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-text-muted">
+                  {label}
+                </div>
+                {items.map(ch => {
+                  const isActive = activeChannel?.id === ch.id
+                  const unread = unreadCounts[ch.id] || 0
+                  return (
+                    <button
+                      key={ch.id}
+                      onClick={() => handleChannelSwitch(ch)}
+                      className={`w-full flex items-center gap-2 px-3 py-1.5 text-left text-sm transition-colors ${
+                        isActive
+                          ? 'bg-brand/15 text-text-primary'
+                          : 'text-text-secondary hover:bg-surface-subtle hover:text-text-primary'
+                      }`}
+                    >
+                      <span className="text-xs">{TYPE_ICONS[ch.type]}</span>
+                      <span className="flex-1 truncate">{ch.name}</span>
+                      {unread > 0 && (
+                        <span className="bg-brand text-text-primary text-[10px] font-bold rounded-full px-1.5 py-0.5 min-w-[18px] text-center">
+                          {unread > 99 ? '99+' : unread}
+                        </span>
+                      )}
+                    </button>
+                  )
+                })}
+              </div>
+            )
+          })}
+        </div>
+      )}
     </>
   )
 }
