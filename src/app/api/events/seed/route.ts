@@ -183,6 +183,29 @@ async function seedFrozenFourTeams(admin: ReturnType<typeof createAdminClient>) 
     return NextResponse.json({ error: 'Frozen Four tournament not found. Run frozen-four-2026 seed first.' }, { status: 400 })
   }
 
+  // Clear game participant references before deleting participants (FK constraint)
+  await admin
+    .from('event_games')
+    .update({ participant_1_id: null, participant_2_id: null, winner_id: null })
+    .eq('tournament_id', tournament.id)
+
+  // Delete any existing picks referencing these participants
+  const { data: existingEntries } = await admin
+    .from('event_entries')
+    .select('id')
+    .in('pool_id', (await admin
+      .from('event_pools')
+      .select('id')
+      .eq('tournament_id', tournament.id)
+    ).data?.map(p => p.id) || [])
+
+  if (existingEntries?.length) {
+    await admin
+      .from('event_picks')
+      .delete()
+      .in('entry_id', existingEntries.map(e => e.id))
+  }
+
   // Delete existing participants (allow re-seeding with actual bracket)
   await admin
     .from('event_participants')
