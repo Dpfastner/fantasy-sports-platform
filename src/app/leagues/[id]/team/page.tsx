@@ -5,6 +5,7 @@ import { Header } from '@/components/Header'
 import PendingTrades from '@/components/PendingTrades'
 import { RosterList } from '@/components/RosterList'
 import { SandboxWeekSelector } from '@/components/SandboxWeekSelector'
+import { ADMIN_USER_IDS } from '@/lib/constants/admin'
 import { getCurrentWeek, getSimulatedDate } from '@/lib/week'
 import { getEnvironment } from '@/lib/env'
 import { getLeagueYear } from '@/lib/league-helpers'
@@ -972,7 +973,7 @@ export default async function TeamPage({ params }: PageProps) {
 
       </main>
 
-      <SandboxWeekSelector currentWeek={currentWeek} environment={environment} />
+      <SandboxWeekSelector currentWeek={currentWeek} environment={environment} isAdmin={ADMIN_USER_IDS.includes(user.id)} />
     </div>
   )
 }

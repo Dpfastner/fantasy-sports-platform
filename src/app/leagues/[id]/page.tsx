@@ -9,6 +9,7 @@ import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { AnnouncementsManager } from '@/components/AnnouncementsManager'
 import { LeagueActivityFeed } from '@/components/LeagueActivityFeed'
 import { SandboxWeekSelector } from '@/components/SandboxWeekSelector'
+import { ADMIN_USER_IDS } from '@/lib/constants/admin'
 import { ShareButton } from '@/components/ShareButton'
 import { InviteCodeCard } from '@/components/InviteCodeCard'
 import { getCurrentWeek } from '@/lib/week'
@@ -664,7 +665,7 @@ export default async function LeaguePage({ params }: PageProps) {
         </div>
       </main>
 
-      <SandboxWeekSelector currentWeek={currentWeek} environment={environment} />
+      <SandboxWeekSelector currentWeek={currentWeek} environment={environment} isAdmin={ADMIN_USER_IDS.includes(user.id)} />
     </div>
   )
 }

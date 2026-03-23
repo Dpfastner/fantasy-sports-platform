@@ -347,7 +347,7 @@ export const palettes: PaletteDefinition[] = [
   },
 ]
 
-export const DEFAULT_PALETTE_ID = 'collegiate-fire'
+export const DEFAULT_PALETTE_ID = 'royal-gambit'
 
 /**
  * Generate CSS variable declarations for a palette.

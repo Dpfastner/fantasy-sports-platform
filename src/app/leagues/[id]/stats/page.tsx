@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import StatsClient from './StatsClient'
 import { SandboxWeekSelector } from '@/components/SandboxWeekSelector'
+import { ADMIN_USER_IDS } from '@/lib/constants/admin'
 import { getCurrentWeek } from '@/lib/week'
 import { getEnvironment } from '@/lib/env'
 
@@ -345,7 +346,7 @@ export default async function StatsPage({ params, searchParams }: PageProps) {
         userEmail={user.email}
         userId={user.id}
       />
-      <SandboxWeekSelector currentWeek={currentWeek} environment={environment} />
+      <SandboxWeekSelector currentWeek={currentWeek} environment={environment} isAdmin={ADMIN_USER_IDS.includes(user.id)} />
     </>
   )
 }

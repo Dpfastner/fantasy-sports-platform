@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import { Header } from '@/components/Header'
 import { LeagueNav } from '@/components/LeagueNav'
 import { SandboxWeekSelector } from '@/components/SandboxWeekSelector'
+import { ADMIN_USER_IDS } from '@/lib/constants/admin'
 import { getCurrentWeek } from '@/lib/week'
 import { getEnvironment } from '@/lib/env'
 import { getLeagueYear } from '@/lib/league-helpers'
@@ -389,7 +390,7 @@ export default async function HistoryPage({ params, searchParams }: PageProps) {
         )}
       </main>
 
-      <SandboxWeekSelector currentWeek={currentWeek} environment={environment} />
+      <SandboxWeekSelector currentWeek={currentWeek} environment={environment} isAdmin={ADMIN_USER_IDS.includes(user.id)} />
     </div>
   )
 }

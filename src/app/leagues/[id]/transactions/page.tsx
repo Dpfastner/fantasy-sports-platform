@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import TransactionsClient from '@/components/TransactionsClient'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { SandboxWeekSelector } from '@/components/SandboxWeekSelector'
+import { ADMIN_USER_IDS } from '@/lib/constants/admin'
 import { getCurrentWeek, getSimulatedDate } from '@/lib/week'
 import { getEnvironment } from '@/lib/env'
 import { getLeagueYear } from '@/lib/league-helpers'
@@ -428,7 +429,7 @@ export default async function TransactionsPage({ params }: PageProps) {
         maxRosterSize={settings?.schools_per_team || 12}
       />
       </ErrorBoundary>
-      <SandboxWeekSelector currentWeek={currentWeek} environment={environment} />
+      <SandboxWeekSelector currentWeek={currentWeek} environment={environment} isAdmin={ADMIN_USER_IDS.includes(user.id)} />
     </>
   )
 }

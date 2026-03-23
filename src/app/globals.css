@@ -30,70 +30,70 @@
 /* ============================================================
    Palette System — CSS Variables
 
-   Default: Collegiate Fire (Option A)
+   Default: Royal Gambit (purple + amber)
    Override via data-palette attribute on <html>
    ============================================================ */
 
 :root {
   /* Surfaces */
-  --palette-page: #0D1520;
-  --palette-page-alt: #111827;
-  --palette-gradient-from: #0D1520;
-  --palette-gradient-to: #1B2A4A;
-  --palette-surface: #1E293B;
-  --palette-surface-hover: #243556;
-  --palette-surface-subtle: rgba(30, 41, 59, 0.5);
-  --palette-surface-inset: rgba(30, 41, 59, 0.7);
+  --palette-page: #1A0F28;
+  --palette-page-alt: #221533;
+  --palette-gradient-from: #1A0F28;
+  --palette-gradient-to: #2A1A3E;
+  --palette-surface: #2A1A3E;
+  --palette-surface-hover: #3A2555;
+  --palette-surface-subtle: rgba(42, 26, 62, 0.5);
+  --palette-surface-inset: rgba(42, 26, 62, 0.7);
 
   /* Borders */
-  --palette-border: #334155;
-  --palette-border-subtle: rgba(51, 65, 85, 0.5);
+  --palette-border: #4A3066;
+  --palette-border-subtle: rgba(74, 48, 102, 0.5);
 
   /* Text */
-  --palette-text-primary: #F7F8FA;
-  --palette-text-secondary: #94A3B8;
-  --palette-text-muted: #64748B;
-  --palette-text-inverse: #0D1520;
+  --palette-text-primary: #FAF5EE;
+  --palette-text-secondary: #C4B5D4;
+  --palette-text-muted: #8B7BA0;
+  --palette-text-inverse: #1A0F28;
 
   /* Brand swatches */
-  --palette-tertiary: #F5A623;
-  --palette-neutral: #F7F8FA;
-  --palette-card-text: #0D1520;
-  --palette-card-text-muted: #3D4F66;
+  --palette-tertiary: #FAF5EE;
+  --palette-neutral: #FFFFFF;
+  --palette-card-text: #1A0F28;
+  --palette-card-text-muted: #4A3D5C;
 
   /* Brand action */
-  --palette-brand: #E8513D;
-  --palette-brand-hover: #D4432F;
-  --palette-brand-text: #E8513D;
-  --palette-brand-subtle: rgba(232, 81, 61, 0.15);
+  --palette-brand: #F59E0B;
+  --palette-brand-hover: #D97706;
+  --palette-brand-text: #F59E0B;
+  --palette-brand-subtle: rgba(245, 158, 11, 0.15);
 
   /* Accent */
-  --palette-accent: #F5A623;
-  --palette-accent-text: #F5A623;
-  --palette-accent-subtle: rgba(245, 166, 35, 0.15);
+  --palette-accent: #E74C6F;
+  --palette-accent-text: #E74C6F;
+  --palette-accent-subtle: rgba(231, 76, 111, 0.15);
 
   /* Functional */
-  --palette-success: #22C55E;
-  --palette-success-text: #4ADE80;
-  --palette-success-subtle: rgba(34, 197, 94, 0.15);
-  --palette-danger: #EF4444;
-  --palette-danger-text: #F87171;
-  --palette-danger-subtle: rgba(239, 68, 68, 0.15);
-  --palette-warning: #F5A623;
+  --palette-success: #4ADE80;
+  --palette-success-text: #86EFAC;
+  --palette-success-subtle: rgba(74, 222, 128, 0.15);
+  --palette-danger: #E74C6F;
+  --palette-danger-text: #F472B6;
+  --palette-danger-subtle: rgba(231, 76, 111, 0.15);
+  --palette-warning: #F59E0B;
   --palette-warning-text: #FBBF24;
-  --palette-warning-subtle: rgba(245, 166, 35, 0.15);
-  --palette-info: #818CF8;
-  --palette-info-text: #A5B4FC;
-  --palette-info-subtle: rgba(129, 140, 248, 0.15);
+  --palette-warning-subtle: rgba(245, 158, 11, 0.15);
+  --palette-info: #A78BFA;
+  --palette-info-text: #C4B5FD;
+  --palette-info-subtle: rgba(167, 139, 250, 0.15);
 
   /* Special */
-  --palette-highlight-row: rgba(232, 81, 61, 0.1);
-  --palette-highlight-special: rgba(245, 166, 35, 0.15);
-  --palette-live-indicator: #22C55E;
+  --palette-highlight-row: rgba(245, 158, 11, 0.1);
+  --palette-highlight-special: rgba(231, 76, 111, 0.15);
+  --palette-live-indicator: #4ADE80;
 
   /* Sticky column backgrounds (must be fully opaque for horizontal scroll) */
-  --palette-sticky-bg: #1E293B;
-  --palette-sticky-bg-highlight: #2B1E1A;
+  --palette-sticky-bg: #2A1A3E;
+  --palette-sticky-bg-highlight: #3A2048;
 
   /* Backward compat */
   --background: var(--palette-page);

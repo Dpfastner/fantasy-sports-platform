@@ -10,6 +10,7 @@ const TIME_OVERRIDE_COOKIE = 'sandbox_time_override'
 interface Props {
   currentWeek: number
   environment: string
+  isAdmin?: boolean
 }
 
 const DAYS = [
@@ -30,7 +31,7 @@ const TIME_PRESETS = [
   { key: '23:00', label: '11 PM', description: 'Late night' },
 ]
 
-export function SandboxWeekSelector({ currentWeek, environment }: Props) {
+export function SandboxWeekSelector({ currentWeek, environment, isAdmin }: Props) {
   const [isOpen, setIsOpen] = useState(false)
   const [selectedWeek, setSelectedWeek] = useState<number>(currentWeek)
   const [selectedDay, setSelectedDay] = useState<string | null>(null)
@@ -52,8 +53,8 @@ export function SandboxWeekSelector({ currentWeek, environment }: Props) {
     }
   }, [])
 
-  // Don't render in production
-  if (environment === 'production') {
+  // Only show for admin users
+  if (!isAdmin) {
     return null
   }
 

@@ -20,8 +20,8 @@ export function usePalette() {
 
 const STORAGE_KEY = 'rivyls-palette'
 
-export function PaletteProvider({ children }: { children: ReactNode }) {
-  const isPreviewMode = process.env.NEXT_PUBLIC_ENVIRONMENT !== 'production'
+export function PaletteProvider({ children, isAdmin = false }: { children: ReactNode; isAdmin?: boolean }) {
+  const isPreviewMode = isAdmin
   const [paletteId, setPaletteId] = useState(DEFAULT_PALETTE_ID)
 
   // Read from localStorage on mount (sandbox/dev only)

@@ -1,6 +1,6 @@
 'use client'
 
-import { ReactNode, useEffect } from 'react'
+import { ReactNode, useEffect, useState } from 'react'
 import { ToastProvider } from './Toast'
 import { ConfirmProvider } from './ConfirmDialog'
 import { PaletteProvider } from './PaletteProvider'
@@ -10,6 +10,7 @@ import TosGate from './TosGate'
 import { ChatContextProvider } from '@/contexts/ChatContext'
 import { MobileChatPeek } from './chat/MobileChatPeek'
 import { createClient } from '@/lib/supabase/client'
+import { ADMIN_USER_IDS } from '@/lib/constants/admin'
 
 const PUSH_PROMPTED_KEY = 'rivyls_push_prompted'
 
@@ -61,6 +62,16 @@ async function autoSubscribePush(registration: ServiceWorkerRegistration) {
 }
 
 export function Providers({ children }: ProvidersProps) {
+  const [isAdmin, setIsAdmin] = useState(false)
+
+  // Check if current user is admin
+  useEffect(() => {
+    const supabase = createClient()
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (user && ADMIN_USER_IDS.includes(user.id)) setIsAdmin(true)
+    })
+  }, [])
+
   // Register service worker and auto-prompt for push notifications
   useEffect(() => {
     if ('serviceWorker' in navigator) {
@@ -79,7 +90,7 @@ export function Providers({ children }: ProvidersProps) {
   }, [])
 
   return (
-    <PaletteProvider>
+    <PaletteProvider isAdmin={isAdmin}>
       <ToastProvider>
         <ConfirmProvider>
           <ChatContextProvider>
