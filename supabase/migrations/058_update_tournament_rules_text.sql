@@ -3,12 +3,12 @@
 
 UPDATE event_tournaments
 SET description = '16-team bracket for the 2026 NCAA Frozen Four. Pick every game from Regionals to the Championship.',
-    rules_text = E'## How to Play\n\n1. Pick the winner of every game \u2014 Regionals through the Championship.\n2. Later rounds are worth more points.\n3. All picks lock before the first Regional game.\n\n## Scoring\n- Regional Quarterfinal: 2 pts\n- Regional Semifinal: 4 pts\n- Frozen Four Semifinal: 8 pts\n- Championship: 16 pts\n- Upset bonus: +2 pts when a lower seed wins\n\n## Tiebreaker\nPredict the total combined goals in the Championship game.'
+    rules_text = E'## How to Play\n\n1. Pick the winner of every game \u2014 Regionals through the Championship.\n2. Later rounds are worth more points.\n3. All picks lock before the first Regional game.\n\nScoring details are in your pool''s Settings tab.\n\n## Tiebreaker\nPredict the total combined goals in the Championship game.'
 WHERE slug = 'frozen-four-2026';
 
 UPDATE event_tournaments
 SET description = E'The 90th Masters at Augusta National. Pick matchup winners or draft a golfer roster.',
-    rules_text = E'## Pick''em\nPick matchup winners each round. 1 pt per correct pick + upset bonus.\n\n## Roster\nDraft 7 golfers \u2014 2 from Tier A (OWGR 1\u201315), 2 from Tier B (16\u201330), 3 from Tier C (31+). Your best 5 of 7 scores count. Lowest total score-to-par wins. Cut golfers get the field high + 1 per missed round. Rosters lock at first tee time.'
+    rules_text = E'## Pick''em\nPick matchup winners each round. Check your pool''s Settings tab for scoring details.\n\n## Roster\nDraft 7 golfers \u2014 2 from Tier A (OWGR 1\u201315), 2 from Tier B (16\u201330), 3 from Tier C (31+). Your best 5 of 7 scores count. Lowest total score-to-par wins. Cut golfers get the field high + 1 per missed round. Rosters lock at first tee time.'
 WHERE slug = 'masters-2026';
 
 UPDATE event_tournaments
