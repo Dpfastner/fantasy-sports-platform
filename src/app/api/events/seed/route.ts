@@ -102,7 +102,7 @@ async function seedFrozenFour(admin: ReturnType<typeof createAdminClient>) {
       status: 'upcoming',
       bracket_size: 16,
       description: '16-team bracket for the 2026 NCAA Frozen Four. Pick every game from Regionals to the Championship.',
-      rules_text: `## How to Play\n\n1. Pick the winner of every game — Regionals through the Championship.\n2. Later rounds are worth more points.\n3. All picks lock before the first Regional game.\n\nScoring details are in your pool's Settings tab.\n\n## Tiebreaker\nPredict the total combined goals in the Championship game.`,
+      rules_text: `## How to Play\n\n1. Pick the winner of every game — Regionals through the Championship.\n2. Later rounds are worth more points.\n3. All picks lock before the first Regional game.\n\nCheck your pool's Settings tab for scoring and tiebreaker details.`,
       starts_at: '2026-03-26T00:00:00Z',
       ends_at: '2026-04-11T23:59:00Z',
       config: {
@@ -363,7 +363,7 @@ async function seedMasters(admin: ReturnType<typeof createAdminClient>) {
       format: 'multi',
       status: 'upcoming',
       description: 'The 90th Masters at Augusta National. Pick matchup winners or draft a golfer roster.',
-      rules_text: `## Pick'em\nPick matchup winners each round. Check your pool's Settings tab for scoring details.\n\n## Roster\nDraft 7 golfers — 2 from Tier A (OWGR 1–15), 2 from Tier B (16–30), 3 from Tier C (31+). Your best 5 of 7 scores count. Lowest total score-to-par wins. Cut golfers get the field high + 1 per missed round. Rosters lock at first tee time.`,
+      rules_text: `## Pick'em\nPick matchup winners each round.\n\n## Roster\nDraft 7 golfers — 2 from Tier A (OWGR 1–15), 2 from Tier B (16–30), 3 from Tier C (31+). Your best 5 of 7 scores count. Lowest total score-to-par wins. Cut golfers get the field high + 1 per missed round. Rosters lock at first tee time.\n\nCheck your pool's Settings tab for scoring and tiebreaker details.`,
       starts_at: '2026-04-09T00:00:00Z',
       ends_at: '2026-04-12T23:59:00Z',
       config: {
