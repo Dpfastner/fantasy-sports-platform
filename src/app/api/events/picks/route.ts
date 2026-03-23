@@ -275,12 +275,11 @@ async function handleBracketPicks(
   const totalGamesInBracket = bracketSize ? bracketSize - 1 : picks.length
   const isComplete = picks.length >= totalGamesInBracket
 
-  // Update tiebreaker, submitted_at, display_name, and completeness
+  // Update tiebreaker, submitted_at, and display_name
   const entryUpdate: Record<string, unknown> = {
     tiebreaker_prediction: tiebreakerPrediction || null,
     submitted_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
-    metadata: { is_complete: isComplete, pick_count: picks.length, total_games: totalGamesInBracket },
   }
   if (displayName !== undefined) {
     entryUpdate.display_name = displayName.trim() || null
