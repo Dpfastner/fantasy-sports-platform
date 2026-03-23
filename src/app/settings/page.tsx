@@ -62,6 +62,7 @@ export default function SettingsPage() {
   // Push notifications
   const [pushEnabled, setPushEnabled] = useState(false)
   const [pushPermission, setPushPermission] = useState<NotificationPermission>('default')
+  const [pushSupported, setPushSupported] = useState(true)
   const [pushLoading, setPushLoading] = useState(false)
   const [pushDraft, setPushDraft] = useState(true)
   const [pushGameResults, setPushGameResults] = useState(true)
@@ -138,9 +139,11 @@ export default function SettingsPage() {
         if (notifData.push_league_activity !== undefined) setPushLeagueActivity(notifData.push_league_activity)
       }
 
-      // Check browser push notification permission
-      if (typeof window !== 'undefined' && 'Notification' in window) {
+      // Check browser push notification support
+      if (typeof window !== 'undefined' && 'Notification' in window && 'PushManager' in window) {
         setPushPermission(Notification.permission)
+      } else {
+        setPushSupported(false)
       }
 
       setLoading(false)
@@ -627,7 +630,9 @@ export default function SettingsPage() {
               toggles={pushEnabled ? [pushDraft, pushGameResults, pushTrades, pushTransactions, pushAnnouncements, pushChatMentions, pushLeagueActivity] : []}
               onMasterToggle={undefined}
               customMasterToggle={
-                pushPermission === 'denied' ? (
+                !pushSupported ? (
+                  <p className="text-text-muted text-xs max-w-[180px] text-right">Add Rivyls to your home screen to enable push</p>
+                ) : pushPermission === 'denied' ? (
                   <p className="text-danger text-xs">Blocked by browser settings</p>
                 ) : (
                   <PushMasterToggle
