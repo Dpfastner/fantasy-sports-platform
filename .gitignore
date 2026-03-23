@@ -46,3 +46,10 @@ scripts/recalculate-season.sh
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# business docs & binary assets (keep out of repo)
+docs/*.docx
+docs/*.xlsx
+docs/*.pptx
+docs/*.pdf
+docs/Giphy Attribution Marks/
