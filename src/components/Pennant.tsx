@@ -20,11 +20,11 @@ interface PennantProps {
 }
 
 const SIZES = {
-  xxs: { minWidth: 60, maxWidth: 90, height: 24, logo: 10, text: 'text-[6px]', gap: 'gap-0.5' },
-  xs: { minWidth: 80, maxWidth: 130, height: 32, logo: 12, text: 'text-[7px]', gap: 'gap-0.5' },
-  sm: { minWidth: 120, maxWidth: 180, height: 48, logo: 16, text: 'text-xs', gap: 'gap-1' },
-  md: { minWidth: 200, maxWidth: 280, height: 64, logo: 24, text: 'text-sm', gap: 'gap-2' },
-  lg: { minWidth: 280, maxWidth: 360, height: 80, logo: 32, text: 'text-base', gap: 'gap-2.5' },
+  xxs: { minWidth: 60, maxWidth: 100, height: 24, logo: 10, text: 'text-[8px]', gap: 'gap-0.5' },
+  xs: { minWidth: 80, maxWidth: 140, height: 32, logo: 12, text: 'text-[10px]', gap: 'gap-0.5' },
+  sm: { minWidth: 120, maxWidth: 200, height: 48, logo: 16, text: 'text-sm', gap: 'gap-1' },
+  md: { minWidth: 200, maxWidth: 300, height: 64, logo: 24, text: 'text-base', gap: 'gap-2' },
+  lg: { minWidth: 280, maxWidth: 380, height: 80, logo: 32, text: 'text-lg', gap: 'gap-2.5' },
 } as const
 
 /**
@@ -120,8 +120,8 @@ function PennantVariant({ school, colors, s }: { school: PennantSchool; colors: 
 /** Variant B — Vertical hanging banner with 3D fabric effect */
 function BannerVariant({ school, colors, size }: { school: PennantSchool; colors: ResolvedColors; size: 'xxs' | 'xs' | 'sm' | 'md' | 'lg' }) {
   const dims = {
-    xxs: { width: 28, minHeight: 40, logo: 10, text: 'text-[5px]', ripples: 1 },
-    xs: { width: 36, minHeight: 64, logo: 14, text: 'text-[6px]', ripples: 2 },
+    xxs: { width: 28, minHeight: 40, logo: 10, text: 'text-[7px]', ripples: 1 },
+    xs: { width: 36, minHeight: 64, logo: 14, text: 'text-[8px]', ripples: 2 },
     sm: { width: 56, minHeight: 100, logo: 20, text: 'text-[10px]', ripples: 3 },
     md: { width: 72, minHeight: 140, logo: 28, text: 'text-xs', ripples: 4 },
     lg: { width: 88, minHeight: 180, logo: 36, text: 'text-sm', ripples: 5 },
