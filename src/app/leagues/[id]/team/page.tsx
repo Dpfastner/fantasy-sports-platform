@@ -802,7 +802,7 @@ export default async function TeamPage({ params }: PageProps) {
 
         {/* Roster History (Dropped Schools) - styled like current roster */}
         {droppedRoster && droppedRoster.length > 0 && (
-          <div className="bg-surface rounded-lg p-6 mb-8">
+          <div className="bg-surface rounded-lg p-4 sm:p-6 mb-8 overflow-hidden">
             <div className="flex items-center justify-between mb-4">
               <div>
                 <h2 className="text-xl font-semibold text-text-secondary">Roster History</h2>
@@ -810,8 +810,9 @@ export default async function TeamPage({ params }: PageProps) {
               </div>
             </div>
 
-            {/* Roster container with fixed left + scrollable right - matching RosterList */}
-            <div className="flex">
+            {/* Roster container — scrollable on mobile */}
+            <div className="overflow-x-auto">
+            <div className="flex min-w-max">
               {/* Fixed left section */}
               <div className="flex-shrink-0">
                 {/* Header row */}
@@ -923,6 +924,7 @@ export default async function TeamPage({ params }: PageProps) {
                   )
                 })}
               </div>
+            </div>
             </div>
           </div>
         )}
