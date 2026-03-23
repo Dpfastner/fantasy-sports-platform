@@ -6,6 +6,7 @@ import { validateBody } from '@/lib/api/validation'
 import { autoPickSchema } from '@/lib/api/schemas'
 import { createRateLimiter, getClientIp } from '@/lib/api/rate-limit'
 import { selectAutoPickSchool, type AutoPickContext } from '@/lib/draft/auto-pick'
+import { notifyLeagueMembers } from '@/lib/notifications'
 
 const limiter = createRateLimiter({ windowMs: 60_000, max: 10 })
 
@@ -114,7 +115,7 @@ export async function POST(
     ] = await Promise.all([
       supabase
         .from('leagues')
-        .select('season_id, seasons(year)')
+        .select('name, season_id, seasons(year)')
         .eq('id', leagueId)
         .single(),
       supabase
@@ -166,7 +167,7 @@ export async function POST(
           .update({ auto_pick_enabled: true })
           .eq('id', currentTeam.id)
       }
-      await advanceDraft(supabase, draft, draftOrder, settings.draft_timer_seconds)
+      await advanceDraft(supabase, draft, draftOrder, settings.draft_timer_seconds, leagueId, league.name)
       return NextResponse.json({
         success: true,
         pick: null,
@@ -216,7 +217,7 @@ export async function POST(
       })
 
     // Advance to next pick
-    await advanceDraft(supabase, draft, draftOrder, settings.draft_timer_seconds)
+    await advanceDraft(supabase, draft, draftOrder, settings.draft_timer_seconds, leagueId, league.name)
 
     return NextResponse.json({
       success: true,
@@ -256,7 +257,9 @@ async function advanceDraft(
   supabase: ReturnType<typeof createAdminClient>,
   draft: DraftState,
   draftOrder: DraftOrderEntry[],
-  timerSeconds: number
+  timerSeconds: number,
+  leagueId?: string,
+  leagueName?: string
 ) {
   const nextPickNumber = draft.current_pick + 1
   const nextOrder = draftOrder.find(o => o.pick_number === nextPickNumber)
@@ -272,6 +275,17 @@ async function advanceDraft(
         completed_at: new Date().toISOString(),
       })
       .eq('id', draft.id)
+
+    // Send draft complete notification to all league members
+    if (leagueId) {
+      notifyLeagueMembers({
+        leagueId,
+        type: 'draft_completed',
+        title: 'Draft Completed',
+        body: `The draft for ${leagueName || 'your league'} is complete!`,
+        data: { draftId: draft.id },
+      })
+    }
     return
   }
 

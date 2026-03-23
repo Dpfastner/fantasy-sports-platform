@@ -500,6 +500,7 @@ export default function SettingsPage() {
                 type="email"
                 value={newEmail}
                 onChange={(e) => setNewEmail(e.target.value)}
+                autoComplete="email"
                 className="w-full px-4 py-2 bg-surface border border-border rounded-lg text-text-primary focus:outline-none focus:border-brand"
                 placeholder="new@email.com"
               />

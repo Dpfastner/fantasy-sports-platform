@@ -681,10 +681,10 @@ export function RosterList({
                             isCurrent ? 'bg-brand-subtle' : 'bg-surface'
                           }`}
                         >
-                          <div className="text-text-muted text-[10px]">W{week}</div>
+                          <div className="text-text-muted text-xs">W{week}</div>
                           {wasOnRoster ? (
                             <div>
-                              {hadDoublePick && <span className="text-info-text text-[10px] font-bold">2x</span>}
+                              {hadDoublePick && <span className="text-info-text text-xs font-bold">2x</span>}
                               <span className={pts > 0 ? 'text-text-primary font-medium' : 'text-text-muted'}>{pts}</span>
                             </div>
                           ) : (
@@ -703,7 +703,7 @@ export function RosterList({
                         const totalPts = gamePts + eventBonus
                         return (
                           <div key={week} className={`text-center py-1 rounded text-xs ${color}`}>
-                            <div className="text-text-muted text-[10px]">{label}</div>
+                            <div className="text-text-muted text-xs">{label}</div>
                             <span className={totalPts > 0 ? 'text-text-primary font-medium' : 'text-text-muted'}>{totalPts}</span>
                           </div>
                         )
@@ -1015,7 +1015,7 @@ export function RosterList({
       {/* School Schedule Modal */}
       {showScheduleModal && selectedSchool && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
-          <div className="bg-surface rounded-lg max-w-2xl w-full max-h-[80vh] overflow-hidden shadow-xl">
+          <div className="bg-surface rounded-lg max-w-2xl w-full max-h-[80vh] overflow-y-auto shadow-xl">
             {/* Modal Header */}
             <div className="flex items-center justify-between p-4 border-b border-border">
               <div className="flex items-center gap-3">

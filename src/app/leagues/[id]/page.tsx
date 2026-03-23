@@ -350,8 +350,8 @@ export default async function LeaguePage({ params }: PageProps) {
 
         {/* Main Grid - Wider leaderboard, narrower sidebar */}
         <div className="grid lg:grid-cols-4 gap-6">
-          {/* Main Content - 3 columns */}
-          <div className="lg:col-span-3 space-y-6">
+          {/* Main Content - 3 columns, split into ordered sections for mobile */}
+          <div className="lg:col-span-3 space-y-6 order-1 lg:order-none">
             {/* Bulletin Board (top, above leaderboard) */}
             {(settings?.show_announcements !== false) && (
               <ErrorBoundary sectionName="announcements">
@@ -472,8 +472,11 @@ export default async function LeaguePage({ params }: PageProps) {
             )}
 
 
-            {/* League Activity Feed (bottom) */}
-            {(settings?.show_activity_feed !== false) && (
+          </div>
+
+          {/* League Activity Feed — own grid item so mobile order works */}
+          {(settings?.show_activity_feed !== false) && (
+            <div className="lg:col-span-3 order-4 lg:order-none">
               <ErrorBoundary sectionName="activity-feed">
                 <div id="activity" className="bg-surface rounded-lg p-4 md:p-6">
                   <div className="flex items-center justify-between mb-4">
@@ -494,11 +497,11 @@ export default async function LeaguePage({ params }: PageProps) {
                   <LeagueActivityFeed events={activityEvents} />
                 </div>
               </ErrorBoundary>
-            )}
-          </div>
+            </div>
+          )}
 
-          {/* Sidebar - 1 column, appears first on mobile so "Your Team" is visible without scrolling */}
-          <div className="space-y-4 order-first lg:order-none">
+          {/* Sidebar - 1 column, appears between leaderboard and activity on mobile */}
+          <div className="space-y-4 order-3 lg:order-none">
             {/* Your Team Summary - Compact */}
             {userTeam && (
               <div className="bg-surface rounded-lg p-4">

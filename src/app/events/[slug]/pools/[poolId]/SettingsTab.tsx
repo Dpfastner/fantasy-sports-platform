@@ -210,6 +210,7 @@ export function SettingsTab({
             <label className="block text-xs text-text-muted mb-1">Max Entries</label>
             <input
               type="number"
+              inputMode="numeric"
               value={settingsMaxEntries}
               onChange={(e) => setSettingsMaxEntries(e.target.value)}
               placeholder="Unlimited"
@@ -389,6 +390,7 @@ export function SettingsTab({
                     <div className="flex items-center gap-1">
                       <input
                         type="number"
+                        inputMode="numeric"
                         min={0}
                         max={100}
                         value={activeScoringRules[roundKey] ?? 0}

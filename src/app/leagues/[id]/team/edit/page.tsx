@@ -299,7 +299,7 @@ export default function TeamEditPage({ params }: PageProps) {
             </div>
 
             {/* Colors */}
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label htmlFor="primaryColor" className="block text-sm font-medium text-text-secondary mb-2">
                   Primary Color
@@ -317,7 +317,7 @@ export default function TeamEditPage({ params }: PageProps) {
                     value={primaryColor}
                     onChange={(e) => setPrimaryColor(e.target.value)}
                     pattern="^#[0-9A-Fa-f]{6}$"
-                    className="flex-1 px-3 py-2 bg-surface border border-border rounded-lg text-text-primary text-sm font-mono focus:outline-none focus:ring-2 focus:ring-brand"
+                    className="flex-1 min-w-0 px-3 py-2 bg-surface border border-border rounded-lg text-text-primary text-sm font-mono focus:outline-none focus:ring-2 focus:ring-brand"
                     placeholder="#1a1a1a"
                   />
                 </div>
@@ -340,7 +340,7 @@ export default function TeamEditPage({ params }: PageProps) {
                     value={secondaryColor}
                     onChange={(e) => setSecondaryColor(e.target.value)}
                     pattern="^#[0-9A-Fa-f]{6}$"
-                    className="flex-1 px-3 py-2 bg-surface border border-border rounded-lg text-text-primary text-sm font-mono focus:outline-none focus:ring-2 focus:ring-brand"
+                    className="flex-1 min-w-0 px-3 py-2 bg-surface border border-border rounded-lg text-text-primary text-sm font-mono focus:outline-none focus:ring-2 focus:ring-brand"
                     placeholder="#ffffff"
                   />
                 </div>

@@ -775,17 +775,17 @@ export default function CommissionerToolsPage() {
           >
             &larr; Back to Quick Setup
           </button>
-          <div className="flex gap-1 mb-6 bg-surface p-1 rounded-lg">
+          <div className="flex gap-1 mb-6 bg-surface p-1 rounded-lg overflow-x-auto scrollbar-hide">
             {[
-              { id: 'league' as TabType, label: 'League Settings' },
-              { id: 'draft' as TabType, label: 'Draft Settings' },
+              { id: 'league' as TabType, label: 'League' },
+              { id: 'draft' as TabType, label: 'Draft' },
               { id: 'members' as TabType, label: 'Members' },
-              { id: 'misc' as TabType, label: 'Miscellaneous' }
+              { id: 'misc' as TabType, label: 'Misc' }
             ].map(tab => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
+                className={`flex-1 py-2 px-3 rounded-md text-sm font-medium transition-colors whitespace-nowrap ${
                   activeTab === tab.id
                     ? 'bg-brand text-text-primary'
                     : 'text-text-secondary hover:text-text-primary hover:bg-surface'

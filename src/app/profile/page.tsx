@@ -111,7 +111,7 @@ export default async function ProfilePage() {
 
         {/* Profile Header */}
         <div className="bg-surface rounded-lg p-6 mb-6">
-          <div className="flex items-start justify-between">
+          <div className="flex items-start justify-between flex-wrap gap-3">
             <div>
               <div className="flex items-center gap-3 mb-2">
                 <h1 className="text-3xl font-bold text-text-primary">
@@ -253,7 +253,7 @@ export default async function ProfilePage() {
               type="text"
               readOnly
               value={referralUrl}
-              className="flex-1 px-4 py-2 bg-surface-subtle border border-border rounded-lg text-text-secondary text-sm font-mono"
+              className="flex-1 min-w-0 px-4 py-2 bg-surface-subtle border border-border rounded-lg text-text-secondary text-sm font-mono truncate"
             />
             <CopyButton text={referralUrl} />
             <ShareButton

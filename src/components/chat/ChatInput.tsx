@@ -245,7 +245,7 @@ export function ChatInput({ channelType, channelEntityId, currentUserId, current
           placeholder="Message..."
           maxLength={500}
           disabled={sending}
-          className="flex-1 px-3 py-2 bg-surface-inset border border-border rounded-lg text-text-primary text-sm placeholder:text-text-muted disabled:opacity-50"
+          className="flex-1 min-w-0 px-3 py-2 bg-surface-inset border border-border rounded-lg text-text-primary text-sm placeholder:text-text-muted disabled:opacity-50"
         />
         {channelType !== 'dm' && (
           <>

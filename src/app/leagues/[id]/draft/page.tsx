@@ -1570,7 +1570,7 @@ export default function DraftRoomPage() {
                     {currentTeam.name}
                   </span>
                   {currentTeam.auto_pick_enabled && (
-                    <span className="flex items-center gap-0.5 text-[9px] px-1.5 py-0.5 rounded bg-brand/20 text-brand-text animate-pulse whitespace-nowrap">
+                    <span className="flex items-center gap-0.5 text-[11px] px-1.5 py-0.5 rounded bg-brand/20 text-brand-text animate-pulse whitespace-nowrap">
                       <span className="inline-block w-1.5 h-1.5 rounded-full bg-brand" />
                       AUTO
                     </span>
@@ -1884,9 +1884,9 @@ export default function DraftRoomPage() {
                     </svg>
                     Draft Queue ({draftQueue.length})
                   </span>
-                  <span className="text-[9px] px-1.5 py-0.5 rounded bg-brand/20 text-brand-text">Auto-pick order</span>
+                  <span className="text-[11px] px-1.5 py-0.5 rounded bg-brand/20 text-brand-text">Auto-pick order</span>
                 </div>
-                <div className="px-2 py-1 text-[9px] text-text-muted bg-brand/5 border-b border-brand/10">
+                <div className="px-2 py-1 text-[11px] text-text-muted bg-brand/5 border-b border-brand/10">
                   Drag to reorder. Auto-pick uses this order. Click &quot;+ Queue&quot; on any school to add it.
                 </div>
                 <div className="p-1.5 max-h-48 overflow-y-auto">
@@ -2025,7 +2025,7 @@ export default function DraftRoomPage() {
                       </button>
                       <div className="flex items-center gap-1 shrink-0">
                         {draftQueue.some(q => q.schoolId === school.id) ? (
-                          <span className="text-[9px] px-1.5 py-0.5 rounded bg-black/20 font-medium">
+                          <span className="text-[11px] px-1.5 py-0.5 rounded bg-black/20 font-medium">
                             #{draftQueue.findIndex(q => q.schoolId === school.id) + 1}
                           </span>
                         ) : (
@@ -2239,7 +2239,7 @@ export default function DraftRoomPage() {
                     )}
                     <span className="font-bold flex-1">{pick.schools.name}</span>
                     {pick.is_auto_pick && (
-                      <span className="text-[9px] px-1 py-0.5 rounded bg-black/20 font-medium">Auto</span>
+                      <span className="text-[11px] px-1 py-0.5 rounded bg-black/20 font-medium">Auto</span>
                     )}
                     <span className="text-xs opacity-75">{pick.fantasy_teams.name}</span>
                   </div>

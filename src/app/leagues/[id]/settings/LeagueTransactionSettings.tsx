@@ -45,6 +45,7 @@ export function LeagueTransactionSettings({
             <label className="block text-text-secondary mb-2">Max Add/Drops per Season</label>
             <input
               type="number"
+              inputMode="numeric"
               min="0"
               max="100"
               value={settings.max_add_drops_per_season}
@@ -109,6 +110,7 @@ export function LeagueTransactionSettings({
                 <label className="block text-text-secondary mb-2">Max Trades per Season</label>
                 <input
                   type="number"
+                  inputMode="numeric"
                   min="1"
                   max="100"
                   value={settings.max_trades_per_season}

@@ -29,7 +29,7 @@ export default function CreateLeaguePage() {
   const [teamName, setTeamName] = useState('')
   const [sportId, setSportId] = useState('')
   const [seasonId, setSeasonId] = useState('')
-  const [maxTeams, setMaxTeams] = useState(12)
+  const [maxTeams, setMaxTeams] = useState<number | ''>(12)
   const [isPublic, setIsPublic] = useState(false)
   const [sports, setSports] = useState<Sport[]>([])
   const [seasons, setSeasons] = useState<Season[]>([])
@@ -171,7 +171,7 @@ export default function CreateLeaguePage() {
           description: description.trim() || null,
           sport_id: sportId,
           season_id: seasonId,
-          max_teams: maxTeams,
+          max_teams: maxTeams || 12,
           is_public: isPublic,
           created_by: user.id,
         })
@@ -342,17 +342,23 @@ export default function CreateLeaguePage() {
               <input
                 type="number"
                 id="maxTeams"
+                inputMode="numeric"
                 value={maxTeams}
                 onChange={(e) => {
-                  const val = parseInt(e.target.value) || 1
-                  setMaxTeams(Math.min(30, Math.max(1, val)))
+                  const raw = e.target.value
+                  if (raw === '') { setMaxTeams(''); return }
+                  const val = parseInt(raw)
+                  if (!isNaN(val)) setMaxTeams(Math.min(30, val))
                 }}
-                min={1}
+                onBlur={() => {
+                  if (maxTeams === '' || (typeof maxTeams === 'number' && maxTeams < 2)) setMaxTeams(2)
+                }}
+                min={2}
                 max={30}
                 className="w-full px-4 py-3 bg-surface border border-border rounded-lg text-text-primary focus:outline-none focus:border-brand"
               />
               <p className="text-text-muted text-sm mt-1">
-                Enter a number between 1-30
+                Enter a number between 2-30
               </p>
             </div>
 

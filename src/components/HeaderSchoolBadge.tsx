@@ -124,7 +124,7 @@ export function HeaderSchoolBadge({ userId }: { userId: string }) {
 
   // School set — ring badge
   return (
-    <div className="relative hidden sm:block" ref={ref}>
+    <div className="relative" ref={ref}>
       <button onClick={() => setIsOpen(!isOpen)} className="flex items-center justify-center hover:opacity-80 transition-opacity" title={school.name}>
         {school.logo_url ? (
           <img

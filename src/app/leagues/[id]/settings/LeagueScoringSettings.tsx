@@ -56,7 +56,7 @@ export function LeagueScoringSettings({
       {selectedPreset !== 'custom' && (
         <div className="mb-6">
           <h3 className="text-sm font-medium text-text-secondary mb-3">Scoring Summary</h3>
-          <div className="grid grid-cols-2 gap-x-6 gap-y-1 text-sm">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1 text-sm">
             {[
               { label: 'Win', field: 'points_win' },
               { label: 'Loss', field: 'points_loss' },
@@ -81,7 +81,7 @@ export function LeagueScoringSettings({
           </div>
           <div className="mt-3 pt-3 border-t border-border-subtle">
             <h4 className="text-xs font-medium text-text-muted mb-2 uppercase tracking-wide">Special Events</h4>
-            <div className="grid grid-cols-2 gap-x-6 gap-y-1 text-sm">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1 text-sm">
               {[
                 { label: 'Conf Championship Win', field: 'points_conference_championship_win' },
                 { label: 'Heisman Winner', field: 'points_heisman_winner' },
@@ -128,6 +128,7 @@ export function LeagueScoringSettings({
                     <label className="block text-text-secondary mb-1 text-sm">{label}</label>
                     <input
                       type="number"
+                      inputMode="numeric"
                       step="0.5"
                       value={settings[field as keyof LeagueSettings] as number}
                       onChange={(e) => updateScoringField(field, parseFloat(e.target.value) || 0)}
@@ -151,6 +152,7 @@ export function LeagueScoringSettings({
                     <label className="block text-text-secondary mb-1 text-sm">{label}</label>
                     <input
                       type="number"
+                      inputMode="numeric"
                       step="0.5"
                       value={settings[field as keyof LeagueSettings] as number}
                       onChange={(e) => updateScoringField(field, parseFloat(e.target.value) || 0)}

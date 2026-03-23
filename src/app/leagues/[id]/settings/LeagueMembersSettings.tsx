@@ -182,7 +182,7 @@ export function LeagueMembersSettings({
 
         <div className="mt-6 p-4 bg-surface-inset rounded-lg">
           <h3 className="text-sm font-medium text-text-secondary mb-2">Summary</h3>
-          <div className="grid grid-cols-3 gap-4 text-sm">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
             <div>
               <span className="text-text-secondary">Total Members:</span>
               <span className="text-text-primary ml-2">{members.length}</span>

@@ -35,6 +35,7 @@ export function LeagueBasicSettings({
           <label className="block text-text-secondary mb-2">Number of Teams (2-30)</label>
           <input
             type="number"
+            inputMode="numeric"
             min="2"
             max="30"
             value={league.max_teams}
@@ -62,6 +63,7 @@ export function LeagueBasicSettings({
           <label className="block text-text-secondary mb-2">Entry Fee ($) <span className="text-text-muted text-xs">(optional)</span></label>
           <input
             type="number"
+            inputMode="numeric"
             min="0"
             step="0.01"
             value={settings.entry_fee}
@@ -74,6 +76,7 @@ export function LeagueBasicSettings({
           <label className="block text-text-secondary mb-2">Prize Pool ($) <span className="text-text-muted text-xs">(optional)</span></label>
           <input
             type="number"
+            inputMode="numeric"
             min="0"
             step="0.01"
             value={settings.prize_pool}
@@ -105,6 +108,7 @@ export function LeagueBasicSettings({
                 <label className="block text-text-secondary mb-2">Weekly Amount ($)</label>
                 <input
                   type="number"
+                  inputMode="numeric"
                   min="0"
                   step="0.01"
                   value={settings.high_points_weekly_amount}
@@ -116,6 +120,7 @@ export function LeagueBasicSettings({
                 <label className="block text-text-secondary mb-2">Number of Weeks</label>
                 <input
                   type="number"
+                  inputMode="numeric"
                   min="1"
                   max="20"
                   value={settings.high_points_weeks}
@@ -153,11 +158,12 @@ export function LeagueBasicSettings({
           </div>
 
           {settings.num_winners >= 1 && (
-            <div className="grid grid-cols-3 gap-4 mt-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-4">
               <div>
                 <label className="block text-text-secondary mb-2">1st Place %</label>
                 <input
                   type="number"
+                  inputMode="numeric"
                   min="0"
                   max="100"
                   value={settings.winner_percentage}
@@ -170,6 +176,7 @@ export function LeagueBasicSettings({
                   <label className="block text-text-secondary mb-2">2nd Place %</label>
                   <input
                     type="number"
+                    inputMode="numeric"
                     min="0"
                     max="100"
                     value={settings.runner_up_percentage}
@@ -183,6 +190,7 @@ export function LeagueBasicSettings({
                   <label className="block text-text-secondary mb-2">3rd Place %</label>
                   <input
                     type="number"
+                    inputMode="numeric"
                     min="0"
                     max="100"
                     value={settings.third_place_percentage}

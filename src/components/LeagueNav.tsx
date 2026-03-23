@@ -1,5 +1,6 @@
 'use client'
 
+import { useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useLeagueContext } from '@/contexts/LeagueContext'
@@ -43,6 +44,12 @@ export function LeagueNav({ leagueId }: LeagueNavProps) {
     : BASE_NAV_ITEMS
 
   const items = isDormant ? DORMANT_NAV_ITEMS : activeNavItems
+  const activeRef = useRef<HTMLAnchorElement>(null)
+
+  // Auto-scroll active tab into view on mobile
+  useEffect(() => {
+    activeRef.current?.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' })
+  }, [pathname])
 
   return (
     <nav className="bg-surface/80 backdrop-blur-md border-b border-border sticky top-[var(--header-h)] z-30">
@@ -60,6 +67,7 @@ export function LeagueNav({ leagueId }: LeagueNavProps) {
             return (
               <Link
                 key={path}
+                ref={isActive ? activeRef : undefined}
                 href={href}
                 className={`py-3 px-4 text-sm whitespace-nowrap transition-colors flex items-center gap-1.5 ${
                   isActive

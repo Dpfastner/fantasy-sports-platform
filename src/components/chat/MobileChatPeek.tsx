@@ -34,7 +34,7 @@ export function MobileChatPeek() {
   // Full-screen expanded view
   if (isMobileExpanded) {
     return (
-      <div className="md:hidden fixed inset-0 z-50 bg-surface flex flex-col">
+      <div className="md:hidden fixed inset-0 z-50 bg-surface flex flex-col" style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}>
         {/* Top bar — tap to collapse */}
         <div
           className="flex items-center justify-between px-4 py-3 border-b border-border cursor-pointer"
@@ -96,7 +96,7 @@ export function MobileChatPeek() {
 
   // Peek bar — always visible on mobile
   return (
-    <div className="md:hidden fixed bottom-0 left-0 right-0 z-40">
+    <div className="md:hidden fixed left-0 right-0 z-40" style={{ bottom: 'var(--footer-h, 0px)' }}>
       <button
         onClick={() => setIsMobileExpanded(true)}
         className="w-full flex items-center gap-2 px-4 py-3 bg-surface border-t border-border text-left"

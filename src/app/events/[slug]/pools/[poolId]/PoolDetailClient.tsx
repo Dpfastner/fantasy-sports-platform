@@ -288,11 +288,33 @@ export function PoolDetailClient({
         )}
       </div>
 
-      {/* Not a member notice */}
+      {/* Not a member — join button */}
       {isLoggedIn && !hasAnyEntry && pool.status === 'open' && (
-        <div className="bg-brand/5 border border-brand/20 rounded-lg p-4 mb-6 text-center">
-          <p className="text-text-secondary text-sm mb-2">You&apos;re not in this pool yet.</p>
-          <p className="text-text-muted text-xs">Use invite code <span className="font-mono font-medium text-brand">{pool.inviteCode}</span> to join from the event page.</p>
+        <div className="bg-brand/5 border border-brand/20 rounded-lg p-5 mb-6 text-center">
+          <p className="text-text-secondary text-sm mb-3">You&apos;re not in this pool yet.</p>
+          <button
+            onClick={async () => {
+              try {
+                const res = await fetch('/api/events/pools', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ inviteCode: pool.inviteCode }),
+                })
+                if (res.ok) {
+                  addToast('Joined pool!', 'success')
+                  router.refresh()
+                } else {
+                  const data = await res.json()
+                  addToast(data.error || 'Failed to join', 'error')
+                }
+              } catch {
+                addToast('Failed to join pool', 'error')
+              }
+            }}
+            className="px-6 py-2.5 text-sm font-semibold rounded-lg bg-brand hover:bg-brand-hover text-text-primary transition-colors"
+          >
+            Join Pool
+          </button>
         </div>
       )}
 
