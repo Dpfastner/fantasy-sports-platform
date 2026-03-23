@@ -1,13 +1,15 @@
 # Rivyls — Business & Platform Status Reference
 
-> **Last updated:** March 22, 2026
+> **Last updated:** March 23, 2026
 > **Purpose:** Shared context document between Claude Chat (business/strategy) and Claude Code (development). Informs architecture decisions, feature flags, and business model constraints.
 
 ---
 
 ## What Rivyls Is
 
-**One sentence:** Rivyls is fantasy sports for college football fans — instead of drafting individual players, you draft the schools you already care about, so you never have to root against your own team.
+**One sentence:** Rivyls is fantasy college sports — instead of drafting individual players, you draft the schools you already care about, so you never have to root against your own team.
+
+**Tagline:** Draft Programs. Not Players.
 
 **One paragraph:** Rivyls is a fantasy sports platform built specifically for college football fans. Instead of drafting individual players the way traditional fantasy works, you draft entire college football programs — schools like Alabama, Ohio State, or Georgia — and those schools earn you points based on how they actually perform each week. You win games, beat ranked opponents, make the playoff, win championships — your fantasy team wins right alongside you. There's no studying snap counts, no rooting against your own team, no needing to know every player on every roster. If you already watch college football on Saturdays, you already know everything you need to play.
 
@@ -56,7 +58,7 @@ These insights should guide every product, design, and business decision:
 
 ## Platform Status (Production at rivyls.com)
 
-### Completed — Phases 0-44b + Platform Audit, all deployed:
+### Completed — Phases 0-45 + Platform Audit, all deployed:
 
 **Foundation & Core (Phases 0-10):**
 - Supabase + Next.js setup, full auth system
@@ -150,6 +152,15 @@ These insights should guide every product, design, and business decision:
 - Phase 43D: Chat sidebar, DMs, @mentions, GIPHY, trash talk prompts, reaction details, pinning, Web Share, bulletin board, weekly recaps
 - Phase 44: "Leaderboard" → "Rivalry Board" rename, bracket nav visibility by season, sportSlug/currentWeek context
 - Phase 44b: `/support` page for voluntary contributions via Stripe Payment Links (no backend). Moved ticket system to `/tickets`. Env var fallback for pre-Stripe setup. Footer "Support Rivyls" link. NAICS 713990 language compliance (no "donation")
+- Phase 44C: Shared tier utility, GamePicker extraction, EntryAvatar component
+- Phase 44D: Fan Zone dismissible + header school ring badge with dropdown
+
+**Phase 45 — Mobile & UX Audit v2 (55 issues, all shipped Mar 22-23, 2026):**
+- P1 (blocking): Disabled pinch zoom, safe area insets, max teams input fix, draft complete notification on auto-pick, public pool one-click join, mobile chat positioning
+- P2 (layout): LeagueNav auto-scroll, school ring on mobile, league overview reordered, settings tab overflow, color picker responsive, profile overflow, keyboard optimization (inputMode/autoComplete on all inputs), text sizes bumped, grids responsive, toast full-width on mobile, modal scroll, leaderboard links visible
+- P3 (UX): Scoring default to Standard, removed Customize expander, auto-pick toast format, Done button clickable, schedule score font, ranked badge overflow, add/drop navigates to team, Drop label clickable, support page reordered, draft help icon, mobile draft tabs, upload error scroll
+- P4 (features): Sport-first create flow (events page shows public leagues + events + "Create New"), draft confetti on completion, Top 25 ranked filter in draft, scrollable mini bracket for mobile, BracketList horizontal scroll
+- Follow-up: Draft help icon circled, settings sub-tabs scrollable, "Coming Soon" removed, leaderboard overflow-hidden, dashboard overflow, bracket logos/times, roster history overflow
 
 ### Platform Metrics:
 | Metric | Value |
@@ -169,11 +180,23 @@ These insights should guide every product, design, and business decision:
 ### Upcoming Phases:
 | Phase | Feature | Notes |
 |-------|---------|-------|
+| 45b | Stripe SDK | Subscription-ready: embedded checkout, webhooks, customer portal, donor tracking |
+| 45c | Draft Improvements | Live event draft (Jackbox TV mode), manual input, sound effects |
+| 46 | Cross-Sport League Continuity | **Key differentiator** — leagues roll between sports. Must be ready for CFB→CBB (Nov 2026) |
+| 47 | Game Night Live + Halftime Heist | Saturday second-screen: live ticker, scoring animations, halftime predictions |
+| 48 | PWA & Mobile App | PWA install prompt + Capacitor for App Store |
 | 33 | Email Notifications | Blocked until DNS transfer (Apr 21, 2026) |
-| 36d | Multi-Sport Season Engine | Full season leagues for CBB, Hockey, Baseball, Volleyball |
-| 45 | Ads Infrastructure | Non-intrusive ads on free tier (Year 2) |
-| 46 | Mobile App | PWA + Capacitor, then React Native / Expo (Year 2) |
-| 47 | Cross-Sport League Continuity | Continue leagues across NCAA sports (Year 1-2) |
+| 49 | Rivalry Wagers | Stake schools for a week on rivalry games |
+| 50 | Campus Conquest (War Map) | Territory visualization, conference control |
+
+### Deferred (Year 2+):
+| Phase | Feature |
+|-------|---------|
+| 41b | Claude AI / AI Commentator (needs API key) |
+| 51-52 | Time Capsules, Chaos Mode |
+| 53-54 | Dynasty/Keeper Leagues, Auction Draft |
+| 55 | Stock Market Mode |
+| 56-58 | Ads, Pro Features, New Game Modes |
 
 ---
 
@@ -218,7 +241,7 @@ If the platform later adds features that move money between users tied to contes
 |-------|-----------|----------|------|
 | DNS/CDN | Cloudflare | Apr 21, 2026 | $0 |
 | Email | Resend | After DNS transfer | $0 free tier |
-| Payments | Stripe | Year 2 | 2.9% + $0.30/txn |
+| Payments | Stripe (Payment Links live, SDK next) | Phase 45b | 2.9% + $0.30/txn |
 
 ---
 
