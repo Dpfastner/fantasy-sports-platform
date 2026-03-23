@@ -361,8 +361,15 @@ export function PoolDetailClient({
             Tournament Rules
           </button>
           {showRules && (
-            <div className="mt-2 bg-surface rounded-lg border border-border p-4 text-sm text-text-secondary whitespace-pre-wrap">
-              {rulesText}
+            <div className="mt-2 bg-surface rounded-lg border border-border p-4 text-sm text-text-secondary [&_h2]:text-text-primary [&_h2]:text-base [&_h2]:font-semibold [&_h2]:mt-4 [&_h2]:mb-1 [&_h3]:text-text-primary [&_h3]:text-sm [&_h3]:font-semibold [&_h3]:mt-3 [&_h3]:mb-1 [&_ul]:list-disc [&_ul]:pl-4 [&_li]:mb-1">
+              {rulesText.split('\n').map((line: string, i: number) => {
+                if (line.startsWith('## ')) return <h2 key={i}>{line.replace('## ', '')}</h2>
+                if (line.startsWith('### ')) return <h3 key={i}>{line.replace('### ', '')}</h3>
+                if (line.startsWith('- ')) return <li key={i}>{line.replace('- ', '')}</li>
+                if (line.match(/^\d+\./)) return <li key={i}>{line.replace(/^\d+\.\s*/, '')}</li>
+                if (line.trim() === '') return null
+                return <p key={i}>{line}</p>
+              })}
             </div>
           )}
         </div>
