@@ -9,6 +9,7 @@ import Link from 'next/link'
 
 interface SchoolData {
   name: string
+  abbreviation: string | null
   logo_url: string | null
   primary_color: string
   secondary_color: string
@@ -41,7 +42,7 @@ export function HeaderSchoolBadge({ userId }: { userId: string }) {
       if (profile.favorite_school_id) {
         const { data: schoolData } = await supabase
           .from('schools')
-          .select('name, logo_url, primary_color, secondary_color')
+          .select('name, abbreviation, logo_url, primary_color, secondary_color')
           .eq('id', profile.favorite_school_id)
           .single()
         setSchool(schoolData)
@@ -86,7 +87,7 @@ export function HeaderSchoolBadge({ userId }: { userId: string }) {
       const supabase = createClient()
       const { data: schoolData } = await supabase
         .from('schools')
-        .select('name, logo_url, primary_color, secondary_color')
+        .select('name, abbreviation, logo_url, primary_color, secondary_color')
         .eq('id', newSchoolId)
         .single()
       setSchool(schoolData)

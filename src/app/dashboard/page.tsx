@@ -102,7 +102,7 @@ export default async function DashboardPage() {
   const currentWeek = await getCurrentWeek(year || 2025)
 
   // Fan Zone data
-  let userSchool: { name: string; logo_url: string | null; primary_color: string; secondary_color: string } | null = null
+  let userSchool: { name: string; abbreviation: string | null; logo_url: string | null; primary_color: string; secondary_color: string } | null = null
   let fanDistribution: { schoolName: string; count: number; color: string; logoUrl: string | null }[] = []
   let totalFans = 0
   let rivalSchool: { name: string; count: number } | null = null
@@ -110,7 +110,7 @@ export default async function DashboardPage() {
   if (profile?.favorite_school_id) {
     const { data: schoolData } = await supabase
       .from('schools')
-      .select('name, logo_url, primary_color, secondary_color')
+      .select('name, abbreviation, logo_url, primary_color, secondary_color')
       .eq('id', profile.favorite_school_id)
       .single()
     userSchool = schoolData

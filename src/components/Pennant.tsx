@@ -4,6 +4,7 @@ import { ensureContrast, isLightColor } from '@/lib/color-utils'
 
 interface PennantSchool {
   name: string
+  abbreviation?: string | null
   logo_url: string | null
   primary_color: string
   secondary_color: string
@@ -105,10 +106,10 @@ function PennantVariant({ school, colors, s }: { school: PennantSchool; colors: 
         <div className={`flex items-center ${s.gap} h-full px-2 pr-[18%]`}>
           <SchoolLogo school={school} size={s.logo} />
           <span
-            className={`${s.text} font-bold leading-tight`}
+            className={`${s.text} font-bold leading-tight whitespace-nowrap`}
             style={{ color: colors.textColor }}
           >
-            {school.name}
+            {school.abbreviation || school.name}
           </span>
         </div>
       </div>
