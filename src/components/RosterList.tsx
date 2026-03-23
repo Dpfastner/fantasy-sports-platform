@@ -517,8 +517,8 @@ export function RosterList({
         </button>
       </div>
 
-      {/* Mobile card view (hidden — using table on all screens) */}
-      <div className="hidden space-y-2">
+      {/* Mobile card view */}
+      <div className="md:hidden space-y-2">
         {roster.map((slot, index) => {
           const school = slot.schools
           const thisWeekGame = games.find(
@@ -717,8 +717,8 @@ export function RosterList({
         })}
       </div>
 
-      {/* Roster table — fixed left + scrollable right */}
-      <div className="flex">
+      {/* Desktop roster table — fixed left + scrollable right */}
+      <div className="hidden md:flex">
         {/* Fixed left section */}
         <div className="flex-shrink-0">
           {/* Header row */}
