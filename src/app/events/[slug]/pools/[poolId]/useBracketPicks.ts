@@ -143,6 +143,12 @@ export function useBracketPicks({ games, participants, existingPicks, isLocked }
     [isLocked, bracketMap],
   )
 
+  /** Load a full set of picks (e.g. copied from another bracket) */
+  const loadPicks = useCallback((newPicks: Record<string, string>) => {
+    if (isLocked) return
+    setPicks(newPicks)
+  }, [isLocked])
+
   const isDirty = useMemo(() => {
     const savedKeys = new Set(existingPicks.filter(p => p.gameId).map(p => p.gameId!))
     const pickKeys = new Set(Object.keys(picks))
@@ -163,6 +169,7 @@ export function useBracketPicks({ games, participants, existingPicks, isLocked }
     bracketMap,
     participantMap,
     handlePick,
+    loadPicks,
     getParticipantForSlot,
     isDirty,
     allPicksMade,

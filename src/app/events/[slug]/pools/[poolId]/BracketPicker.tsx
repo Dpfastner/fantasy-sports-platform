@@ -8,6 +8,7 @@ import { track } from '@vercel/analytics'
 import { useBracketPicks } from './useBracketPicks'
 import { BracketGrid } from './BracketGrid'
 import { BracketList } from './BracketList'
+import { CopyBracketButton } from './CopyBracketButton'
 
 interface Participant {
   id: string
@@ -104,6 +105,7 @@ export function BracketPicker({
     picks,
     bracketMap,
     handlePick,
+    loadPicks,
     getParticipantForSlot,
     pickedCount,
     totalGames,
@@ -229,15 +231,25 @@ export function BracketPicker({
             </span>
           )}
         </div>
-        {!isLocked && (
-          <button
-            onClick={handleSubmit}
-            disabled={isSubmitting || pickedCount === 0}
-            className="px-4 py-2 text-sm font-medium rounded-md bg-brand text-text-primary hover:bg-brand-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {isSubmitting ? 'Saving...' : submittedAt ? 'Update Bracket' : 'Submit Bracket'}
-          </button>
-        )}
+        <div className="flex items-center gap-2">
+          {!isLocked && (
+            <CopyBracketButton
+              tournamentId={tournamentId}
+              poolId={poolId}
+              onCopy={loadPicks}
+              disabled={isSubmitting}
+            />
+          )}
+          {!isLocked && (
+            <button
+              onClick={handleSubmit}
+              disabled={isSubmitting || pickedCount === 0}
+              className="px-4 py-2 text-sm font-medium rounded-md bg-brand text-text-primary hover:bg-brand-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isSubmitting ? 'Saving...' : submittedAt ? 'Update Bracket' : 'Submit Bracket'}
+            </button>
+          )}
+        </div>
       </div>
 
       {isLocked && (
