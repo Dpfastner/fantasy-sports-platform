@@ -46,8 +46,9 @@ const ROUND_LABELS: Record<string, string> = {
 }
 
 /**
- * Mobile stacked bracket view — rounds displayed vertically with same
- * pick propagation as the grid view.
+ * Mobile bracket view — horizontally scrollable bracket layout with
+ * interactive game cards. Matches the mini bracket visual treatment
+ * from TournamentBracketView while keeping pick interactivity.
  */
 export function BracketList({
   games,
@@ -67,53 +68,55 @@ export function BracketList({
   }, [games])
 
   return (
-    <div className="space-y-6">
-      {rounds.map(round => (
-        <div key={round.round}>
-          {/* Round header */}
-          <div className="flex items-center justify-between mb-2">
-            <h3 className="text-sm font-semibold text-text-primary">
-              {ROUND_LABELS[round.round] || round.round}
-            </h3>
-            {scoringRules[round.round] != null && (
-              <span className="text-xs text-text-muted">
-                {scoringRules[round.round]} pt{scoringRules[round.round] !== 1 ? 's' : ''} each
-              </span>
-            )}
-          </div>
+    <div className="overflow-x-auto scrollbar-hide -mx-4 px-4">
+      <div className="flex gap-2" style={{ minWidth: `${rounds.length * 186}px` }}>
+        {rounds.map(round => (
+          <div key={round.round} className="flex flex-col" style={{ width: 180 }}>
+            {/* Round header */}
+            <div className="text-center mb-2">
+              <p className="text-xs text-text-muted whitespace-nowrap font-semibold">
+                {ROUND_LABELS[round.round] || round.round}
+              </p>
+              {scoringRules[round.round] != null && (
+                <p className="text-[10px] text-text-muted">
+                  {scoringRules[round.round]} pt{scoringRules[round.round] !== 1 ? 's' : ''} each
+                </p>
+              )}
+            </div>
 
-          {/* Games */}
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-            {round.games.map(game => {
-              const g = gameMap[game.id]
-              const slot1 = getParticipantForSlot(game.id, 1)
-              const slot2 = getParticipantForSlot(game.id, 2)
-              return (
-                <BracketGameCard
-                  key={game.id}
-                  gameId={game.id}
-                  participant1={slot1.participant}
-                  participant2={slot2.participant}
-                  eliminated1={slot1.eliminated}
-                  eliminated2={slot2.eliminated}
-                  pickedId={picks[game.id] || null}
-                  winnerId={g?.winnerId || null}
-                  status={g?.status || 'scheduled'}
-                  score1={g?.participant1Score ?? null}
-                  score2={g?.participant2Score ?? null}
-                  period={g?.period || null}
-                  clock={g?.clock || null}
-                  startsAt={g?.startsAt || null}
-                  roundPoints={scoringRules[round.round] || 0}
-                  isLocked={isLocked}
-                  onPick={onPick}
-                  compact
-                />
-              )
-            })}
+            {/* Games — vertically centered within the column */}
+            <div className="flex-1 flex flex-col justify-around gap-1">
+              {round.games.map(game => {
+                const g = gameMap[game.id]
+                const slot1 = getParticipantForSlot(game.id, 1)
+                const slot2 = getParticipantForSlot(game.id, 2)
+                return (
+                  <BracketGameCard
+                    key={game.id}
+                    gameId={game.id}
+                    participant1={slot1.participant}
+                    participant2={slot2.participant}
+                    eliminated1={slot1.eliminated}
+                    eliminated2={slot2.eliminated}
+                    pickedId={picks[game.id] || null}
+                    winnerId={g?.winnerId || null}
+                    status={g?.status || 'scheduled'}
+                    score1={g?.participant1Score ?? null}
+                    score2={g?.participant2Score ?? null}
+                    period={g?.period || null}
+                    clock={g?.clock || null}
+                    startsAt={g?.startsAt || null}
+                    roundPoints={scoringRules[round.round] || 0}
+                    isLocked={isLocked}
+                    onPick={onPick}
+                    compact
+                  />
+                )
+              })}
+            </div>
           </div>
-        </div>
-      ))}
+        ))}
+      </div>
     </div>
   )
 }

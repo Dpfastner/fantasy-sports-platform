@@ -538,7 +538,7 @@ export default async function DashboardPage() {
                 <Link
                   key={`${item.type}-${item.id}`}
                   href={item.href}
-                  className={`bg-surface-subtle rounded-lg p-5 hover:bg-surface-inset transition-all border border-border hover:border-brand/40 hover:shadow-md border-l-4 ${item.borderColor}`}
+                  className={`bg-surface-subtle rounded-lg p-5 hover:bg-surface-inset transition-all border border-border hover:border-brand/40 hover:shadow-md border-l-4 overflow-hidden min-w-0 ${item.borderColor}`}
                 >
                   <div className="flex justify-between items-start mb-2">
                     <div className="min-w-0 flex-1 flex items-center gap-2">

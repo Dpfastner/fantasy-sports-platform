@@ -800,7 +800,7 @@ export default function CommissionerToolsPage() {
           {activeTab === 'league' && settings && league && (
             <div className="space-y-6">
               {/* Sub-tabs for League Settings */}
-              <div className="flex gap-2 border-b border-border pb-2">
+              <div className="flex gap-2 border-b border-border pb-2 overflow-x-auto scrollbar-hide">
                 {[
                   { id: 'basic' as LeagueSubTab, label: 'Basic Settings' },
                   { id: 'roster' as LeagueSubTab, label: 'Roster Settings' },
@@ -812,7 +812,7 @@ export default function CommissionerToolsPage() {
                   <button
                     key={tab.id}
                     onClick={() => setLeagueSubTab(tab.id)}
-                    className={`py-2 px-4 text-sm font-medium transition-colors ${
+                    className={`py-2 px-4 text-sm font-medium transition-colors whitespace-nowrap shrink-0 ${
                       leagueSubTab === tab.id
                         ? 'text-brand-text border-b-2 border-brand'
                         : 'text-text-secondary hover:text-text-primary'
@@ -961,11 +961,10 @@ export default function CommissionerToolsPage() {
                 </div>
               </section>
 
-              {/* Other Coming Soon Tools */}
+              {/* More Tools */}
               <section className="bg-surface rounded-lg p-6">
                 <h2 className="text-xl font-semibold text-text-primary mb-4">More Tools</h2>
                 <div className="p-4 bg-surface-inset rounded-lg border border-border">
-                  <h3 className="text-text-primary font-medium mb-2">Coming Soon</h3>
                   <ul className="text-text-secondary text-sm space-y-1">
                     <li>• Export league data</li>
                     <li>• Manual score adjustments</li>

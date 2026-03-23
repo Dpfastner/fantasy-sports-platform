@@ -1682,7 +1682,7 @@ export default function DraftRoomPage() {
 
             <button
               onClick={() => setShowDraftHelp(true)}
-              className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-full text-base font-bold bg-surface-subtle hover:bg-surface text-text-secondary hover:text-text-primary transition-colors"
+              className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-full text-base font-bold bg-surface-subtle border border-border hover:bg-surface text-text-secondary hover:text-text-primary transition-colors"
               title="Draft room help"
             >
               ?
@@ -1726,16 +1726,18 @@ export default function DraftRoomPage() {
 
           {/* Mobile Controls - shown as row below header on mobile */}
           <div className="flex md:hidden items-center gap-2 pt-1">
-            <button
-              onClick={() => setShowDraftHelp(true)}
-              className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-full text-base font-bold bg-surface-subtle hover:bg-surface text-text-secondary hover:text-text-primary transition-colors"
-              title="Help"
-            >
-              ?
-            </button>
             {actionError && (
               <span className="text-danger-text text-xs flex-1">{actionError}</span>
             )}
+            <div className="ml-auto">
+              <button
+                onClick={() => setShowDraftHelp(true)}
+                className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-full text-base font-bold bg-surface-subtle border border-border hover:bg-surface text-text-secondary hover:text-text-primary transition-colors"
+                title="Help"
+              >
+                ?
+              </button>
+            </div>
           </div>
           {isCommissioner && (
             <div className="flex md:hidden items-center gap-2">

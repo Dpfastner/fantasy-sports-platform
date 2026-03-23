@@ -127,6 +127,7 @@ function MiniGameCard({ game, participants }: { game: Game; participants: Record
   const p2 = game.participant2Id ? participants[game.participant2Id] ?? null : null
   const isComplete = game.status === 'final' || game.status === 'completed'
   const isLive = game.status === 'live'
+  const isScheduled = !isLive && !isComplete
 
   return (
     <div className={`bg-surface border rounded text-[10px] overflow-hidden ${
@@ -140,11 +141,26 @@ function MiniGameCard({ game, participants }: { game: Game; participants: Record
           </span>
         </div>
       )}
+      {isComplete && (
+        <div className="px-1 py-0.5 border-b border-border/50 text-center">
+          <span className="text-[9px] text-text-muted font-medium">Final</span>
+        </div>
+      )}
+      {isScheduled && game.startsAt && (
+        <div className="px-1 py-0.5 border-b border-border/50 text-center">
+          <span className="text-[9px] text-text-muted">
+            {new Date(game.startsAt).toLocaleString('en-US', {
+              month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit',
+            })}
+          </span>
+        </div>
+      )}
       <div className={`flex items-center justify-between px-1.5 py-1 ${
         isComplete && game.winnerId === game.participant1Id ? 'bg-success/10' : ''
       }`}>
         <div className="flex items-center gap-1 min-w-0">
           {p1?.seed != null && <span className="text-text-muted text-[9px]">{p1.seed}</span>}
+          {p1?.logoUrl && <img src={p1.logoUrl} alt="" className="w-3 h-3 shrink-0 object-contain" />}
           <span className="truncate font-medium">{p1?.shortName || p1?.name || 'TBD'}</span>
         </div>
         {(isComplete || isLive) && game.participant1Score != null && (
@@ -157,6 +173,7 @@ function MiniGameCard({ game, participants }: { game: Game; participants: Record
       }`}>
         <div className="flex items-center gap-1 min-w-0">
           {p2?.seed != null && <span className="text-text-muted text-[9px]">{p2.seed}</span>}
+          {p2?.logoUrl && <img src={p2.logoUrl} alt="" className="w-3 h-3 shrink-0 object-contain" />}
           <span className="truncate font-medium">{p2?.shortName || p2?.name || 'TBD'}</span>
         </div>
         {(isComplete || isLive) && game.participant2Score != null && (
