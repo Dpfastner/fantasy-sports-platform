@@ -491,3 +491,21 @@ body {
   color: var(--palette-text-primary);
   line-height: 1.6;
 }
+
+/* Hide scrollbar while keeping scroll functionality */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* Draft Complete Confetti Animation */
+@keyframes confetti {
+  0% { transform: translateY(-10vh) rotate(0deg); opacity: 1; }
+  100% { transform: translateY(110vh) rotate(720deg); opacity: 0; }
+}
+.animate-confetti {
+  animation: confetti 3s ease-in-out forwards;
+}

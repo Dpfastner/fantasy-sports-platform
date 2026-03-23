@@ -269,31 +269,11 @@ export default function CreateLeaguePage() {
             </button>
           </div>
 
-          <h1 className="text-3xl font-bold text-text-primary mb-2">Create</h1>
-          <p className="text-text-secondary mb-6">Start a season-long fantasy league or create a pool for an upcoming event.</p>
-
-          {/* Type selector cards */}
-          <div className="grid sm:grid-cols-2 gap-4 mb-8">
-            <div className="bg-surface rounded-lg border-2 border-brand p-5">
-              <div className="flex items-center gap-2 mb-2">
-                <span className="text-xl">🏈</span>
-                <h3 className="text-text-primary font-semibold">Season League</h3>
-              </div>
-              <p className="text-text-muted text-sm mb-3">Draft teams and compete across a full season with your friends.</p>
-              <span className="text-xs text-brand font-medium">Selected</span>
-            </div>
-            <Link
-              href="/events"
-              className="bg-surface rounded-lg border border-border hover:border-brand/40 hover:shadow-md transition-all p-5"
-            >
-              <div className="flex items-center gap-2 mb-2">
-                <span className="text-xl">🏆</span>
-                <h3 className="text-text-primary font-semibold">Event Pool</h3>
-              </div>
-              <p className="text-text-muted text-sm mb-3">Brackets, pick&apos;em, or survivor for a specific tournament.</p>
-              <span className="text-xs text-text-muted">Browse events &rarr;</span>
-            </Link>
-          </div>
+          <h1 className="text-3xl font-bold text-text-primary mb-2">Create a League</h1>
+          <p className="text-text-secondary mb-2">Draft teams and compete across a full season with your friends.</p>
+          <p className="text-text-muted text-sm mb-6">
+            Looking for brackets or pick&apos;em? <Link href="/events" className="text-brand hover:underline">Browse events</Link>
+          </p>
 
           <form onSubmit={handleSubmit} className="bg-surface rounded-lg p-8">
             {error && (

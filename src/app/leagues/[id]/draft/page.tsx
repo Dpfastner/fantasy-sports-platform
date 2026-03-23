@@ -188,6 +188,9 @@ export default function DraftRoomPage() {
   const [showDraftHelp, setShowDraftHelp] = useState(false)
   const [unreadChat, setUnreadChat] = useState(false)
   const [watchlistedSchoolIds, setWatchlistedSchoolIds] = useState<Set<string>>(new Set())
+  const [showConfetti, setShowConfetti] = useState(false)
+  const [rankingsMap, setRankingsMap] = useState<Record<string, number>>({})
+  const [showRankedOnly, setShowRankedOnly] = useState(false)
 
   // Track if timer has expired (for showing warning)
   const [timerExpired, setTimerExpired] = useState(false)
@@ -281,6 +284,7 @@ export default function DraftRoomPage() {
     if (selectedConference !== 'all' && school.conference !== selectedConference) {
       return false
     }
+    if (showRankedOnly && !rankingsMap[school.id]) return false
     return true
   }
 
@@ -408,6 +412,27 @@ export default function DraftRoomPage() {
           setSchools(schoolsData as School[])
         }
 
+        // Fetch AP rankings for current season
+        if (league.season_id) {
+          const { data: rankingsData } = await supabase
+            .from('ap_rankings_history')
+            .select('school_id, rank')
+            .eq('season_id', league.season_id)
+            .order('week_number', { ascending: false })
+            .limit(25)
+
+          if (rankingsData) {
+            const map: Record<string, number> = {}
+            rankingsData.forEach(r => {
+              // Only keep the first (most recent week) rank for each school
+              if (!map[r.school_id]) {
+                map[r.school_id] = r.rank
+              }
+            })
+            setRankingsMap(map)
+          }
+        }
+
         // Get user's watchlist for this league (including priority for draft queue)
         const { data: watchlistData } = await supabase
           .from('watchlists')
@@ -517,6 +542,12 @@ export default function DraftRoomPage() {
         if (newDraft.current_pick >= draft.current_pick) {
           console.log('Realtime: accepting draft update (pick', newDraft.current_pick, ')')
           setDraft(newDraft)
+          // Trigger confetti when draft completes
+          if (newDraft.status === 'completed' && draft.status !== 'completed') {
+            setShowConfetti(true)
+            setMobileTab('teams')
+            setTimeout(() => setShowConfetti(false), 4000)
+          }
           // Reset timer when pick changes
           if (newDraft.current_pick !== draft.current_pick) {
             setTimerExpired(false)
@@ -597,6 +628,12 @@ export default function DraftRoomPage() {
               draftData.status !== draft.status ||
               draftData.current_team_id !== draft.current_team_id) {
             console.log('Polling: accepting draft update (pick', draftData.current_pick, ')')
+            // Trigger confetti when draft completes
+            if (draftData.status === 'completed' && draft.status !== 'completed') {
+              setShowConfetti(true)
+              setMobileTab('teams')
+              setTimeout(() => setShowConfetti(false), 4000)
+            }
             setDraft(draftData as DraftState)
             // Reset timer expired flag when pick changes
             if (draftData.current_pick !== draft.current_pick) {
@@ -1533,6 +1570,23 @@ export default function DraftRoomPage() {
 
   return (
     <div className="h-screen bg-page flex flex-col overflow-hidden">
+      {/* Draft Complete Confetti */}
+      {showConfetti && (
+        <div className="fixed inset-0 z-50 pointer-events-none overflow-hidden" onAnimationEnd={() => setShowConfetti(false)}>
+          {Array.from({ length: 50 }).map((_, i) => (
+            <div
+              key={i}
+              className="absolute w-2 h-2 rounded-full animate-confetti"
+              style={{
+                left: `${Math.random() * 100}%`,
+                backgroundColor: ['#FFD700', '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7'][i % 6],
+                animationDelay: `${Math.random() * 2}s`,
+                animationDuration: `${2 + Math.random() * 2}s`,
+              }}
+            />
+          ))}
+        </div>
+      )}
       {/* Header with Timer and On the Clock */}
       <header className="bg-surface border-b border-border px-3 md:px-4 py-2">
         {/* Mobile: Stack layout */}
@@ -1853,6 +1907,14 @@ export default function DraftRoomPage() {
                   <option key={conf} value={conf}>{getConferenceAbbr(conf)}</option>
                 ))}
               </select>
+              <button
+                onClick={() => setShowRankedOnly(!showRankedOnly)}
+                className={`px-2 py-1.5 rounded text-sm font-medium transition-colors ${
+                  showRankedOnly ? 'bg-warning/20 text-warning-text' : 'bg-surface border border-border text-text-secondary'
+                }`}
+              >
+                Top 25
+              </button>
             </div>
           </div>
 
@@ -2033,7 +2095,12 @@ export default function DraftRoomPage() {
                         </div>
                       )}
                       <div className="flex-1 min-w-0">
-                        <div className="font-bold text-sm truncate">{school.name}</div>
+                        <div className="font-bold text-sm truncate">
+                          {rankingsMap[school.id] && (
+                            <span className="text-warning-text text-xs font-medium mr-1">#{rankingsMap[school.id]}</span>
+                          )}
+                          {school.name}
+                        </div>
                         <div className="text-xs opacity-75">{school.conference}</div>
                       </div>
                       </button>

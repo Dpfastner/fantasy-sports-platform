@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { createClient } from '@/lib/supabase/server'
+import { createClient, createAdminClient } from '@/lib/supabase/server'
 import { Header } from '@/components/Header'
 
 // Sport metadata (matches Locker Room dashboard)
@@ -97,7 +97,44 @@ export default async function EventsPage({ searchParams }: { searchParams: Promi
     }
   }
 
+  // Also fetch public leagues for this sport (so the page isn't empty when there are no events)
+  const admin = createAdminClient()
+  let publicLeagues: Array<{ id: string; name: string; invite_code: string; max_teams: number; memberCount: number; sport_name: string }> = []
+  if (sportFilter) {
+    const { data: leagues } = await admin
+      .from('leagues')
+      .select('id, name, invite_code, max_teams, sports(name, slug)')
+      .eq('is_public', true)
+      .eq('sports.slug', sportFilter)
+      .not('sports', 'is', null)
+
+    if (leagues) {
+      // Get member counts
+      for (const league of leagues) {
+        const { count } = await admin
+          .from('league_members')
+          .select('id', { count: 'exact', head: true })
+          .eq('league_id', league.id)
+        const sport = league.sports as unknown as { name: string; slug: string } | null
+        const memberCount = count || 0
+        if (memberCount < league.max_teams) {
+          publicLeagues.push({
+            id: league.id,
+            name: league.name,
+            invite_code: league.invite_code,
+            max_teams: league.max_teams,
+            memberCount,
+            sport_name: sport?.name || 'Football',
+          })
+        }
+      }
+    }
+  }
+
   const now = new Date()
+  const sportParam = params.sport || ''
+  const sportLabel = sportFilter ? (sportMeta[sportFilter] || defaultSportMeta).label : 'All Sports'
+  const hasContent = (tournaments?.length || 0) > 0 || publicLeagues.length > 0
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gradient-from to-gradient-to">
@@ -109,20 +146,58 @@ export default async function EventsPage({ searchParams }: { searchParams: Promi
 
       <main className="container mx-auto px-4 py-8">
         {/* Page Header */}
-        <div className="mb-8">
-          <h1 className="brand-h1 text-3xl sm:text-4xl text-text-primary mb-2">Events</h1>
-          <p className="text-text-secondary text-lg">
-            Brackets, survivor leagues, and pick&apos;em competitions across every sport.
-          </p>
+        <div className="flex items-start justify-between mb-8">
+          <div>
+            <h1 className="brand-h1 text-3xl sm:text-4xl text-text-primary mb-2">
+              {sportFilter ? `${sportLabel} Competitions` : 'Events'}
+            </h1>
+            <p className="text-text-secondary text-lg">
+              {sportFilter
+                ? `Join a league, bracket, or pick'em for ${sportLabel}.`
+                : "Brackets, survivor leagues, and pick'em competitions across every sport."
+              }
+            </p>
+          </div>
+          <Link
+            href={sportParam ? `/leagues/create?sport=${sportParam}` : '/leagues/create'}
+            className="px-4 py-2 bg-brand hover:bg-brand-hover text-text-primary text-sm font-semibold rounded-lg transition-colors shrink-0"
+          >
+            Create New
+          </Link>
         </div>
 
-        {/* Tournament Grid */}
-        {!tournaments?.length ? (
-          <div className="bg-surface rounded-lg p-12 text-center border border-border">
-            <p className="text-text-secondary text-lg mb-2">No events available yet</p>
-            <p className="text-text-muted">Check back soon for upcoming tournaments and competitions.</p>
+        {/* Public Leagues Section */}
+        {publicLeagues.length > 0 && (
+          <div className="mb-8">
+            <h2 className="brand-h3 text-lg text-text-primary mb-3">Open Leagues</h2>
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {publicLeagues.map((league) => (
+                <Link
+                  key={league.id}
+                  href={`/leagues/${league.id}`}
+                  className="bg-surface rounded-lg border border-border hover:border-brand/40 hover:shadow-md transition-all p-5 border-l-4 border-l-orange-500"
+                >
+                  <h3 className="brand-h3 text-base text-text-primary mb-1">{league.name}</h3>
+                  <p className="text-text-muted text-sm">Season League · {league.memberCount}/{league.max_teams} teams</p>
+                </Link>
+              ))}
+            </div>
           </div>
-        ) : (
+        )}
+
+        {/* Tournament Grid */}
+        {!hasContent ? (
+          <div className="bg-surface rounded-lg p-12 text-center border border-border">
+            <p className="text-text-secondary text-lg mb-2">No competitions available yet</p>
+            <p className="text-text-muted mb-4">Be the first to create one!</p>
+            <Link
+              href={sportParam ? `/leagues/create?sport=${sportParam}` : '/leagues/create'}
+              className="inline-block px-6 py-2.5 bg-brand hover:bg-brand-hover text-text-primary text-sm font-semibold rounded-lg transition-colors"
+            >
+              Create Competition
+            </Link>
+          </div>
+        ) : !tournaments?.length ? null : (
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
             {[...tournaments]
               .sort((a, b) => {

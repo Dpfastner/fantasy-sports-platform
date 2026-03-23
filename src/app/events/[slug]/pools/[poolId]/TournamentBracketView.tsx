@@ -122,6 +122,51 @@ function ResultCard({ game, p1, p2, compact = false }: {
   )
 }
 
+function MiniGameCard({ game, participants }: { game: Game; participants: Record<string, Participant> }) {
+  const p1 = game.participant1Id ? participants[game.participant1Id] ?? null : null
+  const p2 = game.participant2Id ? participants[game.participant2Id] ?? null : null
+  const isComplete = game.status === 'final' || game.status === 'completed'
+  const isLive = game.status === 'live'
+
+  return (
+    <div className={`bg-surface border rounded text-[10px] overflow-hidden ${
+      isLive ? 'border-danger/40' : 'border-border'
+    }`}>
+      {isLive && (
+        <div className="flex items-center justify-center px-1 py-0.5 bg-danger/10 border-b border-danger/20">
+          <span className="text-[9px] font-semibold text-danger-text uppercase flex items-center gap-0.5">
+            <span className="w-1 h-1 rounded-full bg-danger-text animate-pulse" />
+            Live
+          </span>
+        </div>
+      )}
+      <div className={`flex items-center justify-between px-1.5 py-1 ${
+        isComplete && game.winnerId === game.participant1Id ? 'bg-success/10' : ''
+      }`}>
+        <div className="flex items-center gap-1 min-w-0">
+          {p1?.seed != null && <span className="text-text-muted text-[9px]">{p1.seed}</span>}
+          <span className="truncate font-medium">{p1?.shortName || p1?.name || 'TBD'}</span>
+        </div>
+        {(isComplete || isLive) && game.participant1Score != null && (
+          <span className="font-bold shrink-0 ml-1">{game.participant1Score}</span>
+        )}
+      </div>
+      <div className="border-t border-border/50" />
+      <div className={`flex items-center justify-between px-1.5 py-1 ${
+        isComplete && game.winnerId === game.participant2Id ? 'bg-success/10' : ''
+      }`}>
+        <div className="flex items-center gap-1 min-w-0">
+          {p2?.seed != null && <span className="text-text-muted text-[9px]">{p2.seed}</span>}
+          <span className="truncate font-medium">{p2?.shortName || p2?.name || 'TBD'}</span>
+        </div>
+        {(isComplete || isLive) && game.participant2Score != null && (
+          <span className="font-bold shrink-0 ml-1">{game.participant2Score}</span>
+        )}
+      </div>
+    </div>
+  )
+}
+
 export function TournamentBracketView({ tournamentId, games: initialGames, participants }: TournamentBracketViewProps) {
   const [games, setGames] = useState(initialGames)
   const supabase = createClient()
@@ -247,29 +292,36 @@ export function TournamentBracketView({ tournamentId, games: initialGames, parti
         </div>
       </div>
 
-      {/* Mobile stacked view */}
-      <div className="block md:hidden space-y-6">
-        {rounds.map(round => (
-          <div key={round.round}>
-            <h3 className="text-sm font-semibold text-text-primary mb-2">
-              {ROUND_LABELS[round.round] || round.round}
-            </h3>
-            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-              {round.games.map(game => {
-                const g = gameMap[game.id]
-                return (
-                  <ResultCard
-                    key={game.id}
-                    game={g}
-                    p1={g?.participant1Id ? participantMap[g.participant1Id] || null : null}
-                    p2={g?.participant2Id ? participantMap[g.participant2Id] || null : null}
-                    compact
-                  />
-                )
-              })}
+      {/* Mobile: Scrollable mini bracket */}
+      <div className="block md:hidden overflow-x-auto scrollbar-hide -mx-4 px-4">
+        <div className="flex gap-2" style={{ minWidth: `${rounds.length * 150}px` }}>
+          {rounds.map((round, roundIdx) => (
+            <div key={round.round} className="flex flex-col" style={{ width: 140 }}>
+              <p className="text-xs text-text-muted text-center mb-2 whitespace-nowrap font-semibold">
+                {ROUND_LABELS[round.round] || round.round}
+              </p>
+              <div className="flex-1 flex flex-col justify-around gap-1">
+                {round.games.map(game => {
+                  const g = gameMap[game.id]
+                  return (
+                    <MiniGameCard key={game.id} game={g} participants={participantMap} />
+                  )
+                })}
+              </div>
             </div>
-          </div>
-        ))}
+          ))}
+
+          {/* Champion display (mobile) */}
+          {champion && (
+            <div className="flex flex-col items-center justify-center" style={{ width: 100 }}>
+              <p className="text-[9px] text-text-muted uppercase tracking-wider mb-1 whitespace-nowrap">Champion</p>
+              <div className="border border-brand/30 bg-brand/10 rounded-lg px-2 py-1.5 text-center">
+                {champion.logoUrl && <img src={champion.logoUrl} alt="" className="w-6 h-6 mx-auto mb-0.5 object-contain" />}
+                <div className="text-[10px] font-semibold text-brand leading-tight">{champion.shortName || champion.name}</div>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   )
