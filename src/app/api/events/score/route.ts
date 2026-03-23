@@ -16,6 +16,7 @@ import {
   type SurvivorScoringRules,
   type RosterScoringRules,
   DEFAULT_BRACKET_SCORING,
+  DEFAULT_FROZEN_FOUR_SCORING,
   DEFAULT_PICKEM_SCORING,
   DEFAULT_SURVIVOR_SCORING,
   DEFAULT_ROSTER_SCORING,
@@ -141,7 +142,13 @@ async function scoreBracketPool(
   participants: EventParticipant[]
 ): Promise<number> {
   const poolId = pool.id as string
-  const scoringRules = (pool.scoring_rules || DEFAULT_BRACKET_SCORING) as BracketScoringRules
+  const scoringRules = (
+    pool.scoring_rules &&
+    typeof pool.scoring_rules === 'object' &&
+    Object.keys(pool.scoring_rules as object).length > 0
+  )
+    ? pool.scoring_rules as BracketScoringRules
+    : DEFAULT_FROZEN_FOUR_SCORING
 
   // Get all entries for this pool
   const { data: entries } = await admin
@@ -203,7 +210,13 @@ async function scorePickemPool(
   participants: EventParticipant[]
 ): Promise<number> {
   const poolId = pool.id as string
-  const scoringRules = (pool.scoring_rules || DEFAULT_PICKEM_SCORING) as PickemScoringRules
+  const scoringRules = (
+    pool.scoring_rules &&
+    typeof pool.scoring_rules === 'object' &&
+    Object.keys(pool.scoring_rules as object).length > 0
+  )
+    ? pool.scoring_rules as PickemScoringRules
+    : DEFAULT_PICKEM_SCORING
 
   const { data: entries } = await admin
     .from('event_entries')
@@ -263,7 +276,13 @@ async function scoreSurvivorPool(
   weekNumber?: number
 ): Promise<number> {
   const poolId = pool.id as string
-  const scoringRules = (pool.scoring_rules || DEFAULT_SURVIVOR_SCORING) as SurvivorScoringRules
+  const scoringRules = (
+    pool.scoring_rules &&
+    typeof pool.scoring_rules === 'object' &&
+    Object.keys(pool.scoring_rules as object).length > 0
+  )
+    ? pool.scoring_rules as SurvivorScoringRules
+    : DEFAULT_SURVIVOR_SCORING
   const tournamentId = pool.tournament_id as string
 
   // Get pool weeks to process

@@ -8,7 +8,7 @@ import {
   eventPickemPickSchema,
   eventRosterPickSchema,
 } from '@/lib/api/schemas'
-import { validateRosterCompleteness, getDraftMode, type RosterScoringRules, DEFAULT_ROSTER_SCORING } from '@/lib/events/shared'
+import { validateRosterCompleteness, validateBracketConsistency, validateBracketCompleteness, generateBracketStructure, getDraftMode, type RosterScoringRules, DEFAULT_ROSTER_SCORING } from '@/lib/events/shared'
 import { createRateLimiter, getClientIp } from '@/lib/api/rate-limit'
 import { logActivity } from '@/lib/activity'
 
@@ -218,6 +218,36 @@ async function handleBracketPicks(
     return NextResponse.json({ error: 'Participants do not belong to this tournament' }, { status: 400 })
   }
 
+  // Bracket consistency validation — ensure later-round picks follow from earlier winners
+  const bracketSize = (pool as unknown as { event_tournaments: { bracket_size: number | null } }).event_tournaments?.bracket_size
+  if (bracketSize && bracketSize > 0) {
+    // Fetch all tournament games for structure validation
+    const { data: allGames } = await admin
+      .from('event_games')
+      .select('id, game_number, round')
+      .eq('tournament_id', pool.tournament_id)
+      .order('game_number', { ascending: true })
+
+    if (allGames?.length) {
+      const bracketStructure = generateBracketStructure(bracketSize)
+      const pickObjects = picks.map(p => ({
+        game_id: p.gameId,
+        participant_id: p.participantId,
+      }))
+      const { isConsistent, conflicts } = validateBracketConsistency(
+        pickObjects as Parameters<typeof validateBracketConsistency>[0],
+        allGames as Parameters<typeof validateBracketConsistency>[1],
+        bracketStructure,
+      )
+      if (!isConsistent) {
+        return NextResponse.json({
+          error: 'Bracket is inconsistent: ' + conflicts[0],
+          conflicts,
+        }, { status: 400 })
+      }
+    }
+  }
+
   // Delete existing picks for this entry (replace all)
   await admin
     .from('event_picks')
@@ -241,13 +271,18 @@ async function handleBracketPicks(
     return NextResponse.json({ error: 'Failed to save picks' }, { status: 500 })
   }
 
-  // Update tiebreaker and submitted_at
+  // Determine completeness — count games in tournament for comparison
+  const totalGamesInBracket = bracketSize ? bracketSize - 1 : picks.length
+  const isComplete = picks.length >= totalGamesInBracket
+
+  // Update tiebreaker, submitted_at, and completeness
   await admin
     .from('event_entries')
     .update({
       tiebreaker_prediction: tiebreakerPrediction || null,
       submitted_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
+      metadata: { is_complete: isComplete, pick_count: picks.length, total_games: totalGamesInBracket },
     })
     .eq('id', entry.id)
 

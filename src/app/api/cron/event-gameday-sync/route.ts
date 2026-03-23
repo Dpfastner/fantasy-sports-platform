@@ -196,14 +196,46 @@ export async function GET(request: Request) {
             .select('id, external_id, participant_1_id, participant_2_id, status')
             .eq('tournament_id', tournamentId)
 
+          // Fetch participants once for winner matching + fallback game matching
+          const { data: participants } = await admin
+            .from('event_participants')
+            .select('id, external_id, metadata')
+            .eq('tournament_id', tournamentId)
+
           let updated = 0
           let live = 0
           let completed = 0
           const prevStatuses = new Map(ourGames?.map(g => [g.id, g.status]) || [])
 
           for (const espnGame of espnGames) {
-            // Match by external_id or by team names
-            const ourGame = ourGames?.find(g => g.external_id === espnGame.espnEventId)
+            // Match by external_id first
+            let ourGame = ourGames?.find(g => g.external_id === espnGame.espnEventId)
+
+            // Fallback: match by participant ESPN team IDs on both sides
+            if (!ourGame && participants?.length) {
+              const homeParticipant = participants.find(p =>
+                p.external_id === espnGame.homeTeamId ||
+                (p.metadata as Record<string, unknown>)?.espn_team_id === espnGame.homeTeamId
+              )
+              const awayParticipant = participants.find(p =>
+                p.external_id === espnGame.awayTeamId ||
+                (p.metadata as Record<string, unknown>)?.espn_team_id === espnGame.awayTeamId
+              )
+
+              if (homeParticipant && awayParticipant) {
+                ourGame = ourGames?.find(g =>
+                  (g.participant_1_id === homeParticipant.id && g.participant_2_id === awayParticipant.id) ||
+                  (g.participant_1_id === awayParticipant.id && g.participant_2_id === homeParticipant.id)
+                )
+                // Write back external_id for fast future matching
+                if (ourGame) {
+                  await admin.from('event_games')
+                    .update({ external_id: espnGame.espnEventId })
+                    .eq('id', ourGame.id)
+                }
+              }
+            }
+
             if (!ourGame) continue
 
             // Only update live or completed games
@@ -223,12 +255,6 @@ export async function GET(request: Request) {
 
             // Set winner if completed
             if (espnGame.isComplete && espnGame.winnerTeamId) {
-              // Find participant by matching ESPN team ID in metadata or external_id
-              const { data: participants } = await admin
-                .from('event_participants')
-                .select('id, external_id, metadata')
-                .eq('tournament_id', tournamentId)
-
               const winner = participants?.find(p =>
                 p.external_id === espnGame.winnerTeamId ||
                 (p.metadata as Record<string, unknown>)?.espn_team_id === espnGame.winnerTeamId

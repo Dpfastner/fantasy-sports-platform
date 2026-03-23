@@ -55,6 +55,14 @@ export const DEFAULT_BRACKET_SCORING: BracketScoringRules = {
   consolation: 1,
 }
 
+/** Frozen Four bracket scoring — matches round names used in seeded games */
+export const DEFAULT_FROZEN_FOUR_SCORING: BracketScoringRules = {
+  regional_quarterfinal: 2,
+  regional_final: 4,
+  semifinal: 8,
+  championship: 16,
+}
+
 export const DEFAULT_PICKEM_SCORING: PickemScoringRules = {
   correct_pick: 1,
   upset_bonus: 2,
@@ -478,14 +486,14 @@ export function generateBracketStructure(
   }
 
   if (bracketSize === 16) {
-    // 8 R1 + 4 QF + 2 SF + championship
+    // 8 Regional QF + 4 Regional Finals + 2 SF + championship
     for (let i = 1; i <= 8; i++) {
-      structure[i] = { feeds_from: [], round: 'round_1' }
+      structure[i] = { feeds_from: [], round: 'regional_quarterfinal' }
     }
-    structure[9] = { feeds_from: [1, 2], round: 'quarterfinal' }
-    structure[10] = { feeds_from: [3, 4], round: 'quarterfinal' }
-    structure[11] = { feeds_from: [5, 6], round: 'quarterfinal' }
-    structure[12] = { feeds_from: [7, 8], round: 'quarterfinal' }
+    structure[9] = { feeds_from: [1, 2], round: 'regional_final' }
+    structure[10] = { feeds_from: [3, 4], round: 'regional_final' }
+    structure[11] = { feeds_from: [5, 6], round: 'regional_final' }
+    structure[12] = { feeds_from: [7, 8], round: 'regional_final' }
     structure[13] = { feeds_from: [9, 10], round: 'semifinal' }
     structure[14] = { feeds_from: [11, 12], round: 'semifinal' }
     structure[15] = { feeds_from: [13, 14], round: 'championship' }

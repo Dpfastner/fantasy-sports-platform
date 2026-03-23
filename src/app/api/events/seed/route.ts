@@ -189,24 +189,24 @@ async function seedFrozenFourTeams(admin: ReturnType<typeof createAdminClient>) 
     .delete()
     .eq('tournament_id', tournament.id)
 
-  // Projected 16-team bracket (seeds based on PairWise rankings)
+  // Actual 2026 NCAA tournament bracket (from ESPN Selection Sunday March 22, 2026)
   const teams = [
-    { name: 'Michigan State', short: 'MSU', seed: 1 },
-    { name: 'Michigan', short: 'MICH', seed: 2 },
-    { name: 'North Dakota', short: 'UND', seed: 3 },
-    { name: 'Western Michigan', short: 'WMU', seed: 4 },
-    { name: 'Penn State', short: 'PSU', seed: 5 },
-    { name: 'Providence', short: 'PROV', seed: 6 },
-    { name: 'Quinnipiac', short: 'QU', seed: 7 },
-    { name: 'Minnesota Duluth', short: 'UMD', seed: 8 },
-    { name: 'Denver', short: 'DU', seed: 9 },
-    { name: 'Cornell', short: 'COR', seed: 10 },
-    { name: 'Dartmouth', short: 'DART', seed: 11 },
-    { name: 'Boston College', short: 'BC', seed: 12 },
-    { name: 'Wisconsin', short: 'WIS', seed: 13 },
-    { name: 'Connecticut', short: 'CONN', seed: 14 },
-    { name: 'Augustana', short: 'AUG', seed: 15 },
-    { name: 'Bentley', short: 'BENT', seed: 16 },
+    { name: 'Michigan State', short: 'MSU', seed: 1, espnId: '127' },
+    { name: 'Michigan', short: 'MICH', seed: 2, espnId: '130' },
+    { name: 'North Dakota', short: 'UND', seed: 3, espnId: '155' },
+    { name: 'Western Michigan', short: 'WMU', seed: 4, espnId: '2711' },
+    { name: 'Providence', short: 'PROV', seed: 5, espnId: '2507' },
+    { name: 'Denver', short: 'DU', seed: 6, espnId: '2172' },
+    { name: 'Dartmouth', short: 'DART', seed: 7, espnId: '159' },
+    { name: 'Minnesota Duluth', short: 'UMD', seed: 8, espnId: '134' },
+    { name: 'Penn State', short: 'PSU', seed: 9, espnId: '213' },
+    { name: 'Quinnipiac', short: 'QU', seed: 10, espnId: '2514' },
+    { name: 'Cornell', short: 'COR', seed: 11, espnId: '172' },
+    { name: 'Wisconsin', short: 'WIS', seed: 12, espnId: '275' },
+    { name: 'Minnesota State', short: 'MNSU', seed: 13, espnId: '2364' },
+    { name: 'Connecticut', short: 'CONN', seed: 14, espnId: '41' },
+    { name: 'Merrimack', short: 'MERC', seed: 15, espnId: '2771' },
+    { name: 'Bentley', short: 'BENT', seed: 16, espnId: '2060' },
   ]
 
   const participantRows = teams.map(t => ({
@@ -214,7 +214,8 @@ async function seedFrozenFourTeams(admin: ReturnType<typeof createAdminClient>) 
     name: t.name,
     short_name: t.short,
     seed: t.seed,
-    metadata: { projected: true },
+    external_id: t.espnId,
+    metadata: { espn_team_id: t.espnId },
   }))
 
   const { error: pErr } = await admin.from('event_participants').insert(participantRows)
@@ -234,17 +235,21 @@ async function seedFrozenFourTeams(admin: ReturnType<typeof createAdminClient>) 
     if (p.seed != null) seedToId[p.seed] = p.id
   }
 
-  // Assign teams to bracket games
-  // Standard bracket: 1v16, 8v9, 5v12, 4v13, 3v14, 6v11, 7v10, 2v15
+  // Actual bracket matchups with ESPN event IDs and start times
+  // Regional assignments from ESPN scoreboard API (March 22, 2026)
   const matchups = [
-    { game: 1, seed1: 1, seed2: 16 },  // Albany Regional
-    { game: 2, seed1: 8, seed2: 9 },
-    { game: 3, seed1: 5, seed2: 12 },  // Loveland Regional
-    { game: 4, seed1: 4, seed2: 13 },
-    { game: 5, seed1: 3, seed2: 14 },  // Sioux Falls Regional
-    { game: 6, seed1: 6, seed2: 11 },
-    { game: 7, seed1: 7, seed2: 10 },  // Worcester Regional
-    { game: 8, seed1: 2, seed2: 15 },
+    // Albany Regional (Games 1-2)
+    { game: 1, seed1: 2, seed2: 16, espnEventId: '401866188', startsAt: '2026-03-27T21:30:00Z' },  // Michigan vs Bentley
+    { game: 2, seed1: 8, seed2: 9,  espnEventId: '401866196', startsAt: '2026-03-28T01:00:00Z' },  // UMD vs Penn State
+    // Loveland Regional (Games 3-4)
+    { game: 3, seed1: 4, seed2: 13, espnEventId: '401866189', startsAt: '2026-03-27T18:30:00Z' },  // WMU vs Minnesota State
+    { game: 4, seed1: 6, seed2: 11, espnEventId: '401866197', startsAt: '2026-03-27T22:00:00Z' },  // Denver vs Cornell
+    // Sioux Falls Regional (Games 5-6)
+    { game: 5, seed1: 5, seed2: 10, espnEventId: '401866198', startsAt: '2026-03-26T21:00:00Z' },  // Providence vs Quinnipiac
+    { game: 6, seed1: 3, seed2: 15, espnEventId: '401866190', startsAt: '2026-03-27T00:30:00Z' },  // North Dakota vs Merrimack
+    // Worcester Regional (Games 7-8)
+    { game: 7, seed1: 1, seed2: 14, espnEventId: '401866191', startsAt: '2026-03-26T17:30:00Z' },  // Michigan State vs UConn
+    { game: 8, seed1: 7, seed2: 12, espnEventId: '401866199', startsAt: '2026-03-26T21:00:00Z' },  // Dartmouth vs Wisconsin
   ]
 
   // Get existing games
@@ -261,7 +266,7 @@ async function seedFrozenFourTeams(admin: ReturnType<typeof createAdminClient>) 
     gameMap[g.game_number] = g.id
   }
 
-  // Update round 1 games with team assignments + start times
+  // Update round 1 games with team assignments, start times, and ESPN event IDs
   for (const m of matchups) {
     const gameId = gameMap[m.game]
     if (gameId) {
@@ -270,7 +275,8 @@ async function seedFrozenFourTeams(admin: ReturnType<typeof createAdminClient>) 
         .update({
           participant_1_id: seedToId[m.seed1],
           participant_2_id: seedToId[m.seed2],
-          starts_at: '2026-03-27T18:00:00Z', // Regional games start Mar 27
+          starts_at: m.startsAt,
+          external_id: m.espnEventId,
         })
         .eq('id', gameId)
     }
@@ -279,19 +285,22 @@ async function seedFrozenFourTeams(admin: ReturnType<typeof createAdminClient>) 
   // Update config to mark teams as seeded
   await admin
     .from('event_tournaments')
-    .update({ config: {
-      regionals: [
-        { name: 'Albany Regional', city: 'Albany, NY', dates: '2026-03-26 to 2026-03-29' },
-        { name: 'Loveland Regional', city: 'Loveland, CO', dates: '2026-03-26 to 2026-03-29' },
-        { name: 'Sioux Falls Regional', city: 'Sioux Falls, SD', dates: '2026-03-26 to 2026-03-29' },
-        { name: 'Worcester Regional', city: 'Worcester, MA', dates: '2026-03-26 to 2026-03-29' },
-      ],
-      frozen_four_venue: 'T-Mobile Arena, Las Vegas, NV',
-      semifinal_date: '2026-04-09',
-      championship_date: '2026-04-11',
-      selection_date: '2026-03-22',
-      teams_seeded: true,
-    }})
+    .update({
+      starts_at: '2026-03-26T17:30:00Z', // First game: MSU vs UConn
+      config: {
+        regionals: [
+          { name: 'Albany Regional', city: 'Albany, NY', dates: '2026-03-27 to 2026-03-29' },
+          { name: 'Loveland Regional', city: 'Loveland, CO', dates: '2026-03-27 to 2026-03-29' },
+          { name: 'Sioux Falls Regional', city: 'Sioux Falls, SD', dates: '2026-03-26 to 2026-03-28' },
+          { name: 'Worcester Regional', city: 'Worcester, MA', dates: '2026-03-26 to 2026-03-28' },
+        ],
+        frozen_four_venue: 'T-Mobile Arena, Las Vegas, NV',
+        semifinal_date: '2026-04-09',
+        championship_date: '2026-04-11',
+        selection_date: '2026-03-22',
+        teams_seeded: true,
+      },
+    })
     .eq('id', tournament.id)
 
   return NextResponse.json({
@@ -299,7 +308,7 @@ async function seedFrozenFourTeams(admin: ReturnType<typeof createAdminClient>) 
     tournament: 'frozen-four-2026-teams',
     id: tournament.id,
     participants: teams.length,
-    message: 'Projected 16 teams seeded and assigned to bracket games.',
+    message: 'Actual 16 teams seeded with ESPN IDs and game times.',
   })
 }
 
@@ -1645,12 +1654,13 @@ async function seedFrozenFourSchedule(admin: ReturnType<typeof createAdminClient
 const HOCKEY_NAME_ALIASES: Record<string, string[]> = {
   'Connecticut': ['UConn'],
   'Minnesota Duluth': ['Minnesota-Duluth', 'Minn. Duluth'],
+  'Minnesota State': ['Minnesota State Mavericks', 'Mankato'],
 }
 
 function matchEspnTeam(
   participantName: string,
-  espnTeams: { name: string; logoUrl: string | null }[],
-): { name: string; logoUrl: string | null } | undefined {
+  espnTeams: { id: string; name: string; abbreviation: string; logoUrl: string | null }[],
+): { id: string; name: string; abbreviation: string; logoUrl: string | null } | undefined {
   const pLower = participantName.toLowerCase()
 
   // Check aliases first
@@ -1714,19 +1724,26 @@ async function syncHockeyLogos(admin: ReturnType<typeof createAdminClient>) {
   const sortedParticipants = [...participants].sort((a, b) => b.name.length - a.name.length)
 
   let matched = 0
-  const matchDetails: Array<{ participant: string; espn: string | null }> = []
+  const matchDetails: Array<{ participant: string; espn: string | null; espnId: string | null }> = []
   for (const participant of sortedParticipants) {
     const espnTeam = matchEspnTeam(participant.name, espnTeams)
 
-    if (espnTeam?.logoUrl) {
+    if (espnTeam) {
       await admin
         .from('event_participants')
-        .update({ logo_url: espnTeam.logoUrl })
+        .update({
+          logo_url: espnTeam.logoUrl,
+          external_id: espnTeam.id,
+          metadata: {
+            espn_team_id: espnTeam.id,
+            espn_abbreviation: espnTeam.abbreviation,
+          },
+        })
         .eq('id', participant.id)
       matched++
-      matchDetails.push({ participant: participant.name, espn: espnTeam.name })
+      matchDetails.push({ participant: participant.name, espn: espnTeam.name, espnId: espnTeam.id })
     } else {
-      matchDetails.push({ participant: participant.name, espn: null })
+      matchDetails.push({ participant: participant.name, espn: null, espnId: null })
     }
   }
 
