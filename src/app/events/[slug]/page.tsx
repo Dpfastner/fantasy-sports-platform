@@ -175,15 +175,37 @@ export default async function EventDetailPage({ params }: PageProps) {
                   Rules
                   <svg className="w-4 h-4 text-text-muted transition-transform group-open:rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" /></svg>
                 </summary>
-                <div className="text-text-secondary text-sm prose-sm prose-invert max-w-none space-y-2 mt-3 [&_h2]:text-text-primary [&_h2]:text-base [&_h2]:font-semibold [&_h2]:mt-4 [&_h2]:mb-1 [&_h3]:text-text-primary [&_h3]:text-sm [&_h3]:font-semibold [&_h3]:mt-3 [&_h3]:mb-1 [&_ul]:list-disc [&_ul]:pl-4 [&_li]:mb-1">
-                  {tournament.rules_text.split('\n').map((line: string, i: number) => {
-                    if (line.startsWith('## ')) return <h2 key={i}>{line.replace('## ', '')}</h2>
-                    if (line.startsWith('### ')) return <h3 key={i}>{line.replace('### ', '')}</h3>
-                    if (line.startsWith('- ')) return <li key={i}>{line.replace('- ', '')}</li>
-                    if (line.match(/^\d+\./)) return <li key={i}>{line.replace(/^\d+\.\s*/, '')}</li>
-                    if (line.trim() === '') return null
-                    return <p key={i}>{line}</p>
-                  })}
+                <div className="text-text-secondary text-sm prose-sm prose-invert max-w-none space-y-2 mt-3 [&_h2]:text-text-primary [&_h2]:text-base [&_h2]:font-semibold [&_h2]:mt-4 [&_h2]:mb-1 [&_h3]:text-text-primary [&_h3]:text-sm [&_h3]:font-semibold [&_h3]:mt-3 [&_h3]:mb-1">
+                  {(() => {
+                    const lines = tournament.rules_text.split('\n')
+                    const elements: React.ReactNode[] = []
+                    let listItems: React.ReactNode[] = []
+                    let listType: 'ul' | 'ol' | null = null
+
+                    const flushList = () => {
+                      if (listItems.length > 0) {
+                        const key = `list-${elements.length}`
+                        if (listType === 'ol') {
+                          elements.push(<ol key={key} className="list-decimal pl-6 space-y-1">{listItems}</ol>)
+                        } else {
+                          elements.push(<ul key={key} className="list-disc pl-6 space-y-1">{listItems}</ul>)
+                        }
+                        listItems = []
+                        listType = null
+                      }
+                    }
+
+                    lines.forEach((line: string, i: number) => {
+                      if (line.startsWith('## ')) { flushList(); elements.push(<h2 key={i}>{line.replace('## ', '')}</h2>) }
+                      else if (line.startsWith('### ')) { flushList(); elements.push(<h3 key={i}>{line.replace('### ', '')}</h3>) }
+                      else if (line.startsWith('- ')) { listType = listType || 'ul'; listItems.push(<li key={i}>{line.replace('- ', '')}</li>) }
+                      else if (line.match(/^\d+\./)) { listType = listType || 'ol'; listItems.push(<li key={i}>{line.replace(/^\d+\.\s*/, '')}</li>) }
+                      else if (line.trim() === '') { flushList() }
+                      else { flushList(); elements.push(<p key={i}>{line}</p>) }
+                    })
+                    flushList()
+                    return elements
+                  })()}
                 </div>
               </details>
             )}
