@@ -5,7 +5,6 @@ import { ToastProvider } from './Toast'
 import { ConfirmProvider } from './ConfirmDialog'
 import { PaletteProvider } from './PaletteProvider'
 import PaletteSwitcher from './PaletteSwitcher'
-import ReportIssue from './ReportIssue'
 import TosGate from './TosGate'
 import { ChatContextProvider } from '@/contexts/ChatContext'
 import { MobileChatPeek } from './chat/MobileChatPeek'
@@ -98,7 +97,6 @@ export function Providers({ children }: ProvidersProps) {
             <MobileChatPeek />
           </ChatContextProvider>
           <PaletteSwitcher />
-          <ReportIssue />
           <TosGate />
         </ConfirmProvider>
       </ToastProvider>
