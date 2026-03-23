@@ -35,6 +35,8 @@ interface ViewBracketModalProps {
   games: Game[]
   participants: Participant[]
   scoringRules: Record<string, number>
+  tiebreakerPrediction?: { team1_score: number; team2_score: number } | null
+  score?: number
   onClose: () => void
 }
 
@@ -44,6 +46,8 @@ export function ViewBracketModal({
   games,
   participants,
   scoringRules,
+  tiebreakerPrediction,
+  score,
   onClose,
 }: ViewBracketModalProps) {
   const [picks, setPicks] = useState<Record<string, string>>({})
@@ -99,7 +103,19 @@ export function ViewBracketModal({
       >
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-border">
-          <h2 className="text-base font-semibold text-text-primary">{entryName}</h2>
+          <div>
+            <h2 className="text-base font-semibold text-text-primary">{entryName}</h2>
+            <div className="flex items-center gap-3 mt-0.5">
+              {score != null && (
+                <span className="text-sm text-brand font-medium">{score} pts</span>
+              )}
+              {tiebreakerPrediction && (
+                <span className="text-xs text-text-muted">
+                  Tiebreaker: {tiebreakerPrediction.team1_score} - {tiebreakerPrediction.team2_score} total goals
+                </span>
+              )}
+            </div>
+          </div>
           <button
             onClick={onClose}
             className="text-text-muted hover:text-text-primary text-xl leading-none px-2"

@@ -588,6 +588,8 @@ export function PoolDetailClient({
           }))}
           participants={participants}
           scoringRules={pool.scoringRules as Record<string, number>}
+          tiebreakerPrediction={viewingMember.tiebreakerPrediction}
+          score={viewingMember.score}
           onClose={() => setViewingEntryId(null)}
         />
       )}
