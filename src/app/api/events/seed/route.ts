@@ -101,8 +101,8 @@ async function seedFrozenFour(admin: ReturnType<typeof createAdminClient>) {
       format: 'bracket',
       status: 'upcoming',
       bracket_size: 16,
-      description: '2026 NCAA Division I Men\'s Ice Hockey Tournament. 16-team single-elimination bracket.',
-      rules_text: `## How to Play\n\n1. **Fill out your bracket** — predict the winner of each game from Regionals through the Championship.\n2. **Points escalate by round** — later rounds are worth more.\n3. **Lock deadline** — all picks lock before the first Regional game.\n\n### Scoring\n- Regional Quarterfinal: 2 pts\n- Regional Semifinal: 4 pts\n- Frozen Four Semifinal: 8 pts\n- Championship: 16 pts\n- Upset bonus: +2 pts when a lower seed wins\n\n### Tiebreaker\nPredict the total combined goals in the Championship game.`,
+      description: '16-team bracket for the 2026 NCAA Frozen Four. Pick every game from Regionals to the Championship.',
+      rules_text: `## How to Play\n\n1. Pick the winner of every game — Regionals through the Championship.\n2. Later rounds are worth more points.\n3. All picks lock before the first Regional game.\n\n## Scoring\n- Regional Quarterfinal: 2 pts\n- Regional Semifinal: 4 pts\n- Frozen Four Semifinal: 8 pts\n- Championship: 16 pts\n- Upset bonus: +2 pts when a lower seed wins\n\n## Tiebreaker\nPredict the total combined goals in the Championship game.`,
       starts_at: '2026-03-26T00:00:00Z',
       ends_at: '2026-04-11T23:59:00Z',
       config: {
@@ -362,8 +362,8 @@ async function seedMasters(admin: ReturnType<typeof createAdminClient>) {
       slug,
       format: 'multi',
       status: 'upcoming',
-      description: 'The 90th Masters Tournament at Augusta National. Create Pick\'em or Roster pools.',
-      rules_text: `## Pick'em Format\n1. **Pick matchup winners** each round.\n2. **Scoring**: 1 pt per correct pick + upset bonus.\n\n## Roster Format\n1. **Draft 7 golfers** — 2 from Tier A (OWGR 1–15), 2 from Tier B (16–30), 3 from Tier C (31+).\n2. **Scoring**: Aggregate score-to-par from your best 5 of 7 picks. Lowest wins.\n3. **Cut penalty**: Cut golfers get the field's highest score + 1 per missed round.\n4. **Rosters lock** at first tee time.`,
+      description: 'The 90th Masters at Augusta National. Pick matchup winners or draft a golfer roster.',
+      rules_text: `## Pick'em\nPick matchup winners each round. 1 pt per correct pick + upset bonus.\n\n## Roster\nDraft 7 golfers — 2 from Tier A (OWGR 1–15), 2 from Tier B (16–30), 3 from Tier C (31+). Your best 5 of 7 scores count. Lowest total score-to-par wins. Cut golfers get the field high + 1 per missed round. Rosters lock at first tee time.`,
       starts_at: '2026-04-09T00:00:00Z',
       ends_at: '2026-04-12T23:59:00Z',
       config: {
@@ -1098,8 +1098,8 @@ async function convertMSixNationsToSurvivor(admin: ReturnType<typeof createAdmin
     .update({
       format: 'survivor',
       total_weeks: 5,
-      description: "Guinness Men's Six Nations 2026. Pick one team to win each round — if they lose, you're eliminated. Can't pick the same team twice.",
-      rules_text: `## How to Play\n\n1. **Pick one team each round** to win their match.\n2. If your team **wins**, you survive to the next round.\n3. If your team **loses or draws**, you're **eliminated**.\n4. **You can't pick the same team twice** — use them wisely!\n5. Last person standing wins.\n\n### Important\n- Picks lock 1 minute before the first kickoff of each round.\n- If you miss the deadline, you're automatically eliminated.\n- A draw counts as a loss (eliminates you).`,
+      description: "Men's Six Nations 2026. Pick one team to win each round — lose and you're out. Can't reuse a pick.",
+      rules_text: `## How to Play\n\n1. Pick one team each round to win their match.\n2. Win — you survive. Lose or draw — you're out.\n3. Can't pick the same team twice. Choose wisely.\n4. Last one standing wins.\n\n## Deadlines\n- Picks lock 1 minute before the first kickoff of each round.\n- Miss the deadline and you're eliminated.\n- Draws count as losses.`,
       config: {
         ...existingConfig,
         draw_eliminates: true,
@@ -1533,8 +1533,8 @@ async function seedWSixNations(admin: ReturnType<typeof createAdminClient>) {
       format: 'survivor',
       status: 'upcoming',
       total_weeks: roundFirstKickoff.size,
-      description: `Guinness Women's Six Nations ${season}. Pick one team to win each round — if they lose, you're eliminated. Can't pick the same team twice.`,
-      rules_text: `## How to Play\n\n1. **Pick one team each round** to win their match.\n2. If your team **wins**, you survive to the next round.\n3. If your team **loses or draws**, you're **eliminated**.\n4. **You can't pick the same team twice** — use them wisely!\n5. Last person standing wins.\n\n### Important\n- Picks lock 1 minute before the first kickoff of each round.\n- If you miss the deadline, you're automatically eliminated.\n- A draw counts as a loss (eliminates you).`,
+      description: `Women's Six Nations ${season}. Pick one team to win each round — lose and you're out. Can't reuse a pick.`,
+      rules_text: `## How to Play\n\n1. Pick one team each round to win their match.\n2. Win — you survive. Lose or draw — you're out.\n3. Can't pick the same team twice. Choose wisely.\n4. Last one standing wins.\n\n## Deadlines\n- Picks lock 1 minute before the first kickoff of each round.\n- Miss the deadline and you're eliminated.\n- Draws count as losses.`,
       starts_at: startsAt.toISOString(),
       ends_at: endsAt.toISOString(),
       config: {
@@ -1832,8 +1832,8 @@ async function seedMSixNations(admin: ReturnType<typeof createAdminClient>) {
       format: 'survivor',
       status: 'upcoming',
       total_weeks: roundFirstKickoff.size,
-      description: `Guinness Men's Six Nations ${season}. Pick one team to win each round — if they lose, you're eliminated. Can't pick the same team twice.`,
-      rules_text: `## How to Play\n\n1. **Pick one team each round** to win their match.\n2. If your team **wins**, you survive to the next round.\n3. If your team **loses or draws**, you're **eliminated**.\n4. **You can't pick the same team twice** — use them wisely!\n5. Last person standing wins.\n\n### Important\n- Picks lock 1 minute before the first kickoff of each round.\n- If you miss the deadline, you're automatically eliminated.\n- A draw counts as a loss (eliminates you).`,
+      description: `Men's Six Nations ${season}. Pick one team to win each round — lose and you're out. Can't reuse a pick.`,
+      rules_text: `## How to Play\n\n1. Pick one team each round to win their match.\n2. Win — you survive. Lose or draw — you're out.\n3. Can't pick the same team twice. Choose wisely.\n4. Last one standing wins.\n\n## Deadlines\n- Picks lock 1 minute before the first kickoff of each round.\n- Miss the deadline and you're eliminated.\n- Draws count as losses.`,
       starts_at: startsAt.toISOString(),
       ends_at: endsAt.toISOString(),
       config: {
