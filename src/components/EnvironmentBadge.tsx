@@ -1,16 +1,25 @@
 'use client'
 
+import { useState, useEffect } from 'react'
 import { getEnvironment, shouldShowDevBadge, getEnvironmentDisplayName, getEnvironmentBadgeColor } from '@/lib/env'
+import { createClient } from '@/lib/supabase/client'
+import { ADMIN_USER_IDS } from '@/lib/constants/admin'
 
 /**
- * Shows a floating badge in non-production environments
- * Helps developers/testers know which environment they're in
+ * Shows a floating badge for admin users only.
+ * Helps admins know which environment they're in.
  */
 export default function EnvironmentBadge() {
-  // Only render in non-production
-  if (!shouldShowDevBadge()) {
-    return null
-  }
+  const [isAdmin, setIsAdmin] = useState(false)
+
+  useEffect(() => {
+    const supabase = createClient()
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (user && ADMIN_USER_IDS.includes(user.id)) setIsAdmin(true)
+    })
+  }, [])
+
+  if (!shouldShowDevBadge() || !isAdmin) return null
 
   const env = getEnvironment()
   const displayName = getEnvironmentDisplayName()
