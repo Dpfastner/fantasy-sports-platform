@@ -7,11 +7,11 @@
 
 ## What Rivyls Is
 
-**One sentence:** Rivyls is fantasy college sports — instead of drafting individual players, you draft the schools you already care about, so you never have to root against your own team.
+**One sentence:** Rivyls is fantasy college sports — instead of drafting individual players, you draft the schools you already care about. Your fandom and your fantasy team can finally be the same thing.
 
 **Tagline:** Draft Programs. Not Players.
 
-**One paragraph:** Rivyls is a fantasy sports platform built specifically for college football fans. Instead of drafting individual players the way traditional fantasy works, you draft entire college football programs — schools like Alabama, Ohio State, or Georgia — and those schools earn you points based on how they actually perform each week. You win games, beat ranked opponents, make the playoff, win championships — your fantasy team wins right alongside you. There's no studying snap counts, no rooting against your own team, no needing to know every player on every roster. If you already watch college football on Saturdays, you already know everything you need to play.
+**One paragraph:** Rivyls is a fantasy sports platform built for college sports fans. Instead of drafting individual players the way traditional fantasy works, you draft entire college football programs — schools like Alabama, Ohio State, or Georgia — and those schools earn you points based on how they actually perform each week. You win games, beat ranked opponents, make the playoff, win championships — your fantasy team wins right alongside you. There's no studying snap counts, no divided loyalty conflicts, no needing to know every player on every roster. If you already watch college football on Saturdays, you already know everything you need to play.
 
 ---
 
@@ -40,7 +40,7 @@ These insights should guide every product, design, and business decision:
   - Soft Lavender (secondary surface): `#E8E0F0`
   - Dark Plum (dark mode / headers): `#1A0F2E`
 - **Tagline:** Draft Schools. Not Players.
-- **Secondary:** Never root against your own team.
+- **Secondary:** Your fandom and your fantasy team can finally be the same thing.
 
 ---
 
@@ -50,9 +50,9 @@ These insights should guide every product, design, and business decision:
 - **EIN:** 41-4753664
 - **NAICS:** 713990 — All Other Amusement and Recreation Industries
 - **Domain:** rivyls.com (live, Wix DNS — Cloudflare transfer unblocked Apr 21, 2026)
-- **Trademark:** "Rivyls" — USPTO intent-to-use application in progress, Class 41 (fantasy sports contests + leagues)
+- **Trademark:** "Rivyls" — USPTO intent-to-use application FILED, Class 41 (fantasy sports contests + leagues)
 - **Bank:** Mercury (business checking, active)
-- **Accounting:** Not yet set up (Wave or QuickBooks — DO NOW)
+- **Accounting:** Custom spreadsheet (Rivyls_Accounting.xlsx) — expenses, income, mileage, P&L, deductions guide
 
 ---
 
@@ -293,9 +293,9 @@ All legal features built and deployed in Phases 22-24:
 | Date | Item | Status |
 |------|------|--------|
 | Mar 2026 | LLC approved, EIN, Mercury bank | DONE |
-| Mar 2026 | Trademark filing ($350) | Pending Mercury funds |
-| Mar 2026 | Atlanta Occupational Tax Certificate ($50) | Pending notarized affidavits |
-| Mar 2026 | Set up accounting | Next |
+| Mar 2026 | Trademark filing ($350) | DONE — filed via USPTO |
+| Mar 2026 | Atlanta Occupational Tax Certificate ($191) | DONE — submitted via ATLBIZ |
+| Mar 2026 | Set up accounting | DONE — custom spreadsheet |
 | Apr 21, 2026 | Cloudflare DNS transfer | Blocked on ICANN lock |
 | Apr 21+, 2026 | Resend email (Phase 33) | Blocked on DNS |
 | May 2026 | Marketing begins | Platform ready |
@@ -319,9 +319,9 @@ All legal features built and deployed in Phases 22-24:
 - [x] Multi-sport abstraction layer, platform simplification
 
 ### Do now:
-- [ ] Trademark filing ($350)
-- [ ] Atlanta Occupational Tax Certificate ($50 + notarized affidavits)
-- [ ] Set up accounting
+- [x] Trademark filing ($350) — FILED, Class 41, intent-to-use
+- [x] Atlanta Occupational Tax Certificate ($191 — submitted via ATLBIZ)
+- [x] Set up accounting — custom spreadsheet
 
 ### Before launch:
 - [ ] Cloudflare DNS + Resend email (Apr 21+)
@@ -380,16 +380,16 @@ Do NOT gate features that are free everywhere else (trading, chat, scoring, auct
 - When subscription revenue starts (Year 2), quarterly estimated tax payments required (Apr 15, Jun 15, Sep 15, Jan 15)
 
 ### Deductions to Track from Day 1
-Every dollar of legitimate business expense reduces taxable income. Log ALL of these in Wave/QuickBooks:
+Every dollar of legitimate business expense reduces taxable income. Log ALL of these in the Accounting spreadsheet:
 
 **Direct business costs (100% deductible):**
 - Claude subscription ($100/mo) — including months before LLC was formed (startup costs)
 - Domain registration ($22.80/yr)
 - LLC filing fee ($100)
 - Trademark filing ($350) + Statement of Use ($150)
-- Occupational Tax Certificate ($50/yr)
+- Occupational Tax Certificate ($191/yr)
 - Insurance premiums ($30-60/mo)
-- Accounting software ($0-15/mo)
+- Accounting: custom spreadsheet ($0)
 - Future: Supabase Pro, Vercel Pro, Resend, Stripe fees, attorney fees
 
 **Home office deduction (if you have a dedicated workspace):**
@@ -430,7 +430,7 @@ Every dollar of legitimate business expense reduces taxable income. Log ALL of t
 - Due dates: April 15, June 15, September 15, January 15
 - Penalty for underpayment — easier to overpay slightly and get a refund
 - Calculate: (expected profit × 15.3% SE tax) + (expected profit × your income tax bracket)
-- Wave/QuickBooks can help estimate these
+- The P&L Summary sheet in the Accounting spreadsheet estimates these automatically
 
 ---
 
@@ -454,7 +454,8 @@ Year-round engagement reduces seasonal revenue concentration risk.
 
 ## Cost Summary
 
-**Current monthly burn:** $155/mo (Claude + insurance + accounting)
+**Current monthly burn:** $140/mo (Claude $100 + insurance ~$40)
 **At scale (500+ users):** ~$460/mo (adds Supabase, Vercel, Resend, marketing, backup data)
-**One-time costs remaining:** ~$1,400 (trademark + occupational tax cert + attorney review)
-**Annual costs:** $73/yr (domain + LLC renewal)
+**Spent to date:** $1,574.47 (see Accounting spreadsheet for full breakdown)
+**One-time costs remaining:** ~$1,150 (attorney review $1,000 + statement of use $150)
+**Annual recurring:** ~$264/yr (domain $23 + LLC renewal $50 + occ tax cert renewal $191)
