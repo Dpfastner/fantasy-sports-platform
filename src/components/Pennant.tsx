@@ -19,11 +19,11 @@ interface PennantProps {
 }
 
 const SIZES = {
-  xxs: { minWidth: 60, height: 24, logo: 10, text: 'text-[6px]', gap: 'gap-0.5' },
-  xs: { minWidth: 80, height: 32, logo: 12, text: 'text-[7px]', gap: 'gap-0.5' },
-  sm: { minWidth: 120, height: 48, logo: 16, text: 'text-xs', gap: 'gap-1' },
-  md: { minWidth: 200, height: 64, logo: 24, text: 'text-sm', gap: 'gap-2' },
-  lg: { minWidth: 280, height: 80, logo: 32, text: 'text-base', gap: 'gap-2.5' },
+  xxs: { minWidth: 60, maxWidth: 90, height: 24, logo: 10, text: 'text-[6px]', gap: 'gap-0.5' },
+  xs: { minWidth: 80, maxWidth: 130, height: 32, logo: 12, text: 'text-[7px]', gap: 'gap-0.5' },
+  sm: { minWidth: 120, maxWidth: 180, height: 48, logo: 16, text: 'text-xs', gap: 'gap-1' },
+  md: { minWidth: 200, maxWidth: 280, height: 64, logo: 24, text: 'text-sm', gap: 'gap-2' },
+  lg: { minWidth: 280, maxWidth: 360, height: 80, logo: 32, text: 'text-base', gap: 'gap-2.5' },
 } as const
 
 /**
@@ -96,6 +96,7 @@ function PennantVariant({ school, colors, s }: { school: PennantSchool; colors: 
         className="animate-pennant-wave origin-top-left"
         style={{
           minWidth: s.minWidth,
+          maxWidth: s.maxWidth,
           height: s.height,
           backgroundColor: colors.bgColor,
           clipPath: 'polygon(0 0, 100% 0, 85% 50%, 100% 100%, 0 100%)',
@@ -104,7 +105,7 @@ function PennantVariant({ school, colors, s }: { school: PennantSchool; colors: 
         <div className={`flex items-center ${s.gap} h-full px-2 pr-[18%]`}>
           <SchoolLogo school={school} size={s.logo} />
           <span
-            className={`${s.text} font-bold whitespace-nowrap`}
+            className={`${s.text} font-bold leading-tight`}
             style={{ color: colors.textColor }}
           >
             {school.name}
