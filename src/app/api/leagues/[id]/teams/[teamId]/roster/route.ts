@@ -23,7 +23,7 @@ export async function GET(
 
     const isMember = await verifyLeagueMembership(user.id, leagueId)
     if (!isMember) {
-      return NextResponse.json({ error: 'Not a league member' }, { status: 403 })
+      return NextResponse.json({ error: 'You don\'t have permission to do this.' }, { status: 403 })
     }
 
     const supabase = createAdminClient()
@@ -70,7 +70,7 @@ export async function GET(
     Sentry.captureException(error)
     console.error('Fetch team roster error:', error)
     return NextResponse.json(
-      { error: 'Failed to fetch roster' },
+      { error: 'Couldn\'t load the roster. Try refreshing the page.' },
       { status: 500 }
     )
   }

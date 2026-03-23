@@ -41,12 +41,12 @@ export async function POST(request: NextRequest) {
 
     if (error) {
       console.error('Unsubscribe error:', error)
-      return NextResponse.json({ error: 'Failed to update preferences' }, { status: 500 })
+      return NextResponse.json({ error: "Couldn't update preferences. Try again." }, { status: 500 })
     }
 
     return NextResponse.json({ success: true })
   } catch (error) {
     console.error('Unsubscribe error:', error)
-    return NextResponse.json({ error: 'Failed to process request' }, { status: 500 })
+    return NextResponse.json({ error: 'Something went wrong. Try again.' }, { status: 500 })
   }
 }

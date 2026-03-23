@@ -32,7 +32,7 @@ export async function GET(
       .single()
 
     if (!membership) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+      return NextResponse.json({ error: "You don't have permission to do this." }, { status: 403 })
     }
 
     const { data: messages, error } = await supabase
@@ -44,7 +44,7 @@ export async function GET(
 
     if (error) {
       return NextResponse.json(
-        { error: 'Failed to fetch messages', details: error.message },
+        { error: "Couldn't load messages. Try refreshing the page.", details: error.message },
         { status: 500 }
       )
     }
@@ -74,7 +74,7 @@ export async function GET(
   } catch (error) {
     Sentry.captureException(error)
     console.error('DM messages GET error:', error)
-    return NextResponse.json({ error: 'Failed to fetch messages' }, { status: 500 })
+    return NextResponse.json({ error: "Couldn't load messages. Try refreshing the page." }, { status: 500 })
   }
 }
 
@@ -104,7 +104,7 @@ export async function POST(
       .single()
 
     if (!membership) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+      return NextResponse.json({ error: "You don't have permission to do this." }, { status: 403 })
     }
 
     const rawBody = await request.json()
@@ -131,7 +131,7 @@ export async function POST(
 
     if (error) {
       return NextResponse.json(
-        { error: 'Failed to send message', details: error.message },
+        { error: "Couldn't send message. Try again.", details: error.message },
         { status: 500 }
       )
     }
@@ -140,6 +140,6 @@ export async function POST(
   } catch (error) {
     Sentry.captureException(error)
     console.error('DM messages POST error:', error)
-    return NextResponse.json({ error: 'Failed to send message' }, { status: 500 })
+    return NextResponse.json({ error: "Couldn't send message. Try again." }, { status: 500 })
   }
 }

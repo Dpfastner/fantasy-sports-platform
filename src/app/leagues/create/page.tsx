@@ -160,7 +160,7 @@ export default function CreateLeaguePage() {
       const { data: { user } } = await supabase.auth.getUser()
 
       if (!user) {
-        setError('You must be logged in to create a league')
+        setError('You need to sign in to do this.')
         return
       }
 

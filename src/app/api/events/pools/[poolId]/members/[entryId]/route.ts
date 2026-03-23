@@ -17,7 +17,7 @@ export async function DELETE(
     const supabase = await createServerClient()
     const { data: { user }, error: authError } = await supabase.auth.getUser()
     if (authError || !user) {
-      return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
+      return NextResponse.json({ error: 'You need to sign in to do this.' }, { status: 401 })
     }
 
     const admin = createAdminClient()
@@ -30,7 +30,7 @@ export async function DELETE(
       .single()
 
     if (!pool || pool.created_by !== user.id) {
-      return NextResponse.json({ error: 'Only the pool creator can remove members' }, { status: 403 })
+      return NextResponse.json({ error: 'Only the pool host can remove members' }, { status: 403 })
     }
 
     // Get the entry to remove
@@ -67,6 +67,6 @@ export async function DELETE(
   } catch (err) {
     Sentry.captureException(err)
     console.error('Remove member error:', err)
-    return NextResponse.json({ error: 'Failed to remove member' }, { status: 500 })
+    return NextResponse.json({ error: "Couldn't remove member. Try again." }, { status: 500 })
   }
 }

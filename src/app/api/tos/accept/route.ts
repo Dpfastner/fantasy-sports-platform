@@ -40,7 +40,7 @@ export async function POST(request: NextRequest) {
     if (error) {
       console.error('Failed to log ToS agreement:', error)
       return NextResponse.json(
-        { error: 'Failed to log agreement' },
+        { error: "Couldn't save agreement. Try again." },
         { status: 500 }
       )
     }
@@ -49,7 +49,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('ToS accept error:', error)
     return NextResponse.json(
-      { error: 'Failed to process request' },
+      { error: 'Something went wrong. Try again.' },
       { status: 500 }
     )
   }

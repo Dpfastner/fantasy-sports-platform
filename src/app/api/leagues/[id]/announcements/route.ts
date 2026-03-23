@@ -24,7 +24,7 @@ export async function GET(
 
     const isMember = await verifyLeagueMembership(user.id, leagueId)
     if (!isMember) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+      return NextResponse.json({ error: 'You don\'t have permission to do this.' }, { status: 403 })
     }
 
     const supabase = createAdminClient()
@@ -54,7 +54,7 @@ export async function GET(
 
     if (error) {
       return NextResponse.json(
-        { error: 'Failed to fetch announcements', details: error.message },
+        { error: 'Couldn\'t load announcements. Try refreshing the page.', details: error.message },
         { status: 500 }
       )
     }
@@ -64,7 +64,7 @@ export async function GET(
     Sentry.captureException(error)
     console.error('Announcements GET error:', error)
     return NextResponse.json(
-      { error: 'Failed to fetch announcements' },
+      { error: 'Couldn\'t load announcements. Try refreshing the page.' },
       { status: 500 }
     )
   }
@@ -140,7 +140,7 @@ export async function POST(
 
     if (error) {
       return NextResponse.json(
-        { error: 'Failed to create post', details: error.message },
+        { error: 'Couldn\'t create your post. Try again.', details: error.message },
         { status: 500 }
       )
     }
@@ -169,7 +169,7 @@ export async function POST(
     Sentry.captureException(error)
     console.error('Announcement POST error:', error)
     return NextResponse.json(
-      { error: 'Failed to create announcement' },
+      { error: 'Couldn\'t create the announcement. Try again.' },
       { status: 500 }
     )
   }

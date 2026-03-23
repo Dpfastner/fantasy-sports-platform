@@ -22,13 +22,13 @@ export async function GET(request: Request) {
 
     if (error) {
       console.error('Failed to fetch tournaments:', error)
-      return NextResponse.json({ error: 'Failed to fetch tournaments' }, { status: 500 })
+      return NextResponse.json({ error: "Couldn't load tournaments. Try refreshing the page." }, { status: 500 })
     }
 
     return NextResponse.json({ tournaments })
   } catch (err) {
     console.error('Tournaments fetch error:', err)
     Sentry.captureException(err, { tags: { route: 'events/tournaments', action: 'fetch' } })
-    return NextResponse.json({ error: 'An unexpected error occurred' }, { status: 500 })
+    return NextResponse.json({ error: 'Something went wrong. Try again.' }, { status: 500 })
   }
 }

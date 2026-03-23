@@ -506,7 +506,7 @@ export default async function DashboardPage() {
             <div className="text-center py-8">
               <div className="text-5xl mb-4">{'\uD83C\uDFC6'}</div>
               <h2 className="text-xl font-semibold text-text-primary mb-2">
-                No games yet
+                No competitions yet
               </h2>
               <p className="text-text-secondary mb-6">
                 Create or join a league, or browse prediction events to get started.

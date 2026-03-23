@@ -29,7 +29,7 @@ export function LeagueMembersSettings({
         <h2 className="text-xl font-semibold text-text-primary mb-6">League Members</h2>
 
         {members.length === 0 ? (
-          <p className="text-text-secondary">No members yet.</p>
+          <p className="text-text-secondary">No members yet. Share your invite code to fill your league.</p>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full">

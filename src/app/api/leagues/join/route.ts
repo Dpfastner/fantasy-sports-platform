@@ -22,7 +22,7 @@ export async function POST(request: Request) {
     const { data: { user }, error: authError } = await supabase.auth.getUser()
 
     if (authError || !user) {
-      return NextResponse.json({ error: 'You must be logged in' }, { status: 401 })
+      return NextResponse.json({ error: 'You need to sign in to do this.' }, { status: 401 })
     }
 
     const rawBody = await request.json()
@@ -117,7 +117,7 @@ export async function POST(request: Request) {
       if (memberError.code === '23505') {
         return NextResponse.json({ error: 'You are already a member of this league' }, { status: 409 })
       }
-      return NextResponse.json({ error: 'Failed to join league' }, { status: 500 })
+      return NextResponse.json({ error: 'Couldn\'t join the league. Try again.' }, { status: 500 })
     }
 
     // Create fantasy team
@@ -130,7 +130,7 @@ export async function POST(request: Request) {
       })
 
     if (teamError) {
-      return NextResponse.json({ error: 'Failed to create team' }, { status: 500 })
+      return NextResponse.json({ error: 'Couldn\'t create your team. Try again.' }, { status: 500 })
     }
 
     // Save sport favorite if provided
@@ -195,7 +195,7 @@ export async function POST(request: Request) {
     const isSandbox = process.env.NEXT_PUBLIC_ENVIRONMENT === 'sandbox'
     console.error('League join error:', err)
     return NextResponse.json({
-      error: 'An unexpected error occurred',
+      error: 'Something went wrong. Try again.',
       ...(isSandbox && { debug: { message: err instanceof Error ? err.message : String(err) } }),
     }, { status: 500 })
   }

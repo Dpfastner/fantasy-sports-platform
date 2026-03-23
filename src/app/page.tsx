@@ -64,8 +64,7 @@ export default async function Home() {
             Rivyls
           </h1>
           <p className="text-xl text-text-secondary mb-8 max-w-2xl mx-auto">
-            Brackets, survivor leagues, and fantasy rosters across every sport.
-            Compete with friends &mdash; it&apos;s free.
+            Draft the schools you already care about. Fantasy college sports, brackets, pick&apos;em, and survivor &mdash; all free.
           </p>
           <div className="flex gap-4 justify-center">
             <Link
@@ -149,7 +148,7 @@ export default async function Home() {
               <Link href="/signup?next=%2Fevents%3Fsport%3Dcfb" className="bg-surface-subtle p-5 rounded-lg border-l-4 border-l-orange-500 hover:shadow-md hover:border-brand/40 transition-all">
                 <span className="text-2xl">🏈</span>
                 <h3 className="text-lg font-semibold mt-2">Football</h3>
-                <p className="text-text-secondary text-sm mt-1">Fantasy leagues with college football programs</p>
+                <p className="text-text-secondary text-sm mt-1">Draft college football programs and compete all season</p>
               </Link>
               <Link href="/signup?next=%2Fevents%3Fsport%3Dhockey" className="bg-surface-subtle p-5 rounded-lg border-l-4 border-l-blue-500 hover:shadow-md hover:border-brand/40 transition-all">
                 <span className="text-2xl">🏒</span>

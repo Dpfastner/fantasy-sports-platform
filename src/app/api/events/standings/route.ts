@@ -133,6 +133,6 @@ export async function GET(request: Request) {
   } catch (err) {
     Sentry.captureException(err)
     console.error('Standings fetch error:', err)
-    return NextResponse.json({ error: 'Failed to fetch standings' }, { status: 500 })
+    return NextResponse.json({ error: "Couldn't load standings. Try refreshing the page." }, { status: 500 })
   }
 }

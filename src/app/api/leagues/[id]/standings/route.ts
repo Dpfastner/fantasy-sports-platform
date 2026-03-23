@@ -41,7 +41,7 @@ export async function GET(
 
     const isMember = await verifyLeagueMembership(user.id, leagueId)
     if (!isMember) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+      return NextResponse.json({ error: 'You don\'t have permission to do this.' }, { status: 403 })
     }
 
     const supabase = createAdminClient()
@@ -81,7 +81,7 @@ export async function GET(
 
     if (teamsError) {
       return NextResponse.json(
-        { error: 'Failed to fetch teams', details: teamsError.message },
+        { error: 'Couldn\'t load teams. Try refreshing the page.', details: teamsError.message },
         { status: 500 }
       )
     }
@@ -170,7 +170,7 @@ export async function GET(
     Sentry.captureException(error)
     console.error('Standings error:', error)
     return NextResponse.json(
-      { error: 'Failed to fetch standings', details: String(error) },
+      { error: 'Couldn\'t load standings. Try refreshing the page.', details: String(error) },
       { status: 500 }
     )
   }

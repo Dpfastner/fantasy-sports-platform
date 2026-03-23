@@ -33,7 +33,7 @@ export async function POST(
       .single()
 
     if (!membership) {
-      return NextResponse.json({ error: 'Not a league member' }, { status: 403 })
+      return NextResponse.json({ error: 'You don\'t have permission to do this.' }, { status: 403 })
     }
 
     // Commissioners can't nudge themselves
@@ -109,7 +109,7 @@ export async function POST(
     Sentry.captureException(error)
     console.error('Nudge error:', error)
     return NextResponse.json(
-      { error: 'Failed to send nudge', details: String(error) },
+      { error: 'Couldn\'t send the nudge. Try again.', details: String(error) },
       { status: 500 }
     )
   }

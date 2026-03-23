@@ -157,7 +157,7 @@ export function PickemPicker({
 
       const data = await res.json()
       if (!res.ok) {
-        addToast(data.error || 'Failed to submit picks', 'error')
+        addToast(data.error || 'Couldn\'t submit your picks. Try again.', 'error')
         return
       }
 

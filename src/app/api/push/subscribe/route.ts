@@ -47,7 +47,7 @@ export async function POST(request: NextRequest) {
 
   if (error) {
     console.error('[push] Failed to save subscription:', error.message)
-    return NextResponse.json({ error: 'Failed to save subscription' }, { status: 500 })
+    return NextResponse.json({ error: "Couldn't save subscription. Try again." }, { status: 500 })
   }
 
   // Enable push in notification preferences

@@ -40,7 +40,7 @@ export async function GET(
     })
   } catch (err) {
     console.error('Announcements fetch error:', err)
-    return NextResponse.json({ error: 'Failed to fetch announcements' }, { status: 500 })
+    return NextResponse.json({ error: "Couldn't load announcements. Try refreshing the page." }, { status: 500 })
   }
 }
 
@@ -53,7 +53,7 @@ export async function POST(
     const supabase = await createServerClient()
     const { data: { user }, error: authError } = await supabase.auth.getUser()
     if (authError || !user) {
-      return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
+      return NextResponse.json({ error: 'You need to sign in to do this.' }, { status: 401 })
     }
 
     const { limited, response } = announcementLimiter.check(getClientIp(request))
@@ -69,7 +69,7 @@ export async function POST(
       .single()
 
     if (!pool || pool.created_by !== user.id) {
-      return NextResponse.json({ error: 'Only the pool creator can post announcements' }, { status: 403 })
+      return NextResponse.json({ error: 'Only the pool host can post announcements' }, { status: 403 })
     }
 
     const { content, isPinned } = await request.json()
@@ -89,7 +89,7 @@ export async function POST(
       .single()
 
     if (error) {
-      return NextResponse.json({ error: 'Failed to create announcement' }, { status: 500 })
+      return NextResponse.json({ error: "Couldn't create announcement. Try again." }, { status: 500 })
     }
 
     // Log activity
@@ -105,7 +105,7 @@ export async function POST(
   } catch (err) {
     console.error('Announcement create error:', err)
     Sentry.captureException(err, { tags: { route: 'events/pools/announcements', action: 'create' } })
-    return NextResponse.json({ error: 'Failed to create announcement' }, { status: 500 })
+    return NextResponse.json({ error: "Couldn't create announcement. Try again." }, { status: 500 })
   }
 }
 
@@ -118,7 +118,7 @@ export async function DELETE(
     const supabase = await createServerClient()
     const { data: { user }, error: authError } = await supabase.auth.getUser()
     if (authError || !user) {
-      return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
+      return NextResponse.json({ error: 'You need to sign in to do this.' }, { status: 401 })
     }
 
     const admin = createAdminClient()
@@ -131,7 +131,7 @@ export async function DELETE(
       .single()
 
     if (!pool || pool.created_by !== user.id) {
-      return NextResponse.json({ error: 'Only the pool creator can delete announcements' }, { status: 403 })
+      return NextResponse.json({ error: 'Only the pool host can delete announcements' }, { status: 403 })
     }
 
     const { announcementId } = await request.json()
@@ -148,6 +148,6 @@ export async function DELETE(
     return NextResponse.json({ success: true })
   } catch (err) {
     console.error('Announcement delete error:', err)
-    return NextResponse.json({ error: 'Failed to delete announcement' }, { status: 500 })
+    return NextResponse.json({ error: "Couldn't delete announcement. Try again." }, { status: 500 })
   }
 }

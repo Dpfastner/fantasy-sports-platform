@@ -9,7 +9,7 @@ export async function GET(request: Request) {
     const supabase = await createServerClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) {
-      return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
+      return NextResponse.json({ error: 'You need to sign in to do this.' }, { status: 401 })
     }
 
     const { searchParams } = new URL(request.url)
@@ -76,6 +76,6 @@ export async function GET(request: Request) {
   } catch (err) {
     console.error('Copyable picks fetch error:', err)
     Sentry.captureException(err, { tags: { route: 'events/picks/copyable' } })
-    return NextResponse.json({ error: 'An unexpected error occurred' }, { status: 500 })
+    return NextResponse.json({ error: 'Something went wrong. Try again.' }, { status: 500 })
   }
 }

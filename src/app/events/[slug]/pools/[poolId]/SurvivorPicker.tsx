@@ -170,7 +170,7 @@ export function SurvivorPicker({
 
       const data = await res.json()
       if (!res.ok) {
-        addToast(data.error || 'Failed to submit pick', 'error')
+        addToast(data.error || 'Couldn\'t submit your pick. Try again.', 'error')
         return
       }
 

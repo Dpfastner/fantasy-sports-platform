@@ -127,7 +127,7 @@ export async function POST(
 
     if (teamsError) {
       return NextResponse.json(
-        { error: 'Failed to create teams', details: teamsError.message },
+        { error: 'Couldn\'t create teams. Try again.', details: teamsError.message },
         { status: 500 }
       )
     }
@@ -140,7 +140,7 @@ export async function POST(
 
     if (updateError) {
       return NextResponse.json(
-        { error: 'Failed to update league', details: updateError.message },
+        { error: 'Couldn\'t update the league. Try again.', details: updateError.message },
         { status: 500 }
       )
     }
@@ -192,7 +192,7 @@ export async function POST(
     Sentry.captureException(error)
     console.error('Reactivate error:', error)
     return NextResponse.json(
-      { error: 'Failed to reactivate league', details: String(error) },
+      { error: 'Couldn\'t reactivate the league. Try again.', details: String(error) },
       { status: 500 }
     )
   }

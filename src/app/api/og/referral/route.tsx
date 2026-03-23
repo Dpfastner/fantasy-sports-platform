@@ -46,10 +46,10 @@ export async function GET(request: Request) {
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
             <div style={{ display: 'flex', fontSize: 24, color: OG.textPrimary }}>
-              🏈 Fantasy College Football
+              🏈 Draft Programs. Not Players.
             </div>
             <div style={{ display: 'flex', fontSize: 24, color: OG.textPrimary }}>
-              🏆 Draft teams. Compete with friends. Win prizes.
+              🏆 Fantasy college sports — free to play.
             </div>
             <div
               style={{

@@ -49,7 +49,7 @@ export async function GET(
     return NextResponse.json({ reactions: detail })
   } catch (error) {
     Sentry.captureException(error)
-    return NextResponse.json({ error: 'Failed to fetch reaction details' }, { status: 500 })
+    return NextResponse.json({ error: "Couldn't load reaction details. Try refreshing the page." }, { status: 500 })
   }
 }
 
@@ -65,7 +65,7 @@ export async function POST(
     const supabase = await createServerClient()
     const { data: { user }, error: authError } = await supabase.auth.getUser()
     if (authError || !user) {
-      return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
+      return NextResponse.json({ error: 'You need to sign in to do this.' }, { status: 401 })
     }
 
     const { messageId, emoji } = await request.json()
@@ -110,6 +110,6 @@ export async function POST(
   } catch (err) {
     Sentry.captureException(err)
     console.error('Reaction error:', err)
-    return NextResponse.json({ error: 'Failed to toggle reaction' }, { status: 500 })
+    return NextResponse.json({ error: "Couldn't toggle reaction. Try again." }, { status: 500 })
   }
 }

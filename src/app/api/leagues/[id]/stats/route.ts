@@ -44,7 +44,7 @@ export async function GET(
 
     const isMember = await verifyLeagueMembership(user.id, leagueId)
     if (!isMember) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+      return NextResponse.json({ error: 'You don\'t have permission to do this.' }, { status: 403 })
     }
 
     const supabase = createAdminClient()
@@ -91,7 +91,7 @@ export async function GET(
 
     if (pointsError) {
       return NextResponse.json(
-        { error: 'Failed to fetch school points' },
+        { error: 'Couldn\'t load school points. Try refreshing the page.' },
         { status: 500 }
       )
     }
@@ -229,7 +229,7 @@ export async function GET(
     Sentry.captureException(error)
     console.error('Stats calculation error:', error)
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: 'Something went wrong. Try again.' },
       { status: 500 }
     )
   }

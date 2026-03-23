@@ -191,7 +191,7 @@ export function RosterPicker({
 
       const data = await res.json()
       if (!res.ok) {
-        addToast(data.error || 'Failed to submit roster', 'error')
+        addToast(data.error || 'Couldn\'t submit your roster. Try again.', 'error')
         return
       }
 

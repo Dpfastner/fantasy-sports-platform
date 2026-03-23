@@ -105,7 +105,7 @@ export default function PendingTrades({
       })
 
       const data = await res.json()
-      if (!res.ok) throw new Error(data.error || `Failed to ${action} trade`)
+      if (!res.ok) throw new Error(data.error || 'Couldn\'t complete trade action. Try again.')
 
       const messages: Record<string, string> = {
         accept: 'Trade accepted! Rosters updated.',
@@ -115,7 +115,7 @@ export default function PendingTrades({
       addToast(messages[action], 'success')
       router.refresh()
     } catch (err) {
-      addToast(err instanceof Error ? err.message : `Failed to ${action} trade`, 'error')
+      addToast(err instanceof Error ? err.message : 'Couldn\'t complete trade action. Try again.', 'error')
     } finally {
       setActionLoading(null)
     }
@@ -138,7 +138,7 @@ export default function PendingTrades({
       })))
       setCounterTrade(trade)
     } catch {
-      addToast('Failed to load roster for counter-offer', 'error')
+      addToast('Couldn\'t load roster for counter-offer. Try again.', 'error')
     } finally {
       setCounterLoading(false)
     }

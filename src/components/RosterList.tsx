@@ -233,7 +233,7 @@ export function RosterList({
       setDoublePickSchoolId(schoolId)
     } catch (err) {
       console.error('Error saving double pick:', err)
-      addToast('Failed to save double pick. Please try again.', 'error')
+      addToast('Couldn\'t save double pick. Try again.', 'error')
     }
 
     setSaving(false)
@@ -256,7 +256,7 @@ export function RosterList({
       setPicksUsed(prev => Math.max(0, prev - 1))
     } catch (err) {
       console.error('Error removing double pick:', err)
-      addToast('Failed to remove double pick. Please try again.', 'error')
+      addToast('Couldn\'t remove double pick. Try again.', 'error')
     }
 
     setSaving(false)

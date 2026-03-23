@@ -296,7 +296,7 @@ function SignUpForm() {
             />
             <span className="text-text-secondary text-sm">
               I confirm that I am at least 18 years of age.
-              <span className="text-text-muted text-xs block mt-0.5">Required for fantasy sports participation per state regulations.</span>
+              <span className="text-text-muted text-xs block mt-0.5">You must be 18 or older to play.</span>
             </span>
           </label>
 

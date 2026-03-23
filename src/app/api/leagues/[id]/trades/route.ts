@@ -31,7 +31,7 @@ export async function POST(
     // Verify membership
     const isMember = await verifyLeagueMembership(user.id, leagueId)
     if (!isMember) {
-      return NextResponse.json({ error: 'Not a league member' }, { status: 403 })
+      return NextResponse.json({ error: 'You don\'t have permission to do this.' }, { status: 403 })
     }
 
     const rawBody = await request.json()
@@ -268,7 +268,7 @@ export async function POST(
 
     if (tradeError || !trade) {
       console.error('Error creating trade:', tradeError)
-      return NextResponse.json({ error: 'Failed to create trade' }, { status: 500 })
+      return NextResponse.json({ error: 'Couldn\'t create the trade. Try again.' }, { status: 500 })
     }
 
     // Insert trade items
@@ -295,7 +295,7 @@ export async function POST(
       console.error('Error creating trade items:', itemsError)
       // Clean up the trade
       await supabase.from('trades').delete().eq('id', trade.id)
-      return NextResponse.json({ error: 'Failed to create trade items' }, { status: 500 })
+      return NextResponse.json({ error: 'Couldn\'t create the trade. Try again.' }, { status: 500 })
     }
 
     // Log activity
@@ -328,7 +328,7 @@ export async function POST(
     Sentry.captureException(error)
     console.error('Propose trade error:', error)
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Failed to propose trade' },
+      { error: error instanceof Error ? error.message : 'Couldn\'t propose the trade. Try again.' },
       { status: 500 }
     )
   }
@@ -348,7 +348,7 @@ export async function GET(
 
     const isMember = await verifyLeagueMembership(user.id, leagueId)
     if (!isMember) {
-      return NextResponse.json({ error: 'Not a league member' }, { status: 403 })
+      return NextResponse.json({ error: 'You don\'t have permission to do this.' }, { status: 403 })
     }
 
     const supabase = createAdminClient()
@@ -374,7 +374,7 @@ export async function GET(
 
     if (error) {
       console.error('Error fetching trades:', error)
-      return NextResponse.json({ error: 'Failed to fetch trades' }, { status: 500 })
+      return NextResponse.json({ error: 'Couldn\'t load trades. Try refreshing the page.' }, { status: 500 })
     }
 
     return NextResponse.json({ trades: trades || [] })
@@ -383,7 +383,7 @@ export async function GET(
     Sentry.captureException(error)
     console.error('List trades error:', error)
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Failed to list trades' },
+      { error: error instanceof Error ? error.message : 'Couldn\'t load trades. Try refreshing the page.' },
       { status: 500 }
     )
   }

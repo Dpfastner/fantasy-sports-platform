@@ -483,7 +483,7 @@ export default function DraftRoomPage() {
 
       } catch (err) {
         console.error('Error loading draft data:', err)
-        setError('Failed to load draft data. Please refresh the page.')
+        setError('Couldn\'t load draft data. Try refreshing the page.')
       } finally {
         setLoading(false)
       }
@@ -890,7 +890,7 @@ export default function DraftRoomPage() {
         const { error: orderError } = await supabase.from('draft_order').insert(orderEntries)
         if (orderError) {
           console.error('Error inserting draft order:', orderError)
-          setActionError('Failed to create draft order: ' + orderError.message)
+          setActionError('Couldn\'t create draft order. Try again. ' + orderError.message)
           return
         }
         console.log('Inserted draft order successfully')
@@ -958,13 +958,13 @@ export default function DraftRoomPage() {
 
       if (updateError) {
         console.error('Error updating draft status:', updateError)
-        setActionError('Failed to update draft status: ' + updateError.message)
+        setActionError('Couldn\'t update draft status. Try again. ' + updateError.message)
         return
       }
 
       if (!updateData || updateData.length === 0) {
         console.error('Draft update returned no data - RLS policy may be blocking')
-        setActionError('Failed to start draft - you may not have permission. Please check that you are the commissioner.')
+        setActionError('Couldn\'t start draft. You may not have permission -- check that you are the commissioner.')
         return
       }
 
@@ -994,7 +994,7 @@ export default function DraftRoomPage() {
 
     } catch (err) {
       console.error('Error starting draft:', err)
-      setActionError('Failed to start draft: ' + (err instanceof Error ? err.message : String(err)))
+      setActionError('Couldn\'t start draft. Try again. ' + (err instanceof Error ? err.message : String(err)))
     }
   }
 
@@ -1118,8 +1118,8 @@ export default function DraftRoomPage() {
 
       if (pickError) {
         console.error('Error inserting pick:', pickError)
-        setActionError('Failed to make pick: ' + pickError.message)
-        addToast('Failed to make pick: ' + pickError.message, 'error')
+        setActionError('Couldn\'t make pick. Try again. ' + pickError.message)
+        addToast('Couldn\'t make pick. Try again. ' + pickError.message, 'error')
         setIsSubmittingPick(false)
         return
       }
@@ -1165,7 +1165,7 @@ export default function DraftRoomPage() {
 
     } catch (err) {
       console.error('Error making pick:', err)
-      const errorMessage = 'Failed to make pick: ' + (err instanceof Error ? err.message : String(err))
+      const errorMessage = 'Couldn\'t make pick. Try again. ' + (err instanceof Error ? err.message : String(err))
       setActionError(errorMessage)
       addToast(errorMessage, 'error')
     } finally {
@@ -1245,10 +1245,10 @@ export default function DraftRoomPage() {
 
     if (error) {
       console.error('Error advancing pick:', error)
-      setActionError('Failed to advance pick: ' + error.message)
+      setActionError('Couldn\'t advance pick. Try again. ' + error.message)
     } else if (!data || data.length === 0) {
       console.error('advanceToNextPick: No rows updated - RLS policy may be blocking the update')
-      setActionError('Failed to advance pick - permission denied. Please refresh.')
+      setActionError('Couldn\'t advance pick. Permission denied -- try refreshing the page.')
     } else {
       console.log('advanceToNextPick: DB update successful, pick now', nextPickNumber)
       // Notify the next user it's their turn
@@ -1301,7 +1301,7 @@ export default function DraftRoomPage() {
     const results = await Promise.all(updates)
     const failed = results.some(r => r.error)
     if (failed) {
-      addToast('Failed to save draft order', 'error')
+      addToast('Couldn\'t save draft order. Try again.', 'error')
     }
   }
 
@@ -1340,7 +1340,7 @@ export default function DraftRoomPage() {
 
     if (error) {
       console.error('Error toggling pause:', error)
-      setActionError('Failed to pause/resume: ' + error.message)
+      setActionError('Couldn\'t pause/resume. Try again. ' + error.message)
     } else {
       trackActivity(newStatus === 'paused' ? 'draft.paused' : 'draft.resumed', leagueId, { draftId: draft.id })
       // Force local state update
@@ -1365,7 +1365,7 @@ export default function DraftRoomPage() {
       const data = await response.json()
 
       if (!response.ok) {
-        throw new Error(data.error || 'Failed to reset draft')
+        throw new Error(data.error || 'Couldn\'t reset draft. Try again.')
       }
 
       console.log('Draft reset successfully:', data)
@@ -1391,7 +1391,7 @@ export default function DraftRoomPage() {
 
     } catch (err) {
       console.error('Error resetting draft:', err)
-      setActionError('Failed to reset draft: ' + (err instanceof Error ? err.message : String(err)))
+      setActionError('Couldn\'t reset draft. Try again. ' + (err instanceof Error ? err.message : String(err)))
     } finally {
       setIsResettingDraft(false)
     }

@@ -132,7 +132,7 @@ export async function DELETE() {
     if (deleteError) {
       console.error('Failed to delete auth user:', deleteError)
       return NextResponse.json(
-        { error: 'Failed to delete account. Please contact support.' },
+        { error: "Couldn't delete your account. Please contact support@rivyls.com." },
         { status: 500 }
       )
     }
@@ -141,7 +141,7 @@ export async function DELETE() {
   } catch (error) {
     console.error('Account deletion error:', error)
     return NextResponse.json(
-      { error: 'Failed to delete account' },
+      { error: "Couldn't delete your account. Please contact support@rivyls.com." },
       { status: 500 }
     )
   }

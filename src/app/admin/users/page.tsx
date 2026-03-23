@@ -126,7 +126,7 @@ export default function AdminUsersPage() {
               <div className="w-6 h-6 border-2 border-brand border-t-transparent rounded-full animate-spin" />
             </div>
           ) : sorted.length === 0 ? (
-            <div className="text-center py-12 text-text-muted">No users found</div>
+            <div className="text-center py-12 text-text-muted">No users match that search.</div>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">

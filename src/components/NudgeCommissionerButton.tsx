@@ -22,7 +22,7 @@ export function NudgeCommissionerButton({ leagueId }: NudgeCommissionerButtonPro
 
       if (!res.ok) {
         const data = await res.json()
-        throw new Error(data.error || 'Failed to send reminder')
+        throw new Error(data.error || 'Couldn\'t send reminder. Try again.')
       }
 
       setSent(true)

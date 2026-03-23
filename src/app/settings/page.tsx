@@ -159,7 +159,7 @@ export default function SettingsPage() {
 
     try {
       const { data: { user } } = await supabase.auth.getUser()
-      if (!user) throw new Error('Not authenticated')
+      if (!user) throw new Error('You need to sign in to do this.')
 
       const profileUpdate: Record<string, unknown> = {
         display_name: displayName,
@@ -211,7 +211,7 @@ export default function SettingsPage() {
       trackActivity('profile.updated', null, { displayName, timezone })
       showMessage('success', 'Profile updated successfully!')
     } catch (error) {
-      showMessage('error', `Failed to update profile: ${error}`)
+      showMessage('error', `Couldn't update profile. Try again. ${error}`)
     } finally {
       setSaving(false)
     }
@@ -235,7 +235,7 @@ export default function SettingsPage() {
       trackActivity('profile.email_changed')
       showMessage('success', 'Confirmation email sent to your new address. Please check your inbox.')
     } catch (error) {
-      showMessage('error', `Failed to update email: ${error}`)
+      showMessage('error', `Couldn't update email. Try again. ${error}`)
     } finally {
       setSaving(false)
     }
@@ -267,7 +267,7 @@ export default function SettingsPage() {
       setConfirmPassword('')
       showMessage('success', 'Password updated successfully!')
     } catch (error) {
-      showMessage('error', `Failed to update password: ${error}`)
+      showMessage('error', `Couldn't update password. Try again. ${error}`)
     } finally {
       setSaving(false)
     }
@@ -278,7 +278,7 @@ export default function SettingsPage() {
 
     try {
       const { data: { user } } = await supabase.auth.getUser()
-      if (!user) throw new Error('Not authenticated')
+      if (!user) throw new Error('You need to sign in to do this.')
 
       const prefs = {
         user_id: user.id,
@@ -312,7 +312,7 @@ export default function SettingsPage() {
 
       showMessage('success', 'Notification preferences saved!')
     } catch (error) {
-      showMessage('error', `Failed to save notifications: ${error}`)
+      showMessage('error', `Couldn't save notifications. Try again. ${error}`)
     } finally {
       setSavingNotifications(false)
     }
@@ -326,7 +326,7 @@ export default function SettingsPage() {
       const response = await fetch('/api/account/delete', { method: 'DELETE' })
       if (!response.ok) {
         const data = await response.json()
-        throw new Error(data.error || 'Failed to delete account')
+        throw new Error(data.error || 'Couldn\'t delete account. Try again.')
       }
 
       // Sign out and redirect to welcome page
@@ -668,7 +668,7 @@ export default function SettingsPage() {
                         }
                       } catch (err) {
                         console.error('[push] Toggle failed:', err)
-                        showMessage('error', 'Failed to update push notifications. Please try again.')
+                        showMessage('error', 'Couldn\'t update push notifications. Try again.')
                       } finally {
                         setPushLoading(false)
                       }
@@ -764,7 +764,7 @@ export default function SettingsPage() {
                 </div>
               )}
               <p className="text-danger-text text-sm font-medium">
-                This will permanently delete your account and anonymize your data. Your teams will be renamed to &quot;Deleted Team&quot; and frozen — league standings and history will be preserved. Type <strong>DELETE</strong> to confirm.
+                This will permanently delete your account and anonymize your data. Your teams will be renamed to &quot;Deleted Team&quot; and frozen — your data is kept in league records so standings and history stay accurate. Type <strong>DELETE</strong> to confirm.
               </p>
               <input
                 type="text"

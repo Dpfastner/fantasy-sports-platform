@@ -67,7 +67,7 @@ export function MembersTab({ members, poolId, isCreator, userId }: MembersTabPro
                       router.refresh()
                     } else {
                       const data = await res.json()
-                      addToast(data.error || 'Failed to remove', 'error')
+                      addToast(data.error || 'Couldn\'t remove member. Try again.', 'error')
                     }
                   } catch {
                     addToast('Something went wrong', 'error')

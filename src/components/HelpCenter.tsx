@@ -18,19 +18,19 @@ const FAQ_DATA: FaqCategory[] = [
     items: [
       {
         question: 'What is Rivyls?',
-        answer: 'Rivyls is a fantasy college football platform where you draft real schools (not individual players) and earn points based on actual game results throughout the season. Create or join a league, draft your schools, and compete against friends all season long.',
+        answer: 'Rivyls is fantasy college sports — you draft schools instead of players and earn points when they win. Create a league, invite friends, draft your schools, compete all season.',
       },
       {
         question: 'How do I create a league?',
-        answer: 'Go to your Dashboard and click "Create League." You\'ll set a league name, choose the number of teams (4-16), and configure scoring rules. As the commissioner, you control all league settings. Once created, share the invite code with friends so they can join.',
+        answer: 'Go to your Dashboard and tap "Create League." Set a name, choose team count, and configure scoring. Share the invite code with friends so they can join.',
       },
       {
         question: 'How do I join a league?',
-        answer: 'You need an invite code from the league commissioner. Go to your Dashboard, click "Join League," and enter the code. You\'ll be added to the league and can create your fantasy team. If you received a link, just click it and sign up — you\'ll be redirected to the league automatically.',
+        answer: 'Get an invite code from your commissioner, go to Dashboard, tap "Join League," and enter the code. If you got a link, just click it — you\'ll be redirected automatically.',
       },
       {
         question: 'How many schools are available to draft?',
-        answer: 'There are 134 FBS (Football Bowl Subdivision) college football programs available to draft. These include all major conference schools (SEC, Big Ten, Big 12, ACC) plus independents like Notre Dame and Army.',
+        answer: '134 FBS schools — every major conference plus independents like Notre Dame.',
       },
     ],
   },
@@ -39,39 +39,39 @@ const FAQ_DATA: FaqCategory[] = [
     items: [
       {
         question: 'What are Events?',
-        answer: 'Events are prediction-based competitions tied to real sports tournaments (like the NCAA Frozen Four or The Masters). Unlike fantasy leagues where you draft teams for a full season, events let you make predictions — fill out a bracket, pick game winners, or play survivor-style elimination games.',
+        answer: 'Prediction competitions tied to real tournaments — fill out a bracket, pick game winners, or play survivor. Unlike season-long leagues, events are one-and-done.',
       },
       {
         question: 'What game formats are available?',
-        answer: 'Three formats: Bracket (predict the winner of every game in a tournament), Pick\'em (pick game winners each week), and Survivor (pick one team per week — if they lose, you\'re eliminated). Each pool can have its own scoring rules and tiebreakers.',
+        answer: 'Bracket (predict every game winner), Pick\'em (pick winners each week), and Survivor (pick one team per week — lose and you\'re out). Each pool has its own scoring and tiebreakers.',
       },
       {
         question: 'How do I create or join an event pool?',
-        answer: 'Browse Events from the dashboard. Pick a tournament, then either create a new pool (you\'ll get an invite code to share) or join an existing one with a code. Pools can be public (anyone can find and join) or private (invite code required).',
+        answer: 'Browse Events from your dashboard. Pick a tournament, then create a new pool or join one with an invite code. Pools can be public or private.',
       },
       {
         question: 'Can I submit multiple brackets in one pool?',
-        answer: 'If the pool creator allows it (via the "Entries Per User" setting), you can add multiple entries. Each entry has its own picks, name, colors, and logo. Switch between your entries using the selector on the My Bracket tab.',
+        answer: 'If the pool host enables it via "Entries Per User," you can add multiple entries — each with its own picks, name, and colors.',
       },
       {
         question: 'How does bracket scoring work?',
-        answer: 'You earn points for each correct pick. Points increase in later rounds — for example, 2 points for quarterfinals up to 16 points for the championship. The pool creator can choose from scoring presets (Standard, Upset Heavy, Final Four Focus) or set custom point values for each round.',
+        answer: 'Points for each correct pick, increasing in later rounds. The pool host can choose presets (Standard, Upset Heavy, Final Four Focus) or set custom values per round.',
       },
       {
         question: 'How do roster pools work?',
-        answer: 'In a roster pool, you build a team by selecting participants from different skill tiers (e.g., Tier A: top-ranked, Tier B: mid-ranked, Tier C: lower-ranked). Each tier has a set number of picks. Your best scores count toward your total — for example, best 5 of 7 in a golf roster. This format is used for tournaments like The Masters where individual performance is scored.',
+        answer: 'Pick participants from different skill tiers. Your best scores count toward your total — e.g., best 5 of 7 in a golf roster. Used for tournaments like The Masters.',
       },
       {
         question: 'How is golf scoring calculated in roster pools?',
-        answer: 'Golf roster pools use score-to-par (e.g., -5, E, +3). Your total is the sum of your best counting golfers\' scores-to-par. Lower is better — just like real golf. Scores update live during tournament rounds, and you can see round-by-round breakdowns (R1-R4) for each golfer in your roster.',
+        answer: 'Score-to-par (-5, E, +3). Your total is the sum of your best counting golfers. Lower is better. Scores update live with round-by-round breakdowns.',
       },
       {
         question: 'What are multi-format events?',
-        answer: 'Some tournaments offer multiple pool types under one event. For example, The Masters might have both pick\'em pools (predict matchup winners) and roster pools (build a golfer roster). You can join different pool types within the same event and compete separately in each.',
+        answer: 'Some tournaments offer multiple pool types — e.g., The Masters has both pick\'em and roster pools. Join different types and compete separately in each.',
       },
       {
         question: 'What sports are available for events?',
-        answer: 'Events are available across multiple sports including college hockey, golf, college football, and more as they\'re added. Each sport has its own tournaments and game formats.',
+        answer: 'College hockey, golf, college football, rugby, and more as they\'re added. Each sport has its own tournaments and formats.',
       },
     ],
   },
@@ -80,23 +80,23 @@ const FAQ_DATA: FaqCategory[] = [
     items: [
       {
         question: 'How does the draft work?',
-        answer: 'The commissioner sets a draft date and time. When the draft starts, teams take turns selecting schools in real-time. Each pick has a timer (set by the commissioner). If the timer runs out, the system auto-picks for you. The draft room includes live chat so you can talk with your league while drafting.',
+        answer: 'Teams take turns picking schools in real time. Each pick has a timer — if it runs out, auto-pick selects for you. The draft room has live chat so you can trash talk while you draft.',
       },
       {
         question: 'What draft formats are available?',
-        answer: 'Two formats: Snake draft (pick order reverses each round — 1-2-3 then 3-2-1) and Linear draft (same order every round — 1-2-3 then 1-2-3). Snake is the most common and gives everyone a fair shot at top schools.',
+        answer: 'Snake (order reverses each round) or Linear (same order every round). Snake is most common and gives everyone a fair shot.',
       },
       {
         question: 'What happens if I miss my draft pick?',
-        answer: 'If the pick timer expires, the system auto-picks the highest-ranked available school for you. You can also enable auto-pick manually if you need to step away — the system will draft for you based on rankings.',
+        answer: 'Auto-pick selects the highest-ranked available school. You can also enable auto-pick ahead of time if you need to step away.',
       },
       {
         question: 'Can the commissioner pause the draft?',
-        answer: 'Yes. The commissioner can pause and resume the draft at any time. This is useful for breaks or if someone is having technical issues. All league members are notified when the draft is paused or resumed.',
+        answer: 'Yes — pause and resume anytime. All members are notified.',
       },
       {
         question: 'How is draft order determined?',
-        answer: 'Draft order is randomized when the commissioner starts the draft. The commissioner can also manually set the draft order before starting.',
+        answer: 'Randomized when the draft starts. The commissioner can also set the order manually.',
       },
     ],
   },
@@ -105,27 +105,27 @@ const FAQ_DATA: FaqCategory[] = [
     items: [
       {
         question: 'How are points calculated?',
-        answer: 'Points are earned per game based on your drafted schools\' real results. The default scoring is: Win (+1), Conference Game (+1), Score 50+ Points (+1), Shutout Opponent (+1), Beat a Top 10 Team (+2), Beat a #11-25 Team (+1). Commissioners can customize all point values.',
+        answer: 'Your schools earn points from real game results. Default: Win (+1), Conference Game (+1), 50+ Points (+1), Shutout (+1), Beat Top 10 (+2), Beat Top 25 (+1). Commissioners can customize everything.',
       },
       {
         question: 'When do scores update?',
-        answer: 'During gamedays (typically Saturdays), scores update every few minutes using live ESPN data. Final scores are locked after games complete, and points are calculated automatically. A nightly reconciliation job verifies all totals are accurate.',
+        answer: 'Every few minutes on gamedays using live ESPN data. Final scores lock after games complete. A nightly job verifies all totals.',
       },
       {
         question: 'What is Double Points?',
-        answer: 'Each week, you can select one school on your roster to earn double points. If that school wins and earns 3 points, you get 6 instead. Choose wisely — you can only pick one school per week, and you must make your selection before games start.',
+        answer: 'Pick one school per week to earn 2x points. Must choose before games start. Use them wisely — your commissioner sets the season limit.',
       },
       {
         question: 'What is Weekly High Points?',
-        answer: 'If enabled by the commissioner, the team that scores the most points in a given week wins a weekly prize. The commissioner sets the prize amount. This encourages week-to-week competition even if you\'re behind in the overall standings.',
+        answer: 'If enabled, the highest-scoring team each week wins a prize. Keeps every week competitive even if you\'re behind in the standings.',
       },
       {
         question: 'Do bowl games and playoffs count?',
-        answer: 'Yes! Bowl games, conference championships, and College Football Playoff games all count for points. Playoff games have escalating multipliers, making them especially valuable. The season spans 23 scoring weeks (Weeks 0-22), covering regular season through the National Championship.',
+        answer: 'Yes. Bowls, conference championships, and CFP games all count — with escalating multipliers that make playoff schools especially valuable.',
       },
       {
         question: 'Can the commissioner customize scoring?',
-        answer: 'Yes. Commissioners can adjust point values for every scoring category (wins, conference games, ranked upsets, shutouts, 50+ point games) and set multipliers for postseason games. Preset templates are available for quick setup.',
+        answer: 'Yes. Adjust every scoring category and set postseason multipliers. Preset templates are available for quick setup.',
       },
     ],
   },
@@ -134,19 +134,19 @@ const FAQ_DATA: FaqCategory[] = [
     items: [
       {
         question: 'How do add/drops work?',
-        answer: 'You can drop a school from your roster and pick up an undrafted school. Go to your team page, click "Drop" next to a school, then select an available school to add. The commissioner sets limits on how many add/drops you can make per season.',
+        answer: 'Drop a school from your roster and pick up an available one. Go to your team page, tap Drop, then pick a new school. Your commissioner sets the limit on how many moves you get per season.',
       },
       {
         question: 'Are there add/drop limits?',
-        answer: 'The commissioner configures the maximum number of add/drop transactions allowed per season. Check your league settings to see your limit and how many you\'ve used. Once you hit the limit, you cannot make more moves until the next season.',
+        answer: 'Yes — your commissioner sets the max per season. Check league settings to see your limit and how many you\'ve used.',
       },
       {
         question: 'How does trading work?',
-        answer: 'You can propose a trade to another team — offering one or more of your schools for one or more of theirs. The other team can accept or reject. If accepted, the commissioner (or league vote, depending on settings) can veto unfair trades. Once approved, the schools swap rosters immediately.',
+        answer: 'Propose a trade offering your schools for theirs. They accept or reject. The commissioner can veto unfair trades. Once approved, schools swap immediately.',
       },
       {
         question: 'Can trades be vetoed?',
-        answer: 'Yes. The commissioner can veto any trade they believe is unfair or collusive. When a trade is vetoed, both teams are notified and the trade is cancelled. Schools stay on their original rosters.',
+        answer: 'Yes. The commissioner can veto any trade they believe is unfair. Both teams are notified and schools stay on their original rosters.',
       },
     ],
   },
@@ -155,19 +155,19 @@ const FAQ_DATA: FaqCategory[] = [
     items: [
       {
         question: 'What can commissioners do?',
-        answer: 'Commissioners have full control over their league: set scoring rules, configure draft settings, manage members (invite, remove), post to the bulletin board, veto trades, appoint co-commissioners, and manage season settings. Commissioners cannot edit scores — only the platform admin can override scores if needed.',
+        answer: 'Full league control: scoring rules, draft settings, member management, bulletin board, trade vetoes, and co-commissioner appointments.',
       },
       {
         question: 'What is a co-commissioner?',
-        answer: 'Commissioners can promote any member to co-commissioner. Co-commissioners have the same management powers as the commissioner, which is useful for sharing league administration duties.',
+        answer: 'A member promoted to share management powers with the commissioner. Useful for splitting league admin duties.',
       },
       {
         question: 'How does the Bulletin Board work?',
-        answer: 'Commissioners can post to the Bulletin Board, which appears at the top of the league page. All members receive a notification when a new post is published. Use it for rule reminders, trade deadline warnings, weekly updates, or schedule posts in advance.',
+        answer: 'Post updates that appear at the top of your league page. All members get notified. Use it for rule reminders, trade deadlines, or weekly recaps.',
       },
       {
         question: 'Can I run my league again next season?',
-        answer: 'Yes! After the season ends, your league goes dormant automatically. When the next season approaches, you\'ll see a "Start New Season" button on your league page. Reactivating keeps all your members — everyone gets a fresh team and a new draft.',
+        answer: 'Yes. After the season ends, your league goes dormant. Hit "Start New Season" when the next season approaches — all members keep their spots with fresh teams and a new draft.',
       },
     ],
   },
@@ -176,19 +176,19 @@ const FAQ_DATA: FaqCategory[] = [
     items: [
       {
         question: 'How do I change my display name?',
-        answer: 'Go to Settings from the dropdown menu in the top right. You can update your display name, which appears across all your leagues.',
+        answer: 'Go to Settings from the top-right menu. Your display name shows across all leagues.',
       },
       {
         question: 'How do I change the color theme?',
-        answer: 'Go to Settings and look for the Palette/Theme section. Rivyls offers 4 color palettes — pick the one you like best. Your choice is saved and applies across the whole site.',
+        answer: 'Go to Settings and pick from 4 color palettes. Your choice applies across the whole site.',
       },
       {
         question: 'Can I delete my account?',
-        answer: 'Yes. Go to Settings and scroll to the bottom. Account deletion is permanent. Your fantasy teams will be soft-deleted to preserve league history integrity, but your personal data (email, name) will be removed.',
+        answer: 'Yes. Go to Settings and scroll to the bottom. This is permanent. Your teams will be kept in league records so standings and history stay accurate, but your personal info (email, name) will be removed.',
       },
       {
         question: 'How do referral links work?',
-        answer: 'Each user has a unique referral link on their Profile page. Share it with friends — when they sign up through your link, it\'s tracked on your profile. Referrals help you earn badges and may unlock future rewards.',
+        answer: 'Share your unique referral link from your Profile page. When friends sign up through it, it\'s tracked and helps you earn badges.',
       },
     ],
   },
@@ -197,23 +197,23 @@ const FAQ_DATA: FaqCategory[] = [
     items: [
       {
         question: 'I can\'t join a league with my invite code.',
-        answer: 'Make sure the code is entered exactly as provided (codes are case-sensitive). If the league is full (reached max teams), you won\'t be able to join. Ask the commissioner to check the league capacity or send a new code.',
+        answer: 'Codes are case-sensitive — enter it exactly. If the league is full, ask the commissioner to check capacity or send a new code.',
       },
       {
         question: 'The draft timer seems frozen.',
-        answer: 'Try refreshing the page. If the issue persists, the commissioner may have paused the draft. Check the draft chat for updates. If you\'re on a slow connection, the real-time updates may be delayed — your picks will still be saved.',
+        answer: 'Refresh the page. The commissioner may have paused the draft — check the draft chat. On slow connections, updates may be delayed but your picks still save.',
       },
       {
         question: 'My scores don\'t look right.',
-        answer: 'Scores update throughout gameday and may take a few minutes to reflect final results. A nightly reconciliation job runs every day to verify and fix any discrepancies. If scores still look wrong after 24 hours, use the "Report Issue" feature in Settings to let us know.',
+        answer: 'Scores update throughout gameday and may take a few minutes. A nightly job verifies everything. If still wrong after 24 hours, use "Report Issue" in Settings.',
       },
       {
         question: 'I\'m not receiving notifications.',
-        answer: 'Check your notification preferences in Settings. Make sure in-app notifications are enabled for the categories you want (trades, draft reminders, game results). The notification bell in the header shows your unread count.',
+        answer: 'Check notification preferences in Settings. Make sure in-app notifications are enabled for the categories you want.',
       },
       {
         question: 'How do I report a bug?',
-        answer: 'Go to Settings and use the "Report an Issue" section at the bottom of the page. Describe what happened, what you expected, and include any relevant details. Our team reviews all reports.',
+        answer: 'Use the "Report an Issue" button in the bottom-left corner of any page. Describe what happened and what you expected.',
       },
     ],
   },

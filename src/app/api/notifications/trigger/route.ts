@@ -44,7 +44,7 @@ export async function POST(request: NextRequest) {
 
     const isMember = await verifyLeagueMembership(user.id, leagueId)
     if (!isMember) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+      return NextResponse.json({ error: "You don't have permission to do this." }, { status: 403 })
     }
 
     const data = { leagueId, ...(draftId ? { draftId } : {}) }
@@ -83,7 +83,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Notification trigger error:', error)
     return NextResponse.json(
-      { error: 'Failed to send notification' },
+      { error: "Couldn't send notification. Try again." },
       { status: 500 }
     )
   }

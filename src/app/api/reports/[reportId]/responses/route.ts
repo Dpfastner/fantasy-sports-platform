@@ -35,7 +35,7 @@ export async function GET(
       .single()
 
     if (!ticket || ticket.user_id !== user.id) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+      return NextResponse.json({ error: "You don't have permission to do this." }, { status: 403 })
     }
   }
 
@@ -81,7 +81,7 @@ export async function POST(
 
   // Non-admin can only respond to own tickets
   if (!isAdmin && ticket.user_id !== user.id) {
-    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    return NextResponse.json({ error: "You don't have permission to do this." }, { status: 403 })
   }
 
   // Insert response
@@ -98,7 +98,7 @@ export async function POST(
 
   if (insertError) {
     console.error('[ticket_responses] Insert failed:', insertError.message)
-    return NextResponse.json({ error: 'Failed to post response' }, { status: 500 })
+    return NextResponse.json({ error: "Couldn't send response. Try again." }, { status: 500 })
   }
 
   // Update denormalized counters on issue_reports

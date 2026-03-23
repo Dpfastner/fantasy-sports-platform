@@ -19,7 +19,7 @@ interface CardLayoutProps {
   footerText?: string
 }
 
-export function CardLayout({ children, footerText = 'Fantasy College Football' }: CardLayoutProps) {
+export function CardLayout({ children, footerText = 'Fantasy College Sports' }: CardLayoutProps) {
   return (
     <div
       style={{

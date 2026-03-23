@@ -16,10 +16,10 @@ export const SPORTS: SportConfig[] = [
     shortName: 'CFB',
     icon: '🏈',
     description:
-      'Draft real college football programs and chase weekly prizes all season long.',
+      'Draft college football programs and compete all season long.',
     status: 'active',
     seasonLabel: 'Season',
-    tagline: 'Draft teams. Score points. Win your league.',
+    tagline: 'Draft schools. Score points. Win your league.',
   },
   {
     id: 'hockey',

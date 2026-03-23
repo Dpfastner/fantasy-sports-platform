@@ -20,7 +20,7 @@ export async function GET() {
 
     if (error) {
       return NextResponse.json(
-        { error: 'Failed to fetch notifications', details: error.message },
+        { error: "Couldn't load notifications. Try refreshing the page.", details: error.message },
         { status: 500 }
       )
     }
@@ -39,7 +39,7 @@ export async function GET() {
   } catch (error) {
     console.error('Notifications GET error:', error)
     return NextResponse.json(
-      { error: 'Failed to fetch notifications' },
+      { error: "Couldn't load notifications. Try refreshing the page." },
       { status: 500 }
     )
   }
@@ -66,7 +66,7 @@ export async function PATCH(request: NextRequest) {
 
       if (error) {
         return NextResponse.json(
-          { error: 'Failed to mark all as read', details: error.message },
+          { error: "Couldn't update notifications. Try again.", details: error.message },
           { status: 500 }
         )
       }
@@ -82,7 +82,7 @@ export async function PATCH(request: NextRequest) {
 
       if (error) {
         return NextResponse.json(
-          { error: `Failed to mark as ${markUnread ? 'unread' : 'read'}`, details: error.message },
+          { error: "Couldn't update notifications. Try again.", details: error.message },
           { status: 500 }
         )
       }
@@ -94,7 +94,7 @@ export async function PATCH(request: NextRequest) {
   } catch (error) {
     console.error('Notifications PATCH error:', error)
     return NextResponse.json(
-      { error: 'Failed to update notifications' },
+      { error: "Couldn't update notifications. Try again." },
       { status: 500 }
     )
   }

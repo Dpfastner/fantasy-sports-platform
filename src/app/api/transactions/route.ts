@@ -52,7 +52,7 @@ export async function POST(request: NextRequest) {
 
     if (team.user_id !== user.id) {
       return NextResponse.json(
-        { error: 'Forbidden' },
+        { error: "You don't have permission to do this." },
         { status: 403 }
       )
     }
@@ -66,7 +66,7 @@ export async function POST(request: NextRequest) {
 
     if (settingsError) {
       return NextResponse.json(
-        { error: 'Failed to fetch league settings' },
+        { error: "Couldn't load league settings. Try refreshing the page." },
         { status: 500 }
       )
     }
@@ -156,7 +156,7 @@ export async function POST(request: NextRequest) {
 
       if (rosterPeriod.school_id !== droppedSchoolId) {
         return NextResponse.json(
-          { error: 'School ID mismatch' },
+          { error: 'Something went wrong. Try again.' },
           { status: 400 }
         )
       }
@@ -216,7 +216,7 @@ export async function POST(request: NextRequest) {
 
       if (updateError) {
         return NextResponse.json(
-          { error: 'Failed to update roster period' },
+          { error: "Couldn't update your roster. Try again." },
           { status: 500 }
         )
       }
@@ -244,7 +244,7 @@ export async function POST(request: NextRequest) {
       }
 
       return NextResponse.json(
-        { error: 'Failed to add new school to roster' },
+        { error: "Couldn't add school to roster. Try again." },
         { status: 500 }
       )
     }
@@ -322,7 +322,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Transaction error:', error)
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: 'Something went wrong. Try again.' },
       { status: 500 }
     )
   }
@@ -351,7 +351,7 @@ export async function GET(request: NextRequest) {
     if (leagueId) {
       const isMember = await verifyLeagueMembership(user.id, leagueId)
       if (!isMember) {
-        return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+        return NextResponse.json({ error: "You don't have permission to do this." }, { status: 403 })
       }
     }
 
@@ -396,7 +396,7 @@ export async function GET(request: NextRequest) {
 
     if (error) {
       return NextResponse.json(
-        { error: 'Failed to fetch transactions' },
+        { error: "Couldn't load transactions. Try refreshing the page." },
         { status: 500 }
       )
     }
@@ -405,7 +405,7 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error('Error fetching transactions:', error)
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: 'Something went wrong. Try again.' },
       { status: 500 }
     )
   }

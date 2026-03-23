@@ -106,7 +106,7 @@ export default async function PublicProfilePage({ params }: PageProps) {
         {/* CTA */}
         <div className="bg-surface rounded-lg p-6 text-center">
           <p className="text-text-secondary mb-4">
-            Play Fantasy College Football on Rivyls
+            Play Fantasy College Sports on Rivyls
           </p>
           <Link
             href="/login"

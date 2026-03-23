@@ -17,7 +17,7 @@ export async function POST(request: Request) {
     // Get current user
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return NextResponse.json({ error: 'You need to sign in to do this.' }, { status: 401 })
     }
 
     const rawBody = await request.json()
@@ -112,7 +112,7 @@ export async function POST(request: Request) {
 
     if (draftError) {
       console.error('Error resetting draft state:', draftError)
-      return NextResponse.json({ error: 'Failed to reset draft: ' + draftError.message }, { status: 500 })
+      return NextResponse.json({ error: "Couldn't reset draft. Try again." }, { status: 500 })
     }
 
     // Reset auto-pick for all teams in the league
@@ -145,7 +145,7 @@ export async function POST(request: Request) {
     console.error('Reset draft error:', error)
     const errorMessage = error instanceof Error ? error.message : String(error)
     return NextResponse.json(
-      { error: `Failed to reset draft: ${errorMessage}` },
+      { error: "Couldn't reset draft. Try again." },
       { status: 500 }
     )
   }

@@ -258,7 +258,7 @@ export default async function ProfilePage() {
             <CopyButton text={referralUrl} />
             <ShareButton
               shareData={{
-                title: 'Join Rivyls — Fantasy College Football',
+                title: 'Join Rivyls — Fantasy College Sports',
                 text: `${profile.display_name || 'A friend'} wants you to start a league on Rivyls!`,
                 url: buildShareUrl(`/welcome?ref=${user.id}`, { source: 'referral' }),
               }}

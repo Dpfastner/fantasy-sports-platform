@@ -28,7 +28,7 @@ export async function GET(
 
     const isMember = await verifyLeagueMembership(user.id, leagueId)
     if (!isMember) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+      return NextResponse.json({ error: 'You don\'t have permission to do this.' }, { status: 403 })
     }
 
     const supabase = createAdminClient()
@@ -62,7 +62,7 @@ export async function GET(
     return NextResponse.json({ reactions: detail })
   } catch (error) {
     Sentry.captureException(error)
-    return NextResponse.json({ error: 'Failed to fetch reaction details' }, { status: 500 })
+    return NextResponse.json({ error: 'Couldn\'t load reaction details. Try refreshing the page.' }, { status: 500 })
   }
 }
 
@@ -82,7 +82,7 @@ export async function POST(
 
     const isMember = await verifyLeagueMembership(user.id, leagueId)
     if (!isMember) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+      return NextResponse.json({ error: 'You don\'t have permission to do this.' }, { status: 403 })
     }
 
     const rawBody = await request.json()
@@ -134,7 +134,7 @@ export async function POST(
 
       if (error) {
         return NextResponse.json(
-          { error: 'Failed to add reaction', details: error.message },
+          { error: 'Couldn\'t add your reaction. Try again.', details: error.message },
           { status: 500 }
         )
       }
@@ -145,7 +145,7 @@ export async function POST(
     Sentry.captureException(error)
     console.error('Reactions POST error:', error)
     return NextResponse.json(
-      { error: 'Failed to toggle reaction' },
+      { error: 'Couldn\'t add your reaction. Try again.' },
       { status: 500 }
     )
   }

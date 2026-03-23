@@ -140,7 +140,7 @@ export function SettingsTab({
 
       const data = await res.json()
       if (!res.ok) {
-        addToast(data.error || 'Failed to save settings', 'error')
+        addToast(data.error || 'Couldn\'t save settings. Try again.', 'error')
         return
       }
 

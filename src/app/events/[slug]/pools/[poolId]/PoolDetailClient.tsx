@@ -188,7 +188,7 @@ export function PoolDetailClient({
         router.refresh()
       } else {
         const data = await res.json()
-        addToast(data.error || 'Failed to add entry', 'error')
+        addToast(data.error || 'Couldn\'t add entry. Try again.', 'error')
       }
     } catch {
       addToast('Something went wrong', 'error')
@@ -202,7 +202,7 @@ export function PoolDetailClient({
       addToast('Invite code copied!', 'success')
       setTimeout(() => setCodeCopied(false), 2000)
     } catch {
-      addToast('Failed to copy', 'error')
+      addToast('Couldn\'t copy. Try again.', 'error')
     }
   }
 
@@ -312,10 +312,10 @@ export function PoolDetailClient({
                   router.refresh()
                 } else {
                   const data = await res.json()
-                  addToast(data.error || 'Failed to join', 'error')
+                  addToast(data.error || 'Couldn\'t join pool. Try again.', 'error')
                 }
               } catch {
-                addToast('Failed to join pool', 'error')
+                addToast('Couldn\'t join pool. Try again.', 'error')
               }
             }}
             className="px-6 py-2.5 text-sm font-semibold rounded-lg bg-brand hover:bg-brand-hover text-text-primary transition-colors"

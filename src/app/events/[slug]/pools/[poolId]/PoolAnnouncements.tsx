@@ -57,7 +57,7 @@ export function PoolAnnouncements({ poolId, isCreator }: PoolAnnouncementsProps)
         await fetchAnnouncements()
       } else {
         const data = await res.json()
-        addToast(data.error || 'Failed to post', 'error')
+        addToast(data.error || 'Couldn\'t post. Try again.', 'error')
       }
     } catch {
       addToast('Something went wrong', 'error')
@@ -78,7 +78,7 @@ export function PoolAnnouncements({ poolId, isCreator }: PoolAnnouncementsProps)
         await fetchAnnouncements()
       }
     } catch {
-      addToast('Failed to delete', 'error')
+      addToast('Couldn\'t delete. Try again.', 'error')
     }
   }
 

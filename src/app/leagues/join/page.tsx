@@ -220,7 +220,7 @@ function JoinLeagueForm() {
       const data = await res.json()
 
       if (!res.ok) {
-        setError(data.error || 'Failed to join league')
+        setError(data.error || 'Couldn\'t join league. Try again.')
         return
       }
 

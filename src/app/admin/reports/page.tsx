@@ -100,7 +100,7 @@ export default function AdminReportsPage() {
           </div>
         ) : filteredReports.length === 0 ? (
           <div className="bg-surface rounded-lg p-8 text-center">
-            <p className="text-text-secondary">No reports found.</p>
+            <p className="text-text-secondary">No reports yet.</p>
           </div>
         ) : (
           <div className="space-y-3">

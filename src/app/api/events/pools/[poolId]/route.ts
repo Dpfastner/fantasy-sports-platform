@@ -28,7 +28,7 @@ export async function PATCH(
     const { data: { user }, error: authError } = await supabase.auth.getUser()
 
     if (authError || !user) {
-      return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
+      return NextResponse.json({ error: 'You need to sign in to do this.' }, { status: 401 })
     }
 
     const admin = createAdminClient()
@@ -45,7 +45,7 @@ export async function PATCH(
     }
 
     if (pool.created_by !== user.id) {
-      return NextResponse.json({ error: 'Only the pool creator can edit settings' }, { status: 403 })
+      return NextResponse.json({ error: 'Only the pool host can edit settings' }, { status: 403 })
     }
 
     const rawBody = await request.json()
@@ -76,13 +76,13 @@ export async function PATCH(
 
     if (updateError) {
       console.error('Pool update failed:', updateError)
-      return NextResponse.json({ error: 'Failed to update pool' }, { status: 500 })
+      return NextResponse.json({ error: "Couldn't update pool. Try again." }, { status: 500 })
     }
 
     return NextResponse.json({ success: true })
   } catch (err) {
     console.error('Pool settings error:', err)
     Sentry.captureException(err, { tags: { route: 'events/pools/[poolId]', action: 'update' } })
-    return NextResponse.json({ error: 'An unexpected error occurred' }, { status: 500 })
+    return NextResponse.json({ error: 'Something went wrong. Try again.' }, { status: 500 })
   }
 }

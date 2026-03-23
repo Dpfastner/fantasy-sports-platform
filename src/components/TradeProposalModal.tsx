@@ -274,14 +274,14 @@ export default function TradeProposalModal({
       const data = await res.json()
 
       if (!res.ok) {
-        throw new Error(data.error || 'Failed to propose trade')
+        throw new Error(data.error || 'Couldn\'t send the trade. Try again.')
       }
 
       addToast(counterToTrade ? 'Counter-offer sent!' : 'Trade proposed!', 'success')
       onClose()
       onTradeProposed?.()
     } catch (err) {
-      addToast(err instanceof Error ? err.message : 'Failed to propose trade', 'error')
+      addToast(err instanceof Error ? err.message : 'Couldn\'t send the trade. Try again.', 'error')
     } finally {
       setSubmitting(false)
     }

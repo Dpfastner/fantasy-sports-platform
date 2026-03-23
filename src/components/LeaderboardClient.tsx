@@ -196,7 +196,7 @@ export default function LeaderboardClient({
         }
       } catch (error) {
         console.error('Failed to fetch stats:', error)
-        addToast('Failed to load league stats.', 'error')
+        addToast('Couldn\'t load league stats. Try refreshing the page.', 'error')
       }
     }
 

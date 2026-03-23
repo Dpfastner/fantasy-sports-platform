@@ -32,6 +32,6 @@ export async function GET(
 
     return NextResponse.json({ members })
   } catch {
-    return NextResponse.json({ error: 'Failed to fetch members' }, { status: 500 })
+    return NextResponse.json({ error: "Couldn't load members. Try refreshing the page." }, { status: 500 })
   }
 }

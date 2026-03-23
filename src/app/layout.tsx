@@ -28,10 +28,10 @@ export const viewport: Viewport = {
 
 export const metadata: Metadata = {
   title: "Rivyls",
-  description: "Fantasy sports platform for college football, hockey, and more",
+  description: "Rivyls — fantasy college sports, brackets, pick'em, and survivor. Free to play.",
   openGraph: {
-    title: "Rivyls — Fantasy College Football",
-    description: "Draft teams. Compete with friends. Win prizes.",
+    title: "Rivyls — Draft Programs. Not Players.",
+    description: "Draft programs. Not players. Fantasy college sports — free to play.",
     siteName: "Rivyls",
     url: "https://rivyls.com",
     type: "website",
@@ -40,14 +40,14 @@ export const metadata: Metadata = {
         url: "https://rivyls.com/api/og/default",
         width: 1200,
         height: 630,
-        alt: "Rivyls — Fantasy College Football",
+        alt: "Rivyls — Draft Programs. Not Players.",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Rivyls — Fantasy College Football",
-    description: "Draft teams. Compete with friends. Win prizes.",
+    title: "Rivyls — Draft Programs. Not Players.",
+    description: "Draft programs. Not players. Fantasy college sports — free to play.",
     images: ["https://rivyls.com/api/og/default"],
   },
 };

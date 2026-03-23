@@ -70,7 +70,7 @@ export async function GET(
   } catch (err) {
     console.error('Pool messages fetch error:', err)
     Sentry.captureException(err, { tags: { route: 'events/pools/messages', action: 'fetch' } })
-    return NextResponse.json({ error: 'Failed to fetch messages' }, { status: 500 })
+    return NextResponse.json({ error: "Couldn't load messages. Try refreshing the page." }, { status: 500 })
   }
 }
 
@@ -83,7 +83,7 @@ export async function POST(
     const supabase = await createServerClient()
     const { data: { user }, error: authError } = await supabase.auth.getUser()
     if (authError || !user) {
-      return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
+      return NextResponse.json({ error: 'You need to sign in to do this.' }, { status: 401 })
     }
 
     const { limited, response } = messageLimiter.check(getClientIp(request))
@@ -115,13 +115,13 @@ export async function POST(
       .single()
 
     if (error) {
-      return NextResponse.json({ error: 'Failed to send message' }, { status: 500 })
+      return NextResponse.json({ error: "Couldn't send message. Try again." }, { status: 500 })
     }
 
     return NextResponse.json({ success: true, messageId: message.id })
   } catch (err) {
     console.error('Pool message send error:', err)
     Sentry.captureException(err, { tags: { route: 'events/pools/messages', action: 'send' } })
-    return NextResponse.json({ error: 'Failed to send message' }, { status: 500 })
+    return NextResponse.json({ error: "Couldn't send message. Try again." }, { status: 500 })
   }
 }

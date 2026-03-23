@@ -159,7 +159,7 @@ export function DoublePointsPicker({
       loadPicksAndDeadline()
     } catch (err: unknown) {
       console.error('Error saving pick:', err)
-      setError(err instanceof Error ? err.message : 'Failed to save pick')
+      setError(err instanceof Error ? err.message : 'Couldn\'t save pick. Try again.')
     }
     setSaving(false)
   }

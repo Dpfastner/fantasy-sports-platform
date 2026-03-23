@@ -51,7 +51,7 @@ export async function GET(request: Request, context: RouteContext) {
     })
   } catch (err) {
     Sentry.captureException(err, { tags: { route: 'events/pools/draft', method: 'GET' } })
-    return NextResponse.json({ error: 'Failed to fetch draft state' }, { status: 500 })
+    return NextResponse.json({ error: "Couldn't load draft state. Try refreshing the page." }, { status: 500 })
   }
 }
 
@@ -66,7 +66,7 @@ export async function POST(request: Request, context: RouteContext) {
     const supabase = await createServerClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return NextResponse.json({ error: 'You need to sign in to do this.' }, { status: 401 })
     }
 
     const admin = createAdminClient()
@@ -102,7 +102,7 @@ export async function POST(request: Request, context: RouteContext) {
     }
   } catch (err) {
     Sentry.captureException(err, { tags: { route: 'events/pools/draft', method: 'POST' } })
-    return NextResponse.json({ error: 'Draft action failed' }, { status: 500 })
+    return NextResponse.json({ error: "Something went wrong. Try again." }, { status: 500 })
   }
 }
 
@@ -114,7 +114,7 @@ async function handleStartDraft(
 ) {
   // Only pool creator can start
   if (pool.created_by !== userId) {
-    return NextResponse.json({ error: 'Only the pool creator can start the draft' }, { status: 403 })
+    return NextResponse.json({ error: 'Only the pool host can start the draft' }, { status: 403 })
   }
 
   // Check if draft already exists
@@ -171,7 +171,7 @@ async function handleStartDraft(
       .eq('id', existing.id)
 
     if (error) {
-      return NextResponse.json({ error: 'Failed to start draft' }, { status: 500 })
+      return NextResponse.json({ error: "Couldn't start draft. Try again." }, { status: 500 })
     }
     draftId = existing.id
 
@@ -193,7 +193,7 @@ async function handleStartDraft(
       .single()
 
     if (error || !newDraft) {
-      return NextResponse.json({ error: 'Failed to create draft' }, { status: 500 })
+      return NextResponse.json({ error: "Couldn't create draft. Try again." }, { status: 500 })
     }
     draftId = newDraft.id
   }
@@ -222,7 +222,7 @@ async function handleStartDraft(
 
   if (orderError) {
     console.error('Draft order insert failed:', orderError)
-    return NextResponse.json({ error: 'Failed to set draft order' }, { status: 500 })
+    return NextResponse.json({ error: "Couldn't set draft order. Try again." }, { status: 500 })
   }
 
   logActivity({ userId, action: 'event.draft_started', details: { poolId: pool.id, mode: draftMode, entries: entryIds.length } })
@@ -322,7 +322,7 @@ async function handleDraftPick(
 
   if (pickError) {
     console.error('Draft pick insert failed:', pickError)
-    return NextResponse.json({ error: 'Failed to record pick' }, { status: 500 })
+    return NextResponse.json({ error: "Couldn't record pick. Try again." }, { status: 500 })
   }
 
   // Advance to next pick
@@ -398,7 +398,7 @@ async function handlePauseDraft(
   admin: ReturnType<typeof createAdminClient>
 ) {
   if (pool.created_by !== userId) {
-    return NextResponse.json({ error: 'Only the pool creator can pause the draft' }, { status: 403 })
+    return NextResponse.json({ error: 'Only the pool host can pause the draft' }, { status: 403 })
   }
 
   const { error } = await admin
@@ -408,7 +408,7 @@ async function handlePauseDraft(
     .eq('status', 'in_progress')
 
   if (error) {
-    return NextResponse.json({ error: 'Failed to pause draft' }, { status: 500 })
+    return NextResponse.json({ error: "Couldn't pause draft. Try again." }, { status: 500 })
   }
 
   return NextResponse.json({ success: true })
@@ -420,7 +420,7 @@ async function handleResumeDraft(
   admin: ReturnType<typeof createAdminClient>
 ) {
   if (pool.created_by !== userId) {
-    return NextResponse.json({ error: 'Only the pool creator can resume the draft' }, { status: 403 })
+    return NextResponse.json({ error: 'Only the pool host can resume the draft' }, { status: 403 })
   }
 
   const scoringRules = (pool.scoring_rules || {}) as Partial<RosterScoringRules>
@@ -437,7 +437,7 @@ async function handleResumeDraft(
     .eq('status', 'paused')
 
   if (error) {
-    return NextResponse.json({ error: 'Failed to resume draft' }, { status: 500 })
+    return NextResponse.json({ error: "Couldn't resume draft. Try again." }, { status: 500 })
   }
 
   return NextResponse.json({ success: true })

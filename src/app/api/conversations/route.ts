@@ -48,7 +48,7 @@ export async function GET() {
   } catch (error) {
     Sentry.captureException(error)
     console.error('Conversations GET error:', error)
-    return NextResponse.json({ error: 'Failed to fetch conversations' }, { status: 500 })
+    return NextResponse.json({ error: "Couldn't load conversations. Try refreshing the page." }, { status: 500 })
   }
 }
 
@@ -114,7 +114,7 @@ export async function POST(request: NextRequest) {
       .single()
 
     if (convError || !conversation) {
-      return NextResponse.json({ error: 'Failed to create conversation' }, { status: 500 })
+      return NextResponse.json({ error: "Couldn't create conversation. Try again." }, { status: 500 })
     }
 
     // Add both members
@@ -126,7 +126,7 @@ export async function POST(request: NextRequest) {
       ])
 
     if (membersError) {
-      return NextResponse.json({ error: 'Failed to add conversation members' }, { status: 500 })
+      return NextResponse.json({ error: "Couldn't create conversation. Try again." }, { status: 500 })
     }
 
     return NextResponse.json({
@@ -136,6 +136,6 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     Sentry.captureException(error)
     console.error('Conversations POST error:', error)
-    return NextResponse.json({ error: 'Failed to create conversation' }, { status: 500 })
+    return NextResponse.json({ error: "Couldn't create conversation. Try again." }, { status: 500 })
   }
 }

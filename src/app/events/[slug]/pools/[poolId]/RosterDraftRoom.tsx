@@ -192,7 +192,7 @@ export function RosterDraftRoom({
       })
       const data = await res.json()
       if (!res.ok) {
-        addToast(data.error || `Failed to ${action}`, 'error')
+        addToast(data.error || 'Couldn\'t complete that action. Try again.', 'error')
         return
       }
 
@@ -238,7 +238,7 @@ export function RosterDraftRoom({
       <div className="bg-surface rounded-lg border border-border p-6 text-center">
         <h3 className="brand-h3 text-lg text-text-primary mb-2">Live Draft</h3>
         <p className="text-text-muted text-sm mb-4">
-          {entries.length} entries ready. {isCreator ? 'Start the draft when everyone has joined.' : 'Waiting for the pool creator to start the draft.'}
+          {entries.length} entries ready. {isCreator ? 'Start the draft when everyone has joined.' : 'Waiting for the pool host to start the draft.'}
         </p>
         <div className="flex flex-wrap gap-2 justify-center mb-4">
           {entries.map(e => (

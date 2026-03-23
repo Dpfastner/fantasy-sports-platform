@@ -222,7 +222,7 @@ export async function POST(
     Sentry.captureException(error)
     console.error('Trade veto error:', error)
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Failed to veto trade' },
+      { error: error instanceof Error ? error.message : 'Couldn\'t veto the trade. Try again.' },
       { status: 500 }
     )
   }

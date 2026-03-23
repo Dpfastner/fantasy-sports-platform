@@ -148,7 +148,7 @@ export default function MonitoringPage() {
                   )}
                 </div>
               ) : (
-                <p className="text-text-muted text-sm">No health checks recorded yet.</p>
+                <p className="text-text-muted text-sm">No health checks yet. Hit &ldquo;Test Now&rdquo; to run one.</p>
               )}
             </div>
           ))}
@@ -162,7 +162,7 @@ export default function MonitoringPage() {
           {loading ? (
             <div className="p-8 text-center text-text-muted">Loading...</div>
           ) : checks.length === 0 ? (
-            <div className="p-8 text-center text-text-muted">No health checks recorded yet. Run a sync or click &ldquo;Test Now&rdquo;.</div>
+            <div className="p-8 text-center text-text-muted">No health checks yet. Hit &ldquo;Test Now&rdquo; to run one.</div>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">

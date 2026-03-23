@@ -66,10 +66,10 @@ export function PoolChat({ poolId, userId }: PoolChatProps) {
         setNewMessage('')
         await fetchMessages()
       } else {
-        addToast('Failed to send message', 'error')
+        addToast('Couldn\'t send message. Try again.', 'error')
       }
     } catch {
-      addToast('Failed to send message', 'error')
+      addToast('Couldn\'t send message. Try again.', 'error')
     } finally {
       setSending(false)
     }
@@ -85,7 +85,7 @@ export function PoolChat({ poolId, userId }: PoolChatProps) {
       })
       await fetchMessages()
     } catch {
-      addToast('Failed to react', 'error')
+      addToast('Couldn\'t add your reaction. Try again.', 'error')
     }
   }
 

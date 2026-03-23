@@ -33,14 +33,14 @@ export default function ReportIssue() {
       })
 
       if (!response.ok) {
-        throw new Error('Failed to submit report')
+        throw new Error('Couldn\'t submit your report. Try again.')
       }
 
       addToast('Report submitted! View your tickets at /tickets', 'success')
       setDescription('')
       setIsOpen(false)
     } catch {
-      addToast('Failed to submit report. Please try again.', 'error')
+      addToast('Couldn\'t submit your report. Try again.', 'error')
     } finally {
       setIsSubmitting(false)
     }

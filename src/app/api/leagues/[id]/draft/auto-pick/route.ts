@@ -32,7 +32,7 @@ export async function DELETE(
   } catch (error) {
     Sentry.captureException(error)
     console.error('Reset auto-pick error:', error)
-    return NextResponse.json({ error: 'Failed to reset auto-pick' }, { status: 500 })
+    return NextResponse.json({ error: 'Couldn\'t reset auto-pick. Try again.' }, { status: 500 })
   }
 }
 
@@ -52,7 +52,7 @@ export async function POST(
 
     const isMember = await verifyLeagueMembership(user.id, leagueId)
     if (!isMember) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+      return NextResponse.json({ error: 'You don\'t have permission to do this.' }, { status: 403 })
     }
 
     const rawBody = await request.json()
@@ -136,7 +136,7 @@ export async function POST(
     ])
 
     if (!league || !settings || !currentTeam || !draftOrder) {
-      return NextResponse.json({ error: 'Failed to load draft data' }, { status: 500 })
+      return NextResponse.json({ error: 'Couldn\'t load draft data. Try refreshing the page.' }, { status: 500 })
     }
 
     const seasonYear = (league.seasons as unknown as { year: number })?.year || new Date().getFullYear()
@@ -193,7 +193,7 @@ export async function POST(
       if (pickError.code === '23505') {
         return NextResponse.json({ skipped: true, reason: 'pick_already_made' })
       }
-      return NextResponse.json({ error: 'Failed to insert pick' }, { status: 500 })
+      return NextResponse.json({ error: 'Couldn\'t make the pick. Try again.' }, { status: 500 })
     }
 
     // If this auto-pick was triggered by timer expiry (not by user toggle),
@@ -234,7 +234,7 @@ export async function POST(
     Sentry.captureException(error)
     console.error('Auto-pick error:', error)
     return NextResponse.json(
-      { error: 'Auto-pick failed', details: String(error) },
+      { error: 'Something went wrong. Try again.', details: String(error) },
       { status: 500 }
     )
   }

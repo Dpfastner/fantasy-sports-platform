@@ -182,7 +182,7 @@ export function LeagueChat({ leagueId, currentUserId, initialMessages, initialRe
         body: JSON.stringify({ messageId, emoji }),
       })
       if (!res.ok) {
-        throw new Error('Failed to toggle reaction')
+        throw new Error('Couldn\'t add your reaction. Try again.')
       }
     } catch {
       // Revert on error — re-fetch from server would be ideal but simple revert works
@@ -220,10 +220,10 @@ export function LeagueChat({ leagueId, currentUserId, initialMessages, initialRe
         body: JSON.stringify({ message: trimmed }),
       })
       const data = await res.json()
-      if (!res.ok) throw new Error(data.error || 'Failed to send message')
+      if (!res.ok) throw new Error(data.error || 'Couldn\'t send message. Try again.')
       setInput('')
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to send message')
+      setError(err instanceof Error ? err.message : 'Couldn\'t send message. Try again.')
     } finally {
       setSending(false)
     }

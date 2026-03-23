@@ -114,7 +114,7 @@ export function EventPoolsClient({
 
       const data = await res.json()
       if (!res.ok) {
-        addToast(data.error || 'Failed to create pool', 'error')
+        addToast(data.error || 'Couldn\'t create pool. Try again.', 'error')
         return
       }
 
@@ -148,7 +148,7 @@ export function EventPoolsClient({
 
       const data = await res.json()
       if (!res.ok) {
-        addToast(data.error || 'Failed to join pool', 'error')
+        addToast(data.error || 'Couldn\'t join pool. Try again.', 'error')
         return
       }
 

@@ -69,7 +69,7 @@ export function CopyBracketButton({ tournamentId, poolId, onCopy, disabled }: Co
         setShowDropdown(true)
       }
     } catch {
-      addToast('Failed to load brackets', 'error')
+      addToast('Couldn\'t load brackets. Try again.', 'error')
     } finally {
       setLoading(false)
     }

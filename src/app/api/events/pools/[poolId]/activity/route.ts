@@ -55,6 +55,6 @@ export async function GET(
   } catch (err) {
     Sentry.captureException(err)
     console.error('Pool activity fetch error:', err)
-    return NextResponse.json({ error: 'Failed to fetch activity' }, { status: 500 })
+    return NextResponse.json({ error: "Couldn't load activity. Try refreshing the page." }, { status: 500 })
   }
 }

@@ -23,7 +23,7 @@ export async function GET(
 
     const isMember = await verifyLeagueMembership(user.id, leagueId)
     if (!isMember) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+      return NextResponse.json({ error: 'You don\'t have permission to do this.' }, { status: 403 })
     }
 
     const supabase = createAdminClient()
@@ -36,7 +36,7 @@ export async function GET(
 
     if (error) {
       return NextResponse.json(
-        { error: 'Failed to fetch history', details: error.message },
+        { error: 'Couldn\'t load history. Try refreshing the page.', details: error.message },
         { status: 500 }
       )
     }
@@ -68,7 +68,7 @@ export async function GET(
     Sentry.captureException(error)
     console.error('History GET error:', error)
     return NextResponse.json(
-      { error: 'Failed to fetch history' },
+      { error: 'Couldn\'t load history. Try refreshing the page.' },
       { status: 500 }
     )
   }
@@ -118,7 +118,7 @@ export async function POST(
     Sentry.captureException(error)
     console.error('History POST error:', error)
     return NextResponse.json(
-      { error: 'Failed to archive season' },
+      { error: 'Couldn\'t archive the season. Try again.' },
       { status: 500 }
     )
   }

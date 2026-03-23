@@ -124,7 +124,7 @@ export function ChatInput({ channelType, channelEntityId, currentUserId, current
         body: JSON.stringify({ message }),
       })
       const data = await res.json()
-      if (!res.ok) throw new Error(data.error || 'Failed to send message')
+      if (!res.ok) throw new Error(data.error || 'Couldn\'t send message. Try again.')
       setInput('')
       mentionsRef.current.clear()
       // Optimistically add message to the list so it appears immediately
@@ -138,7 +138,7 @@ export function ChatInput({ channelType, channelEntityId, currentUserId, current
         })
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to send message')
+      setError(err instanceof Error ? err.message : 'Couldn\'t send message. Try again.')
     } finally {
       setSending(false)
       // Refocus after React re-enables the input

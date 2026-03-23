@@ -25,7 +25,7 @@ export async function POST(
 
     const isMember = await verifyLeagueMembership(user.id, leagueId)
     if (!isMember) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+      return NextResponse.json({ error: 'You don\'t have permission to do this.' }, { status: 403 })
     }
 
     const rawBody = await request.json()
@@ -66,7 +66,7 @@ export async function POST(
 
     if (error) {
       return NextResponse.json(
-        { error: 'Failed to send message', details: error.message },
+        { error: 'Couldn\'t send your message. Try again.', details: error.message },
         { status: 500 }
       )
     }
@@ -76,7 +76,7 @@ export async function POST(
     Sentry.captureException(error)
     console.error('Draft messages POST error:', error)
     return NextResponse.json(
-      { error: 'Failed to send message' },
+      { error: 'Couldn\'t send your message. Try again.' },
       { status: 500 }
     )
   }

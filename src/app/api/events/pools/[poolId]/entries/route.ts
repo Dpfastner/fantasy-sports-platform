@@ -19,7 +19,7 @@ export async function POST(
     const { data: { user }, error: authError } = await supabase.auth.getUser()
 
     if (authError || !user) {
-      return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
+      return NextResponse.json({ error: 'You need to sign in to do this.' }, { status: 401 })
     }
 
     const admin = createAdminClient()
@@ -93,13 +93,13 @@ export async function POST(
 
     if (entryError) {
       console.error('Entry creation failed:', entryError)
-      return NextResponse.json({ error: 'Failed to create entry' }, { status: 500 })
+      return NextResponse.json({ error: "Couldn't create entry. Try again." }, { status: 500 })
     }
 
     return NextResponse.json({ success: true, entryId: entry.id })
   } catch (err) {
     console.error('Add entry error:', err)
     Sentry.captureException(err, { tags: { route: 'events/pools/[poolId]/entries', action: 'create' } })
-    return NextResponse.json({ error: 'An unexpected error occurred' }, { status: 500 })
+    return NextResponse.json({ error: 'Something went wrong. Try again.' }, { status: 500 })
   }
 }

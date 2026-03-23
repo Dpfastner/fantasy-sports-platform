@@ -184,7 +184,7 @@ export function FanZoneWidget({
               <CopyButton text={referralUrl} />
               <ShareButton
                 shareData={{
-                  title: `Join Rivyls — Fantasy College Football`,
+                  title: `Join Rivyls — Fantasy College Sports`,
                   text: `${displayName} wants you to rep ${userSchool.name} on Rivyls!`,
                   url: buildShareUrl(`/welcome?ref=${userId}`, { source: 'referral' }),
                 }}

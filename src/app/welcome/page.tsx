@@ -5,13 +5,13 @@ import EmailCaptureForm from '@/components/EmailCaptureForm'
 import { SPORTS } from '@/lib/sports-config'
 
 export const metadata: Metadata = {
-  title: 'Rivyls — Fantasy Sports Leagues',
+  title: 'Rivyls — Draft Programs. Not Players.',
   description:
-    'Draft real teams, compete with friends, and win weekly prizes. Fantasy college football and more — Rivyls makes it simple to run the league you\'ve always wanted.',
+    'Draft college programs. You score points when they win real games. Compete with friends all season. Free to play.',
   openGraph: {
-    title: 'Rivyls — Fantasy Sports Leagues',
+    title: 'Rivyls — Draft Programs. Not Players.',
     description:
-      'Draft real teams, compete with friends, and win weekly prizes.',
+      'Draft college programs. You score points when they win real games. Compete with friends all season. Free to play.',
     url: 'https://rivyls.com/welcome',
     siteName: 'Rivyls',
     type: 'website',
@@ -20,15 +20,15 @@ export const metadata: Metadata = {
         url: 'https://rivyls.com/api/og/default',
         width: 1200,
         height: 630,
-        alt: 'Rivyls — Fantasy Sports Leagues',
+        alt: 'Rivyls — Draft Programs. Not Players.',
       },
     ],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Rivyls — Fantasy Sports Leagues',
+    title: 'Rivyls — Draft Programs. Not Players.',
     description:
-      'Draft real teams, compete with friends, and win weekly prizes.',
+      'Draft college programs. You score points when they win real games. Compete with friends all season. Free to play.',
   },
   robots: { index: true, follow: true },
 }
@@ -39,7 +39,7 @@ const jsonLd = {
   name: 'Rivyls',
   url: 'https://rivyls.com',
   description:
-    'Fantasy sports platform — draft teams, compete with friends, win prizes.',
+    'Fantasy college sports — draft programs, not players. Free to play.',
 }
 
 export default function WelcomePage() {
@@ -74,12 +74,11 @@ export default function WelcomePage() {
       {/* ── Hero ── */}
       <section className="container mx-auto px-4 md:px-8 pt-20 pb-16 md:pt-32 md:pb-24 text-center">
         <h1 className="brand-h1 text-4xl sm:text-5xl md:text-7xl text-text-primary mb-6">
-          Your League.<br />Your Rivals.<br />Your Season.
+          Your Programs.<br />Your Rivals.<br />Your Season.
         </h1>
         <p className="text-lg md:text-xl text-text-secondary max-w-2xl mx-auto mb-10 leading-relaxed">
-          Draft real teams, compete head-to-head with friends,
-          and chase weekly prizes all season long. Rivyls makes it simple to
-          run the league you&apos;ve always wanted.
+          Draft college programs. You score points when they win real games.
+          Compete with friends all season. It&apos;s free.
         </p>
         <a
           href="/signup"
@@ -135,8 +134,8 @@ export default function WelcomePage() {
               },
               {
                 step: '2',
-                title: 'Draft Your Teams',
-                desc: 'Pick real college football programs in a live snake draft. Every school you roster earns points based on real-game results.',
+                title: 'Draft Your Schools',
+                desc: 'Pick the college programs you believe in. Every school on your roster earns points when they win real games.',
               },
               {
                 step: '3',

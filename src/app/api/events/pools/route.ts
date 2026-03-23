@@ -23,7 +23,7 @@ export async function GET(request: Request) {
     if (!tournamentId) {
       // Return user's pools across all tournaments
       if (!user) {
-        return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
+        return NextResponse.json({ error: 'You need to sign in to do this.' }, { status: 401 })
       }
 
       const admin = createAdminClient()
@@ -82,7 +82,7 @@ export async function GET(request: Request) {
 
     if (error) {
       console.error('Failed to fetch pools:', error)
-      return NextResponse.json({ error: 'Failed to fetch pools' }, { status: 500 })
+      return NextResponse.json({ error: "Couldn't load pools. Try refreshing the page." }, { status: 500 })
     }
 
     // Filter: show public pools + pools user is in + pools user created
@@ -122,7 +122,7 @@ export async function GET(request: Request) {
   } catch (err) {
     console.error('Pools fetch error:', err)
     Sentry.captureException(err, { tags: { route: 'events/pools', action: 'fetch' } })
-    return NextResponse.json({ error: 'An unexpected error occurred' }, { status: 500 })
+    return NextResponse.json({ error: 'Something went wrong. Try again.' }, { status: 500 })
   }
 }
 
@@ -135,7 +135,7 @@ export async function POST(request: Request) {
     const supabase = await createServerClient()
     const { data: { user }, error: authError } = await supabase.auth.getUser()
     if (authError || !user) {
-      return NextResponse.json({ error: 'You must be logged in' }, { status: 401 })
+      return NextResponse.json({ error: 'You need to sign in to do this.' }, { status: 401 })
     }
 
     const rawBody = await request.json()
@@ -207,7 +207,7 @@ export async function POST(request: Request) {
 
       if (entryError) {
         console.error('Entry creation failed:', entryError)
-        return NextResponse.json({ error: 'Failed to join pool' }, { status: 500 })
+        return NextResponse.json({ error: "Couldn't join pool. Try again." }, { status: 500 })
       }
 
       // Log activity
@@ -313,7 +313,7 @@ export async function POST(request: Request) {
 
     if (poolError) {
       console.error('Pool creation failed:', poolError)
-      return NextResponse.json({ error: 'Failed to create pool' }, { status: 500 })
+      return NextResponse.json({ error: "Couldn't create pool. Try again." }, { status: 500 })
     }
 
     // Auto-join the creator
@@ -374,6 +374,6 @@ export async function POST(request: Request) {
   } catch (err) {
     console.error('Pool create/join error:', err)
     Sentry.captureException(err, { tags: { route: 'events/pools', action: 'create_or_join' } })
-    return NextResponse.json({ error: 'An unexpected error occurred' }, { status: 500 })
+    return NextResponse.json({ error: 'Something went wrong. Try again.' }, { status: 500 })
   }
 }

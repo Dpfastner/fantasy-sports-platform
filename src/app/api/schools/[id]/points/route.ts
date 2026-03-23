@@ -71,7 +71,7 @@ export async function GET(
 
     if (pointsError) {
       return NextResponse.json(
-        { error: 'Failed to fetch points', details: pointsError.message },
+        { error: "Couldn't load points. Try refreshing the page.", details: pointsError.message },
         { status: 500 }
       )
     }
@@ -174,7 +174,7 @@ export async function GET(
   } catch (error) {
     console.error('School points error:', error)
     return NextResponse.json(
-      { error: 'Failed to fetch school points', details: String(error) },
+      { error: "Couldn't load school points. Try refreshing the page.", details: String(error) },
       { status: 500 }
     )
   }

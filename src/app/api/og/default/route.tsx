@@ -22,11 +22,11 @@ export async function GET() {
               marginBottom: 24,
             }}
           >
-            Fantasy College Football
+            Draft Programs. Not Players.
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
             <div style={{ display: 'flex', fontSize: 28, color: OG.textPrimary }}>
-              Draft teams. Compete with friends. Win prizes.
+              Fantasy college sports — free to play.
             </div>
             <div
               style={{

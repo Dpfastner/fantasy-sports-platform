@@ -16,7 +16,7 @@ export async function PATCH(
 
     const isMember = await verifyLeagueMembership(user.id, leagueId)
     if (!isMember) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+      return NextResponse.json({ error: 'You don\'t have permission to do this.' }, { status: 403 })
     }
 
     const supabase = createAdminClient()
@@ -72,6 +72,6 @@ export async function PATCH(
   } catch (error) {
     Sentry.captureException(error)
     console.error('Pin message error:', error)
-    return NextResponse.json({ error: 'Failed to pin/unpin message' }, { status: 500 })
+    return NextResponse.json({ error: 'Couldn\'t pin/unpin the message. Try again.' }, { status: 500 })
   }
 }

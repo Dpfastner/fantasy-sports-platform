@@ -27,7 +27,7 @@ export async function GET(request: NextRequest) {
   if (limited) return response!
 
   if (!GIPHY_API_KEY) {
-    return NextResponse.json({ error: 'GIF service not configured' }, { status: 503 })
+    return NextResponse.json({ error: "GIFs aren't available right now." }, { status: 503 })
   }
 
   const q = request.nextUrl.searchParams.get('q')
@@ -42,7 +42,7 @@ export async function GET(request: NextRequest) {
 
     const res = await fetch(url, { next: { revalidate: 300 } })
     if (!res.ok) {
-      return NextResponse.json({ error: 'Failed to fetch GIFs' }, { status: 502 })
+      return NextResponse.json({ error: "Couldn't load GIFs right now." }, { status: 502 })
     }
 
     const data = await res.json()
@@ -57,6 +57,6 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ results })
   } catch {
-    return NextResponse.json({ error: 'Failed to fetch GIFs' }, { status: 500 })
+    return NextResponse.json({ error: "Couldn't load GIFs right now." }, { status: 500 })
   }
 }

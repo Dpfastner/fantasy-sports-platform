@@ -21,7 +21,7 @@ export async function GET(request: Request) {
     const supabase = await createServerClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) {
-      return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
+      return NextResponse.json({ error: 'You need to sign in to do this.' }, { status: 401 })
     }
 
     const { searchParams } = new URL(request.url)
@@ -67,7 +67,7 @@ export async function GET(request: Request) {
   } catch (err) {
     console.error('Picks fetch error:', err)
     Sentry.captureException(err, { tags: { route: 'events/picks', action: 'fetch' } })
-    return NextResponse.json({ error: 'An unexpected error occurred' }, { status: 500 })
+    return NextResponse.json({ error: 'Something went wrong. Try again.' }, { status: 500 })
   }
 }
 
@@ -81,7 +81,7 @@ export async function POST(request: Request) {
     const supabase = await createServerClient()
     const { data: { user }, error: authError } = await supabase.auth.getUser()
     if (authError || !user) {
-      return NextResponse.json({ error: 'You must be logged in' }, { status: 401 })
+      return NextResponse.json({ error: 'You need to sign in to do this.' }, { status: 401 })
     }
 
     const rawBody = await request.json()
@@ -154,7 +154,7 @@ export async function POST(request: Request) {
   } catch (err) {
     console.error('Pick submission error:', err)
     Sentry.captureException(err, { tags: { route: 'events/picks', action: 'submit' } })
-    return NextResponse.json({ error: 'An unexpected error occurred' }, { status: 500 })
+    return NextResponse.json({ error: 'Something went wrong. Try again.' }, { status: 500 })
   }
 }
 
@@ -268,7 +268,7 @@ async function handleBracketPicks(
 
   if (insertError) {
     console.error('Bracket pick insert failed:', insertError)
-    return NextResponse.json({ error: 'Failed to save picks' }, { status: 500 })
+    return NextResponse.json({ error: "Couldn't save picks. Try again." }, { status: 500 })
   }
 
   // Determine completeness — count games in tournament for comparison
@@ -383,7 +383,7 @@ async function handleSurvivorPick(
 
   if (insertError) {
     console.error('Survivor pick insert failed:', insertError)
-    return NextResponse.json({ error: 'Failed to save pick' }, { status: 500 })
+    return NextResponse.json({ error: "Couldn't save pick. Try again." }, { status: 500 })
   }
 
   // Log activity
@@ -465,7 +465,7 @@ async function handlePickemPicks(
 
   if (insertError) {
     console.error('Pickem pick insert failed:', insertError)
-    return NextResponse.json({ error: 'Failed to save picks' }, { status: 500 })
+    return NextResponse.json({ error: "Couldn't save picks. Try again." }, { status: 500 })
   }
 
   // Update submitted_at
@@ -633,7 +633,7 @@ async function handleRosterPicks(
 
   if (insertError) {
     console.error('Roster pick insert failed:', insertError)
-    return NextResponse.json({ error: 'Failed to save roster' }, { status: 500 })
+    return NextResponse.json({ error: "Couldn't save roster. Try again." }, { status: 500 })
   }
 
   // Update submitted_at

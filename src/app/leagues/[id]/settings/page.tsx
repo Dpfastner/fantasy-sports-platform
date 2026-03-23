@@ -240,7 +240,7 @@ export default function CommissionerToolsPage() {
 
       } catch (err) {
         console.error('Error loading settings:', err)
-        setError('Failed to load settings. Please refresh the page.')
+        setError('Couldn\'t load settings. Try refreshing the page.')
       } finally {
         setLoading(false)
       }
@@ -327,7 +327,7 @@ export default function CommissionerToolsPage() {
       setTimeout(() => setSuccess(null), 3000)
     } catch (err) {
       console.error('Error saving settings:', err)
-      setError('Failed to save settings. Please check your connection and try again.')
+      setError('Couldn\'t save settings. Try again.')
     } finally {
       setSaving(false)
     }
@@ -367,14 +367,14 @@ export default function CommissionerToolsPage() {
         body: JSON.stringify({ tradeId, reason: vetoReason.trim() }),
       })
       const data = await res.json()
-      if (!res.ok) throw new Error(data.error || 'Failed to veto trade')
+      if (!res.ok) throw new Error(data.error || 'Couldn\'t veto the trade. Try again.')
       setSuccess('Trade vetoed. Rosters have been reversed.')
       setVetoingTradeId(null)
       setVetoReason('')
       loadRecentTrades()
       setTimeout(() => setSuccess(null), 3000)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to veto trade')
+      setError(err instanceof Error ? err.message : 'Couldn\'t veto the trade. Try again.')
     } finally {
       setVetoSubmitting(false)
     }
@@ -404,7 +404,7 @@ export default function CommissionerToolsPage() {
       setTimeout(() => setSuccess(null), 3000)
     } catch (err) {
       console.error('Error saving league:', err)
-      setError('Failed to save league settings. Please check your connection and try again.')
+      setError('Couldn\'t save settings. Try again.')
     } finally {
       setSaving(false)
     }
@@ -425,7 +425,7 @@ export default function CommissionerToolsPage() {
       ))
     } catch (err) {
       console.error('Error updating payment status:', err)
-      setError('Failed to update payment status. Please try again.')
+      setError('Couldn\'t update payment status. Try again.')
     }
   }
 
@@ -448,7 +448,7 @@ export default function CommissionerToolsPage() {
       setTimeout(() => setSuccess(null), 3000)
     } catch (err) {
       console.error('Error removing member:', err)
-      setError('Failed to remove member. Please try again.')
+      setError('Couldn\'t remove member. Try again.')
     }
   }
 
@@ -515,7 +515,7 @@ export default function CommissionerToolsPage() {
       setTimeout(() => setSuccess(null), 3000)
     } catch (err) {
       console.error('Error changing role:', err)
-      setError('Failed to change role. Please try again.')
+      setError('Couldn\'t change role. Try again.')
     }
   }
 
@@ -554,7 +554,7 @@ export default function CommissionerToolsPage() {
       setTimeout(() => setSuccess(null), 3000)
     } catch (err) {
       console.error('Error updating second owner:', err)
-      setError('Failed to update second owner. Please try again.')
+      setError('Couldn\'t update second owner. Try again.')
     }
   }
 
@@ -580,7 +580,7 @@ export default function CommissionerToolsPage() {
       setTimeout(() => setSuccess(null), 3000)
     } catch (err) {
       console.error('Error removing second owner:', err)
-      setError('Failed to remove second owner. Please try again.')
+      setError('Couldn\'t remove second owner. Try again.')
     }
   }
 
@@ -598,7 +598,7 @@ export default function CommissionerToolsPage() {
       console.error('Error toggling section visibility:', err)
       // Revert on error
       setSettings(settings)
-      setError('Failed to update setting. Please try again.')
+      setError('Couldn\'t update setting. Try again.')
     }
   }
 
@@ -613,7 +613,7 @@ export default function CommissionerToolsPage() {
       const data = await response.json()
 
       if (!response.ok) {
-        throw new Error(data.error || 'Failed to reset draft')
+        throw new Error(data.error || 'Couldn\'t reset draft. Try again.')
       }
 
       setDraftStatus('not_started')
@@ -621,7 +621,7 @@ export default function CommissionerToolsPage() {
       setTimeout(() => setSuccess(null), 3000)
     } catch (err) {
       console.error('Error resetting draft:', err)
-      setError(err instanceof Error ? err.message : 'Failed to reset draft')
+      setError(err instanceof Error ? err.message : 'Couldn\'t reset draft. Try again.')
     }
   }
 

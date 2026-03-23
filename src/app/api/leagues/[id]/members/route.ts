@@ -15,7 +15,7 @@ export async function GET(
 
     const isMember = await verifyLeagueMembership(user.id, leagueId)
     if (!isMember) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+      return NextResponse.json({ error: 'You don\'t have permission to do this.' }, { status: 403 })
     }
 
     const supabase = createAdminClient()
@@ -42,6 +42,6 @@ export async function GET(
 
     return NextResponse.json({ members })
   } catch {
-    return NextResponse.json({ error: 'Failed to fetch members' }, { status: 500 })
+    return NextResponse.json({ error: 'Couldn\'t load members. Try refreshing the page.' }, { status: 500 })
   }
 }

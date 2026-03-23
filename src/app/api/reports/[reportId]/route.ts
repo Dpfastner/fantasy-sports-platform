@@ -34,7 +34,7 @@ export async function GET(
 
   // Non-admin can only view own tickets
   if (!isAdmin && ticket.user_id !== user.id) {
-    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    return NextResponse.json({ error: "You don't have permission to do this." }, { status: 403 })
   }
 
   // Fetch responses
@@ -59,7 +59,7 @@ export async function PATCH(
   const { user } = authResult
 
   if (!ADMIN_USER_IDS.includes(user.id)) {
-    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    return NextResponse.json({ error: "You don't have permission to do this." }, { status: 403 })
   }
 
   const { reportId } = await params
@@ -89,7 +89,7 @@ export async function PATCH(
     .eq('id', reportId)
 
   if (error) {
-    return NextResponse.json({ error: 'Update failed' }, { status: 500 })
+    return NextResponse.json({ error: "Couldn't update ticket. Try again." }, { status: 500 })
   }
 
   return NextResponse.json({ success: true })

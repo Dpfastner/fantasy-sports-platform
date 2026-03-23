@@ -56,7 +56,7 @@ export function ReactivateLeagueButton({ leagueId, sportId, currentSeasonYear }:
 
       if (!res.ok) {
         const data = await res.json()
-        throw new Error(data.error || 'Failed to reactivate')
+        throw new Error(data.error || 'Couldn\'t reactivate the league. Try again.')
       }
 
       router.refresh()

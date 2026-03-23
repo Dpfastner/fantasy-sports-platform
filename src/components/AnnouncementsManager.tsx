@@ -63,13 +63,13 @@ export function AnnouncementsManager({
         }),
       })
       const data = await res.json()
-      if (!res.ok) throw new Error(data.error || 'Failed to create post')
+      if (!res.ok) throw new Error(data.error || 'Couldn\'t create post. Try again.')
       setAnnouncements(prev => [data.announcement, ...prev])
       setForm({ title: '', body: '', pinned: false, scheduled_at: '' })
       setShowForm(false)
       router.refresh()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to create post')
+      setError(err instanceof Error ? err.message : 'Couldn\'t create post. Try again.')
     } finally {
       setSaving(false)
     }
@@ -85,13 +85,13 @@ export function AnnouncementsManager({
         body: JSON.stringify(form),
       })
       const data = await res.json()
-      if (!res.ok) throw new Error(data.error || 'Failed to update announcement')
+      if (!res.ok) throw new Error(data.error || 'Couldn\'t update announcement. Try again.')
       setAnnouncements(prev => prev.map(a => a.id === id ? data.announcement : a))
       setEditingId(null)
       setForm({ title: '', body: '', pinned: false, scheduled_at: '' })
       router.refresh()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to update announcement')
+      setError(err instanceof Error ? err.message : 'Couldn\'t update announcement. Try again.')
     } finally {
       setSaving(false)
     }
@@ -103,11 +103,11 @@ export function AnnouncementsManager({
       const res = await fetchWithRetry(`/api/leagues/${leagueId}/announcements/${id}`, {
         method: 'DELETE',
       })
-      if (!res.ok) throw new Error('Failed to delete announcement')
+      if (!res.ok) throw new Error('Couldn\'t delete announcement. Try again.')
       setAnnouncements(prev => prev.filter(a => a.id !== id))
       router.refresh()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to delete announcement')
+      setError(err instanceof Error ? err.message : 'Couldn\'t delete announcement. Try again.')
     }
   }
 
@@ -119,10 +119,10 @@ export function AnnouncementsManager({
         body: JSON.stringify({ pinned: !currentPinned }),
       })
       const data = await res.json()
-      if (!res.ok) throw new Error(data.error || 'Failed to update pin')
+      if (!res.ok) throw new Error(data.error || 'Couldn\'t update pin. Try again.')
       setAnnouncements(prev => prev.map(a => a.id === id ? data.announcement : a))
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to update pin')
+      setError(err instanceof Error ? err.message : 'Couldn\'t update pin. Try again.')
     }
   }
 

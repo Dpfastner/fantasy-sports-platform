@@ -183,3 +183,13 @@ Same as input, with `appearance-none` if custom arrow needed.
 - Set via `data-palette` attribute on `<html>`
 - CSS variables: `--palette-*` tokens
 - Config: `src/lib/palettes.ts`, `src/app/globals.css`, `src/components/PaletteProvider.tsx`
+
+## Voice & Tone
+
+All user-facing copy must follow the standards in `docs/RIVYLS_VOICE_AND_TONE_GUIDE.md`. Key rules:
+- Say it once, say it short
+- Tell users what to do, not how it works
+- Error messages: "[What happened]. [What to do]."
+- Use "schools" not "teams" for drafted entities
+- Use "college sports" for platform-wide copy, "college football" only for CFB-specific features
+- Run every string through: tailgate test, half test, action test

@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
     if (error) {
       console.error('Failed to set favorite school:', error)
       return NextResponse.json(
-        { error: 'Failed to update profile' },
+        { error: "Couldn't save your favorite school. Try again." },
         { status: 500 }
       )
     }
@@ -45,7 +45,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Favorite school error:', error)
     return NextResponse.json(
-      { error: 'Failed to process request' },
+      { error: 'Something went wrong. Try again.' },
       { status: 500 }
     )
   }

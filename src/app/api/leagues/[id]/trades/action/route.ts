@@ -28,7 +28,7 @@ export async function POST(
 
     const isMember = await verifyLeagueMembership(user.id, leagueId)
     if (!isMember) {
-      return NextResponse.json({ error: 'Not a league member' }, { status: 403 })
+      return NextResponse.json({ error: 'You don\'t have permission to do this.' }, { status: 403 })
     }
 
     const rawBody = await request.json()
@@ -203,7 +203,7 @@ export async function POST(
       })
 
       if (!result.success) {
-        return NextResponse.json({ error: result.error || 'Trade execution failed' }, { status: 500 })
+        return NextResponse.json({ error: result.error || 'Couldn\'t complete the trade. Try again.' }, { status: 500 })
       }
 
       // Get school names for notification
@@ -347,7 +347,7 @@ export async function POST(
     Sentry.captureException(error)
     console.error('Trade action error:', error)
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Failed to process trade action' },
+      { error: error instanceof Error ? error.message : 'Couldn\'t process the trade. Try again.' },
       { status: 500 }
     )
   }

@@ -70,7 +70,7 @@ export async function PATCH(
 
     if (error) {
       return NextResponse.json(
-        { error: 'Failed to update announcement', details: error.message },
+        { error: 'Couldn\'t update the announcement. Try again.', details: error.message },
         { status: 500 }
       )
     }
@@ -87,7 +87,7 @@ export async function PATCH(
     Sentry.captureException(error)
     console.error('Announcement PATCH error:', error)
     return NextResponse.json(
-      { error: 'Failed to update announcement' },
+      { error: 'Couldn\'t update the announcement. Try again.' },
       { status: 500 }
     )
   }
@@ -131,7 +131,7 @@ export async function DELETE(
 
     if (error) {
       return NextResponse.json(
-        { error: 'Failed to delete announcement', details: error.message },
+        { error: 'Couldn\'t delete the announcement. Try again.', details: error.message },
         { status: 500 }
       )
     }
@@ -148,7 +148,7 @@ export async function DELETE(
     Sentry.captureException(error)
     console.error('Announcement DELETE error:', error)
     return NextResponse.json(
-      { error: 'Failed to delete announcement' },
+      { error: 'Couldn\'t delete the announcement. Try again.' },
       { status: 500 }
     )
   }
