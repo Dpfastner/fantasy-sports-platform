@@ -4,6 +4,7 @@ import { useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { useToast } from '@/components/Toast'
 import { trackEventActivity } from '@/app/actions/activity'
+import { saveEntryName } from '@/app/actions/entry'
 import { track } from '@vercel/analytics'
 import { useBracketPicks } from './useBracketPicks'
 import { BracketGrid } from './BracketGrid'
@@ -228,13 +229,21 @@ export function BracketPicker({
 
   return (
     <div>
-      {/* Bracket name */}
+      {/* Bracket name — auto-saves on blur */}
       {!isLocked && (
         <div className="mb-3">
           <input
             type="text"
             value={bracketName}
             onChange={e => setBracketName(e.target.value.slice(0, 50))}
+            onBlur={async () => {
+              const trimmed = bracketName.trim()
+              if (trimmed === (existingDisplayName || '')) return
+              const result = await saveEntryName(entryId, trimmed)
+              if (result.success) {
+                addToast('Bracket name saved', 'success')
+              }
+            }}
             placeholder="Name your bracket"
             className="w-full sm:w-64 px-3 py-1.5 text-sm rounded-md border border-border bg-surface text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-1 focus:ring-brand"
           />
