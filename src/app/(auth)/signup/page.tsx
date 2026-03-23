@@ -72,6 +72,12 @@ function SignUpForm() {
         return
       }
 
+      // Detect existing account — Supabase returns identities: [] for duplicate emails
+      if (data.user?.identities?.length === 0) {
+        setError('This email already has an account. Please sign in instead.')
+        return
+      }
+
       // Log ToS acceptance (uses admin client, no session needed)
       if (data.user?.id) {
         fetch('/api/tos/accept', {
@@ -148,6 +154,11 @@ function SignUpForm() {
           {error && (
             <div className="bg-danger/10 border border-danger text-danger px-4 py-3 rounded-lg mb-6">
               {error}
+              {error.includes('already has an account') && (
+                <Link href="/login" className="block mt-2 text-brand hover:underline text-sm font-medium">
+                  Go to Sign In &rarr;
+                </Link>
+              )}
             </div>
           )}
 
