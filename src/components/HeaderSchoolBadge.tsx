@@ -25,7 +25,15 @@ export function HeaderSchoolBadge({ userId }: { userId: string }) {
   const [loaded, setLoaded] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
 
-  // Fetch user's school data
+  // Fetch user's school data — re-fetch on window focus (e.g., after changing in settings)
+  const [refreshKey, setRefreshKey] = useState(0)
+
+  useEffect(() => {
+    const handleFocus = () => setRefreshKey(k => k + 1)
+    window.addEventListener('focus', handleFocus)
+    return () => window.removeEventListener('focus', handleFocus)
+  }, [])
+
   useEffect(() => {
     async function load() {
       const supabase = createClient()
@@ -47,17 +55,19 @@ export function HeaderSchoolBadge({ userId }: { userId: string }) {
           .single()
         setSchool(schoolData)
 
-        // Count fans for this school
         const { count } = await supabase
           .from('profiles')
           .select('id', { count: 'exact', head: true })
           .eq('favorite_school_id', profile.favorite_school_id)
         setFanCount(count || 0)
+      } else {
+        setSchool(null)
+        setFanCount(0)
       }
       setLoaded(true)
     }
     load()
-  }, [userId])
+  }, [userId, refreshKey])
 
   // Close on outside click
   useEffect(() => {
