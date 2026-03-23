@@ -36,6 +36,8 @@ export default function CommissionerToolsPage() {
   const [success, setSuccess] = useState<string | null>(null)
   const [isCommissioner, setIsCommissioner] = useState(false)
   const [draftStatus, setDraftStatus] = useState<string>('not_started')
+  const [isDeleting, setIsDeleting] = useState(false)
+  const [deleteConfirmText, setDeleteConfirmText] = useState('')
 
   // Draft order reordering
   const [draftOrderTeams, setDraftOrderTeams] = useState<DraftOrderTeam[]>([])
@@ -971,6 +973,67 @@ export default function CommissionerToolsPage() {
                   </ul>
                 </div>
               </section>
+
+              {/* Danger Zone */}
+              {isCommissioner && league && (
+                <section className="border border-danger rounded-lg p-6">
+                  <h2 className="text-xl font-semibold text-danger mb-2">Danger Zone</h2>
+                  <p className="text-text-muted text-sm mb-4">
+                    Permanently delete this league and all its teams, drafts, scores, trades, and messages. This cannot be undone.
+                  </p>
+                  <div className="space-y-3">
+                    <div>
+                      <label className="block text-xs text-text-muted mb-1">
+                        Type <span className="font-semibold text-text-secondary">{league.name}</span> to confirm
+                      </label>
+                      <input
+                        type="text"
+                        value={deleteConfirmText}
+                        onChange={(e) => setDeleteConfirmText(e.target.value)}
+                        placeholder={league.name}
+                        className="w-full bg-surface-inset border border-border rounded-md px-3 py-2 text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-danger/50"
+                      />
+                    </div>
+                    <button
+                      onClick={async () => {
+                        if (deleteConfirmText !== league.name) {
+                          setError('League name does not match. Please type the exact name to confirm.')
+                          return
+                        }
+
+                        const ok = await confirmDialog({
+                          title: 'Delete League?',
+                          message: `Are you sure you want to permanently delete "${league.name}"? All teams, drafts, scores, trades, and messages will be lost forever.`,
+                          confirmLabel: 'Delete League',
+                          variant: 'danger',
+                        })
+                        if (!ok) return
+
+                        setIsDeleting(true)
+                        setError(null)
+                        try {
+                          const res = await fetch(`/api/leagues/${leagueId}/delete`, { method: 'DELETE' })
+                          if (res.ok) {
+                            setSuccess('League deleted')
+                            router.push('/dashboard')
+                          } else {
+                            const data = await res.json()
+                            setError(data.error || 'Failed to delete league')
+                          }
+                        } catch {
+                          setError('Something went wrong. Try again.')
+                        } finally {
+                          setIsDeleting(false)
+                        }
+                      }}
+                      disabled={isDeleting || deleteConfirmText !== league.name}
+                      className="px-4 py-2 bg-danger hover:bg-danger/80 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {isDeleting ? 'Deleting...' : 'Delete League'}
+                    </button>
+                  </div>
+                </section>
+              )}
             </div>
           )}
 

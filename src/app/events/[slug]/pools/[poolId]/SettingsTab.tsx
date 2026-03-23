@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useToast } from '@/components/Toast'
+import { useConfirm } from '@/components/ConfirmDialog'
 import { ShareButton } from '@/components/ShareButton'
 
 const tiebreakerLabels: Record<string, string> = {
@@ -73,6 +74,8 @@ export function SettingsTab({
 }: SettingsTabProps) {
   const { addToast } = useToast()
   const router = useRouter()
+  const { confirm: confirmDialog } = useConfirm()
+  const [isDeleting, setIsDeleting] = useState(false)
 
   const rosterRules = (pool.scoringRules || {}) as Record<string, unknown>
 
@@ -479,6 +482,45 @@ export function SettingsTab({
             </span>
           </div>
         </div>
+      </div>
+
+      {/* Danger Zone */}
+      <div className="mt-8 border border-danger rounded-lg p-4">
+        <h3 className="text-danger font-semibold mb-2">Danger Zone</h3>
+        <p className="text-text-muted text-sm mb-3">
+          Permanently delete this pool and all its entries, picks, and messages. This cannot be undone.
+        </p>
+        <button
+          onClick={async () => {
+            const ok = await confirmDialog({
+              title: 'Delete Pool?',
+              message: 'This will permanently delete this pool and all data. This action cannot be undone.',
+              confirmLabel: 'Delete',
+              variant: 'danger',
+            })
+            if (!ok) return
+
+            setIsDeleting(true)
+            try {
+              const res = await fetch(`/api/events/pools/${pool.id}`, { method: 'DELETE' })
+              if (res.ok) {
+                addToast('Pool deleted', 'success')
+                router.push('/dashboard')
+              } else {
+                const data = await res.json()
+                addToast(data.error || 'Failed to delete pool', 'error')
+              }
+            } catch {
+              addToast('Something went wrong', 'error')
+            } finally {
+              setIsDeleting(false)
+            }
+          }}
+          disabled={isDeleting}
+          className="px-4 py-2 bg-danger hover:bg-danger/80 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {isDeleting ? 'Deleting...' : 'Delete Pool'}
+        </button>
       </div>
     </div>
   )
