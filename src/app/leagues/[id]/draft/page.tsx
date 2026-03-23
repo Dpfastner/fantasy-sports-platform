@@ -184,7 +184,7 @@ export default function DraftRoomPage() {
   const [isSubmittingPick, setIsSubmittingPick] = useState(false)
   const [isResettingDraft, setIsResettingDraft] = useState(false)
   const [showResetConfirm, setShowResetConfirm] = useState(false)
-  const [mobileTab, setMobileTab] = useState<'schools' | 'history' | 'teams' | 'chat'>('schools')
+  const [mobileTab, setMobileTab] = useState<'schools' | 'history' | 'teams' | 'chat'>('history')
   const [showDraftHelp, setShowDraftHelp] = useState(false)
   const [unreadChat, setUnreadChat] = useState(false)
   const [watchlistedSchoolIds, setWatchlistedSchoolIds] = useState<Set<string>>(new Set())
@@ -712,7 +712,7 @@ export default function DraftRoomPage() {
         })
         const data = await res.json()
         if (data.success && data.pick) {
-          addToast(`Auto-pick: ${data.pick.schoolName} selected for ${data.pick.teamName}`, 'info')
+          addToast(`${data.pick.schoolName} selected for ${data.pick.teamName} (Auto-pick)`, 'success')
         }
         // If skipped, that's fine — another client handled it or pick already advanced
       } catch {
@@ -751,7 +751,7 @@ export default function DraftRoomPage() {
         })
         const data = await res.json()
         if (data.success && data.pick) {
-          addToast(`Auto-pick: ${data.pick.schoolName} selected for ${data.pick.teamName}`, 'info')
+          addToast(`${data.pick.schoolName} selected for ${data.pick.teamName} (Auto-pick)`, 'success')
         }
       } catch {
         // Silent failure — polling will catch up
@@ -1547,16 +1547,23 @@ export default function DraftRoomPage() {
             </div>
             {/* Status badge - shown on mobile in header row */}
             <div className="md:hidden">
-              <span className={`px-2 py-0.5 rounded text-xs font-medium ${
-                draft?.status === 'in_progress' ? 'bg-success text-text-primary' :
-                draft?.status === 'paused' ? 'bg-warning text-text-primary' :
-                draft?.status === 'completed' ? 'bg-brand text-text-primary' :
-                'bg-surface-subtle text-text-primary'
-              }`}>
-                {draft?.status === 'in_progress' ? 'Live' :
-                 draft?.status === 'paused' ? 'Paused' :
-                 draft?.status === 'completed' ? 'Done' : 'Not Started'}
-              </span>
+              {draft?.status === 'completed' ? (
+                <button
+                  onClick={() => router.push(`/leagues/${leagueId}`)}
+                  className="px-3 py-1 rounded-lg text-xs font-medium bg-brand text-text-primary hover:bg-brand-hover transition-colors"
+                >
+                  Done
+                </button>
+              ) : (
+                <span className={`px-2 py-0.5 rounded text-xs font-medium ${
+                  draft?.status === 'in_progress' ? 'bg-success text-text-primary' :
+                  draft?.status === 'paused' ? 'bg-warning text-text-primary' :
+                  'bg-surface-subtle text-text-primary'
+                }`}>
+                  {draft?.status === 'in_progress' ? 'Live' :
+                   draft?.status === 'paused' ? 'Paused' : 'Not Started'}
+                </span>
+              )}
             </div>
           </div>
 
@@ -1600,21 +1607,28 @@ export default function DraftRoomPage() {
             {actionError && (
               <span className="text-danger-text text-sm">{actionError}</span>
             )}
-            <span className={`px-3 py-1 rounded text-sm font-medium ${
-              draft?.status === 'in_progress' ? 'bg-success text-text-primary' :
-              draft?.status === 'paused' ? 'bg-warning text-text-primary' :
-              draft?.status === 'completed' ? 'bg-brand text-text-primary' :
-              'bg-surface-subtle text-text-primary'
-            }`}>
-              {draft?.status === 'in_progress' ? 'Live' :
-               draft?.status === 'paused' ? 'Paused' :
-               draft?.status === 'completed' ? 'Completed' :
-               'Not Started'}
-            </span>
+            {draft?.status === 'completed' ? (
+              <button
+                onClick={() => router.push(`/leagues/${leagueId}`)}
+                className="px-4 py-1.5 rounded-lg text-sm font-medium bg-brand text-text-primary hover:bg-brand-hover transition-colors"
+              >
+                Done
+              </button>
+            ) : (
+              <span className={`px-3 py-1 rounded text-sm font-medium ${
+                draft?.status === 'in_progress' ? 'bg-success text-text-primary' :
+                draft?.status === 'paused' ? 'bg-warning text-text-primary' :
+                'bg-surface-subtle text-text-primary'
+              }`}>
+                {draft?.status === 'in_progress' ? 'Live' :
+                 draft?.status === 'paused' ? 'Paused' :
+                 'Not Started'}
+              </span>
+            )}
 
             <button
               onClick={() => setShowDraftHelp(true)}
-              className="px-2.5 py-1.5 rounded text-sm font-medium bg-surface-subtle hover:bg-surface text-text-secondary hover:text-text-primary transition-colors"
+              className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-full text-base font-bold bg-surface-subtle hover:bg-surface text-text-secondary hover:text-text-primary transition-colors"
               title="Draft room help"
             >
               ?
@@ -1660,7 +1674,7 @@ export default function DraftRoomPage() {
           <div className="flex md:hidden items-center gap-2 pt-1">
             <button
               onClick={() => setShowDraftHelp(true)}
-              className="px-2 py-1 rounded text-xs font-medium bg-surface-subtle hover:bg-surface text-text-secondary"
+              className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-full text-base font-bold bg-surface-subtle hover:bg-surface text-text-secondary hover:text-text-primary transition-colors"
               title="Help"
             >
               ?
@@ -1771,16 +1785,6 @@ export default function DraftRoomPage() {
       {/* Mobile Tab Navigation */}
       <div className="md:hidden flex border-b border-border">
         <button
-          onClick={() => setMobileTab('schools')}
-          className={`flex-1 py-3 text-sm font-medium transition-colors ${
-            mobileTab === 'schools'
-              ? 'text-text-primary border-b-2 border-brand bg-surface'
-              : 'text-text-secondary hover:text-text-primary'
-          }`}
-        >
-          Schools ({availableSchools.length})
-        </button>
-        <button
           onClick={() => setMobileTab('history')}
           className={`flex-1 py-3 text-sm font-medium transition-colors ${
             mobileTab === 'history'
@@ -1789,6 +1793,16 @@ export default function DraftRoomPage() {
           }`}
         >
           History ({picks.length})
+        </button>
+        <button
+          onClick={() => setMobileTab('schools')}
+          className={`flex-1 py-3 text-sm font-medium transition-colors ${
+            mobileTab === 'schools'
+              ? 'text-text-primary border-b-2 border-brand bg-surface'
+              : 'text-text-secondary hover:text-text-primary'
+          }`}
+        >
+          Schools ({availableSchools.length})
         </button>
         <button
           onClick={() => setMobileTab('teams')}

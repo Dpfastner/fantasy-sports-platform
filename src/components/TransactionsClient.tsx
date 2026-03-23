@@ -367,13 +367,8 @@ export default function TransactionsClient({
         : `Successfully added ${selectedAdd.name}`
       addToast(msg, 'success')
 
-      // Reset form state and refresh server data
-      setSelectedDrop(null)
-      setSelectedAdd(null)
-      setStep('select-drop')
-      setIsSubmitting(false)
-      setError(null)
-      router.refresh()
+      // Navigate to team page after successful transaction
+      router.push(`/leagues/${leagueId}/team`)
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Transaction failed'
       setError(errorMessage)
@@ -448,13 +443,17 @@ export default function TransactionsClient({
             <div className="lg:col-span-2">
               {/* Progress Steps */}
               <div className="flex items-center gap-2 md:gap-4 mb-4 md:mb-6">
-                <div className={`flex items-center gap-1 md:gap-2 ${step === 'select-drop' ? 'text-brand-text' : 'text-text-muted'}`}>
+                <button
+                  type="button"
+                  onClick={() => { if (step !== 'select-drop') handleBack() }}
+                  className={`flex items-center gap-1 md:gap-2 ${step === 'select-drop' ? 'text-brand-text' : 'text-text-muted'} ${step !== 'select-drop' ? 'cursor-pointer hover:text-text-primary' : ''}`}
+                >
                   <div className={`w-6 h-6 md:w-8 md:h-8 text-xs md:text-base rounded-full flex items-center justify-center ${step === 'select-drop' ? 'bg-brand' : 'bg-surface'}`}>
                     1
                   </div>
                   <span className="text-sm md:text-base hidden sm:inline">Select Drop</span>
                   <span className="text-xs sm:hidden">Drop</span>
-                </div>
+                </button>
                 <div className="flex-1 h-px bg-surface" />
                 <div className={`flex items-center gap-1 md:gap-2 ${step === 'select-add' ? 'text-brand-text' : 'text-text-muted'}`}>
                   <div className={`w-6 h-6 md:w-8 md:h-8 text-xs md:text-base rounded-full flex items-center justify-center ${step === 'select-add' ? 'bg-brand' : 'bg-surface'}`}>

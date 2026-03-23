@@ -197,6 +197,12 @@ export default function CreateLeaguePage() {
         console.error('Failed to create team:', teamError)
       }
 
+      // Set scoring preset to standard (DB defaults to 'custom')
+      await supabase
+        .from('league_settings')
+        .update({ scoring_preset: 'standard' })
+        .eq('league_id', league.id)
+
       // Save sport favorite if provided
       if (favoriteSchoolId && sportId) {
         const { data: inserted } = await supabase
@@ -394,56 +400,6 @@ export default function CreateLeaguePage() {
               Standard scoring · Snake draft · Change anytime in Settings
             </p>
 
-            {/* Customize expander — Description, Sport selector */}
-            <div className="mb-8">
-              <button
-                type="button"
-                onClick={() => setShowCustomize(!showCustomize)}
-                className="text-brand-text text-sm font-medium hover:underline"
-              >
-                {showCustomize ? 'Hide options' : 'Customize'} &mdash; description, sport
-              </button>
-              {showCustomize && (
-                <div className="mt-4 space-y-6 border-t border-border pt-4">
-                  <div>
-                    <label htmlFor="description" className="block text-text-secondary mb-2">
-                      Description (optional)
-                    </label>
-                    <textarea
-                      id="description"
-                      value={description}
-                      onChange={(e) => setDescription(e.target.value)}
-                      rows={3}
-                      maxLength={500}
-                      className="w-full px-4 py-3 bg-surface border border-border rounded-lg text-text-primary placeholder-text-muted focus:outline-none focus:border-brand resize-none"
-                      placeholder="Tell your friends what this league is about..."
-                    />
-                  </div>
-                  <div>
-                    <label htmlFor="sport" className="block text-text-secondary mb-2">
-                      Sport
-                    </label>
-                    <select
-                      id="sport"
-                      value={sportId}
-                      onChange={(e) => setSportId(e.target.value)}
-                      required
-                      className="w-full px-4 py-3 bg-surface border border-border rounded-lg text-text-primary focus:outline-none focus:border-brand"
-                    >
-                      <option value="">Select a sport</option>
-                      {sports.map((sport) => (
-                        <option key={sport.id} value={sport.id}>
-                          {sport.name}
-                        </option>
-                      ))}
-                    </select>
-                    <p className="text-text-muted text-sm mt-1">
-                      Defaults to College Football
-                    </p>
-                  </div>
-                </div>
-              )}
-            </div>
 
             {/* Preview Panel (#24) */}
             {showPreview && (

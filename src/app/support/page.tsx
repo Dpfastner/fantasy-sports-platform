@@ -86,16 +86,7 @@ export default function SupportPage() {
           </p>
         </div>
 
-        {/* Section 2: Legal Disclaimer Callout */}
-        <div className="border-l-[3px] border-brand bg-brand-subtle rounded-r-lg p-4 mb-8">
-          <p className="text-sm text-text-primary leading-relaxed">
-            This is not a required purchase and does not unlock any features or
-            provide any in-game advantage. Rivyls is free. This is purely
-            voluntary support for an independent platform.
-          </p>
-        </div>
-
-        {/* Section 3: Where Your Support Goes */}
+        {/* Section 2: Where Your Support Goes */}
         <div className="mb-8">
           <h2 className="text-lg font-semibold mb-4">Where your support goes</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -146,6 +137,15 @@ export default function SupportPage() {
               Support links coming soon
             </p>
           )}
+        </div>
+
+        {/* Legal Disclaimer Callout */}
+        <div className="border-l-[3px] border-brand bg-brand-subtle rounded-r-lg p-4 mb-8">
+          <p className="text-sm text-text-primary leading-relaxed">
+            This is not a required purchase and does not unlock any features or
+            provide any in-game advantage. Rivyls is free. This is purely
+            voluntary support for an independent platform.
+          </p>
         </div>
 
         {/* Section 5: Alternative Support */}

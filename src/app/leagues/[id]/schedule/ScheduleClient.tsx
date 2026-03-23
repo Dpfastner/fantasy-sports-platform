@@ -409,7 +409,7 @@ export default function ScheduleClient({
                           <div className={`flex items-center gap-3 flex-1 ${awayWon ? '' : isCompleted ? 'opacity-60' : ''}`}>
                             <div className="flex items-center gap-2">
                               {game.away_rank && game.away_rank <= 25 && (
-                                <span className="text-xs text-warning-text font-medium w-4">
+                                <span className="text-xs text-warning-text font-medium w-auto min-w-[1rem]">
                                   #{game.away_rank}
                                 </span>
                               )}
@@ -462,12 +462,12 @@ export default function ScheduleClient({
                               </>
                             ) : isCompleted ? (
                               <>
-                                <div className="flex items-center gap-3 text-xl font-bold">
-                                  <span className={awayWon ? 'text-success-text' : 'text-text-secondary'}>
+                                <div className="flex items-center gap-3 text-2xl font-extrabold">
+                                  <span className={awayWon ? 'text-brand' : 'text-text-secondary'}>
                                     {game.away_score}
                                   </span>
                                   <span className="text-text-muted">-</span>
-                                  <span className={homeWon ? 'text-success-text' : 'text-text-secondary'}>
+                                  <span className={homeWon ? 'text-brand' : 'text-text-secondary'}>
                                     {game.home_score}
                                   </span>
                                 </div>
@@ -510,7 +510,7 @@ export default function ScheduleClient({
                                 <div className="w-8 h-8 bg-surface-subtle rounded-full" />
                               )}
                               {game.home_rank && game.home_rank <= 25 && (
-                                <span className="text-xs text-warning-text font-medium w-4">
+                                <span className="text-xs text-warning-text font-medium w-auto min-w-[1rem]">
                                   #{game.home_rank}
                                 </span>
                               )}

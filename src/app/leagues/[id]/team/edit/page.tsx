@@ -116,12 +116,14 @@ export default function TeamEditPage({ params }: PageProps) {
 
     if (file.size > 500 * 1024) {
       setError('File too large. Maximum size is 500KB.')
+      window.scrollTo({ top: 0, behavior: 'smooth' })
       return
     }
 
     const allowed = ['image/png', 'image/jpeg', 'image/jpg', 'image/gif', 'image/webp', 'image/svg+xml']
     if (!allowed.includes(file.type)) {
       setError('Invalid file type. Accepted: PNG, JPG, GIF, WEBP, SVG')
+      window.scrollTo({ top: 0, behavior: 'smooth' })
       return
     }
 
