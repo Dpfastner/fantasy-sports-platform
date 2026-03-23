@@ -13,6 +13,7 @@ import { EntryAvatar } from '@/components/EntryAvatar'
 import { ScheduleView } from './ScheduleView'
 import { ShareButton } from '@/components/ShareButton'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
+import { ViewBracketModal } from './ViewBracketModal'
 import { MembersTab } from './MembersTab'
 import { SettingsTab } from './SettingsTab'
 
@@ -163,6 +164,10 @@ export function PoolDetailClient({
 
   // Effective format: pool.gameType takes precedence over tournament.format for multi-format tournaments
   const effectiveFormat = pool.gameType || tournament.format
+
+  // View another user's bracket
+  const [viewingEntryId, setViewingEntryId] = useState<string | null>(null)
+  const viewingMember = viewingEntryId ? members.find(m => m.id === viewingEntryId) : null
 
   // Multi-entry state
   const [activeEntryIndex, setActiveEntryIndex] = useState(0)
@@ -409,6 +414,7 @@ export function PoolDetailClient({
               format={effectiveFormat}
               poolStatus={pool.status}
               tiebreaker={pool.tiebreaker}
+              onViewEntry={effectiveFormat === 'bracket' ? setViewingEntryId : undefined}
             />
           )}
           </ErrorBoundary>
@@ -558,6 +564,31 @@ export function PoolDetailClient({
           members={members}
           codeCopied={codeCopied}
           onCopyInviteCode={copyInviteCode}
+        />
+      )}
+      {/* View Bracket Modal */}
+      {viewingEntryId && viewingMember && (
+        <ViewBracketModal
+          entryId={viewingEntryId}
+          entryName={viewingMember.entryName || viewingMember.displayName}
+          games={games.map(g => ({
+            id: g.id,
+            round: g.round,
+            gameNumber: g.gameNumber,
+            participant1Id: g.participant1Id,
+            participant2Id: g.participant2Id,
+            participant1Score: g.participant1Score,
+            participant2Score: g.participant2Score,
+            startsAt: g.startsAt,
+            status: g.status,
+            result: g.result,
+            winnerId: g.winnerId,
+            period: g.period,
+            clock: g.clock,
+          }))}
+          participants={participants}
+          scoringRules={pool.scoringRules as Record<string, number>}
+          onClose={() => setViewingEntryId(null)}
         />
       )}
     </div>

@@ -26,6 +26,7 @@ interface LeaderboardProps {
   format: string
   poolStatus: string
   tiebreaker?: string
+  onViewEntry?: (entryId: string) => void
 }
 
 function formatGolfScore(score: number): string {
@@ -34,7 +35,7 @@ function formatGolfScore(score: number): string {
   return String(score)
 }
 
-export function Leaderboard({ members, format, poolStatus, tiebreaker }: LeaderboardProps) {
+export function Leaderboard({ members, format, poolStatus, tiebreaker, onViewEntry }: LeaderboardProps) {
   const isRoster = format === 'roster'
   const isSurvivor = format === 'survivor'
   const hasTiebreaker = tiebreaker && tiebreaker !== 'none'
@@ -133,17 +134,25 @@ export function Leaderboard({ members, format, poolStatus, tiebreaker }: Leaderb
                   <div className="min-w-0">
                     {member.entryName ? (
                       <>
-                        <div className="text-sm font-medium text-text-primary truncate">{member.entryName}</div>
+                        <button
+                          onClick={() => onViewEntry?.(member.id)}
+                          className="text-sm font-medium text-text-primary truncate hover:underline text-left block w-full"
+                        >
+                          {member.entryName}
+                        </button>
                         {member.userId ? (
                           <Link href={`/profile/${member.userId}`} className="text-xs text-text-muted truncate hover:underline block">{member.userName}</Link>
                         ) : (
                           <span className="text-xs text-text-muted truncate italic block">{member.userName}</span>
                         )}
                       </>
-                    ) : member.userId ? (
-                      <Link href={`/profile/${member.userId}`} className="text-sm text-text-primary truncate hover:underline">{member.displayName}</Link>
                     ) : (
-                      <span className="text-sm text-text-muted truncate italic">{member.displayName}</span>
+                      <button
+                        onClick={() => onViewEntry?.(member.id)}
+                        className="text-sm text-text-primary truncate hover:underline text-left"
+                      >
+                        {member.displayName}
+                      </button>
                     )}
                   </div>
                 </div>
