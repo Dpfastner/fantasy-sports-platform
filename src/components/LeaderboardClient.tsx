@@ -287,7 +287,7 @@ export default function LeaderboardClient({
   // --- Embedded variant ---
   if (variant === 'embedded') {
     return (
-      <div className="space-y-6 overflow-x-auto">
+      <div className="space-y-6 overflow-hidden">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
           <div>
