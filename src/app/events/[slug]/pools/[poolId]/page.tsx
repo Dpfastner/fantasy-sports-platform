@@ -45,6 +45,11 @@ export default async function PoolDetailPage({ params }: PageProps) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
+  // Redirect unauthenticated users to login with return URL
+  if (!user) {
+    redirect(`/login?next=${encodeURIComponent(`/events/${slug}/pools/${poolId}`)}`)
+  }
+
   // Get user profile for header
   let profile: { display_name: string | null; email: string } | null = null
   if (user) {

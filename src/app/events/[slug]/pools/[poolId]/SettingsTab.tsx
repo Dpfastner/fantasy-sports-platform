@@ -208,9 +208,9 @@ export function SettingsTab({
             </select>
           </div>
 
-          {/* Max Entries */}
+          {/* Max Participants */}
           <div>
-            <label className="block text-xs text-text-muted mb-1">Max Entries</label>
+            <label className="block text-xs text-text-muted mb-1">Max Participants</label>
             <input
               type="number"
               inputMode="numeric"

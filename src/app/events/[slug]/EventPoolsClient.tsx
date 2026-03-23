@@ -350,9 +350,9 @@ export function EventPoolsClient({
               </div>
             </div>
 
-            {/* Max Entries */}
+            {/* Max Participants */}
             <div>
-              <label className="block text-xs text-text-muted mb-1">Max Entries (optional)</label>
+              <label className="block text-xs text-text-muted mb-1">Max Participants (optional)</label>
               <input
                 type="number"
                 value={maxEntries}
