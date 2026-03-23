@@ -60,6 +60,19 @@ export async function POST(request: NextRequest) {
       details: { category, reportId },
     })
 
+    // Notify all admin users about the new report
+    const { ADMIN_USER_IDS } = await import('@/lib/constants/admin')
+    const { createNotification } = await import('@/lib/notifications')
+    for (const adminId of ADMIN_USER_IDS) {
+      createNotification({
+        userId: adminId,
+        type: 'system',
+        title: `New ${category} report`,
+        body: description.slice(0, 100) + (description.length > 100 ? '...' : ''),
+        data: { reportId, page, category },
+      })
+    }
+
     return NextResponse.json({ success: true, reportId })
   } catch (error) {
     console.error('Report submission error:', error)
