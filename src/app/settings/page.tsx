@@ -825,7 +825,7 @@ function NotificationCategory({
 
   return (
     <div className="border border-border rounded-lg overflow-hidden">
-      <div className="flex items-center justify-between px-4 py-3 bg-surface-subtle">
+      <div className="flex items-center justify-between gap-3 px-4 py-3 bg-surface-subtle">
         <button
           type="button"
           onClick={onToggleExpand}
@@ -922,25 +922,17 @@ function PushMasterToggle({
   onToggle: () => void
 }) {
   return (
-    <label className="flex items-center justify-between py-2 cursor-pointer">
-      <div>
-        <p className="text-text-primary text-sm font-medium">Enable Push Notifications</p>
-        <p className="text-text-muted text-xs">
-          {loading ? 'Updating...' : enabled ? 'You will receive browser notifications' : 'Get alerts even when you\'re not on the site'}
-        </p>
-      </div>
+    <div
+      onClick={onToggle}
+      className={`relative w-10 h-6 rounded-full transition-colors cursor-pointer shrink-0 ${
+        loading ? 'bg-surface-inset opacity-50 cursor-wait' : enabled ? 'bg-brand' : 'bg-surface-inset'
+      }`}
+    >
       <div
-        onClick={onToggle}
-        className={`relative w-10 h-6 rounded-full transition-colors ${
-          loading ? 'bg-surface-inset opacity-50 cursor-wait' : enabled ? 'bg-brand' : 'bg-surface-inset'
+        className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-transform ${
+          enabled ? 'translate-x-5' : 'translate-x-1'
         }`}
-      >
-        <div
-          className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-transform ${
-            enabled ? 'translate-x-5' : 'translate-x-1'
-          }`}
-        />
-      </div>
-    </label>
+      />
+    </div>
   )
 }
