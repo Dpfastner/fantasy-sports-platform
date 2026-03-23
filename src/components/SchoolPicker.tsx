@@ -18,7 +18,7 @@ interface SchoolPickerProps {
   label?: string
 }
 
-export function SchoolPicker({ value, onChange, label = 'Alma Mater or Favorite FBS Team' }: SchoolPickerProps) {
+export function SchoolPicker({ value, onChange, label = 'Alma Mater or Favorite School' }: SchoolPickerProps) {
   const [schools, setSchools] = useState<School[]>([])
   const [search, setSearch] = useState('')
   const [open, setOpen] = useState(false)
