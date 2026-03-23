@@ -53,6 +53,7 @@ interface BracketPickerProps {
   existingTiebreaker: { team1_score: number; team2_score: number } | null
   submittedAt: string | null
   scoringRules?: Record<string, unknown> | null
+  existingDisplayName?: string | null
 }
 
 const DEFAULT_SCORING: Record<string, number> = {
@@ -85,10 +86,12 @@ export function BracketPicker({
   existingTiebreaker,
   submittedAt,
   scoringRules,
+  existingDisplayName,
 }: BracketPickerProps) {
   const router = useRouter()
   const { addToast } = useToast()
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [bracketName, setBracketName] = useState(existingDisplayName || '')
 
   const isLocked = poolStatus !== 'open'
 
@@ -192,6 +195,10 @@ export function BracketPicker({
         picks: pickArray,
       }
 
+      if (bracketName.trim()) {
+        body.displayName = bracketName.trim()
+      }
+
       if (tiebreakerType === 'championship_score') {
         body.tiebreakerPrediction = tiebreaker
       }
@@ -221,6 +228,19 @@ export function BracketPicker({
 
   return (
     <div>
+      {/* Bracket name */}
+      {!isLocked && (
+        <div className="mb-3">
+          <input
+            type="text"
+            value={bracketName}
+            onChange={e => setBracketName(e.target.value.slice(0, 50))}
+            placeholder="Name your bracket"
+            className="w-full sm:w-64 px-3 py-1.5 text-sm rounded-md border border-border bg-surface text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-1 focus:ring-brand"
+          />
+        </div>
+      )}
+
       {/* Status bar */}
       <div className="flex items-center justify-between mb-4">
         <div className="text-sm text-text-muted">

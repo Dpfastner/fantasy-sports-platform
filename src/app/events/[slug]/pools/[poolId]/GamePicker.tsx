@@ -61,6 +61,7 @@ interface GamePickerProps {
     isActive: boolean
     submittedAt: string | null
     tiebreakerPrediction: { team1_score: number; team2_score: number } | null
+    displayName?: string | null
   }
   participants: Participant[]
   games: Game[]
@@ -98,6 +99,7 @@ export function GamePicker({
         existingTiebreaker={activeEntry.tiebreakerPrediction}
         submittedAt={activeEntry.submittedAt}
         scoringRules={pool.scoringRules}
+        existingDisplayName={activeEntry.displayName}
       />
     )
   }

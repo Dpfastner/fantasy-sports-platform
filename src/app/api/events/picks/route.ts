@@ -170,7 +170,7 @@ async function handleBracketPicks(
   const validation = validateBody(eventBracketPickSchema, rawBody)
   if (!validation.success) return validation.response
 
-  const { picks, tiebreakerPrediction } = validation.data
+  const { picks, tiebreakerPrediction, displayName } = validation.data
 
   // Tiebreaker validation
   if (pool.tiebreaker !== 'none' && !tiebreakerPrediction) {
@@ -275,15 +275,19 @@ async function handleBracketPicks(
   const totalGamesInBracket = bracketSize ? bracketSize - 1 : picks.length
   const isComplete = picks.length >= totalGamesInBracket
 
-  // Update tiebreaker, submitted_at, and completeness
+  // Update tiebreaker, submitted_at, display_name, and completeness
+  const entryUpdate: Record<string, unknown> = {
+    tiebreaker_prediction: tiebreakerPrediction || null,
+    submitted_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+    metadata: { is_complete: isComplete, pick_count: picks.length, total_games: totalGamesInBracket },
+  }
+  if (displayName !== undefined) {
+    entryUpdate.display_name = displayName.trim() || null
+  }
   await admin
     .from('event_entries')
-    .update({
-      tiebreaker_prediction: tiebreakerPrediction || null,
-      submitted_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-      metadata: { is_complete: isComplete, pick_count: picks.length, total_games: totalGamesInBracket },
-    })
+    .update(entryUpdate)
     .eq('id', entry.id)
 
   // Log activity

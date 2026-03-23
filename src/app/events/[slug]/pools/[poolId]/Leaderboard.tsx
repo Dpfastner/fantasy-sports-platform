@@ -6,6 +6,8 @@ import { EntryAvatar } from '@/components/EntryAvatar'
 interface Member {
   id: string
   userId: string | null
+  entryName?: string | null
+  userName?: string
   displayName: string
   isActive: boolean
   submittedAt: string | null
@@ -128,11 +130,22 @@ export function Leaderboard({ members, format, poolStatus, tiebreaker }: Leaderb
                 </span>
                 <div className="min-w-0 flex items-center gap-2">
                   <EntryAvatar imageUrl={member.imageUrl} primaryColor={member.primaryColor} showBorder />
-                  {member.userId ? (
-                    <Link href={`/profile/${member.userId}`} className="text-sm text-text-primary truncate hover:underline">{member.displayName}</Link>
-                  ) : (
-                    <span className="text-sm text-text-muted truncate italic">{member.displayName}</span>
-                  )}
+                  <div className="min-w-0">
+                    {member.entryName ? (
+                      <>
+                        <div className="text-sm font-medium text-text-primary truncate">{member.entryName}</div>
+                        {member.userId ? (
+                          <Link href={`/profile/${member.userId}`} className="text-xs text-text-muted truncate hover:underline block">{member.userName}</Link>
+                        ) : (
+                          <span className="text-xs text-text-muted truncate italic block">{member.userName}</span>
+                        )}
+                      </>
+                    ) : member.userId ? (
+                      <Link href={`/profile/${member.userId}`} className="text-sm text-text-primary truncate hover:underline">{member.displayName}</Link>
+                    ) : (
+                      <span className="text-sm text-text-muted truncate italic">{member.displayName}</span>
+                    )}
+                  </div>
                 </div>
                 {isSurvivor ? (
                   <>

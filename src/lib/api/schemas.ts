@@ -196,6 +196,7 @@ export const eventBracketPickSchema = z.object({
     team1_score: z.number().int().min(0).max(99),
     team2_score: z.number().int().min(0).max(99),
   }).optional(),
+  displayName: z.string().max(50).optional(),
 })
 
 export const eventSurvivorPickSchema = z.object({

@@ -299,6 +299,8 @@ export default async function PoolDetailPage({ params }: PageProps) {
     return {
       id: e.id,
       userId: e.user_id,
+      entryName: e.display_name || null,
+      userName: p?.display_name || p?.email?.split('@')[0] || 'Anonymous',
       displayName: e.display_name || p?.display_name || p?.email?.split('@')[0] || 'Anonymous',
       isActive: e.is_active,
       submittedAt: e.submitted_at,
