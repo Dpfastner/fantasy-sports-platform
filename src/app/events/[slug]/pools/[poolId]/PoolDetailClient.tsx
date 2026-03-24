@@ -215,7 +215,7 @@ export function PoolDetailClient({
       : 'My Picks', requiresMember: true },
     { key: 'schedule', label: effectiveFormat === 'roster' ? 'Leaderboard' : 'Schedule' },
     { key: 'members', label: `Members (${members.length})` },
-    ...(isCreator ? [{ key: 'settings' as Tab, label: 'Settings' }] : []),
+    { key: 'settings' as Tab, label: 'Settings' },
   ]
 
   return (
@@ -585,7 +585,7 @@ export function PoolDetailClient({
         <MembersTab members={members} poolId={pool.id} isCreator={isCreator} userId={userId} />
       )}
 
-      {activeTab === 'settings' && isCreator && (
+      {activeTab === 'settings' && (
         <SettingsTab
           pool={pool}
           tournament={tournament}
@@ -593,6 +593,7 @@ export function PoolDetailClient({
           members={members}
           codeCopied={codeCopied}
           onCopyInviteCode={copyInviteCode}
+          readOnly={!isCreator}
         />
       )}
       {/* View Bracket Modal */}

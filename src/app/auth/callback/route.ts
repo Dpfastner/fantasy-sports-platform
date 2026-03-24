@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server'
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
+import { ADMIN_USER_IDS } from '@/lib/constants/admin'
+import { createNotification } from '@/lib/notifications'
 
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url)
@@ -40,6 +42,20 @@ export async function GET(request: Request) {
         const recoveryAge = Date.now() - new Date(recoverySentAt).getTime()
         if (recoveryAge < 600_000) { // within last 10 minutes
           redirectTo = '/reset-password'
+        }
+      }
+
+      // Notify admins of new signups (fire-and-forget)
+      if (!recoverySentAt && data.session?.user) {
+        const userEmail = data.session.user.email || 'unknown'
+        const userName = data.session.user.user_metadata?.display_name || userEmail.split('@')[0]
+        for (const adminId of ADMIN_USER_IDS) {
+          createNotification({
+            userId: adminId,
+            type: 'system',
+            title: 'New user signed up',
+            body: `${userName} (${userEmail}) just joined Rivyls`,
+          })
         }
       }
 

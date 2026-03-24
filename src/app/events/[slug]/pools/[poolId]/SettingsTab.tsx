@@ -62,6 +62,7 @@ interface SettingsTabProps {
   members: { length: number }
   codeCopied: boolean
   onCopyInviteCode: () => void
+  readOnly?: boolean
 }
 
 export function SettingsTab({
@@ -71,6 +72,7 @@ export function SettingsTab({
   members,
   codeCopied,
   onCopyInviteCode,
+  readOnly = false,
 }: SettingsTabProps) {
   const { addToast } = useToast()
   const router = useRouter()
@@ -414,13 +416,15 @@ export function SettingsTab({
             </div>
           )}
 
-          <button
-            onClick={handleSaveSettings}
-            disabled={isSavingSettings || !settingsName.trim()}
-            className="w-full py-2.5 text-sm font-semibold rounded-lg bg-brand hover:bg-brand-hover text-text-primary transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {isSavingSettings ? 'Saving...' : 'Save Settings'}
-          </button>
+          {!readOnly && (
+            <button
+              onClick={handleSaveSettings}
+              disabled={isSavingSettings || !settingsName.trim()}
+              className="w-full py-2.5 text-sm font-semibold rounded-lg bg-brand hover:bg-brand-hover text-text-primary transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isSavingSettings ? 'Saving...' : 'Save Settings'}
+            </button>
+          )}
         </div>
       </div>
 
@@ -484,44 +488,45 @@ export function SettingsTab({
         </div>
       </div>
 
-      {/* Danger Zone */}
-      <div className="mt-8 border border-danger rounded-lg p-4">
-        <h3 className="text-danger font-semibold mb-2">Danger Zone</h3>
-        <p className="text-text-muted text-sm mb-3">
-          Permanently delete this pool and all its entries, picks, and messages. This cannot be undone.
-        </p>
-        <button
-          onClick={async () => {
-            const ok = await confirmDialog({
-              title: 'Delete Pool?',
-              message: 'This will permanently delete this pool and all data. This action cannot be undone.',
-              confirmLabel: 'Delete',
-              variant: 'danger',
-            })
-            if (!ok) return
+      {!readOnly && (
+        <div className="mt-8 border border-danger rounded-lg p-4">
+          <h3 className="text-danger font-semibold mb-2">Danger Zone</h3>
+          <p className="text-text-muted text-sm mb-3">
+            Permanently delete this pool and all its entries, picks, and messages. This cannot be undone.
+          </p>
+          <button
+            onClick={async () => {
+              const ok = await confirmDialog({
+                title: 'Delete Pool?',
+                message: 'This will permanently delete this pool and all data. This action cannot be undone.',
+                confirmLabel: 'Delete',
+                variant: 'danger',
+              })
+              if (!ok) return
 
-            setIsDeleting(true)
-            try {
-              const res = await fetch(`/api/events/pools/${pool.id}`, { method: 'DELETE' })
-              if (res.ok) {
-                addToast('Pool deleted', 'success')
-                router.push('/dashboard')
-              } else {
-                const data = await res.json()
-                addToast(data.error || 'Failed to delete pool', 'error')
+              setIsDeleting(true)
+              try {
+                const res = await fetch(`/api/events/pools/${pool.id}`, { method: 'DELETE' })
+                if (res.ok) {
+                  addToast('Pool deleted', 'success')
+                  router.push('/dashboard')
+                } else {
+                  const data = await res.json()
+                  addToast(data.error || 'Failed to delete pool', 'error')
+                }
+              } catch {
+                addToast('Something went wrong', 'error')
+              } finally {
+                setIsDeleting(false)
               }
-            } catch {
-              addToast('Something went wrong', 'error')
-            } finally {
-              setIsDeleting(false)
-            }
-          }}
-          disabled={isDeleting}
-          className="px-4 py-2 bg-danger hover:bg-danger/80 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {isDeleting ? 'Deleting...' : 'Delete Pool'}
-        </button>
-      </div>
+            }}
+            disabled={isDeleting}
+            className="px-4 py-2 bg-danger hover:bg-danger/80 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {isDeleting ? 'Deleting...' : 'Delete Pool'}
+          </button>
+        </div>
+      )}
     </div>
   )
 }

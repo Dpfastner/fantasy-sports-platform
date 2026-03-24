@@ -120,9 +120,9 @@ export function BracketPicker({
     isLocked,
   })
 
-  // Tiebreaker state
+  // Tiebreaker state — use string to allow clearing input
   const [tiebreaker, setTiebreaker] = useState(
-    existingTiebreaker || { team1_score: 0, team2_score: 0 },
+    existingTiebreaker || { team1_score: 0 as number | '', team2_score: 0 as number | '' },
   )
 
   // Scoring breakdown for results display
@@ -363,7 +363,14 @@ export function BracketPicker({
               min={0}
               max={99}
               value={tiebreaker.team1_score}
-              onChange={(e) => setTiebreaker(prev => ({ ...prev, team1_score: parseInt(e.target.value) || 0 }))}
+              onChange={(e) => {
+                const raw = e.target.value
+                if (raw === '') { setTiebreaker(prev => ({ ...prev, team1_score: '' })); return }
+                const val = parseInt(raw)
+                if (!isNaN(val)) setTiebreaker(prev => ({ ...prev, team1_score: Math.min(99, val) }))
+              }}
+              onBlur={() => { if (tiebreaker.team1_score === '') setTiebreaker(prev => ({ ...prev, team1_score: 0 })) }}
+              inputMode="numeric"
               className="w-16 bg-surface-inset border border-border rounded-md px-2 py-1.5 text-sm text-center text-text-primary focus:outline-none focus:ring-2 focus:ring-brand/50"
             />
             <span className="text-text-muted text-sm">—</span>
@@ -372,7 +379,14 @@ export function BracketPicker({
               min={0}
               max={99}
               value={tiebreaker.team2_score}
-              onChange={(e) => setTiebreaker(prev => ({ ...prev, team2_score: parseInt(e.target.value) || 0 }))}
+              onChange={(e) => {
+                const raw = e.target.value
+                if (raw === '') { setTiebreaker(prev => ({ ...prev, team2_score: '' })); return }
+                const val = parseInt(raw)
+                if (!isNaN(val)) setTiebreaker(prev => ({ ...prev, team2_score: Math.min(99, val) }))
+              }}
+              onBlur={() => { if (tiebreaker.team2_score === '') setTiebreaker(prev => ({ ...prev, team2_score: 0 })) }}
+              inputMode="numeric"
               className="w-16 bg-surface-inset border border-border rounded-md px-2 py-1.5 text-sm text-center text-text-primary focus:outline-none focus:ring-2 focus:ring-brand/50"
             />
           </div>
