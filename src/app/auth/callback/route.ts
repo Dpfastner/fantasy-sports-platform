@@ -3,6 +3,7 @@ import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 import { ADMIN_USER_IDS } from '@/lib/constants/admin'
 import { createNotification } from '@/lib/notifications'
+import { sendAdminEmail } from '@/lib/email'
 
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url)
@@ -57,6 +58,10 @@ export async function GET(request: Request) {
             body: `${userName} (${userEmail}) just joined Rivyls`,
           })
         }
+        sendAdminEmail(
+          `New Rivyls signup: ${userName}`,
+          `<p><strong>${userName}</strong> (${userEmail}) just created a Rivyls account.</p>`
+        )
       }
 
       const response = NextResponse.redirect(`${origin}${redirectTo}`)

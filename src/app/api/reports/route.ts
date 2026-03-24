@@ -63,6 +63,7 @@ export async function POST(request: NextRequest) {
     // Notify all admin users about the new report
     const { ADMIN_USER_IDS } = await import('@/lib/constants/admin')
     const { createNotification } = await import('@/lib/notifications')
+    const { sendAdminEmail } = await import('@/lib/email')
     for (const adminId of ADMIN_USER_IDS) {
       createNotification({
         userId: adminId,
@@ -72,6 +73,12 @@ export async function POST(request: NextRequest) {
         data: { reportId, page, category },
       })
     }
+    sendAdminEmail(
+      `[Rivyls ${category}] ${description.slice(0, 60)}`,
+      `<p><strong>${category.toUpperCase()}</strong> from ${user.email || 'unknown'}</p>
+       <p>${description}</p>
+       <p style="color:#888;font-size:12px;">Page: ${page || 'unknown'}</p>`
+    )
 
     return NextResponse.json({ success: true, reportId })
   } catch (error) {
