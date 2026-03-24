@@ -89,7 +89,8 @@ export async function POST(
     const { limited, response } = messageLimiter.check(getClientIp(request))
     if (limited) return response!
 
-    const { content } = await request.json()
+    const body = await request.json()
+    const content = body.message || body.content
     if (!content || typeof content !== 'string' || content.trim().length === 0 || content.length > 2000) {
       return NextResponse.json({ error: 'Invalid message content' }, { status: 400 })
     }
