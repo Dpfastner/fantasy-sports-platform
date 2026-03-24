@@ -19,11 +19,14 @@ export default function AdminNav() {
 
   return (
     <header className="bg-surface/50 border-b border-border">
-      <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-        <Link href="/dashboard" className="text-2xl font-bold text-text-primary">
-          Rivyls
-        </Link>
-        <div className="flex items-center gap-3 overflow-x-auto scrollbar-hide whitespace-nowrap">
+      <div className="container mx-auto px-4 py-3">
+        <div className="flex justify-between items-center mb-2">
+          <Link href="/dashboard" className="text-xl font-bold text-text-primary">
+            Rivyls
+          </Link>
+          <span className="text-xs text-text-muted">Admin</span>
+        </div>
+        <div className="flex items-center gap-3 overflow-x-auto scrollbar-hide whitespace-nowrap -mx-4 px-4">
           {navItems.map((item) => {
             const isActive = item.exact
               ? pathname === item.href
