@@ -244,16 +244,8 @@ export function PoolDetailClient({
             </p>
           </div>
 
-          {/* Invite Code + Share + Edit Entry */}
+          {/* Invite Code + Share */}
           <div className="flex items-center gap-2 flex-wrap">
-            {activeEntry && (
-              <Link
-                href={`/events/${tournament.slug}/pools/${pool.id}/edit-entry?entryId=${activeEntry.id}`}
-                className="text-xs px-2 py-1.5 rounded-md border border-border text-text-muted hover:text-text-primary hover:border-brand/40 transition-colors"
-              >
-                Edit Entry
-              </Link>
-            )}
             <div className="bg-surface-inset rounded-md px-3 py-1.5 border border-border">
               <span className="text-xs text-text-muted mr-1">Code:</span>
               <span className="font-mono text-sm text-text-primary tracking-wider">{pool.inviteCode}</span>
@@ -459,6 +451,19 @@ export function PoolDetailClient({
 
       {activeTab === 'picks' && activeEntry && (
         <div>
+          {/* Customize entry link — always visible */}
+          <div className="flex items-center justify-end mb-2">
+            <Link
+              href={`/events/${tournament.slug}/pools/${pool.id}/edit-entry?entryId=${activeEntry.id}`}
+              className="flex items-center gap-1 text-xs text-text-muted hover:text-text-primary transition-colors"
+            >
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+              </svg>
+              Customize
+            </Link>
+          </div>
+
           {/* Entry selector */}
           {(userEntries.length > 1 || canAddEntry) && (
             <div className="flex items-center gap-2 mb-4 overflow-x-auto pb-1">
