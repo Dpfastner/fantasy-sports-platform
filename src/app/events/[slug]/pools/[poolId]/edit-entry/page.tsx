@@ -268,15 +268,37 @@ export default function EditEntryPage({ params }: PageProps) {
               <div>
                 <label htmlFor="primaryColor" className="block text-sm font-medium text-text-secondary mb-2">Primary Color</label>
                 <div className="flex gap-3 items-center">
-                  <input type="color" id="primaryColor" value={primaryColor} onChange={(e) => setPrimaryColor(e.target.value)} className="w-12 h-10 rounded border border-border cursor-pointer" />
-                  <input type="text" value={primaryColor} onChange={(e) => setPrimaryColor(e.target.value)} pattern="^#[0-9A-Fa-f]{6}$" className="flex-1 px-3 py-2 bg-surface border border-border rounded-lg text-text-primary text-sm font-mono focus:outline-none focus:ring-2 focus:ring-brand" placeholder="#1a1a1a" />
+                  <input type="color" id="primaryColor" value={primaryColor} onChange={(e) => setPrimaryColor(e.target.value)} className="w-12 h-12 rounded border border-border cursor-pointer" />
+                </div>
+                <div className="flex flex-wrap gap-1.5 mt-2">
+                  {['#CC0000', '#FF6600', '#FFD700', '#228B22', '#003DA5', '#4B0082', '#8B0000', '#000000', '#1A0F28', '#F59E0B', '#E74C6F', '#FFFFFF'].map((c) => (
+                    <button
+                      key={c}
+                      type="button"
+                      onClick={() => setPrimaryColor(c)}
+                      className={`w-8 h-8 rounded-full border-2 transition-transform hover:scale-110 ${primaryColor === c ? 'border-brand scale-110' : 'border-border'}`}
+                      style={{ backgroundColor: c }}
+                      title={c}
+                    />
+                  ))}
                 </div>
               </div>
               <div>
                 <label htmlFor="secondaryColor" className="block text-sm font-medium text-text-secondary mb-2">Secondary Color</label>
                 <div className="flex gap-3 items-center">
-                  <input type="color" id="secondaryColor" value={secondaryColor} onChange={(e) => setSecondaryColor(e.target.value)} className="w-12 h-10 rounded border border-border cursor-pointer" />
-                  <input type="text" value={secondaryColor} onChange={(e) => setSecondaryColor(e.target.value)} pattern="^#[0-9A-Fa-f]{6}$" className="flex-1 px-3 py-2 bg-surface border border-border rounded-lg text-text-primary text-sm font-mono focus:outline-none focus:ring-2 focus:ring-brand" placeholder="#ffffff" />
+                  <input type="color" id="secondaryColor" value={secondaryColor} onChange={(e) => setSecondaryColor(e.target.value)} className="w-12 h-12 rounded border border-border cursor-pointer" />
+                </div>
+                <div className="flex flex-wrap gap-1.5 mt-2">
+                  {['#CC0000', '#FF6600', '#FFD700', '#228B22', '#003DA5', '#4B0082', '#8B0000', '#000000', '#1A0F28', '#F59E0B', '#E74C6F', '#FFFFFF'].map((c) => (
+                    <button
+                      key={c}
+                      type="button"
+                      onClick={() => setSecondaryColor(c)}
+                      className={`w-8 h-8 rounded-full border-2 transition-transform hover:scale-110 ${secondaryColor === c ? 'border-brand scale-110' : 'border-border'}`}
+                      style={{ backgroundColor: c }}
+                      title={c}
+                    />
+                  ))}
                 </div>
               </div>
             </div>

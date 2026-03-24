@@ -19,6 +19,7 @@ interface Member {
   primaryColor?: string | null
   secondaryColor?: string | null
   imageUrl?: string | null
+  championPick?: { participantId: string; participantName: string } | null
 }
 
 interface LeaderboardProps {
@@ -153,6 +154,11 @@ export function Leaderboard({ members, format, poolStatus, tiebreaker, onViewEnt
                       >
                         {member.displayName}
                       </button>
+                    )}
+                    {member.championPick && (
+                      <span className="text-[10px] text-text-muted truncate block" title={`Champion: ${member.championPick.participantName}`}>
+                        <span className="inline-block mr-0.5">&#127942;</span>{member.championPick.participantName}
+                      </span>
                     )}
                   </div>
                 </div>

@@ -244,6 +244,34 @@ export default async function PoolDetailPage({ params }: PageProps) {
     }
   }
 
+  // For bracket pools, fetch champion picks (championship game pick = predicted champion)
+  let championPickMap: Record<string, { participantId: string; participantName: string }> = {}
+  if ((effectiveFormatForQuery === 'bracket') && entries?.length && games?.length) {
+    // Find the championship game (highest game_number or round === 'championship')
+    const championshipGame = games.find(g => g.round === 'championship')
+    if (championshipGame) {
+      const entryIds = entries.map(e => e.id)
+      const { data: championPicks } = await admin
+        .from('event_picks')
+        .select('entry_id, participant_id')
+        .in('entry_id', entryIds)
+        .eq('game_id', championshipGame.id)
+
+      if (championPicks) {
+        const participantById: Record<string, string> = {}
+        for (const p of (participants || [])) {
+          participantById[p.id] = p.short_name || p.name
+        }
+        for (const pick of championPicks) {
+          championPickMap[pick.entry_id] = {
+            participantId: pick.participant_id,
+            participantName: participantById[pick.participant_id] || 'Unknown',
+          }
+        }
+      }
+    }
+  }
+
   // For survivor format, count picks per entry (= rounds survived)
   let survivorPickCounts: Record<string, number> = {}
   if ((effectiveFormatForQuery === 'survivor') && entries?.length) {
@@ -317,6 +345,7 @@ export default async function PoolDetailPage({ params }: PageProps) {
       primaryColor: e.primary_color as string | null,
       secondaryColor: e.secondary_color as string | null,
       imageUrl: e.image_url as string | null,
+      championPick: championPickMap[e.id] || null,
     }
   })
 

@@ -7,7 +7,7 @@ on:
     # - No event games today? Skip instantly
     # - Outside game window (30min before → 4hr after)? Skip instantly
     # - In game window? Fetch ESPN, update scores/period/clock
-    # Note: For 1-minute updates, use an external cron service (Upstash/EasyCron)
+    # For 1-minute updates, would need an external cron service (Upstash/EasyCron)
     - cron: '*/5 * * * *'
   workflow_dispatch: # Allow manual trigger
 
