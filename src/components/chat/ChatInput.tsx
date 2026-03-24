@@ -177,7 +177,7 @@ export function ChatInput({ channelType, channelEntityId, currentUserId, current
   }
 
   return (
-    <div className="border-t border-border flex flex-col">
+    <div className="border-t border-border flex flex-col" style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}>
       {/* Trash Talk picker */}
       {showTrashTalk && (
         <div className="max-h-48 overflow-y-auto border-b border-border">

@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
+import ColorPicker from '@/components/ColorPicker'
 
 interface PageProps {
   params: Promise<{ slug: string; poolId: string }>
@@ -231,87 +232,12 @@ export default function EditEntryPage({ params }: PageProps) {
               />
             </div>
 
-            {/* Color Presets */}
-            <div>
-              <label className="block text-sm font-medium text-text-secondary mb-2">Color Presets</label>
-              <div className="flex flex-wrap gap-2">
-                {[
-                  { primary: '#1a1a1a', secondary: '#ffffff', label: 'Classic' },
-                  { primary: '#1e3a5f', secondary: '#f0c040', label: 'Navy/Gold' },
-                  { primary: '#8b0000', secondary: '#ffffff', label: 'Crimson' },
-                  { primary: '#002244', secondary: '#c83803', label: 'Navy/Orange' },
-                  { primary: '#333f48', secondary: '#b3a369', label: 'Steel/Gold' },
-                  { primary: '#4b2e83', secondary: '#e8d3a2', label: 'Purple/Gold' },
-                  { primary: '#006747', secondary: '#cfc493', label: 'Green/Gold' },
-                  { primary: '#cc0033', secondary: '#000000', label: 'Red/Black' },
-                ].map((preset) => (
-                  <button
-                    key={preset.label}
-                    type="button"
-                    onClick={() => { setPrimaryColor(preset.primary); setSecondaryColor(preset.secondary) }}
-                    className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border text-xs transition-colors ${
-                      primaryColor === preset.primary && secondaryColor === preset.secondary
-                        ? 'border-brand bg-brand/10'
-                        : 'border-border hover:border-text-muted'
-                    }`}
-                  >
-                    <span className="w-4 h-4 rounded-full border border-border" style={{ backgroundColor: preset.primary }} />
-                    <span className="w-4 h-4 rounded-full border border-border" style={{ backgroundColor: preset.secondary }} />
-                    <span className="text-text-secondary">{preset.label}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Colors */}
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label htmlFor="primaryColor" className="block text-sm font-medium text-text-secondary mb-2">Primary Color</label>
-                <div className="flex gap-3 items-center">
-                  <input type="color" id="primaryColor" value={primaryColor} onChange={(e) => setPrimaryColor(e.target.value)} className="w-12 h-12 rounded border border-border cursor-pointer" />
-                </div>
-                <div className="flex flex-wrap gap-1.5 mt-2">
-                  {['#CC0000', '#FF6600', '#FFD700', '#228B22', '#003DA5', '#4B0082', '#8B0000', '#000000', '#1A0F28', '#F59E0B', '#E74C6F', '#FFFFFF'].map((c) => (
-                    <button
-                      key={c}
-                      type="button"
-                      onClick={() => setPrimaryColor(c)}
-                      className={`w-8 h-8 rounded-full border-2 transition-transform hover:scale-110 ${primaryColor === c ? 'border-brand scale-110' : 'border-border'}`}
-                      style={{ backgroundColor: c }}
-                      title={c}
-                    />
-                  ))}
-                </div>
-              </div>
-              <div>
-                <label htmlFor="secondaryColor" className="block text-sm font-medium text-text-secondary mb-2">Secondary Color</label>
-                <div className="flex gap-3 items-center">
-                  <input type="color" id="secondaryColor" value={secondaryColor} onChange={(e) => setSecondaryColor(e.target.value)} className="w-12 h-12 rounded border border-border cursor-pointer" />
-                </div>
-                <div className="flex flex-wrap gap-1.5 mt-2">
-                  {['#CC0000', '#FF6600', '#FFD700', '#228B22', '#003DA5', '#4B0082', '#8B0000', '#000000', '#1A0F28', '#F59E0B', '#E74C6F', '#FFFFFF'].map((c) => (
-                    <button
-                      key={c}
-                      type="button"
-                      onClick={() => setSecondaryColor(c)}
-                      className={`w-8 h-8 rounded-full border-2 transition-transform hover:scale-110 ${secondaryColor === c ? 'border-brand scale-110' : 'border-border'}`}
-                      style={{ backgroundColor: c }}
-                      title={c}
-                    />
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            {/* Preview */}
-            <div>
-              <label className="block text-sm font-medium text-text-secondary mb-2">Preview</label>
-              <div className="h-20 rounded-lg flex items-center justify-center" style={{ backgroundColor: primaryColor, border: `3px solid ${secondaryColor}` }}>
-                <span className="text-lg font-bold px-4 py-2 rounded" style={{ color: secondaryColor }}>
-                  {name || 'My Entry'}
-                </span>
-              </div>
-            </div>
+            <ColorPicker
+              primaryColor={primaryColor}
+              secondaryColor={secondaryColor}
+              onPrimaryChange={setPrimaryColor}
+              onSecondaryChange={setSecondaryColor}
+            />
 
             {/* Logo */}
             <div>

@@ -44,12 +44,14 @@ export function ChannelList({ autoOpenDmPicker }: { autoOpenDmPicker?: boolean }
     setDmLoading(true)
 
     try {
-      // Get members from all leagues the user is in
+      // Get members from all leagues and pools the user is in
       const leagueChannels = channels.filter(ch => ch.type === 'league')
+      const poolChannels = channels.filter(ch => ch.type === 'pool')
       const allMembers = new Map<string, MemberOption>()
 
-      await Promise.all(
-        leagueChannels.map(async (ch) => {
+      await Promise.all([
+        // Fetch league members
+        ...leagueChannels.map(async (ch) => {
           try {
             const res = await fetch(`/api/leagues/${ch.entityId}/members`)
             if (res.ok) {
@@ -61,8 +63,22 @@ export function ChannelList({ autoOpenDmPicker }: { autoOpenDmPicker?: boolean }
               }
             }
           } catch { /* skip */ }
-        })
-      )
+        }),
+        // Fetch pool members
+        ...poolChannels.map(async (ch) => {
+          try {
+            const res = await fetch(`/api/events/pools/${ch.entityId}/members`)
+            if (res.ok) {
+              const data = await res.json()
+              for (const m of (data.members || [])) {
+                if (m.id !== userId) {
+                  allMembers.set(m.id, m)
+                }
+              }
+            }
+          } catch { /* skip */ }
+        }),
+      ])
 
       setDmMembers(Array.from(allMembers.values()).sort((a, b) =>
         a.display_name.localeCompare(b.display_name)

@@ -73,6 +73,7 @@ interface ChatMessagesProps {
   currentUserId: string
   isCommissioner?: boolean
   onSendRef?: React.MutableRefObject<((msg: ChatMessage) => void) | null>
+  showPinnedOnly?: boolean
 }
 
 function formatTimeAgo(dateStr: string): string {
@@ -88,7 +89,7 @@ function formatTimeAgo(dateStr: string): string {
   return new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
 }
 
-export function ChatMessages({ channelType, channelEntityId, currentUserId, isCommissioner, onSendRef }: ChatMessagesProps) {
+export function ChatMessages({ channelType, channelEntityId, currentUserId, isCommissioner, onSendRef, showPinnedOnly }: ChatMessagesProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [reactions, setReactions] = useState<Record<string, ReactionData[]>>({})
   const [pickerOpenFor, setPickerOpenFor] = useState<string | null>(null)
@@ -351,6 +352,9 @@ export function ChatMessages({ channelType, channelEntityId, currentUserId, isCo
   // Find pinned message
   const pinnedMessage = messages.find(m => m.pinned_at)
 
+  // Filter messages when showPinnedOnly is active
+  const displayMessages = showPinnedOnly ? messages.filter(m => m.pinned_at) : messages
+
   if (loading) {
     return (
       <div className="flex-1 flex items-center justify-center">
@@ -383,12 +387,12 @@ export function ChatMessages({ channelType, channelEntityId, currentUserId, isCo
 
       {/* Messages area */}
       <div ref={containerRef} className="flex-1 overflow-y-auto space-y-2 p-3">
-        {messages.length === 0 ? (
+        {displayMessages.length === 0 ? (
           <p className="text-text-muted text-sm text-center py-6">
-            No messages yet. Start the conversation!
+            {showPinnedOnly ? 'No pinned messages' : 'No messages yet. Start the conversation!'}
           </p>
         ) : (
-          messages.map(msg => {
+          displayMessages.map(msg => {
             const isOwn = msg.user_id === currentUserId
             const msgReactions = reactions[msg.id] || []
             return (

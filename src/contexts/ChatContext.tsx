@@ -138,6 +138,74 @@ export function ChatContextProvider({ children }: { children: ReactNode }) {
     }
   }, [pathname, refreshChannels])
 
+  // Reset unread count when a channel becomes active
+  useEffect(() => {
+    if (activeChannel) {
+      setUnreadCounts(prev => {
+        if (prev[activeChannel.id] === 0 || prev[activeChannel.id] === undefined) return prev
+        return { ...prev, [activeChannel.id]: 0 }
+      })
+    }
+  }, [activeChannel])
+
+  // Subscribe to Realtime INSERTs across all channels to track unread counts
+  const activeChannelRef = useRef<Channel | null>(activeChannel)
+  useEffect(() => {
+    activeChannelRef.current = activeChannel
+  }, [activeChannel])
+
+  useEffect(() => {
+    if (!userId || channels.length === 0) return
+
+    const supabase = createClient()
+
+    // Build one subscription per message table type
+    const tableConfigs: { table: string; filterCol: string; channelType: Channel['type'] }[] = []
+
+    if (channels.some(c => c.type === 'league')) {
+      tableConfigs.push({ table: 'league_messages', filterCol: 'league_id', channelType: 'league' })
+    }
+    if (channels.some(c => c.type === 'pool')) {
+      tableConfigs.push({ table: 'event_pool_messages', filterCol: 'pool_id', channelType: 'pool' })
+    }
+    if (channels.some(c => c.type === 'dm')) {
+      tableConfigs.push({ table: 'direct_messages', filterCol: 'conversation_id', channelType: 'dm' })
+    }
+
+    const sub = supabase.channel('chat-unread-counts')
+
+    for (const cfg of tableConfigs) {
+      sub.on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: cfg.table,
+      }, (payload) => {
+        const newMsg = payload.new as Record<string, string>
+        const entityId = newMsg[cfg.filterCol]
+        if (!entityId) return
+
+        // Don't count own messages
+        if (newMsg.user_id === userId) return
+
+        const channelId = `${cfg.channelType}:${entityId}`
+
+        // Only increment if this channel is NOT currently active
+        if (activeChannelRef.current?.id === channelId) return
+
+        setUnreadCounts(prev => ({
+          ...prev,
+          [channelId]: (prev[channelId] || 0) + 1,
+        }))
+      })
+    }
+
+    sub.subscribe()
+
+    return () => {
+      supabase.removeChannel(sub)
+    }
+  }, [userId, channels])
+
   // Toggle body class for sidebar margin (used by CSS to offset content)
   useEffect(() => {
     const shouldShow = isOpen && !!userId

@@ -21,6 +21,7 @@ export function ChatSidebar() {
   const [displayName, setDisplayName] = useState<string>('You')
   const [showChannelDropdown, setShowChannelDropdown] = useState(false)
   const [pendingDmPicker, setPendingDmPicker] = useState(false)
+  const [showPinnedOnly, setShowPinnedOnly] = useState(false)
   const [dropdownPos, setDropdownPos] = useState<{ top: number; left: number } | null>(null)
   const dropdownRef = useRef<HTMLDivElement>(null)
   const triggerRef = useRef<HTMLButtonElement>(null)
@@ -114,6 +115,7 @@ export function ChatSidebar() {
     setActiveChannel(ch)
     setShowChannelDropdown(false)
     setPendingDmPicker(false)
+    setShowPinnedOnly(false)
   }
 
   return (
@@ -181,15 +183,47 @@ export function ChatSidebar() {
           ) : (
             <span className="text-sm font-semibold text-text-primary">Chat</span>
           )}
-          <button
-            onClick={() => setIsOpen(false)}
-            className="p-1 text-text-muted hover:text-text-primary transition-colors shrink-0"
-            title="Close chat"
-          >
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
+          <div className="flex items-center gap-1 shrink-0">
+            {/* Pin filter icon */}
+            {activeChannel && (
+              <button
+                onClick={() => setShowPinnedOnly(p => !p)}
+                className={`w-8 h-8 p-1.5 rounded hover:bg-surface-subtle transition-colors ${showPinnedOnly ? 'text-warning-text' : 'text-text-muted'}`}
+                title={showPinnedOnly ? 'Show all messages' : 'Show pinned only'}
+              >
+                <svg className="w-full h-full" viewBox="0 0 24 24" fill={showPinnedOnly ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M16 3H8a1 1 0 00-1 1v3.586a1 1 0 01-.293.707l-2.414 2.414a1 1 0 00-.293.707V13a1 1 0 001 1h5v7l1 1 1-1v-7h5a1 1 0 001-1v-1.586a1 1 0 00-.293-.707l-2.414-2.414A1 1 0 0117 7.586V4a1 1 0 00-1-1z" />
+                </svg>
+              </button>
+            )}
+            {/* DM shortcut icon */}
+            {activeChannel && (
+              <button
+                onClick={() => {
+                  setShowChannelDropdown(false)
+                  setPendingDmPicker(true)
+                  setActiveChannel(null)
+                }}
+                className={`h-8 px-2 flex items-center justify-center rounded-lg text-xs font-bold transition-colors ${
+                  pendingDmPicker
+                    ? 'bg-brand text-white'
+                    : 'bg-surface-subtle text-text-muted hover:text-text-primary'
+                }`}
+                title="Direct Messages"
+              >
+                DM
+              </button>
+            )}
+            <button
+              onClick={() => setIsOpen(false)}
+              className="p-1 text-text-muted hover:text-text-primary transition-colors shrink-0"
+              title="Close chat"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
         </div>
 
         {/* Body */}
@@ -200,6 +234,7 @@ export function ChatSidebar() {
               channelEntityId={activeChannel.entityId}
               currentUserId={userId}
               onSendRef={sendRef}
+              showPinnedOnly={showPinnedOnly}
             />
             <ChatInput
               channelType={activeChannel.type}
