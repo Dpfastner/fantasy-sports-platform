@@ -110,7 +110,7 @@ export function FanZoneWidget({
           {dismissButton}
         </div>
         <p className="text-text-secondary text-sm mb-4">
-          Pick your team to join the rivalry! Set your Alma Mater or favorite college team and see how your school stacks up against the competition.
+          Pick your team to join the rivalry! Set your alma mater or favorite college team and see how your school stacks up against the competition.
         </p>
         <div className="max-w-sm">
           <SchoolPicker value={selectedSchoolId} onChange={setSelectedSchoolId} label="Pick your team" />
