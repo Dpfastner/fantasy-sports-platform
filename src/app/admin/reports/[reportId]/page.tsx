@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import TicketThread from '@/components/TicketThread'
+import { useToast } from '@/components/Toast'
 
 interface Ticket {
   id: string
@@ -51,9 +52,16 @@ const priorityColors: Record<string, string> = {
   urgent: 'bg-danger/20 text-danger-text',
 }
 
+const statusLabels: Record<string, string> = {
+  new: 'Ticket reopened.',
+  in_progress: 'Ticket in progress. User notified.',
+  resolved: 'Ticket resolved. User notified.',
+}
+
 export default function AdminTicketDetailPage() {
   const { reportId } = useParams<{ reportId: string }>()
   const router = useRouter()
+  const { addToast } = useToast()
   const [ticket, setTicket] = useState<Ticket | null>(null)
   const [responses, setResponses] = useState<Response[]>([])
   const [loading, setLoading] = useState(true)
@@ -76,7 +84,7 @@ export default function AdminTicketDetailPage() {
 
   useEffect(() => { fetchTicket() }, [fetchTicket])
 
-  const sendReply = async (e: React.FormEvent) => {
+  const sendReply = async (e: React.FormEvent, resolve = false) => {
     e.preventDefault()
     if (!replyContent.trim()) return
     setSubmitting(true)
@@ -86,12 +94,29 @@ export default function AdminTicketDetailPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ content: replyContent.trim() }),
       })
-      if (res.ok) {
-        setReplyContent('')
-        fetchTicket()
+      if (!res.ok) {
+        addToast("Couldn't send reply. Try again.", 'error')
+        return
       }
+      setReplyContent('')
+
+      if (resolve && ticket?.status !== 'resolved') {
+        const statusRes = await fetch(`/api/reports/${reportId}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status: 'resolved' }),
+        })
+        if (statusRes.ok) {
+          addToast('Reply sent. Ticket resolved.', 'success')
+        } else {
+          addToast('Reply sent. Couldn\'t update status. Try again.', 'warning')
+        }
+      } else {
+        addToast('Reply sent.', 'success')
+      }
+      fetchTicket()
     } catch {
-      // ignore
+      addToast("Couldn't send reply. Try again.", 'error')
     } finally {
       setSubmitting(false)
     }
@@ -99,27 +124,64 @@ export default function AdminTicketDetailPage() {
 
   const updateStatus = async (newStatus: string) => {
     setUpdating(true)
-    // Use the existing Supabase client approach
-    const res = await fetch(`/api/reports/${reportId}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ status: newStatus }),
-    })
-    // Fallback: direct update via responses endpoint workaround
-    // For now, just refetch since the admin reports page handles status changes
-    setUpdating(false)
-    fetchTicket()
+    try {
+      const res = await fetch(`/api/reports/${reportId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: newStatus }),
+      })
+      if (res.ok) {
+        addToast(statusLabels[newStatus] || 'Status updated.', 'success')
+        fetchTicket()
+      } else {
+        addToast("Couldn't update ticket. Try again.", 'error')
+      }
+    } catch {
+      addToast("Couldn't update ticket. Try again.", 'error')
+    } finally {
+      setUpdating(false)
+    }
   }
 
   const updatePriority = async (newPriority: string) => {
     setUpdating(true)
-    await fetch(`/api/reports/${reportId}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ priority: newPriority }),
-    })
-    setUpdating(false)
-    fetchTicket()
+    try {
+      const res = await fetch(`/api/reports/${reportId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ priority: newPriority }),
+      })
+      if (res.ok) {
+        addToast('Priority updated.', 'success')
+        fetchTicket()
+      } else {
+        addToast("Couldn't update ticket. Try again.", 'error')
+      }
+    } catch {
+      addToast("Couldn't update ticket. Try again.", 'error')
+    } finally {
+      setUpdating(false)
+    }
+  }
+
+  const saveNotes = async () => {
+    setSavingNotes(true)
+    try {
+      const res = await fetch(`/api/reports/${reportId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ admin_notes: adminNotes }),
+      })
+      if (res.ok) {
+        addToast('Notes saved.', 'success')
+      } else {
+        addToast("Couldn't save notes. Try again.", 'error')
+      }
+    } catch {
+      addToast("Couldn't save notes. Try again.", 'error')
+    } finally {
+      setSavingNotes(false)
+    }
   }
 
   if (loading) {
@@ -184,6 +246,13 @@ export default function AdminTicketDetailPage() {
               </div>
             </div>
 
+            {/* Resolved banner */}
+            {ticket.status === 'resolved' && (
+              <div className="bg-success/10 border border-success/20 rounded-lg px-4 py-3 mb-4 text-success-text text-sm">
+                This ticket is resolved. Reply to reopen it.
+              </div>
+            )}
+
             {/* Thread */}
             <div className="bg-surface rounded-lg border border-border">
               <div className="p-4">
@@ -191,7 +260,7 @@ export default function AdminTicketDetailPage() {
               </div>
 
               {/* Reply form */}
-              <form onSubmit={sendReply} className="border-t border-border p-4">
+              <form onSubmit={(e) => sendReply(e)} className="border-t border-border p-4">
                 <textarea
                   value={replyContent}
                   onChange={e => setReplyContent(e.target.value)}
@@ -199,7 +268,17 @@ export default function AdminTicketDetailPage() {
                   rows={3}
                   className="w-full px-3 py-2 bg-surface border border-border rounded-lg text-text-primary placeholder-text-muted focus:outline-none focus:ring-2 focus:ring-brand/50 resize-none text-sm"
                 />
-                <div className="flex justify-end mt-2">
+                <div className="flex justify-end gap-2 mt-2">
+                  {ticket.status !== 'resolved' && (
+                    <button
+                      type="button"
+                      onClick={(e) => sendReply(e as unknown as React.FormEvent, true)}
+                      disabled={submitting || !replyContent.trim()}
+                      className="px-4 py-2 bg-success/20 hover:bg-success/30 text-success-text rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
+                    >
+                      {submitting ? 'Sending...' : 'Send & Resolve'}
+                    </button>
+                  )}
                   <button
                     type="submit"
                     disabled={submitting || !replyContent.trim()}
@@ -276,15 +355,7 @@ export default function AdminTicketDetailPage() {
                 className="w-full px-3 py-2 bg-surface border border-border rounded-lg text-text-primary placeholder-text-muted focus:outline-none focus:ring-2 focus:ring-brand/50 resize-none text-xs"
               />
               <button
-                onClick={async () => {
-                  setSavingNotes(true)
-                  await fetch(`/api/reports/${reportId}`, {
-                    method: 'PATCH',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ admin_notes: adminNotes }),
-                  })
-                  setSavingNotes(false)
-                }}
+                onClick={saveNotes}
                 disabled={savingNotes}
                 className="mt-2 w-full px-3 py-1.5 bg-brand hover:bg-brand-hover text-text-primary rounded-lg text-xs font-medium transition-colors disabled:opacity-50"
               >
