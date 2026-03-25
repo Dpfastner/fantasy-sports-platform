@@ -33,17 +33,37 @@ export function ChatSidebar() {
     return () => cancelAnimationFrame(id)
   }, [])
 
-  // Measure footer height so sidebar stops above it
+  // Measure footer height so sidebar stops above it (only when footer is visible)
   useEffect(() => {
     const footer = document.querySelector('footer')
     if (!footer) return
-    const update = () => {
-      document.documentElement.style.setProperty('--footer-h', `${footer.offsetHeight}px`)
+
+    let footerHeight = footer.offsetHeight
+    let footerVisible = false
+
+    const sync = () => {
+      document.documentElement.style.setProperty(
+        '--footer-h',
+        footerVisible ? `${footerHeight}px` : '0px'
+      )
     }
-    update()
-    const ro = new ResizeObserver(update)
+
+    const ro = new ResizeObserver(() => {
+      footerHeight = footer.offsetHeight
+      sync()
+    })
     ro.observe(footer)
-    return () => ro.disconnect()
+
+    const io = new IntersectionObserver(
+      ([entry]) => {
+        footerVisible = entry.isIntersecting
+        sync()
+      },
+      { threshold: 0 }
+    )
+    io.observe(footer)
+
+    return () => { ro.disconnect(); io.disconnect() }
   }, [mounted])
 
   // Fetch current user's display name for optimistic messages
