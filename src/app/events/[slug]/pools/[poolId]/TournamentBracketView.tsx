@@ -66,9 +66,9 @@ function ResultCard({ game, p1, p2, compact = false }: {
       <div className={`flex items-center gap-1.5 w-full px-2 ${compact ? 'py-1' : 'py-1.5'} ${
         slot === 1 ? 'border-b border-border/50' : ''
       } ${isWinner ? 'bg-success/10' : ''}`}>
-        {participant?.seed != null && (
+        {participant?.seed ? (
           <span className="text-[10px] text-text-muted w-4 text-center shrink-0">{participant.seed}</span>
-        )}
+        ) : null}
         {!participant && <span className="w-4 shrink-0" />}
         {participant?.logoUrl ? (
           <img src={participant.logoUrl} alt="" className={`${compact ? 'w-4 h-4' : 'w-5 h-5'} shrink-0 object-contain`} />
@@ -159,7 +159,7 @@ function MiniGameCard({ game, participants }: { game: Game; participants: Record
         isComplete && game.winnerId === game.participant1Id ? 'bg-success/10' : ''
       }`}>
         <div className="flex items-center gap-1 min-w-0">
-          {p1?.seed != null && <span className="text-text-muted text-[9px]">{p1.seed}</span>}
+          {p1?.seed ? <span className="text-text-muted text-[9px]">{p1.seed}</span> : null}
           {p1?.logoUrl && <img src={p1.logoUrl} alt="" className="w-3 h-3 shrink-0 object-contain" />}
           <span className="truncate font-medium">{p1?.shortName || p1?.name || 'TBD'}</span>
         </div>
@@ -172,7 +172,7 @@ function MiniGameCard({ game, participants }: { game: Game; participants: Record
         isComplete && game.winnerId === game.participant2Id ? 'bg-success/10' : ''
       }`}>
         <div className="flex items-center gap-1 min-w-0">
-          {p2?.seed != null && <span className="text-text-muted text-[9px]">{p2.seed}</span>}
+          {p2?.seed ? <span className="text-text-muted text-[9px]">{p2.seed}</span> : null}
           {p2?.logoUrl && <img src={p2.logoUrl} alt="" className="w-3 h-3 shrink-0 object-contain" />}
           <span className="truncate font-medium">{p2?.shortName || p2?.name || 'TBD'}</span>
         </div>

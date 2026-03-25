@@ -88,11 +88,11 @@ export function BracketGameCard({
         `}
       >
         {/* Seed */}
-        {participant?.seed != null && (
+        {participant?.seed ? (
           <span className="text-[10px] text-text-muted w-4 text-center shrink-0">
             {participant.seed}
           </span>
-        )}
+        ) : null}
         {!participant && <span className="w-4 shrink-0" />}
 
         {/* Logo */}
