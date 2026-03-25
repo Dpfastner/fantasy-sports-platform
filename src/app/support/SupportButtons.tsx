@@ -4,9 +4,9 @@ import { useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 
 const presets = [
-  { amount: 3, label: '$3', subtitle: 'Buy a coffee' },
-  { amount: 5, label: '$5', subtitle: 'Cover a day of hosting' },
-  { amount: 10, label: '$10', subtitle: 'Fund a feature' },
+  { amount: 5, label: '$5', subtitle: 'Buy a coffee' },
+  { amount: 10, label: '$10', subtitle: 'Cover a day of hosting' },
+  { amount: 20, label: '$20', subtitle: 'Fund a feature' },
 ]
 
 export default function SupportButtons() {
