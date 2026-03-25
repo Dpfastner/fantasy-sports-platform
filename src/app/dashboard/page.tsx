@@ -630,7 +630,7 @@ export default async function DashboardPage() {
                   <Link
                     key={tournament.id}
                     href={`/events/${tournament.slug}`}
-                    className={`bg-card-neutral rounded-lg hover:shadow-lg transition-all group border-l-4 ${meta.borderColor}`}
+                    className={`bg-card-neutral rounded-lg hover:shadow-lg transition-all group border-l-4 overflow-hidden min-w-0 ${meta.borderColor}`}
                   >
                     <div className="p-5 pb-3">
                       <div className="flex items-start justify-between mb-2">
@@ -696,7 +696,7 @@ export default async function DashboardPage() {
                   <Link
                     key={`${item.type}-${item.id}`}
                     href={item.href}
-                    className="bg-surface/60 rounded-lg p-5 hover:bg-surface-subtle transition-all border border-border/50 opacity-75 hover:opacity-100"
+                    className="bg-surface/60 rounded-lg p-5 hover:bg-surface-subtle transition-all border border-border/50 opacity-75 hover:opacity-100 overflow-hidden min-w-0"
                   >
                     <div className="flex justify-between items-start mb-3">
                       <h3 className="text-lg font-semibold text-text-secondary truncate">
