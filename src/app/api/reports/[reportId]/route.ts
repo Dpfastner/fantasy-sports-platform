@@ -92,5 +92,47 @@ export async function PATCH(
     return NextResponse.json({ error: "Couldn't update ticket. Try again." }, { status: 500 })
   }
 
+  // Notify user on status changes
+  if (body.status && ['in_progress', 'resolved'].includes(body.status)) {
+    const { data: ticket } = await admin
+      .from('issue_reports')
+      .select('user_id')
+      .eq('id', reportId)
+      .single()
+
+    if (ticket?.user_id) {
+      const { createNotification } = await import('@/lib/notifications')
+      const statusLabel = body.status === 'resolved' ? 'resolved' : 'being looked into'
+      createNotification({
+        userId: ticket.user_id,
+        type: 'support_response',
+        title: 'Ticket Update',
+        body: `Your support ticket is ${statusLabel}.`,
+        data: { reportId },
+      })
+
+      if (body.status === 'resolved') {
+        const { data: profile } = await admin
+          .from('profiles')
+          .select('email')
+          .eq('id', ticket.user_id)
+          .single()
+
+        if (profile?.email) {
+          const { sendUserEmail } = await import('@/lib/email')
+          const ticketUrl = `${process.env.NEXT_PUBLIC_SITE_URL || 'https://rivyls.com'}/tickets/${reportId}`
+          sendUserEmail(
+            profile.email,
+            'Your Rivyls support ticket has been resolved',
+            `<p>Your support ticket has been resolved.</p>
+             <p>If you have any follow-up questions, you can reply directly on your ticket.</p>
+             <p><a href="${ticketUrl}" style="color:#4F46E5;">View your ticket</a></p>
+             <p style="color:#888;font-size:12px;margin-top:24px;">— The Rivyls Team</p>`
+          )
+        }
+      }
+    }
+  }
+
   return NextResponse.json({ success: true })
 }
