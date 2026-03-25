@@ -7,6 +7,7 @@ import TicketReplyForm from '@/components/TicketReplyForm'
 const categoryColors: Record<string, string> = {
   bug: 'bg-danger/20 text-danger-text',
   feature: 'bg-brand/20 text-brand-text',
+  content: 'bg-accent/20 text-accent',
   other: 'bg-surface-inset text-text-secondary',
 }
 

@@ -34,6 +34,7 @@ interface Response {
 const categoryColors: Record<string, string> = {
   bug: 'bg-danger/20 text-danger-text',
   feature: 'bg-brand/20 text-brand-text',
+  content: 'bg-accent/20 text-accent',
   other: 'bg-surface-inset text-text-secondary',
 }
 
@@ -274,6 +275,21 @@ export default function AdminTicketDetailPage() {
                 rows={3}
                 className="w-full px-3 py-2 bg-surface border border-border rounded-lg text-text-primary placeholder-text-muted focus:outline-none focus:ring-2 focus:ring-brand/50 resize-none text-xs"
               />
+              <button
+                onClick={async () => {
+                  setSavingNotes(true)
+                  await fetch(`/api/reports/${reportId}`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ admin_notes: adminNotes }),
+                  })
+                  setSavingNotes(false)
+                }}
+                disabled={savingNotes}
+                className="mt-2 w-full px-3 py-1.5 bg-brand hover:bg-brand-hover text-text-primary rounded-lg text-xs font-medium transition-colors disabled:opacity-50"
+              >
+                {savingNotes ? 'Saving...' : 'Save Notes'}
+              </button>
             </div>
           </div>
         </div>
