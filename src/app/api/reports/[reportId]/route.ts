@@ -24,7 +24,7 @@ export async function GET(
   // Fetch ticket
   const { data: ticket, error } = await admin
     .from('issue_reports')
-    .select('*, profiles(display_name, email)')
+    .select('*, profiles!issue_reports_user_id_fkey(display_name, email)')
     .eq('id', reportId)
     .single()
 
