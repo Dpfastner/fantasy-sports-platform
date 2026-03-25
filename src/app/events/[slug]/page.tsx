@@ -228,9 +228,9 @@ export default async function EventDetailPage({ params }: PageProps) {
                     return (
                       <div key={p.id} className="flex items-center justify-between text-sm py-1">
                         <div className="flex items-center gap-2">
-                          {p.seed && (
+                          {p.seed ? (
                             <span className="text-text-muted w-5 text-right text-xs">{p.seed}</span>
-                          )}
+                          ) : null}
                           {p.logo_url && (
                             <img src={p.logo_url} alt="" className="w-5 h-5 object-contain shrink-0" />
                           )}

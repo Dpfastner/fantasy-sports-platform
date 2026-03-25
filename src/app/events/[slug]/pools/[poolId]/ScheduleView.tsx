@@ -202,7 +202,7 @@ export function ScheduleView({ games, participants, format, tournamentId, sport 
                         p1Won ? 'bg-success/5' : ''
                       }`}>
                         {p1?.logoUrl && <img src={p1.logoUrl} alt="" className="w-8 h-8 rounded-sm object-contain" />}
-                        {p1?.seed && <span className="text-[9px] text-text-muted">#{p1.seed}</span>}
+                        {p1?.seed ? <span className="text-[9px] text-text-muted">#{p1.seed}</span> : null}
                         <span className={`text-xs font-medium text-center leading-tight ${
                           p1Won ? 'text-success-text'
                             : isFinal && !p1Won ? 'opacity-50 text-text-muted'
@@ -234,7 +234,7 @@ export function ScheduleView({ games, participants, format, tournamentId, sport 
                         p2Won ? 'bg-success/5' : ''
                       }`}>
                         {p2?.logoUrl && <img src={p2.logoUrl} alt="" className="w-8 h-8 rounded-sm object-contain" />}
-                        {p2?.seed && <span className="text-[9px] text-text-muted">#{p2.seed}</span>}
+                        {p2?.seed ? <span className="text-[9px] text-text-muted">#{p2.seed}</span> : null}
                         <span className={`text-xs font-medium text-center leading-tight ${
                           p2Won ? 'text-success-text'
                             : isFinal && !p2Won ? 'opacity-50 text-text-muted'
