@@ -51,11 +51,11 @@ export default async function PoolDetailPage({ params }: PageProps) {
   }
 
   // Get user profile for header
-  let profile: { display_name: string | null; email: string } | null = null
+  let profile: { display_name: string | null; email: string; favorite_school_id: string | null } | null = null
   if (user) {
     const { data } = await supabase
       .from('profiles')
-      .select('display_name, email')
+      .select('display_name, email, favorite_school_id')
       .eq('id', user.id)
       .single()
     profile = data
@@ -438,6 +438,7 @@ export default async function PoolDetailPage({ params }: PageProps) {
           isCreator={!!user && pool.created_by === user.id}
           userId={user?.id || null}
           rulesText={tournament.rules_text || null}
+          hasFavoriteSchool={!!profile?.favorite_school_id}
           rosterSelectionCounts={Object.keys(rosterSelectionCounts).length > 0 ? rosterSelectionCounts : undefined}
           allRosterPicks={Object.keys(allRosterPicks).length > 0 ? allRosterPicks : undefined}
         />

@@ -13,6 +13,7 @@ import { EntryAvatar } from '@/components/EntryAvatar'
 import { ScheduleView } from './ScheduleView'
 import { ShareButton } from '@/components/ShareButton'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
+import { SchoolPicker } from '@/components/SchoolPicker'
 import { ViewBracketModal } from './ViewBracketModal'
 import { MembersTab } from './MembersTab'
 import { SettingsTab } from './SettingsTab'
@@ -126,6 +127,7 @@ interface PoolDetailClientProps {
   isCreator: boolean
   userId: string | null
   rulesText: string | null
+  hasFavoriteSchool: boolean
   rosterSelectionCounts?: Record<string, number>
   /** All submitted entries' roster picks: entryId → participantIds */
   allRosterPicks?: Record<string, string[]>
@@ -146,6 +148,7 @@ export function PoolDetailClient({
   isCreator,
   userId,
   rulesText,
+  hasFavoriteSchool,
   rosterSelectionCounts,
   allRosterPicks,
 }: PoolDetailClientProps) {
@@ -154,6 +157,9 @@ export function PoolDetailClient({
   const [activeTab, setActiveTabState] = useState<Tab>(initialTab)
   const [showRules, setShowRules] = useState(false)
   const [codeCopied, setCodeCopied] = useState(false)
+  const [showSchoolPrompt, setShowSchoolPrompt] = useState(false)
+  const [selectedSchoolId, setSelectedSchoolId] = useState<string | null>(null)
+  const [savingSchool, setSavingSchool] = useState(false)
   const { addToast } = useToast()
   const router = useRouter()
 
@@ -288,8 +294,8 @@ export function PoolDetailClient({
         )}
       </div>
 
-      {/* Not a member — join button */}
-      {isLoggedIn && !hasAnyEntry && pool.status === 'open' && (
+      {/* Not a member — join button or post-join school prompt */}
+      {isLoggedIn && !hasAnyEntry && pool.status === 'open' && !showSchoolPrompt && (
         <div className="bg-brand/5 border border-brand/20 rounded-lg p-5 mb-6 text-center">
           <p className="text-text-secondary text-sm mb-3">You&apos;re not in this pool yet.</p>
           <button
@@ -302,7 +308,11 @@ export function PoolDetailClient({
                 })
                 if (res.ok) {
                   addToast('Joined pool!', 'success')
-                  router.refresh()
+                  if (!hasFavoriteSchool) {
+                    setShowSchoolPrompt(true)
+                  } else {
+                    router.refresh()
+                  }
                 } else {
                   const data = await res.json()
                   addToast(data.error || 'Couldn\'t join pool. Try again.', 'error')
@@ -315,6 +325,45 @@ export function PoolDetailClient({
           >
             Join Pool
           </button>
+        </div>
+      )}
+
+      {showSchoolPrompt && (
+        <div className="bg-brand/5 border border-brand/20 rounded-lg p-5 mb-6 text-center">
+          <h3 className="text-base font-semibold text-text-primary mb-1">You&apos;re in! Rep your school?</h3>
+          <p className="text-text-secondary text-sm mb-4">Pick your alma mater or favorite school to join the Fan Zone.</p>
+          <div className="max-w-sm mx-auto text-left">
+            <SchoolPicker value={selectedSchoolId} onChange={setSelectedSchoolId} label="Pick your school" />
+          </div>
+          <div className="flex items-center justify-center gap-3 mt-4">
+            <button
+              onClick={async () => {
+                if (!selectedSchoolId) return
+                setSavingSchool(true)
+                try {
+                  await fetch('/api/profile/favorite-school', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ schoolId: selectedSchoolId }),
+                  })
+                  addToast('School saved!', 'success')
+                } catch {
+                  // Non-critical — proceed anyway
+                }
+                router.refresh()
+              }}
+              disabled={!selectedSchoolId || savingSchool}
+              className="px-5 py-2 text-sm font-semibold rounded-lg bg-brand hover:bg-brand-hover text-text-primary transition-colors disabled:opacity-50"
+            >
+              {savingSchool ? 'Saving...' : 'Save'}
+            </button>
+            <button
+              onClick={() => router.refresh()}
+              className="text-sm text-text-muted hover:text-text-secondary transition-colors"
+            >
+              Skip
+            </button>
+          </div>
         </div>
       )}
 

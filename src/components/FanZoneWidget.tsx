@@ -7,6 +7,7 @@ import { ShareButton } from './ShareButton'
 import { buildShareUrl } from '@/lib/share'
 import { SITE_URL } from '@/lib/og/constants'
 import Link from 'next/link'
+import { SchoolPicker } from './SchoolPicker'
 
 interface FanDistributionEntry {
   schoolName: string
@@ -41,6 +42,23 @@ export function FanZoneWidget({
   userId,
 }: FanZoneWidgetProps) {
   const [dismissed, setDismissed] = useState(false)
+  const [selectedSchoolId, setSelectedSchoolId] = useState<string | null>(null)
+  const [savingSchool, setSavingSchool] = useState(false)
+
+  const handleSaveSchool = async () => {
+    if (!selectedSchoolId) return
+    setSavingSchool(true)
+    try {
+      await fetch('/api/profile/favorite-school', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ schoolId: selectedSchoolId }),
+      })
+      window.location.reload()
+    } catch {
+      setSavingSchool(false)
+    }
+  }
 
   useEffect(() => {
     if (typeof window !== 'undefined' && localStorage.getItem('rivyls_fan_zone_dismissed') === '1') {
@@ -94,12 +112,18 @@ export function FanZoneWidget({
         <p className="text-text-secondary text-sm mb-4">
           Pick your team to join the rivalry! Set your favorite FBS team and see how your school stacks up against the competition.
         </p>
-        <Link
-          href="/settings"
-          className="inline-block bg-brand hover:bg-brand-hover text-text-primary font-semibold py-2 px-4 rounded-lg transition-colors text-sm"
-        >
-          Set Your Favorite Team
-        </Link>
+        <div className="max-w-sm">
+          <SchoolPicker value={selectedSchoolId} onChange={setSelectedSchoolId} label="Pick your team" />
+        </div>
+        {selectedSchoolId && (
+          <button
+            onClick={handleSaveSchool}
+            disabled={savingSchool}
+            className="mt-3 bg-brand hover:bg-brand-hover text-text-primary font-semibold py-2 px-4 rounded-lg transition-colors text-sm disabled:opacity-50"
+          >
+            {savingSchool ? 'Saving...' : 'Join the Rivalry!'}
+          </button>
+        )}
       </div>
     )
   }
