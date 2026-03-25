@@ -137,6 +137,26 @@ export async function POST(
       body: 'The Rivyls team responded to your support ticket.',
       data: { reportId },
     })
+
+    // Email the user
+    const { data: profile } = await admin
+      .from('profiles')
+      .select('email')
+      .eq('id', ticket.user_id)
+      .single()
+
+    if (profile?.email) {
+      const { sendUserEmail } = await import('@/lib/email')
+      const ticketUrl = `${process.env.NEXT_PUBLIC_SITE_URL || 'https://rivyls.com'}/tickets/${reportId}`
+      sendUserEmail(
+        profile.email,
+        'Rivyls Support — New response to your ticket',
+        `<p>The Rivyls team responded to your support ticket.</p>
+         <p style="margin:16px 0;padding:12px;background:#f5f5f5;border-radius:8px;font-size:14px;">${content.slice(0, 300)}${content.length > 300 ? '...' : ''}</p>
+         <p><a href="${ticketUrl}" style="color:#4F46E5;">View full conversation</a></p>
+         <p style="color:#888;font-size:12px;margin-top:24px;">— The Rivyls Team</p>`
+      )
+    }
   }
 
   logActivity({

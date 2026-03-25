@@ -26,3 +26,19 @@ export function sendAdminEmail(subject: string, body: string): void {
     console.error('[email] Failed to send admin email:', err.message)
   })
 }
+
+/**
+ * Send an email to a user. Fire-and-forget — never blocks the caller.
+ */
+export function sendUserEmail(to: string, subject: string, body: string): void {
+  const from = process.env.SMTP_USER || 'dan@rivyls.com'
+
+  transporter.sendMail({
+    from: `Rivyls <${from}>`,
+    to,
+    subject,
+    html: body,
+  }).catch((err) => {
+    console.error('[email] Failed to send user email:', err.message)
+  })
+}
