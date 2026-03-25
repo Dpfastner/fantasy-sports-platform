@@ -125,7 +125,7 @@ export function HeaderSchoolBadge({ userId }: { userId: string }) {
         </button>
         {isOpen && showPicker && (
           <div className="absolute right-0 top-full mt-2 w-72 bg-surface border border-border rounded-lg shadow-lg p-3 z-50">
-            <p className="text-xs text-text-secondary mb-2">Set your favorite FBS team</p>
+            <p className="text-xs text-text-secondary mb-2">Set your favorite college team</p>
             <SchoolPicker value={schoolId} onChange={handleSchoolSelect} label="" />
           </div>
         )}

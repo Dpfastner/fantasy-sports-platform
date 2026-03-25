@@ -30,7 +30,7 @@ const FAQ_DATA: FaqCategory[] = [
       },
       {
         question: 'How many schools are available to draft?',
-        answer: '134 FBS schools — every major conference plus independents like Notre Dame.',
+        answer: '134 college programs — every major conference plus independents like Notre Dame.',
       },
     ],
   },
