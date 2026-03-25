@@ -185,7 +185,14 @@ export function ChatMessages({ channelType, channelEntityId, currentUserId, isCo
         table,
         filter,
       }, async (payload) => {
-        const newMsg = payload.new as { id: string; message: string; created_at: string; user_id: string }
+        const raw = payload.new as Record<string, string>
+        // Normalize column name: league_messages uses 'message', event_pool_messages uses 'content'
+        const newMsg = {
+          id: raw.id,
+          message: raw.message || raw.content,
+          created_at: raw.created_at,
+          user_id: raw.user_id,
+        }
 
         let displayName = nameCache.current[newMsg.user_id]
         if (!displayName) {
