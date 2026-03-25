@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useToast } from '@/components/Toast'
+import { createClient } from '@/lib/supabase/client'
 
 interface ChatMessage {
   id: string
@@ -28,6 +29,7 @@ export function PoolChat({ poolId, userId }: PoolChatProps) {
   const { addToast } = useToast()
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
+  const nameCache = useRef<Record<string, string>>({})
 
   const fetchMessages = useCallback(async () => {
     try {
@@ -35,6 +37,12 @@ export function PoolChat({ poolId, userId }: PoolChatProps) {
       if (!res.ok) return
       const data = await res.json()
       setMessages(data.messages || [])
+      // Populate name cache from fetched messages
+      for (const msg of (data.messages || []) as ChatMessage[]) {
+        if (msg.user_id && msg.display_name) {
+          nameCache.current[msg.user_id] = msg.display_name
+        }
+      }
     } catch {
       // silent
     } finally {
@@ -42,12 +50,81 @@ export function PoolChat({ poolId, userId }: PoolChatProps) {
     }
   }, [poolId])
 
+  // Supabase Realtime subscription for messages + reactions
   useEffect(() => {
     fetchMessages()
-    // Poll every 15 seconds for new messages
-    const interval = setInterval(fetchMessages, 15000)
-    return () => clearInterval(interval)
-  }, [fetchMessages])
+
+    const supabase = createClient()
+    const channel = supabase
+      .channel(`pool-chat:${poolId}`)
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'event_pool_messages',
+        filter: `pool_id=eq.${poolId}`,
+      }, async (payload) => {
+        const newMsg = payload.new as { id: string; user_id: string; content: string; created_at: string }
+
+        let displayName = nameCache.current[newMsg.user_id]
+        if (!displayName) {
+          const { data } = await supabase
+            .from('profiles')
+            .select('display_name, email')
+            .eq('id', newMsg.user_id)
+            .single()
+          displayName = data?.display_name || data?.email?.split('@')[0] || 'Unknown'
+          nameCache.current[newMsg.user_id] = displayName
+        }
+
+        setMessages(prev => {
+          if (prev.some(m => m.id === newMsg.id)) return prev
+          return [...prev, {
+            id: newMsg.id,
+            user_id: newMsg.user_id,
+            display_name: displayName,
+            content: newMsg.content,
+            created_at: newMsg.created_at,
+            reactions: [],
+          }]
+        })
+      })
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'event_pool_message_reactions',
+      }, (payload) => {
+        const r = payload.new as { message_id: string; user_id: string; emoji: string }
+        setMessages(prev => prev.map(msg => {
+          if (msg.id !== r.message_id) return msg
+          // Skip if already present
+          if (msg.reactions.some(rx => rx.emoji === r.emoji && rx.user_id === r.user_id)) return msg
+          return { ...msg, reactions: [...msg.reactions, { emoji: r.emoji, user_id: r.user_id }] }
+        }))
+      })
+      .on('postgres_changes', {
+        event: 'DELETE',
+        schema: 'public',
+        table: 'event_pool_message_reactions',
+      }, (payload) => {
+        const r = payload.old as { message_id: string; user_id: string; emoji: string }
+        setMessages(prev => prev.map(msg => {
+          if (msg.id !== r.message_id) return msg
+          return { ...msg, reactions: msg.reactions.filter(rx => !(rx.emoji === r.emoji && rx.user_id === r.user_id)) }
+        }))
+      })
+      .subscribe()
+
+    // Re-fetch on tab visibility change to catch messages missed while backgrounded
+    const handleVisibility = () => {
+      if (!document.hidden) fetchMessages()
+    }
+    document.addEventListener('visibilitychange', handleVisibility)
+
+    return () => {
+      supabase.removeChannel(channel)
+      document.removeEventListener('visibilitychange', handleVisibility)
+    }
+  }, [poolId, fetchMessages])
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -64,7 +141,6 @@ export function PoolChat({ poolId, userId }: PoolChatProps) {
       })
       if (res.ok) {
         setNewMessage('')
-        await fetchMessages()
       } else {
         addToast('Couldn\'t send message. Try again.', 'error')
       }
@@ -83,7 +159,6 @@ export function PoolChat({ poolId, userId }: PoolChatProps) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ messageId, emoji }),
       })
-      await fetchMessages()
     } catch {
       addToast('Couldn\'t add your reaction. Try again.', 'error')
     }
