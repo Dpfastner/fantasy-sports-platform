@@ -10,6 +10,7 @@ interface Member {
   id: string
   userId: string | null
   displayName: string
+  userName?: string
   isActive: boolean
   submittedAt: string | null
   primaryColor?: string | null
@@ -40,9 +41,9 @@ export function MembersTab({ members, poolId, isCreator, userId }: MembersTabPro
             <EntryAvatar imageUrl={member.imageUrl} primaryColor={member.primaryColor} showBorder />
             <div>
               {member.userId ? (
-                <Link href={`/profile/${member.userId}`} className="text-text-primary text-sm font-medium hover:underline">{member.displayName}</Link>
+                <Link href={`/profile/${member.userId}`} className="text-text-primary text-sm font-medium hover:underline">{member.userName || member.displayName}</Link>
               ) : (
-                <span className="text-sm text-text-muted italic">{member.displayName}</span>
+                <span className="text-sm text-text-muted italic">{member.userName || member.displayName}</span>
               )}
               {!member.isActive && (
                 <span className="ml-2 text-xs text-danger-text">Eliminated</span>
