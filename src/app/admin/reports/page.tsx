@@ -52,7 +52,7 @@ export default function AdminReportsPage() {
     setLoading(true)
     const { data, error } = await supabase
       .from('issue_reports')
-      .select('*, profiles(email, display_name)')
+      .select('*, profiles!issue_reports_user_id_fkey(email, display_name)')
       .order('created_at', { ascending: false })
 
     if (data) setReports(data)

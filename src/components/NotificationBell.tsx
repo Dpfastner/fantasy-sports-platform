@@ -64,6 +64,10 @@ function getNotificationHref(notification: Notification): string | null {
     return '/events'
   }
 
+  // Report notifications → admin reports page
+  const reportId = notification.data?.reportId as string
+  if (reportId) return `/admin/reports`
+
   const leagueId = notification.data?.leagueId || notification.league_id
   if (!leagueId) return null
 
