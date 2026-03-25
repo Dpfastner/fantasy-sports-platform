@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo } from 'react'
 import { BracketGrid } from './BracketGrid'
 import { BracketList } from './BracketList'
 import { buildBracketMap } from './bracketUtils'
+import { EntryAvatar } from '@/components/EntryAvatar'
 
 interface Participant {
   id: string
@@ -32,6 +33,9 @@ interface Game {
 interface ViewBracketModalProps {
   entryId: string
   entryName: string
+  primaryColor?: string | null
+  secondaryColor?: string | null
+  imageUrl?: string | null
   games: Game[]
   participants: Participant[]
   scoringRules: Record<string, number>
@@ -43,6 +47,9 @@ interface ViewBracketModalProps {
 export function ViewBracketModal({
   entryId,
   entryName,
+  primaryColor,
+  secondaryColor,
+  imageUrl,
   games,
   participants,
   scoringRules,
@@ -104,7 +111,15 @@ export function ViewBracketModal({
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-border">
           <div>
-            <h2 className="text-base font-semibold text-text-primary">{entryName}</h2>
+            <div className="flex items-center gap-2">
+              <EntryAvatar imageUrl={imageUrl} primaryColor={primaryColor} size="md" />
+              <h2
+                className="text-base font-semibold"
+                style={primaryColor ? { color: primaryColor } : undefined}
+              >
+                {entryName}
+              </h2>
+            </div>
             <div className="flex items-center gap-3 mt-0.5">
               {score != null && (
                 <span className="text-sm text-brand font-medium">{score} pts</span>

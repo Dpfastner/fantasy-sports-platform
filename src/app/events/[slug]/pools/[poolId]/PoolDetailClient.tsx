@@ -668,6 +668,9 @@ export function PoolDetailClient({
         <ViewBracketModal
           entryId={viewingEntryId}
           entryName={viewingMember.entryName || viewingMember.displayName}
+          primaryColor={viewingMember.primaryColor}
+          secondaryColor={viewingMember.secondaryColor}
+          imageUrl={viewingMember.imageUrl}
           games={games.map(g => ({
             id: g.id,
             round: g.round,
