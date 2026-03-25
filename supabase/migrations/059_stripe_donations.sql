@@ -52,4 +52,4 @@ ON CONFLICT (slug) DO NOTHING;
 -- Updated_at trigger
 CREATE TRIGGER set_donations_updated_at
   BEFORE UPDATE ON donations
-  FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
