@@ -36,7 +36,7 @@ CREATE POLICY "Service role can manage donations"
   USING (auth.jwt() ->> 'role' = 'service_role');
 
 -- Add supporter badge definition
-INSERT INTO badge_definitions (slug, label, description, category, icon, color, sort_order)
+INSERT INTO badge_definitions (slug, label, description, category, fallback_icon, color, bg_color, sort_order)
 VALUES (
   'supporter',
   'Supporter',
@@ -44,6 +44,7 @@ VALUES (
   'distinction',
   'heart',
   '#F59E0B',
+  'rgba(245,158,11,0.2)',
   15
 )
 ON CONFLICT (slug) DO NOTHING;
