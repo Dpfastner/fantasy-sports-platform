@@ -8,9 +8,16 @@ interface ChatMessage {
   id: string
   user_id: string | null
   display_name: string
-  content: string
+  message: string
   created_at: string
-  reactions: { emoji: string; user_id: string | null }[]
+  pinned_at: string | null
+  pinned_by: string | null
+}
+
+interface ReactionGroup {
+  emoji: string
+  count: number
+  reacted: boolean
 }
 
 const EMOJI_OPTIONS = ['\u{1F44D}', '\u{1F44E}', '\u{1F602}', '\u{1F525}', '\u{2764}\u{FE0F}', '\u{1F62E}', '\u{1F3D2}', '\u{1F3C6}', '\u{1F389}']
@@ -22,6 +29,7 @@ interface PoolChatProps {
 
 export function PoolChat({ poolId, userId }: PoolChatProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([])
+  const [reactions, setReactions] = useState<Record<string, ReactionGroup[]>>({})
   const [newMessage, setNewMessage] = useState('')
   const [sending, setSending] = useState(false)
   const [loading, setLoading] = useState(true)
@@ -29,7 +37,6 @@ export function PoolChat({ poolId, userId }: PoolChatProps) {
   const { addToast } = useToast()
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
-  const nameCache = useRef<Record<string, string>>({})
 
   const fetchMessages = useCallback(async () => {
     try {
@@ -37,12 +44,7 @@ export function PoolChat({ poolId, userId }: PoolChatProps) {
       if (!res.ok) return
       const data = await res.json()
       setMessages(data.messages || [])
-      // Populate name cache from fetched messages
-      for (const msg of (data.messages || []) as ChatMessage[]) {
-        if (msg.user_id && msg.display_name) {
-          nameCache.current[msg.user_id] = msg.display_name
-        }
-      }
+      setReactions(data.reactions || {})
     } catch {
       // silent
     } finally {
@@ -50,7 +52,7 @@ export function PoolChat({ poolId, userId }: PoolChatProps) {
     }
   }, [poolId])
 
-  // Supabase Realtime subscription for messages + reactions
+  // Supabase Realtime — re-fetch on any new message or reaction
   useEffect(() => {
     fetchMessages()
 
@@ -62,59 +64,19 @@ export function PoolChat({ poolId, userId }: PoolChatProps) {
         schema: 'public',
         table: 'event_pool_messages',
         filter: `pool_id=eq.${poolId}`,
-      }, async (payload) => {
-        const newMsg = payload.new as { id: string; user_id: string; content: string; created_at: string }
-
-        let displayName = nameCache.current[newMsg.user_id]
-        if (!displayName) {
-          const { data } = await supabase
-            .from('profiles')
-            .select('display_name, email')
-            .eq('id', newMsg.user_id)
-            .single()
-          displayName = data?.display_name || data?.email?.split('@')[0] || 'Unknown'
-          nameCache.current[newMsg.user_id] = displayName
-        }
-
-        setMessages(prev => {
-          if (prev.some(m => m.id === newMsg.id)) return prev
-          return [...prev, {
-            id: newMsg.id,
-            user_id: newMsg.user_id,
-            display_name: displayName,
-            content: newMsg.content,
-            created_at: newMsg.created_at,
-            reactions: [],
-          }]
-        })
+      }, () => {
+        fetchMessages()
       })
       .on('postgres_changes', {
-        event: 'INSERT',
+        event: '*',
         schema: 'public',
         table: 'event_pool_message_reactions',
-      }, (payload) => {
-        const r = payload.new as { message_id: string; user_id: string; emoji: string }
-        setMessages(prev => prev.map(msg => {
-          if (msg.id !== r.message_id) return msg
-          // Skip if already present
-          if (msg.reactions.some(rx => rx.emoji === r.emoji && rx.user_id === r.user_id)) return msg
-          return { ...msg, reactions: [...msg.reactions, { emoji: r.emoji, user_id: r.user_id }] }
-        }))
-      })
-      .on('postgres_changes', {
-        event: 'DELETE',
-        schema: 'public',
-        table: 'event_pool_message_reactions',
-      }, (payload) => {
-        const r = payload.old as { message_id: string; user_id: string; emoji: string }
-        setMessages(prev => prev.map(msg => {
-          if (msg.id !== r.message_id) return msg
-          return { ...msg, reactions: msg.reactions.filter(rx => !(rx.emoji === r.emoji && rx.user_id === r.user_id)) }
-        }))
+      }, () => {
+        fetchMessages()
       })
       .subscribe()
 
-    // Re-fetch on tab visibility change to catch messages missed while backgrounded
+    // Re-fetch on tab return to catch anything missed while backgrounded
     const handleVisibility = () => {
       if (!document.hidden) fetchMessages()
     }
@@ -141,6 +103,7 @@ export function PoolChat({ poolId, userId }: PoolChatProps) {
       })
       if (res.ok) {
         setNewMessage('')
+        await fetchMessages()
       } else {
         addToast('Couldn\'t send message. Try again.', 'error')
       }
@@ -159,6 +122,7 @@ export function PoolChat({ poolId, userId }: PoolChatProps) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ messageId, emoji }),
       })
+      await fetchMessages()
     } catch {
       addToast('Couldn\'t add your reaction. Try again.', 'error')
     }
@@ -198,13 +162,7 @@ export function PoolChat({ poolId, userId }: PoolChatProps) {
         )}
         {messages.map(msg => {
           const isOwn = msg.user_id === userId
-          // Group reactions by emoji
-          const reactionGroups: Record<string, string[]> = {}
-          for (const r of msg.reactions) {
-            if (!r.user_id) continue
-            if (!reactionGroups[r.emoji]) reactionGroups[r.emoji] = []
-            reactionGroups[r.emoji].push(r.user_id)
-          }
+          const msgReactions = reactions[msg.id] || []
 
           return (
             <div key={msg.id} className={`group ${isOwn ? 'text-right' : ''}`}>
@@ -218,22 +176,22 @@ export function PoolChat({ poolId, userId }: PoolChatProps) {
                 <div className={`rounded-lg px-3 py-1.5 text-sm ${
                   isOwn ? 'bg-brand/10 text-text-primary' : 'bg-surface-inset text-text-secondary'
                 }`}>
-                  {msg.content}
+                  {msg.message}
                 </div>
 
                 {/* Reactions */}
                 <div className="flex items-center gap-1 mt-0.5 flex-wrap">
-                  {Object.entries(reactionGroups).map(([emoji, users]) => (
+                  {msgReactions.map(({ emoji, count, reacted }) => (
                     <button
                       key={emoji}
                       onClick={() => handleReaction(msg.id, emoji)}
                       className={`text-xs px-1.5 py-0.5 rounded-full border transition-colors ${
-                        userId != null && users.includes(userId)
+                        reacted
                           ? 'border-brand/40 bg-brand/10'
                           : 'border-border bg-surface-inset hover:border-brand/20'
                       }`}
                     >
-                      {emoji} {users.length}
+                      {emoji} {count}
                     </button>
                   ))}
 
