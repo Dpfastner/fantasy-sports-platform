@@ -1,36 +1,15 @@
 import type { Metadata } from 'next'
+import { Suspense } from 'react'
 import Link from 'next/link'
 import BackButton from '@/components/BackButton'
 import { ShareButton } from '@/components/ShareButton'
+import SupportButtons from './SupportButtons'
 
 export const metadata: Metadata = {
   title: 'Support Rivyls',
   description: 'Help keep Rivyls free. Support the platform with a voluntary contribution.',
   robots: { index: true, follow: true },
 }
-
-const amounts = [
-  {
-    label: '$3',
-    subtitle: 'Buy a coffee',
-    href: process.env.NEXT_PUBLIC_STRIPE_SUPPORT_3,
-  },
-  {
-    label: '$5',
-    subtitle: 'Cover a day of hosting',
-    href: process.env.NEXT_PUBLIC_STRIPE_SUPPORT_5,
-  },
-  {
-    label: '$10',
-    subtitle: 'Fund a feature',
-    href: process.env.NEXT_PUBLIC_STRIPE_SUPPORT_10,
-  },
-  {
-    label: 'Custom',
-    subtitle: 'You choose',
-    href: process.env.NEXT_PUBLIC_STRIPE_SUPPORT_CUSTOM,
-  },
-]
 
 const cards = [
   {
@@ -60,8 +39,6 @@ const cards = [
 ]
 
 export default function SupportPage() {
-  const anyAvailable = amounts.some((a) => a.href)
-
   return (
     <div className="min-h-screen bg-page text-text-primary">
       {/* Nav */}
@@ -104,40 +81,10 @@ export default function SupportPage() {
           </div>
         </div>
 
-        {/* Section 4: Support Buttons */}
-        <div className="mb-8">
-          <div className="flex flex-wrap justify-center gap-3">
-            {amounts.map((amount) =>
-              amount.href ? (
-                <a
-                  key={amount.label}
-                  href={amount.href}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex flex-col items-center min-w-[120px] bg-brand hover:bg-brand-hover text-text-primary font-semibold rounded-lg px-6 py-4 text-center transition-colors"
-                >
-                  <span className="text-lg">{amount.label}</span>
-                  <span className="text-xs font-normal opacity-80">
-                    {amount.subtitle}
-                  </span>
-                </a>
-              ) : (
-                <span
-                  key={amount.label}
-                  className="flex flex-col items-center min-w-[120px] bg-surface-inset text-text-muted font-semibold rounded-lg px-6 py-4 text-center cursor-not-allowed opacity-50"
-                >
-                  <span className="text-lg">{amount.label}</span>
-                  <span className="text-xs font-normal">{amount.subtitle}</span>
-                </span>
-              )
-            )}
-          </div>
-          {!anyAvailable && (
-            <p className="text-center text-text-muted text-sm mt-3">
-              Support links coming soon
-            </p>
-          )}
-        </div>
+        {/* Section 3: Support Buttons (client component) */}
+        <Suspense fallback={<div className="mb-8 text-center text-text-muted">Loading...</div>}>
+          <SupportButtons />
+        </Suspense>
 
         {/* Legal Disclaimer Callout */}
         <div className="border-l-[3px] border-brand bg-brand-subtle rounded-r-lg p-4 mb-8">
