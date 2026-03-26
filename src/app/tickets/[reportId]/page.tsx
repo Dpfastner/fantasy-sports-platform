@@ -74,7 +74,12 @@ export default async function SupportTicketPage({
           )}
         </div>
 
-        {/* Resolved banner */}
+        {/* Status banners */}
+        {ticket.status === 'in_progress' && (
+          <div className="bg-brand/10 border border-brand/20 rounded-lg px-4 py-3 mb-4 text-brand-text text-sm">
+            We&apos;re looking into this.
+          </div>
+        )}
         {ticket.status === 'resolved' && (
           <div className="bg-success/10 border border-success/20 rounded-lg px-4 py-3 mb-4 text-success-text text-sm">
             This ticket has been resolved. You can still reply to reopen it.

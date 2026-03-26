@@ -157,6 +157,32 @@ export async function POST(
          <p style="color:#888;font-size:12px;margin-top:24px;">— The Rivyls Team</p>`
       )
     }
+  } else if (!isAdmin) {
+    // User responded → notify admins
+    const wasReopened = ticket.status === 'resolved'
+    const userEmail = user.email || 'A user'
+    const notifBody = wasReopened
+      ? `${userEmail} reopened a support ticket.`
+      : `${userEmail} replied to a support ticket.`
+
+    for (const adminId of ADMIN_USER_IDS) {
+      createNotification({
+        userId: adminId,
+        type: 'system',
+        title: wasReopened ? 'Ticket reopened' : 'Ticket reply',
+        body: notifBody,
+        data: { reportId },
+      })
+    }
+
+    const { sendAdminEmail } = await import('@/lib/email')
+    const adminTicketUrl = `${process.env.NEXT_PUBLIC_SITE_URL || 'https://rivyls.com'}/admin/reports/${reportId}`
+    sendAdminEmail(
+      `[Rivyls] ${wasReopened ? 'Ticket reopened' : 'Ticket reply'} from ${userEmail}`,
+      `<p><strong>${userEmail}</strong> ${wasReopened ? 'reopened' : 'replied to'} a support ticket:</p>
+       <p style="margin:16px 0;padding:12px;background:#f5f5f5;border-radius:8px;font-size:14px;">${content.slice(0, 300)}${content.length > 300 ? '...' : ''}</p>
+       <p><a href="${adminTicketUrl}" style="color:#4F46E5;">View ticket</a></p>`
+    )
   }
 
   logActivity({

@@ -69,8 +69,13 @@ export async function PATCH(
   const updates: Record<string, unknown> = {}
   if (body.status && ['new', 'in_progress', 'resolved'].includes(body.status)) {
     updates.status = body.status
-    if (body.status === 'resolved') updates.resolved_at = new Date().toISOString()
-    else updates.resolved_at = null
+    if (body.status === 'resolved') {
+      updates.resolved_at = new Date().toISOString()
+      updates.resolved_by = user.id
+    } else {
+      updates.resolved_at = null
+      updates.resolved_by = null
+    }
   }
   if (body.priority && ['low', 'normal', 'high', 'urgent'].includes(body.priority)) {
     updates.priority = body.priority

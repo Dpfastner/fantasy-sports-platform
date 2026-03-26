@@ -68,7 +68,7 @@ function getNotificationHref(notification: Notification): string | null {
   const reportId = notification.data?.reportId as string
   if (reportId) {
     if (notification.type === 'support_response') return `/tickets/${reportId}`
-    return `/admin/reports`
+    return `/admin/reports/${reportId}`
   }
 
   const leagueId = notification.data?.leagueId || notification.league_id
