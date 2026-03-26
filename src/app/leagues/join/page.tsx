@@ -151,12 +151,17 @@ function JoinLeagueForm() {
 
       if (!res.ok) {
         if (res.status === 401) {
-          // User is not logged in — redirect to login with return URL
           const returnUrl = `/leagues/join?code=${encodeURIComponent(code.trim())}`
           router.push(`/login?next=${encodeURIComponent(returnUrl)}`)
           return
         }
-        setError(data.error || 'League not found. Check your invite code and try again.')
+        setError(data.error || 'Competition not found. Check your invite code and try again.')
+        return
+      }
+
+      // If it's a pool, redirect directly to the pool page
+      if (data.type === 'pool') {
+        router.push(`/events/${data.pool.tournamentSlug}/pools/${data.pool.id}`)
         return
       }
 
@@ -220,7 +225,13 @@ function JoinLeagueForm() {
       const data = await res.json()
 
       if (!res.ok) {
-        setError(data.error || 'Couldn\'t join league. Try again.')
+        setError(data.error || 'Couldn\'t join. Try again.')
+        return
+      }
+
+      // Pool join redirects directly
+      if (data.type === 'pool') {
+        router.push(`/events/${data.tournamentSlug}/pools/${data.poolId}`)
         return
       }
 
@@ -306,8 +317,8 @@ function JoinLeagueForm() {
             </Link>
           </div>
 
-          <h1 className="text-3xl font-bold text-text-primary mb-2">Join a League</h1>
-          <p className="text-text-secondary mb-6">Enter the invite code from your commissioner.</p>
+          <h1 className="text-3xl font-bold text-text-primary mb-2">Join a Competition</h1>
+          <p className="text-text-secondary mb-6">Enter an invite code or browse open competitions.</p>
 
           {joinMode === 'browse' && (
             <div className="mb-8">
@@ -407,7 +418,7 @@ function JoinLeagueForm() {
               // Step 1: Enter invite code
               <div>
                 <p className="text-text-secondary mb-6">
-                  Enter the invite code you received from your league commissioner.
+                  Enter the invite code you received to join a competition.
                 </p>
 
                 <div className="mb-6">
@@ -432,7 +443,7 @@ function JoinLeagueForm() {
                   disabled={loading}
                   className="w-full bg-brand hover:bg-brand-hover disabled:bg-brand/50 disabled:cursor-not-allowed text-text-primary font-semibold py-3 px-4 rounded-lg transition-colors"
                 >
-                  {loading ? 'Looking up...' : 'Look Up League'}
+                  {loading ? 'Looking up...' : 'Look Up'}
                 </button>
               </div>
             ) : (
