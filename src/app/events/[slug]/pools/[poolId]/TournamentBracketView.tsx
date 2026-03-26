@@ -17,6 +17,7 @@ interface Participant {
   shortName: string | null
   seed: number | null
   logoUrl: string | null
+  metadata?: Record<string, unknown>
 }
 
 interface Game {
@@ -77,6 +78,9 @@ function ResultCard({ game, p1, p2, compact = false }: {
         ) : null}
         <span className={`text-xs truncate flex-1 ${participant ? 'text-text-primary' : 'text-text-muted italic'} ${isWinner ? 'font-semibold' : ''}`}>
           {compact ? (participant?.shortName || participant?.name || 'TBD') : (participant?.name || 'TBD')}
+          {!compact && participant?.metadata?.season_record ? (
+            <span className="text-text-muted text-[10px] ml-1">({String(participant.metadata.season_record)})</span>
+          ) : null}
         </span>
         {(isLive || isFinal) && score != null && (
           <span className={`text-xs font-semibold tabular-nums shrink-0 ${isWinner ? 'text-success-text' : 'text-text-secondary'}`}>

@@ -391,7 +391,7 @@ export default async function PoolDetailPage({ params }: PageProps) {
             shortName: p.short_name,
             seed: p.seed,
             logoUrl: p.logo_url,
-            ...(pool.game_type === 'roster' || tournament.format === 'multi' ? { metadata: p.metadata as Record<string, unknown> } : {}),
+            metadata: (p.metadata as Record<string, unknown>) || undefined,
           }))}
           games={(games || []).map(g => ({
             id: g.id,

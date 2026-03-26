@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import * as Sentry from '@sentry/nextjs'
 import { createAdminClient } from '@/lib/supabase/server'
-import { fetchHockeyTeams, fetchGolfRankings, fetchGolfField, getCountryFlagCode, fetchRugbyMatches, fetchRugbyMatchesSportsDb } from '@/lib/events/espn-adapters'
+import { fetchHockeyTeams, fetchHockeyRecords, fetchGolfRankings, fetchGolfField, getCountryFlagCode, fetchRugbyMatches, fetchRugbyMatchesSportsDb } from '@/lib/events/espn-adapters'
 import { getTier as getTierFromOwgr } from '@/lib/events/tiers'
 import { createRateLimiter, getClientIp } from '@/lib/api/rate-limit'
 
@@ -60,6 +60,8 @@ export async function POST(request: Request) {
         return await convertMSixNationsToSurvivor(admin)
       case 'sync-hockey-logos':
         return await syncHockeyLogos(admin)
+      case 'sync-hockey-records':
+        return await syncHockeyRecordsAction(admin)
       case 'frozen-four-2026-schedule':
         return await seedFrozenFourSchedule(admin)
       default:
@@ -1776,6 +1778,87 @@ async function syncHockeyLogos(admin: ReturnType<typeof createAdminClient>) {
     totalParticipants: participants.length,
     logosMatched: matched,
     espnTeamsAvailable: espnTeams.length,
+    matchDetails,
+  })
+}
+
+// ============================================
+// HOCKEY RECORDS SYNC
+// ============================================
+
+async function syncHockeyRecordsAction(admin: ReturnType<typeof createAdminClient>) {
+  // Get all hockey tournaments
+  const { data: tournaments } = await admin
+    .from('event_tournaments')
+    .select('id')
+    .eq('sport', 'hockey')
+
+  if (!tournaments?.length) {
+    return NextResponse.json({ error: 'No hockey tournaments found' }, { status: 404 })
+  }
+
+  const tournamentIds = tournaments.map(t => t.id)
+
+  // Get all participants with current metadata
+  const { data: participants } = await admin
+    .from('event_participants')
+    .select('id, name, metadata')
+    .in('tournament_id', tournamentIds)
+
+  if (!participants?.length) {
+    return NextResponse.json({ error: 'No participants found' }, { status: 404 })
+  }
+
+  // Fetch records from USCHO poll on ESPN
+  const records = await fetchHockeyRecords()
+
+  if (records.size === 0) {
+    return NextResponse.json({ error: 'Could not fetch records from ESPN. HTML structure may have changed.' }, { status: 502 })
+  }
+
+  // Match records to participants by name
+  // Sort by name length DESC so "Michigan State" matches before "Michigan"
+  const sortedParticipants = [...participants].sort((a, b) => b.name.length - a.name.length)
+  let matched = 0
+  const matchDetails: Array<{ participant: string; record: string | null }> = []
+
+  for (const participant of sortedParticipants) {
+    // Try exact match first, then partial matches
+    let record = records.get(participant.name) || null
+    if (!record) {
+      // Try matching ESPN names that include location (e.g., "Michigan Wolverines" → "Michigan")
+      for (const [espnName, espnRecord] of records) {
+        if (espnName.startsWith(participant.name) || participant.name.startsWith(espnName)) {
+          record = espnRecord
+          break
+        }
+      }
+    }
+    // Special case: "Connecticut" → "UConn"
+    if (!record && participant.name === 'Connecticut') {
+      record = records.get('UConn') || records.get('Connecticut') || null
+    }
+
+    if (record) {
+      const existingMeta = (participant.metadata as Record<string, unknown>) || {}
+      await admin
+        .from('event_participants')
+        .update({
+          metadata: { ...existingMeta, season_record: record },
+        })
+        .eq('id', participant.id)
+      matched++
+    }
+
+    matchDetails.push({ participant: participant.name, record })
+  }
+
+  return NextResponse.json({
+    success: true,
+    action: 'sync-hockey-records',
+    totalParticipants: participants.length,
+    recordsMatched: matched,
+    recordsAvailable: records.size,
     matchDetails,
   })
 }

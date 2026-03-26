@@ -1059,6 +1059,68 @@ export async function fetchGolfRankings(): Promise<ESPNGolfRanking[]> {
 }
 
 // ============================================
+// Hockey records from USCHO poll (ESPN website)
+// ============================================
+
+/**
+ * Fetch hockey team records from the USCHO poll on ESPN's rankings page.
+ * The ESPN API doesn't return accurate hockey records, but the USCHO poll
+ * on the website has correct W-L-T records.
+ * Returns a Map of team name → record string (e.g., "29-7-1").
+ */
+export async function fetchHockeyRecords(): Promise<Map<string, string>> {
+  const records = new Map<string, string>()
+
+  try {
+    const response = await fetchWithTimeout('https://www.espn.com/mens-college-hockey/rankings', 15000)
+    if (!response.ok) {
+      console.error(`[espn-hockey] Rankings page returned ${response.status}`)
+      return records
+    }
+
+    const html = await response.text()
+
+    // Find the USCHO section — it's the third poll table on the page
+    // Each team row has: rank, team name, and record (W-L-T)
+    // Pattern: look for team names with records in W-L or W-L-T format after them
+    const teamRecordPattern = /class="Table__TD"[^>]*>(?:<[^>]+>)*(\d+)(?:<[^>]+>)*<\/td>[\s\S]*?class="Table__TD"[^>]*>[\s\S]*?<a[^>]*>([^<]+)<\/a>[\s\S]*?class="Table__TD"[^>]*>(?:<[^>]+>)*(\d+-\d+(?:-\d+)?)(?:<[^>]+>)*<\/td>/g
+    let match
+    while ((match = teamRecordPattern.exec(html)) !== null) {
+      const name = match[2].trim()
+      const record = match[3].trim()
+      if (name && record) {
+        records.set(name, record)
+      }
+    }
+
+    // If regex didn't match (ESPN structure changed), try simpler pattern
+    if (records.size === 0) {
+      // Fallback: match team display names followed by W-L-T records
+      const simplePattern = /<a[^>]*href="[^"]*mens-college-hockey[^"]*"[^>]*>([^<]+)<\/a>[\s\S]*?(\d{2,}-\d{1,2}(?:-\d{1,2})?)/g
+      while ((match = simplePattern.exec(html)) !== null) {
+        const name = match[1].trim()
+        const record = match[2].trim()
+        if (name && record && !records.has(name)) {
+          records.set(name, record)
+        }
+      }
+    }
+
+    if (records.size === 0) {
+      Sentry.captureMessage('ESPN hockey rankings page returned 0 records — HTML structure may have changed', {
+        level: 'warning',
+        tags: { sport: 'hockey', monitor: 'espn-rankings' },
+      })
+    }
+  } catch (err) {
+    console.error('[espn-hockey] Failed to fetch records:', err)
+    Sentry.captureException(err, { tags: { sport: 'hockey', monitor: 'espn-rankings' } })
+  }
+
+  return records
+}
+
+// ============================================
 // Generic event game sync helper
 // ============================================
 

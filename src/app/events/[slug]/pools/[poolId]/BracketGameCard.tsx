@@ -6,6 +6,7 @@ interface Participant {
   shortName: string | null
   seed: number | null
   logoUrl: string | null
+  metadata?: Record<string, unknown>
 }
 
 interface BracketGameCardProps {
@@ -115,6 +116,9 @@ export function BracketGameCard({
             ? (participant?.shortName || participant?.name || 'TBD')
             : (participant?.name || 'TBD')
           }
+          {!compact && participant?.metadata?.season_record ? (
+            <span className="text-text-muted text-[10px] ml-1">({String(participant.metadata.season_record)})</span>
+          ) : null}
         </span>
 
         {/* Eliminated badge */}
