@@ -73,6 +73,7 @@ export function ChatContextProvider({ children }: { children: ReactNode }) {
   const refreshChannels = useCallback(async () => {
     if (!userId) return
 
+    try {
     const supabase = createClient()
 
     // Fetch leagues (include role for pin permissions)
@@ -125,6 +126,9 @@ export function ChatContextProvider({ children }: { children: ReactNode }) {
     } catch { /* skip — DMs just won't appear */ }
 
     setChannels([...leagueChannels, ...poolChannels, ...dmChannels])
+    } catch {
+      // Silently fail — chat channels just won't appear
+    }
   }, [userId])
 
   useEffect(() => {
