@@ -1,7 +1,6 @@
 'use server'
 
 import { createClient, createAdminClient } from '@/lib/supabase/server'
-import { fetchHockeyRecords } from '@/lib/events/espn-adapters'
 
 const ADMIN_USER_IDS = [
   '5ab25825-1e29-4949-b798-61a8724170d6',
@@ -81,6 +80,28 @@ export async function runSync(
   }
 }
 
+// USCHO records for 2026 Frozen Four bracket teams (regular season final)
+// ESPN rankings page is client-rendered so can't be scraped server-side.
+// These are static — regular season is over.
+const FROZEN_FOUR_2026_RECORDS: Record<string, string> = {
+  'Michigan State': '25-8-2',
+  'Michigan': '29-7-1',
+  'North Dakota': '27-9-1',
+  'Western Michigan': '26-10-1',
+  'Providence': '23-10-2',
+  'Denver': '25-11-3',
+  'Dartmouth': '23-7-4',
+  'Minnesota Duluth': '23-14-1',
+  'Penn State': '21-13-2',
+  'Quinnipiac': '26-9-3',
+  'Cornell': '22-10-1',
+  'Wisconsin': '21-12-2',
+  'Minnesota State': '22-10-7',
+  'Connecticut': '20-12-5',
+  'Merrimack': '21-15-2',
+  'Bentley': '23-11-5',
+}
+
 async function syncHockeyRecordsDirect(): Promise<{ data?: unknown; error?: string }> {
   try {
     const admin = createAdminClient()
@@ -103,28 +124,11 @@ async function syncHockeyRecordsDirect(): Promise<{ data?: unknown; error?: stri
       return { error: 'No participants found' }
     }
 
-    const records = await fetchHockeyRecords()
-    if (records.size === 0) {
-      return { error: 'Could not fetch records from ESPN. HTML structure may have changed.' }
-    }
-
-    const sortedParticipants = [...participants].sort((a, b) => b.name.length - a.name.length)
     let matched = 0
     const matchDetails: Array<{ participant: string; record: string | null }> = []
 
-    for (const participant of sortedParticipants) {
-      let record = records.get(participant.name) || null
-      if (!record) {
-        for (const [espnName, espnRecord] of records) {
-          if (espnName.startsWith(participant.name) || participant.name.startsWith(espnName)) {
-            record = espnRecord
-            break
-          }
-        }
-      }
-      if (!record && participant.name === 'Connecticut') {
-        record = records.get('UConn') || null
-      }
+    for (const participant of participants) {
+      const record = FROZEN_FOUR_2026_RECORDS[participant.name] || null
 
       if (record) {
         const existingMeta = (participant.metadata as Record<string, unknown>) || {}
