@@ -1,6 +1,7 @@
 'use server'
 
-import { createClient } from '@/lib/supabase/server'
+import { createClient, createAdminClient } from '@/lib/supabase/server'
+import { fetchHockeyRecords } from '@/lib/events/espn-adapters'
 
 const ADMIN_USER_IDS = [
   '5ab25825-1e29-4949-b798-61a8724170d6',
@@ -49,9 +50,7 @@ export async function runSync(
       method = 'GET'
       break
     case 'event-records':
-      endpoint = `${baseUrl}/api/events/seed`
-      authKey = cronSecret
-      break
+      return await syncHockeyRecordsDirect()
     default:
       return { error: `Unknown sync type: ${syncType}` }
   }
@@ -77,6 +76,74 @@ export async function runSync(
     }
 
     return { data }
+  } catch (err) {
+    return { error: String(err) }
+  }
+}
+
+async function syncHockeyRecordsDirect(): Promise<{ data?: unknown; error?: string }> {
+  try {
+    const admin = createAdminClient()
+
+    const { data: tournaments } = await admin
+      .from('event_tournaments')
+      .select('id')
+      .eq('sport', 'hockey')
+
+    if (!tournaments?.length) {
+      return { error: 'No hockey tournaments found' }
+    }
+
+    const { data: participants } = await admin
+      .from('event_participants')
+      .select('id, name, metadata')
+      .in('tournament_id', tournaments.map(t => t.id))
+
+    if (!participants?.length) {
+      return { error: 'No participants found' }
+    }
+
+    const records = await fetchHockeyRecords()
+    if (records.size === 0) {
+      return { error: 'Could not fetch records from ESPN. HTML structure may have changed.' }
+    }
+
+    const sortedParticipants = [...participants].sort((a, b) => b.name.length - a.name.length)
+    let matched = 0
+    const matchDetails: Array<{ participant: string; record: string | null }> = []
+
+    for (const participant of sortedParticipants) {
+      let record = records.get(participant.name) || null
+      if (!record) {
+        for (const [espnName, espnRecord] of records) {
+          if (espnName.startsWith(participant.name) || participant.name.startsWith(espnName)) {
+            record = espnRecord
+            break
+          }
+        }
+      }
+      if (!record && participant.name === 'Connecticut') {
+        record = records.get('UConn') || null
+      }
+
+      if (record) {
+        const existingMeta = (participant.metadata as Record<string, unknown>) || {}
+        await admin
+          .from('event_participants')
+          .update({ metadata: { ...existingMeta, season_record: record } })
+          .eq('id', participant.id)
+        matched++
+      }
+      matchDetails.push({ participant: participant.name, record })
+    }
+
+    return {
+      data: {
+        success: true,
+        summary: { matched, totalSchools: participants.length },
+        matchDetails,
+      },
+    }
   } catch (err) {
     return { error: String(err) }
   }
