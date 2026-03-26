@@ -102,6 +102,7 @@ export default async function TransactionsPage({ params }: PageProps) {
       id,
       name,
       season_id,
+      sport_id,
       seasons (year, name),
       league_settings (
         schools_per_team,
@@ -192,6 +193,7 @@ export default async function TransactionsPage({ params }: PageProps) {
   const { data: schoolsData } = await supabase
     .from('schools')
     .select('id, name, abbreviation, logo_url, conference, primary_color')
+    .eq('sport_id', league.sport_id)
     .eq('is_active', true)
     .order('name', { ascending: true })
 

@@ -115,7 +115,7 @@ export async function POST(
     ] = await Promise.all([
       supabase
         .from('leagues')
-        .select('name, season_id, seasons(year)')
+        .select('name, season_id, sport_id, seasons(year)')
         .eq('id', leagueId)
         .single(),
       supabase
@@ -147,6 +147,7 @@ export async function POST(
       leagueId,
       teamId: currentTeam.id,
       userId: currentTeam.user_id,
+      sportId: league.sport_id,
       currentPick: draft.current_pick,
       currentRound: draft.current_round,
       seasonId: league.season_id,

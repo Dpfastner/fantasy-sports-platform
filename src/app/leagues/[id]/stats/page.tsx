@@ -59,6 +59,7 @@ export default async function StatsPage({ params, searchParams }: PageProps) {
       id,
       name,
       season_id,
+      sport_id,
       seasons (year, name),
       league_settings (schools_per_team)
     `)
@@ -99,6 +100,7 @@ export default async function StatsPage({ params, searchParams }: PageProps) {
   const { data: schools } = await supabase
     .from('schools')
     .select('id, name, abbreviation, logo_url, conference')
+    .eq('sport_id', league.sport_id)
     .eq('is_active', true)
 
   // Get all completed games for record calculation (only up to simulated week)

@@ -7,6 +7,7 @@ export interface AutoPickContext {
   leagueId: string
   teamId: string
   userId: string
+  sportId: string
   currentPick: number
   currentRound: number
   seasonId: string
@@ -80,10 +81,11 @@ export async function selectAutoPickSchool(
     }
   }
 
-  // 2. Get all active schools
+  // 2. Get all active schools for this sport
   const { data: allSchools } = await supabase
     .from('schools')
     .select('id, name, conference')
+    .eq('sport_id', ctx.sportId)
     .eq('is_active', true)
 
   if (!allSchools || allSchools.length === 0) return null
