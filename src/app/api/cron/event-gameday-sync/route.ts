@@ -520,7 +520,24 @@ export async function GET(request: Request) {
     }
 
     // ── Step 5: Trigger scoring for newly completed games ──
+    // Also re-score any tournament that has completed games (safety net for missed scoring)
     const scoredTournaments = new Set<string>()
+
+    // Add tournaments with any completed games to ensure scoring runs even if
+    // the newlyCompleted tracking missed a transition (e.g. cron failure, race condition)
+    for (const tournament of tournaments) {
+      const { count } = await admin.from('event_games')
+        .select('id', { count: 'exact', head: true })
+        .eq('tournament_id', tournament.id)
+        .eq('status', 'completed')
+      if (count && count > 0) {
+        const alreadyTracked = newlyCompleted.some(nc => nc.tournamentId === tournament.id)
+        if (!alreadyTracked) {
+          newlyCompleted.push({ tournamentId: tournament.id, format: tournament.format, config: tournament.config })
+        }
+      }
+    }
+
     for (const { tournamentId, format, config } of newlyCompleted) {
       if (scoredTournaments.has(tournamentId)) continue
       scoredTournaments.add(tournamentId)
