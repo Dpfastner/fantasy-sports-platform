@@ -1,10 +1,11 @@
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { createAdminClient } from '@/lib/supabase/server'
+import { createClient, createAdminClient } from '@/lib/supabase/server'
 import { getUserBadges } from '@/lib/badges'
 import { TrophyCase } from '@/components/TrophyCase'
 import { Pennant } from '@/components/Pennant'
+import { Header } from '@/components/Header'
 import { SITE_URL } from '@/lib/og/constants'
 
 interface PageProps {
@@ -44,6 +45,15 @@ export default async function PublicProfilePage({ params }: PageProps) {
 
   if (!profile) notFound()
 
+  // Check if viewer is authenticated
+  const viewerSupabase = await createClient()
+  const { data: { user: viewer } } = await viewerSupabase.auth.getUser()
+  let viewerProfile: { display_name: string | null } | null = null
+  if (viewer) {
+    const { data } = await supabase.from('profiles').select('display_name').eq('id', viewer.id).single()
+    viewerProfile = data
+  }
+
   const [badges, sportFavoritesResult] = await Promise.all([
     getUserBadges(userId),
     supabase
@@ -81,31 +91,35 @@ export default async function PublicProfilePage({ params }: PageProps) {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gradient-from to-gradient-to">
-      <header className="bg-surface/50 border-b border-border">
-        <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-          <Link href="/" className="text-2xl font-bold text-text-primary">
-            Rivyls
-          </Link>
-          <Link
-            href="/login"
-            className="text-text-secondary hover:text-text-primary transition-colors text-sm"
-          >
-            Sign in
-          </Link>
-        </div>
-      </header>
+      {viewer ? (
+        <Header userName={viewerProfile?.display_name} userEmail={viewer.email} userId={viewer.id} />
+      ) : (
+        <header className="bg-surface/50 border-b border-border">
+          <div className="container mx-auto px-4 py-4 flex justify-between items-center">
+            <Link href="/" className="text-2xl font-bold text-text-primary">
+              Rivyls
+            </Link>
+            <Link
+              href="/login"
+              className="text-text-secondary hover:text-text-primary transition-colors text-sm"
+            >
+              Sign in
+            </Link>
+          </div>
+        </header>
+      )}
 
       <main className="container mx-auto px-4 py-8 max-w-2xl">
         {/* Profile Header */}
-        <div className="bg-surface rounded-lg p-6 mb-6">
-          <div className="flex items-start justify-between gap-4">
-            <div className="flex items-start gap-4">
+        <div className="bg-surface rounded-lg p-6 mb-6 overflow-hidden">
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div className="flex items-start gap-4 min-w-0">
               <div className="w-16 h-16 rounded-full bg-surface-subtle flex items-center justify-center text-2xl font-bold text-text-secondary flex-shrink-0">
                 {(profile.display_name || '?').charAt(0).toUpperCase()}
               </div>
-              <div>
-                <div className="flex items-center gap-2 mb-1">
-                  <h1 className="text-2xl font-bold text-text-primary">
+              <div className="min-w-0">
+                <div className="flex items-center gap-2 mb-1 flex-wrap">
+                  <h1 className="text-2xl font-bold text-text-primary truncate">
                     {profile.display_name || 'Rivyls Player'}
                   </h1>
                   {profile.tier === 'pro' && (
