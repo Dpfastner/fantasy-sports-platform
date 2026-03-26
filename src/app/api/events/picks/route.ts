@@ -45,12 +45,14 @@ export async function GET(request: Request) {
 
     // Allow viewing own picks or pool member picks
     if (entry.user_id !== user.id) {
-      const { data: userEntry } = await admin
+      const { data: userEntries } = await admin
         .from('event_entries')
         .select('id')
         .eq('pool_id', entry.pool_id)
         .eq('user_id', user.id)
-        .maybeSingle()
+        .limit(1)
+
+      const userEntry = userEntries?.[0] || null
 
       if (!userEntry) {
         return NextResponse.json({ error: 'Not a member of this pool' }, { status: 403 })
