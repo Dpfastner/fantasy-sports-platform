@@ -334,7 +334,7 @@ export function ChatMessages({ channelType, channelEntityId, currentUserId, isCo
   }
 
   const handleTogglePin = async (messageId: string) => {
-    if (channelType !== 'league') return
+    if (channelType !== 'league' && channelType !== 'pool') return
 
     // Optimistic update
     setMessages(prev => prev.map(m => {
@@ -349,9 +349,10 @@ export function ChatMessages({ channelType, channelEntityId, currentUserId, isCo
     }))
 
     try {
-      await fetch(`/api/leagues/${channelEntityId}/messages/${messageId}/pin`, {
-        method: 'PATCH',
-      })
+      const url = channelType === 'league'
+        ? `/api/leagues/${channelEntityId}/messages/${messageId}/pin`
+        : `/api/events/pools/${channelEntityId}/messages/${messageId}/pin`
+      await fetch(url, { method: 'PATCH' })
     } catch {
       // revert would go here
     }
@@ -381,7 +382,7 @@ export function ChatMessages({ channelType, channelEntityId, currentUserId, isCo
             <span className="text-xs font-semibold text-text-primary">{pinnedMessage.display_name}: </span>
             <span className="text-xs text-text-secondary">{pinnedMessage.message}</span>
           </div>
-          {isCommissioner && channelType === 'league' && (
+          {isCommissioner && (channelType === 'league' || channelType === 'pool') && (
             <button
               onClick={() => handleTogglePin(pinnedMessage.id)}
               className="text-text-muted hover:text-text-primary text-[10px] shrink-0"
@@ -442,7 +443,7 @@ export function ChatMessages({ channelType, channelEntityId, currentUserId, isCo
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                       </svg>
                     </button>
-                    {isCommissioner && channelType === 'league' && (
+                    {isCommissioner && (channelType === 'league' || channelType === 'pool') && (
                       <button
                         onClick={() => handleTogglePin(msg.id)}
                         className="p-0.5 text-text-muted hover:text-text-secondary rounded transition-colors"

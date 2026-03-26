@@ -48,6 +48,14 @@ export function MobileChatPeek() {
 
   const { isMobileExpanded, setIsMobileExpanded, activeChannel, setActiveChannel, userId } = ctx
 
+  // Lock body scroll when chat is expanded to prevent background showing behind keyboard
+  useEffect(() => {
+    if (isMobileExpanded) {
+      document.body.style.overflow = 'hidden'
+      return () => { document.body.style.overflow = '' }
+    }
+  }, [isMobileExpanded])
+
   // Full-screen expanded view
   if (isMobileExpanded) {
     return (
@@ -98,6 +106,7 @@ export function MobileChatPeek() {
               channelType={activeChannel.type}
               channelEntityId={activeChannel.entityId}
               currentUserId={userId}
+              isCommissioner={activeChannel.isAdmin}
               onSendRef={sendRef}
             />
             <ChatInput

@@ -253,6 +253,7 @@ export function ChatSidebar() {
               channelType={activeChannel.type}
               channelEntityId={activeChannel.entityId}
               currentUserId={userId}
+              isCommissioner={activeChannel.isAdmin}
               onSendRef={sendRef}
               showPinnedOnly={showPinnedOnly}
             />

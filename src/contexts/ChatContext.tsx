@@ -12,6 +12,7 @@ export interface Channel {
   name: string
   imageUrl?: string
   entityId: string // leagueId, poolId, or conversationId
+  isAdmin?: boolean // commissioner/co-commissioner for leagues, creator for pools
 }
 
 interface ChatContextValue {
@@ -74,35 +75,37 @@ export function ChatContextProvider({ children }: { children: ReactNode }) {
 
     const supabase = createClient()
 
-    // Fetch leagues
+    // Fetch leagues (include role for pin permissions)
     const { data: memberships } = await supabase
       .from('league_members')
-      .select('league_id, leagues(id, name)')
+      .select('league_id, role, leagues(id, name)')
       .eq('user_id', userId)
 
-    const leagueChannels: Channel[] = (memberships || []).map((m: { league_id: string; leagues: { id: string; name: string } | { id: string; name: string }[] | null }) => {
+    const leagueChannels: Channel[] = (memberships || []).map((m: { league_id: string; role: string; leagues: { id: string; name: string } | { id: string; name: string }[] | null }) => {
       const league = Array.isArray(m.leagues) ? m.leagues[0] : m.leagues
       return {
         id: `league:${m.league_id}`,
         type: 'league' as const,
         name: league?.name || 'League',
         entityId: m.league_id,
+        isAdmin: m.role === 'commissioner' || m.role === 'co_commissioner',
       }
     })
 
-    // Fetch event pools the user has entries in
+    // Fetch event pools the user has entries in (include created_by for pin permissions)
     const { data: entries } = await supabase
       .from('event_entries')
-      .select('pool_id, event_pools(id, name)')
+      .select('pool_id, event_pools(id, name, created_by)')
       .eq('user_id', userId)
 
-    const poolChannels: Channel[] = (entries || []).map((e: { pool_id: string; event_pools: { id: string; name: string } | { id: string; name: string }[] | null }) => {
+    const poolChannels: Channel[] = (entries || []).map((e: { pool_id: string; event_pools: { id: string; name: string; created_by: string } | { id: string; name: string; created_by: string }[] | null }) => {
       const pool = Array.isArray(e.event_pools) ? e.event_pools[0] : e.event_pools
       return {
         id: `pool:${e.pool_id}`,
         type: 'pool' as const,
         name: pool?.name || 'Pool',
         entityId: e.pool_id,
+        isAdmin: pool?.created_by === userId,
       }
     })
 
