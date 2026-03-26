@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server'
 import * as Sentry from '@sentry/nextjs'
 import { createClient as createServerClient, createAdminClient } from '@/lib/supabase/server'
 import { createRateLimiter, getClientIp } from '@/lib/api/rate-limit'
+import { validateBody } from '@/lib/api/validation'
+import { reactionToggleSchema } from '@/lib/api/schemas'
 
 const limiter = createRateLimiter({ windowMs: 60_000, max: 30 })
 
@@ -68,10 +70,10 @@ export async function POST(
       return NextResponse.json({ error: 'You need to sign in to do this.' }, { status: 401 })
     }
 
-    const { messageId, emoji } = await request.json()
-    if (!messageId || !emoji) {
-      return NextResponse.json({ error: 'Missing messageId or emoji' }, { status: 400 })
-    }
+    const rawBody = await request.json()
+    const validation = validateBody(reactionToggleSchema, rawBody)
+    if (!validation.success) return validation.response
+    const { messageId, emoji } = validation.data
 
     const admin = createAdminClient()
 

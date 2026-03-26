@@ -108,6 +108,12 @@ export const reactionToggleSchema = z.object({
   emoji: z.string().min(1).max(10),
 })
 
+// ── Pool Chat ──────────────────────────────────────────────
+
+export const poolChatMessageSchema = z.object({
+  message: z.string().min(1, 'Message is required').max(2000, 'Message too long'),
+})
+
 // ── Draft Chat ──────────────────────────────────────────────
 
 export const draftChatMessageSchema = z.object({

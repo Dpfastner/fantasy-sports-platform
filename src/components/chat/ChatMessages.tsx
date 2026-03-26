@@ -45,6 +45,7 @@ function renderMessageText(text: string) {
 
 // Detect if message is a GIF URL
 function isGifUrl(text: string): boolean {
+  if (!text) return false
   const trimmed = text.trim()
   return /^https?:\/\/.*\.(gif|webp)(\?.*)?$/i.test(trimmed) ||
     trimmed.includes('tenor.com') ||
@@ -343,7 +344,7 @@ export function ChatMessages({ channelType, channelEntityId, currentUserId, isCo
           : { ...m, pinned_at: new Date().toISOString(), pinned_by: currentUserId }
       }
       // Unpin any other pinned message
-      if (m.pinned_at && !m.pinned_at === null) return { ...m, pinned_at: null, pinned_by: null }
+      if (m.id !== messageId && m.pinned_at) return { ...m, pinned_at: null, pinned_by: null }
       return m
     }))
 
@@ -415,11 +416,11 @@ export function ChatMessages({ channelType, channelEntityId, currentUserId, isCo
                     {formatTimeAgo(msg.created_at)}
                   </span>
                 </div>
-                {isGifUrl(msg.message) ? (
+                {isGifUrl(msg.message || '') ? (
                   <div className="mt-1 max-w-[250px]">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
-                      src={msg.message.trim()}
+                      src={(msg.message || '').trim()}
                       alt="GIF"
                       className="rounded-lg w-full h-auto"
                       loading="lazy"
@@ -427,7 +428,7 @@ export function ChatMessages({ channelType, channelEntityId, currentUserId, isCo
                   </div>
                 ) : (
                   <p className="text-text-secondary text-sm break-words inline">
-                    {renderMessageText(msg.message)}
+                    {renderMessageText(msg.message || '')}
                   </p>
                 )}
                 {channelType !== 'dm' && (
@@ -456,7 +457,7 @@ export function ChatMessages({ channelType, channelEntityId, currentUserId, isCo
                       <ReportContentButton
                         contentType="chat_message"
                         contentId={msg.id}
-                        contentPreview={msg.message}
+                        contentPreview={msg.message || ''}
                       />
                     )}
                   </span>

@@ -2,6 +2,9 @@ import { NextResponse } from 'next/server'
 import * as Sentry from '@sentry/nextjs'
 import { createClient as createServerClient, createAdminClient } from '@/lib/supabase/server'
 import { createRateLimiter, getClientIp } from '@/lib/api/rate-limit'
+import { checkContent } from '@/lib/moderation/word-filter'
+import { validateBody } from '@/lib/api/validation'
+import { poolChatMessageSchema } from '@/lib/api/schemas'
 
 const messageLimiter = createRateLimiter({ windowMs: 60_000, max: 30 })
 
@@ -90,9 +93,17 @@ export async function POST(
     if (limited) return response!
 
     const body = await request.json()
-    const content = body.message || body.content
-    if (!content || typeof content !== 'string' || content.trim().length === 0 || content.length > 2000) {
-      return NextResponse.json({ error: 'Invalid message content' }, { status: 400 })
+    // Normalize: ChatInput sends 'message', legacy callers may send 'content'
+    const normalizedBody = { message: body.message || body.content }
+    const validation = validateBody(poolChatMessageSchema, normalizedBody)
+    if (!validation.success) return validation.response
+
+    const content = validation.data.message
+
+    // Content moderation
+    const contentCheck = checkContent(content.trim())
+    if (!contentCheck.allowed) {
+      return NextResponse.json({ error: contentCheck.reason }, { status: 400 })
     }
 
     const admin = createAdminClient()
@@ -112,14 +123,17 @@ export async function POST(
     const { data: message, error } = await admin
       .from('event_pool_messages')
       .insert({ pool_id: poolId, user_id: user.id, content: content.trim() })
-      .select('id, created_at')
+      .select('id, content, created_at, user_id')
       .single()
 
     if (error) {
       return NextResponse.json({ error: "Couldn't send message. Try again." }, { status: 500 })
     }
 
-    return NextResponse.json({ success: true, messageId: message.id })
+    return NextResponse.json({
+      success: true,
+      message: { id: message.id, message: message.content, created_at: message.created_at, user_id: message.user_id },
+    })
   } catch (err) {
     console.error('Pool message send error:', err)
     Sentry.captureException(err, { tags: { route: 'events/pools/messages', action: 'send' } })
