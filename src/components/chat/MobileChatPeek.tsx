@@ -41,20 +41,21 @@ export function MobileChatPeek() {
       })
   }, [ctx?.userId])
 
-  if (!ctx) return null
-
-  // Hide for unauthenticated users and on draft pages (draft has its own chat)
-  if (!ctx.userId || pathname?.includes('/draft')) return null
-
-  const { isMobileExpanded, setIsMobileExpanded, activeChannel, setActiveChannel, userId } = ctx
-
   // Lock body scroll when chat is expanded to prevent background showing behind keyboard
+  const isMobileExpanded = ctx?.isMobileExpanded ?? false
   useEffect(() => {
     if (isMobileExpanded) {
       document.body.style.overflow = 'hidden'
       return () => { document.body.style.overflow = '' }
     }
   }, [isMobileExpanded])
+
+  if (!ctx) return null
+
+  // Hide for unauthenticated users and on draft pages (draft has its own chat)
+  if (!ctx.userId || pathname?.includes('/draft')) return null
+
+  const { setIsMobileExpanded, activeChannel, setActiveChannel, userId } = ctx
 
   // Full-screen expanded view
   if (isMobileExpanded) {
