@@ -114,8 +114,8 @@ export function ViewBracketModal({
             <div className="flex items-center gap-2">
               <EntryAvatar imageUrl={imageUrl} primaryColor={primaryColor} size="md" />
               <h2
-                className="text-base font-semibold"
-                style={primaryColor ? { color: primaryColor } : undefined}
+                className="text-base font-semibold text-text-primary"
+                style={primaryColor && primaryColor !== '#1a1a1a' ? { color: primaryColor } : undefined}
               >
                 {entryName}
               </h2>
