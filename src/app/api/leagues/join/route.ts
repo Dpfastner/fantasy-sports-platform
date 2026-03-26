@@ -45,10 +45,12 @@ export async function POST(request: Request) {
 
     // If not a league, check event pools
     if (!league) {
+      // Pool codes are stored uppercase, try both cases
       const { data: pool } = await admin
         .from('event_pools')
         .select('id, name, tournament_id, max_entries, visibility, invite_code, scoring_rules, game_type, tiebreaker')
-        .eq('invite_code', trimmedCode)
+        .or(`invite_code.eq.${trimmedCode},invite_code.eq.${inviteCode.trim().toUpperCase()}`)
+        .limit(1)
         .single()
 
       if (!pool) {
