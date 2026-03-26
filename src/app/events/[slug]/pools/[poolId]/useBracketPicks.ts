@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from 'react'
+import { useState, useMemo, useCallback, useEffect } from 'react'
 import { buildBracketMap, getDownstreamGameIds, type BracketMap } from './bracketUtils'
 
 interface Game {
@@ -58,6 +58,11 @@ export function useBracketPicks({ games, participants, existingPicks, isLocked }
   }, [existingPicks])
 
   const [picks, setPicks] = useState<Record<string, string>>(initialPicks)
+
+  // Reset picks when switching entries (useState ignores initialPicks after first render)
+  useEffect(() => {
+    setPicks(initialPicks)
+  }, [initialPicks])
 
   /**
    * Get the participant for a game slot.
