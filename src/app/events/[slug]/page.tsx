@@ -60,6 +60,12 @@ export default async function EventDetailPage({ params }: PageProps) {
     if (a.seed != null && b.seed != null) return a.seed - b.seed
     if (a.seed != null) return -1
     if (b.seed != null) return 1
+    // Unseeded: sort by win count descending (from season_record like "29-7-1")
+    const aRecord = (a.metadata as Record<string, unknown>)?.season_record
+    const bRecord = (b.metadata as Record<string, unknown>)?.season_record
+    const aWins = typeof aRecord === 'string' ? parseInt(aRecord.split('-')[0], 10) || 0 : 0
+    const bWins = typeof bRecord === 'string' ? parseInt(bRecord.split('-')[0], 10) || 0 : 0
+    if (bWins !== aWins) return bWins - aWins
     return a.name.localeCompare(b.name)
   })
 
