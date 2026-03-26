@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useToast } from '@/components/Toast'
 import { trackEventActivity } from '@/app/actions/activity'
@@ -93,6 +93,11 @@ export function BracketPicker({
   const { addToast } = useToast()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [bracketName, setBracketName] = useState(existingDisplayName || '')
+
+  // Reset name when switching entries
+  useEffect(() => {
+    setBracketName(existingDisplayName || '')
+  }, [existingDisplayName])
 
   const isLocked = poolStatus !== 'open'
 
