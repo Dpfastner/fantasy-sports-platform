@@ -18,7 +18,7 @@ jobs:
     steps:
       - name: Call event-gameday-sync endpoint
         run: |
-          response=$(curl -sL -o /tmp/sync-response.txt -w "%{http_code}" \
+          response=$(curl -s --location-trusted -o /tmp/sync-response.txt -w "%{http_code}" \
             -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
             "${{ secrets.SITE_URL }}/api/cron/event-gameday-sync")
 
