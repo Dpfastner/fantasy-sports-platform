@@ -49,6 +49,9 @@ export async function runSync(
       endpoint = `${baseUrl}/api/cron/gameday-sync`
       method = 'GET'
       break
+    case 'event-records':
+      endpoint = `${baseUrl}/api/events/seed`
+      break
     default:
       return { error: `Unknown sync type: ${syncType}` }
   }

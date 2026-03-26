@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { runSync } from './actions'
 
-type SyncType = 'schools' | 'games' | 'rankings' | 'bulk' | 'live'
+type SyncType = 'schools' | 'games' | 'rankings' | 'bulk' | 'live' | 'event-records'
 
 interface SyncResult {
   success: boolean
@@ -77,6 +77,9 @@ export default function SyncPage() {
         case 'bulk':
           body = { year, startWeek, endWeek, includePostseason }
           break
+        case 'event-records':
+          body = { tournament: 'sync-hockey-records' }
+          break
       }
 
       const result = await runSync(syncType, body)
@@ -99,6 +102,7 @@ export default function SyncPage() {
     { id: 'rankings', label: 'AP Rankings', description: 'Sync AP Top 25 rankings' },
     { id: 'bulk', label: 'Bulk Sync', description: 'Sync entire season or range' },
     { id: 'live', label: 'Live Scores', description: 'Update live game scores' },
+    { id: 'event-records', label: 'Hockey Records', description: 'Sync USCHO records for bracket teams' },
   ]
 
   return (
