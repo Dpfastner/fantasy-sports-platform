@@ -35,28 +35,89 @@ export async function POST(request: Request) {
     // Use admin client to bypass RLS for invite code lookup
     const admin = createAdminClient()
 
-    // Look up league by invite code (no joins — avoids PostgREST .single() issues)
-    const { data: league, error: lookupError } = await admin
+    // Look up by invite code — check leagues first, then event pools
+    const trimmedCode = inviteCode.trim().toLowerCase()
+    const { data: league } = await admin
       .from('leagues')
       .select('id, name, max_teams, sport_id, season_id')
-      .eq('invite_code', inviteCode.trim().toLowerCase())
+      .eq('invite_code', trimmedCode)
       .single()
 
-    if (lookupError || !league) {
-      console.error('League lookup failed:', lookupError?.message, 'code:', inviteCode.trim().toLowerCase())
-      const isSandbox = process.env.NEXT_PUBLIC_ENVIRONMENT === 'sandbox'
-      return NextResponse.json({
-        error: 'League not found. Please check your invite code.',
-        ...(isSandbox && {
-          debug: {
-            lookupError: lookupError?.message || null,
-            lookupCode: lookupError?.code || null,
-            searchedCode: inviteCode.trim().toLowerCase(),
-            hasAdminUrl: !!process.env.NEXT_PUBLIC_SUPABASE_URL,
-            hasAdminKey: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
+    // If not a league, check event pools
+    if (!league) {
+      const { data: pool } = await admin
+        .from('event_pools')
+        .select('id, name, tournament_id, max_entries, visibility, invite_code, scoring_rules, game_type, tiebreaker')
+        .eq('invite_code', trimmedCode)
+        .single()
+
+      if (!pool) {
+        return NextResponse.json({
+          error: 'Competition not found. Please check your invite code.',
+        }, { status: 404 })
+      }
+
+      // Found a pool — get tournament info
+      const { data: tournament } = await admin
+        .from('event_tournaments')
+        .select('id, name, slug, format')
+        .eq('id', pool.tournament_id)
+        .single()
+
+      // Check if user already has an entry
+      const { data: existingEntries } = await admin
+        .from('event_entries')
+        .select('id')
+        .eq('pool_id', pool.id)
+        .eq('user_id', user.id)
+
+      if (existingEntries && existingEntries.length > 0) {
+        return NextResponse.json({ error: 'You are already in this competition' }, { status: 409 })
+      }
+
+      // For pools, redirect to the pool page (no team name needed)
+      if (!teamName) {
+        // Lookup mode — return pool preview
+        const { count } = await admin
+          .from('event_entries')
+          .select('id', { count: 'exact', head: true })
+          .eq('pool_id', pool.id)
+
+        return NextResponse.json({
+          success: true,
+          type: 'pool',
+          pool: {
+            id: pool.id,
+            name: pool.name,
+            tournamentName: tournament?.name || 'Event',
+            tournamentSlug: tournament?.slug || '',
+            format: pool.game_type || tournament?.format || 'bracket',
+            memberCount: count || 0,
+            maxEntries: pool.max_entries,
           },
-        }),
-      }, { status: 404 })
+        })
+      }
+
+      // Join mode for pool — create entry
+      const { error: entryError } = await admin
+        .from('event_entries')
+        .insert({
+          pool_id: pool.id,
+          user_id: user.id,
+          display_name: teamName.trim(),
+          is_active: true,
+        })
+
+      if (entryError) {
+        return NextResponse.json({ error: 'Couldn\'t join. Try again.' }, { status: 500 })
+      }
+
+      return NextResponse.json({
+        success: true,
+        type: 'pool',
+        poolId: pool.id,
+        tournamentSlug: tournament?.slug || '',
+      })
     }
 
     // Fetch related data separately
