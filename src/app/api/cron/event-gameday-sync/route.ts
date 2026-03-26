@@ -37,9 +37,6 @@ import {
 function verifyCronRequest(request: Request): boolean {
   const authHeader = request.headers.get('authorization')
   const cronSecret = process.env.CRON_SECRET
-  // Temporary debug — remove after fixing auth
-  console.log('[cron-debug] secret set:', !!cronSecret, 'len:', cronSecret?.length, 'first4:', cronSecret?.slice(0, 4))
-  console.log('[cron-debug] header set:', !!authHeader, 'len:', authHeader?.length, 'first11:', authHeader?.slice(0, 11))
   if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
     return false
   }
