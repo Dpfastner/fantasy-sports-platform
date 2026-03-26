@@ -1,7 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
+import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
 import { useToast } from '@/components/Toast'
 import { GamePicker } from './GamePicker'
@@ -163,6 +164,30 @@ export function PoolDetailClient({
   const { addToast } = useToast()
   const router = useRouter()
 
+  // Live-updating members: subscribe to event_entries changes for this pool
+  const [liveMembers, setLiveMembers] = useState(members)
+  useEffect(() => { setLiveMembers(members) }, [members])
+
+  useEffect(() => {
+    const supabase = createClient()
+    const channel = supabase
+      .channel(`pool-scores-${pool.id}`)
+      .on('postgres_changes', {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'event_entries',
+        filter: `pool_id=eq.${pool.id}`,
+      }, (payload) => {
+        const updated = payload.new as { id: string; total_points: number }
+        setLiveMembers(prev => prev.map(m =>
+          m.id === updated.id ? { ...m, score: Number(updated.total_points) || 0 } : m
+        ))
+      })
+      .subscribe()
+
+    return () => { supabase.removeChannel(channel) }
+  }, [pool.id])
+
   const setActiveTab = (tab: Tab) => {
     setActiveTabState(tab)
     const url = tab === 'overview' ? window.location.pathname : `${window.location.pathname}?tab=${tab}`
@@ -174,7 +199,7 @@ export function PoolDetailClient({
 
   // View another user's bracket
   const [viewingEntryId, setViewingEntryId] = useState<string | null>(null)
-  const viewingMember = viewingEntryId ? members.find(m => m.id === viewingEntryId) : null
+  const viewingMember = viewingEntryId ? liveMembers.find(m => m.id === viewingEntryId) : null
 
   // Multi-entry state
   const [activeEntryIndex, setActiveEntryIndex] = useState(0)
@@ -473,7 +498,7 @@ export function PoolDetailClient({
           <ErrorBoundary sectionName="Rivalry Board">
           {effectiveFormat === 'roster' ? (
             <RosterLeaderboard
-              members={members}
+              members={liveMembers}
               participants={participants}
               poolStatus={pool.status}
               scoringRules={pool.scoringRules}
@@ -481,7 +506,7 @@ export function PoolDetailClient({
             />
           ) : (
             <Leaderboard
-              members={members}
+              members={liveMembers}
               format={effectiveFormat}
               poolStatus={pool.status}
               tiebreaker={pool.tiebreaker}
