@@ -78,14 +78,13 @@ export async function POST(
     const admin = createAdminClient()
 
     // Verify membership or creator
-    const { data: entry } = await admin
+    const { count } = await admin
       .from('event_entries')
-      .select('id')
+      .select('id', { count: 'exact', head: true })
       .eq('pool_id', poolId)
       .eq('user_id', user.id)
-      .maybeSingle()
 
-    if (!entry) {
+    if (!count || count === 0) {
       const { data: pool } = await admin
         .from('event_pools')
         .select('created_by')
