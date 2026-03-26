@@ -19,13 +19,12 @@ export async function runSync(
   }
 
   const apiKey = process.env.SYNC_API_KEY
-  if (!apiKey) {
-    return { error: 'SYNC_API_KEY not configured on server' }
-  }
+  const cronSecret = process.env.CRON_SECRET
 
   // Determine endpoint and method
   let endpoint = ''
   let method = 'POST'
+  let authKey = apiKey
 
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL
     || (process.env.VERCEL_URL
@@ -51,17 +50,22 @@ export async function runSync(
       break
     case 'event-records':
       endpoint = `${baseUrl}/api/events/seed`
+      authKey = cronSecret
       break
     default:
       return { error: `Unknown sync type: ${syncType}` }
   }
 
   try {
+    if (!authKey) {
+      return { error: 'API key not configured on server' }
+    }
+
     const response = await fetch(endpoint, {
       method,
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`,
+        'Authorization': `Bearer ${authKey}`,
       },
       body: method === 'POST' && body ? JSON.stringify(body) : undefined,
     })
