@@ -433,7 +433,7 @@ export function ChatMessages({ channelType, channelEntityId, currentUserId, isCo
                   </p>
                 )}
                 {channelType !== 'dm' && (
-                  <span className="opacity-0 group-hover:opacity-100 transition-opacity inline-flex items-center gap-1 ml-1 align-middle">
+                  <span className="md:opacity-0 md:group-hover:opacity-100 transition-opacity inline-flex items-center gap-1 ml-1 align-middle">
                     <button
                       onClick={() => setPickerOpenFor(pickerOpenFor === msg.id ? null : msg.id)}
                       className="p-0.5 text-text-muted hover:text-text-secondary rounded transition-colors"

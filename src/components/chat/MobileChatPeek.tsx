@@ -13,6 +13,7 @@ export function MobileChatPeek() {
   const pathname = usePathname()
   const [latestPreview, setLatestPreview] = useState<string>('')
   const [displayName, setDisplayName] = useState<string>('You')
+  const [showPinnedOnly, setShowPinnedOnly] = useState(false)
   const sendRef = useRef<((msg: ChatMessage) => void) | null>(null)
 
   // Fetch a latest message preview for the peek bar
@@ -60,21 +61,13 @@ export function MobileChatPeek() {
   // Full-screen expanded view
   if (isMobileExpanded) {
     return (
-      <div className="md:hidden fixed inset-0 z-50 bg-surface flex flex-col" style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}>
-        {/* Top bar — tap to collapse */}
-        <div
-          className="flex items-center justify-between px-4 py-3 border-b border-border cursor-pointer"
-          onClick={() => {
-            if (!activeChannel) setIsMobileExpanded(false)
-          }}
-        >
+      <div className="md:hidden fixed inset-0 z-50 bg-surface flex flex-col overflow-hidden overscroll-none" style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}>
+        {/* Top bar */}
+        <div className="flex items-center justify-between px-4 py-3 border-b border-border shrink-0">
           {activeChannel ? (
             <div className="flex items-center gap-2 min-w-0">
               <button
-                onClick={(e) => {
-                  e.stopPropagation()
-                  setActiveChannel(null)
-                }}
+                onClick={() => { setActiveChannel(null); setShowPinnedOnly(false) }}
                 className="p-1 text-text-muted hover:text-text-primary transition-colors"
               >
                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -86,18 +79,45 @@ export function MobileChatPeek() {
           ) : (
             <span className="text-sm font-semibold text-text-primary">Chat</span>
           )}
-          <button
-            onClick={(e) => {
-              e.stopPropagation()
-              setIsMobileExpanded(false)
-              setActiveChannel(null)
-            }}
-            className="p-1 text-text-muted hover:text-text-primary transition-colors"
-          >
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
+          <div className="flex items-center gap-1 shrink-0">
+            {/* Pin filter */}
+            {activeChannel && (
+              <button
+                onClick={() => setShowPinnedOnly(p => !p)}
+                className={`w-8 h-8 p-1.5 rounded hover:bg-surface-subtle transition-colors ${showPinnedOnly ? 'text-warning-text' : 'text-text-muted'}`}
+                title={showPinnedOnly ? 'Show all messages' : 'Show pinned only'}
+              >
+                <svg className="w-full h-full" viewBox="0 0 24 24" fill={showPinnedOnly ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M16 3H8a1 1 0 00-1 1v3.586a1 1 0 01-.293.707l-2.414 2.414a1 1 0 00-.293.707V13a1 1 0 001 1h5v7l1 1 1-1v-7h5a1 1 0 001-1v-1.586a1 1 0 00-.293-.707l-2.414-2.414A1 1 0 0117 7.586V4a1 1 0 00-1-1z" />
+                </svg>
+              </button>
+            )}
+            {/* DM shortcut */}
+            {activeChannel && (
+              <button
+                onClick={() => {
+                  setActiveChannel(null)
+                  setShowPinnedOnly(false)
+                }}
+                className="h-8 px-2 flex items-center justify-center rounded-lg text-xs font-bold bg-surface-subtle text-text-muted hover:text-text-primary transition-colors"
+                title="Direct Messages"
+              >
+                DM
+              </button>
+            )}
+            <button
+              onClick={() => {
+                setIsMobileExpanded(false)
+                setActiveChannel(null)
+                setShowPinnedOnly(false)
+              }}
+              className="p-1 text-text-muted hover:text-text-primary transition-colors"
+            >
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
         </div>
 
         {/* Body */}
@@ -109,6 +129,7 @@ export function MobileChatPeek() {
               currentUserId={userId}
               isCommissioner={activeChannel.isAdmin}
               onSendRef={sendRef}
+              showPinnedOnly={showPinnedOnly}
             />
             <ChatInput
               channelType={activeChannel.type}
