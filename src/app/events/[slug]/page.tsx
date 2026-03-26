@@ -50,12 +50,18 @@ export default async function EventDetailPage({ params }: PageProps) {
 
   if (!tournament) notFound()
 
-  // Get participants
-  const { data: participants } = await supabase
+  // Get participants (sort client-side to guarantee seed order)
+  const { data: rawParticipants } = await supabase
     .from('event_participants')
     .select('id, name, short_name, seed, logo_url, metadata')
     .eq('tournament_id', tournament.id)
-    .order('seed', { ascending: true, nullsFirst: false })
+
+  const participants = (rawParticipants || []).sort((a, b) => {
+    if (a.seed != null && b.seed != null) return a.seed - b.seed
+    if (a.seed != null) return -1
+    if (b.seed != null) return 1
+    return a.name.localeCompare(b.name)
+  })
 
   // Get pools (public + user's) with entry counts
   const admin = createAdminClient()
