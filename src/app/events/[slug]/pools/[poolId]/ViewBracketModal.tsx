@@ -69,15 +69,17 @@ export function ViewBracketModal({
       try {
         const res = await fetch(`/api/events/picks?entryId=${entryId}`)
         const data = await res.json()
-        if (data.picks) {
+        if (!res.ok) {
+          console.error('Failed to load picks:', res.status, data.error)
+        } else if (data.picks) {
           const pickMap: Record<string, string> = {}
           for (const p of data.picks) {
             if (p.game_id) pickMap[p.game_id] = p.participant_id
           }
           setPicks(pickMap)
         }
-      } catch {
-        // Failed to load picks
+      } catch (err) {
+        console.error('Failed to load picks:', err)
       } finally {
         setLoading(false)
       }
