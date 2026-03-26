@@ -1,16 +1,19 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { usePathname } from 'next/navigation'
+import { createClient } from '@/lib/supabase/client'
 import { useChatContext } from '@/contexts/ChatContext'
 import { ChannelList } from './ChannelList'
-import { ChatMessages } from './ChatMessages'
+import { ChatMessages, ChatMessage } from './ChatMessages'
 import { ChatInput } from './ChatInput'
 
 export function MobileChatPeek() {
   const ctx = useChatContext()
   const pathname = usePathname()
   const [latestPreview, setLatestPreview] = useState<string>('')
+  const [displayName, setDisplayName] = useState<string>('You')
+  const sendRef = useRef<((msg: ChatMessage) => void) | null>(null)
 
   // Fetch a latest message preview for the peek bar
   useEffect(() => {
@@ -23,6 +26,20 @@ export function MobileChatPeek() {
       setLatestPreview('Tap to open chat')
     }
   }, [ctx?.channels, ctx?.activeChannel])
+
+  // Fetch current user's display name for optimistic messages
+  useEffect(() => {
+    if (!ctx?.userId) return
+    const supabase = createClient()
+    supabase
+      .from('profiles')
+      .select('display_name, email')
+      .eq('id', ctx.userId)
+      .single()
+      .then(({ data }: { data: any }) => {
+        if (data) setDisplayName(data.display_name || data.email?.split('@')[0] || 'You')
+      })
+  }, [ctx?.userId])
 
   if (!ctx) return null
 
@@ -81,10 +98,14 @@ export function MobileChatPeek() {
               channelType={activeChannel.type}
               channelEntityId={activeChannel.entityId}
               currentUserId={userId}
+              onSendRef={sendRef}
             />
             <ChatInput
               channelType={activeChannel.type}
               channelEntityId={activeChannel.entityId}
+              currentUserId={userId}
+              currentDisplayName={displayName}
+              onMessageSent={(msg) => sendRef.current?.(msg)}
             />
           </div>
         ) : (
