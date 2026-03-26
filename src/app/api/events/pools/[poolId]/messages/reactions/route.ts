@@ -77,7 +77,7 @@ export async function POST(
 
     const admin = createAdminClient()
 
-    // Verify membership
+    // Verify membership or creator
     const { data: entry } = await admin
       .from('event_entries')
       .select('id')
@@ -86,7 +86,15 @@ export async function POST(
       .maybeSingle()
 
     if (!entry) {
-      return NextResponse.json({ error: 'Not a pool member' }, { status: 403 })
+      const { data: pool } = await admin
+        .from('event_pools')
+        .select('created_by')
+        .eq('id', poolId)
+        .single()
+
+      if (!pool || pool.created_by !== user.id) {
+        return NextResponse.json({ error: 'Not a pool member' }, { status: 403 })
+      }
     }
 
     // Toggle: if reaction exists, remove it; otherwise add it
