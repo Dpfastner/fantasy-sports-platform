@@ -108,7 +108,7 @@ export async function POST(
 
     const admin = createAdminClient()
 
-    // Verify user is a pool member
+    // Verify user is a pool member or creator
     const { data: entry } = await admin
       .from('event_entries')
       .select('id')
@@ -117,7 +117,15 @@ export async function POST(
       .maybeSingle()
 
     if (!entry) {
-      return NextResponse.json({ error: 'You must be a pool member to send messages' }, { status: 403 })
+      const { data: pool } = await admin
+        .from('event_pools')
+        .select('created_by')
+        .eq('id', poolId)
+        .single()
+
+      if (!pool || pool.created_by !== user.id) {
+        return NextResponse.json({ error: 'You must be a pool member to send messages' }, { status: 403 })
+      }
     }
 
     const { data: message, error } = await admin
