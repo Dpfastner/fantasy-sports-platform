@@ -1,8 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
-import { ADMIN_USER_IDS } from '@/lib/constants/admin'
-import { createNotification } from '@/lib/notifications'
 import { sendAdminEmail } from '@/lib/email'
 
 export async function GET(request: Request) {
@@ -46,18 +44,12 @@ export async function GET(request: Request) {
         }
       }
 
-      // Notify admins of new signups (fire-and-forget)
+      // Admin signup notification now handled by database trigger (migration 063)
+      // — guaranteed delivery in same transaction as user creation.
+      // Email still sent here since DB triggers can't send emails.
       if (!recoverySentAt && data.session?.user) {
         const userEmail = data.session.user.email || 'unknown'
         const userName = data.session.user.user_metadata?.display_name || userEmail.split('@')[0]
-        for (const adminId of ADMIN_USER_IDS) {
-          createNotification({
-            userId: adminId,
-            type: 'system',
-            title: 'New user signed up',
-            body: `${userName} (${userEmail}) just joined Rivyls`,
-          })
-        }
         sendAdminEmail(
           `New Rivyls signup: ${userName}`,
           `<p><strong>${userName}</strong> (${userEmail}) just created a Rivyls account.</p>`
