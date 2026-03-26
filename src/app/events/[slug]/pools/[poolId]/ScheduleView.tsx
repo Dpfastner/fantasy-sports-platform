@@ -10,6 +10,7 @@ interface Participant {
   shortName: string | null
   seed: number | null
   logoUrl: string | null
+  metadata?: Record<string, unknown>
 }
 
 interface Game {
@@ -150,7 +151,7 @@ export function ScheduleView({ games, participants, format, tournamentId, sport 
           <div key={round}>
             <h3 className="text-sm font-semibold text-text-secondary mb-3">{label}</h3>
             <div className="space-y-2">
-              {roundGames.sort((a, b) => a.gameNumber - b.gameNumber).map(game => {
+              {roundGames.sort((a, b) => new Date(a.startsAt || '').getTime() - new Date(b.startsAt || '').getTime() || a.gameNumber - b.gameNumber).map(game => {
                 const p1 = game.participant1Id ? participantMap.get(game.participant1Id) : null
                 const p2 = game.participant2Id ? participantMap.get(game.participant2Id) : null
                 const isLive = game.status === 'live'
@@ -210,6 +211,9 @@ export function ScheduleView({ games, participants, format, tournamentId, sport 
                         }`}>
                           {p1?.name || 'TBD'}
                         </span>
+                        {p1?.metadata?.season_record ? (
+                          <span className="text-[9px] text-text-muted">({String(p1.metadata.season_record)})</span>
+                        ) : null}
                         {(isLive || isFinal) && hasScores && (
                           <span className={`text-lg font-mono font-bold tabular-nums ${
                             isLive ? 'text-text-primary' : p1Won ? 'text-success-text' : 'text-text-muted'
@@ -242,6 +246,9 @@ export function ScheduleView({ games, participants, format, tournamentId, sport 
                         }`}>
                           {p2?.name || 'TBD'}
                         </span>
+                        {p2?.metadata?.season_record ? (
+                          <span className="text-[9px] text-text-muted">({String(p2.metadata.season_record)})</span>
+                        ) : null}
                         {(isLive || isFinal) && hasScores && (
                           <span className={`text-lg font-mono font-bold tabular-nums ${
                             isLive ? 'text-text-primary' : p2Won ? 'text-success-text' : 'text-text-muted'

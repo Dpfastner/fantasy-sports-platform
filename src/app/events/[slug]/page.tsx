@@ -55,7 +55,7 @@ export default async function EventDetailPage({ params }: PageProps) {
     .from('event_participants')
     .select('id, name, short_name, seed, logo_url, metadata')
     .eq('tournament_id', tournament.id)
-    .order('seed', { ascending: true })
+    .order('seed', { ascending: true, nullsFirst: false })
 
   // Get pools (public + user's) with entry counts
   const admin = createAdminClient()
@@ -225,6 +225,7 @@ export default async function EventDetailPage({ params }: PageProps) {
                     const countryCode = typeof meta.country_code === 'string' ? meta.country_code : null
                     const country = typeof meta.country === 'string' ? meta.country : undefined
                     const tier = typeof meta.tier === 'string' ? meta.tier : null
+                    const seasonRecord = typeof meta.season_record === 'string' ? meta.season_record : null
                     return (
                       <div key={p.id} className="flex items-center justify-between text-sm py-1">
                         <div className="flex items-center gap-2">
@@ -256,6 +257,9 @@ export default async function EventDetailPage({ params }: PageProps) {
                             }`}>
                               {tier}
                             </span>
+                          )}
+                          {seasonRecord && (
+                            <span className="text-text-muted text-xs">{seasonRecord}</span>
                           )}
                           {p.short_name && (
                             <span className="text-text-muted text-xs">{p.short_name}</span>
