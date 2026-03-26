@@ -633,7 +633,11 @@ export async function fetchHockeyTournamentGames(
   const games: ESPNHockeyGame[] = []
 
   try {
-    const url = `${SITE_API_BASE}/hockey/mens-college-hockey/scoreboard?dates=${year}&seasontype=3&limit=100`
+    // Use today's date (YYYYMMDD) — ESPN returns first 100 postseason games with just year,
+    // which misses late-season tournaments like the Frozen Four
+    const today = new Date()
+    const dateStr = today.toISOString().split('T')[0].replace(/-/g, '')
+    const url = `${SITE_API_BASE}/hockey/mens-college-hockey/scoreboard?dates=${dateStr}&limit=100`
     const { data } = await monitoredEventFetch(
       supabase,
       `events/hockey/ncaa/scoreboard?seasontype=3&year=${year}`,
