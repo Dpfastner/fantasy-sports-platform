@@ -18,13 +18,15 @@ jobs:
     steps:
       - name: Call event-gameday-sync endpoint
         run: |
-          response=$(curl -s -o /dev/null -w "%{http_code}" \
+          response=$(curl -sL -o /tmp/sync-response.txt -w "%{http_code}" \
             -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
             "${{ secrets.SITE_URL }}/api/cron/event-gameday-sync")
 
-          if [ "$response" -ge 500 ]; then
-            echo "Server error: HTTP $response"
+          echo "Response: HTTP $response"
+          cat /tmp/sync-response.txt | head -c 500
+          echo ""
+
+          if [ "$response" -ge 500 ] || [ "$response" -eq 401 ] || [ "$response" -eq 307 ]; then
+            echo "Error: HTTP $response"
             exit 1
           fi
-
-          echo "Response: HTTP $response"
