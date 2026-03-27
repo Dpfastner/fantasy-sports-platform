@@ -129,6 +129,7 @@ interface PoolDetailClientProps {
   userId: string | null
   rulesText: string | null
   hasFavoriteSchool: boolean
+  uniqueMembers: Member[]
   rosterSelectionCounts?: Record<string, number>
   /** All submitted entries' roster picks: entryId → participantIds */
   allRosterPicks?: Record<string, string[]>
@@ -150,6 +151,7 @@ export function PoolDetailClient({
   userId,
   rulesText,
   hasFavoriteSchool,
+  uniqueMembers,
   rosterSelectionCounts,
   allRosterPicks,
 }: PoolDetailClientProps) {
@@ -736,7 +738,7 @@ export function PoolDetailClient({
       )}
 
       {activeTab === 'members' && (
-        <MembersTab members={members} poolId={pool.id} isCreator={isCreator} userId={userId} />
+        <MembersTab members={uniqueMembers} poolId={pool.id} isCreator={isCreator} userId={userId} />
       )}
 
       {activeTab === 'settings' && (

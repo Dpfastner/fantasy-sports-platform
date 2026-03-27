@@ -349,6 +349,16 @@ export default async function PoolDetailPage({ params }: PageProps) {
     }
   })
 
+  // Deduplicate members by user_id for the Members tab
+  // Keep the first (highest-scoring) entry per user since members is already sorted by score
+  const seenUsers = new Set<string>()
+  const uniqueMembers = members.filter(m => {
+    if (!m.userId) return true // keep entries without user_id (shouldn't happen but safe)
+    if (seenUsers.has(m.userId)) return false
+    seenUsers.add(m.userId)
+    return true
+  })
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-gradient-from to-gradient-to">
       <Header
@@ -439,6 +449,7 @@ export default async function PoolDetailPage({ params }: PageProps) {
           userId={user?.id || null}
           rulesText={tournament.rules_text || null}
           hasFavoriteSchool={!!profile?.favorite_school_id}
+          uniqueMembers={uniqueMembers}
           rosterSelectionCounts={Object.keys(rosterSelectionCounts).length > 0 ? rosterSelectionCounts : undefined}
           allRosterPicks={Object.keys(allRosterPicks).length > 0 ? allRosterPicks : undefined}
         />

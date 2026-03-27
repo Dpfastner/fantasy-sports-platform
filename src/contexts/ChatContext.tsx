@@ -99,16 +99,21 @@ export function ChatContextProvider({ children }: { children: ReactNode }) {
       .select('pool_id, event_pools(id, name, created_by)')
       .eq('user_id', userId)
 
-    const poolChannels: Channel[] = (entries || []).map((e: { pool_id: string; event_pools: { id: string; name: string; created_by: string } | { id: string; name: string; created_by: string }[] | null }) => {
+    // Deduplicate by pool_id — user may have multiple entries in the same pool
+    const seenPools = new Set<string>()
+    const poolChannels: Channel[] = []
+    for (const e of (entries || []) as { pool_id: string; event_pools: { id: string; name: string; created_by: string } | { id: string; name: string; created_by: string }[] | null }[]) {
+      if (seenPools.has(e.pool_id)) continue
+      seenPools.add(e.pool_id)
       const pool = Array.isArray(e.event_pools) ? e.event_pools[0] : e.event_pools
-      return {
+      poolChannels.push({
         id: `pool:${e.pool_id}`,
         type: 'pool' as const,
         name: pool?.name || 'Pool',
         entityId: e.pool_id,
         isAdmin: pool?.created_by === userId,
-      }
-    })
+      })
+    }
 
     // Fetch DM conversations via API (avoids RLS complexity with browser client)
     let dmChannels: Channel[] = []

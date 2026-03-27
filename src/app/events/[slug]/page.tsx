@@ -79,7 +79,7 @@ export default async function EventDetailPage({ params }: PageProps) {
 
   // Get entry counts
   const poolIds = (allPools || []).map(p => p.id)
-  let entryCounts: Record<string, number> = {}
+  let memberCounts: Record<string, number> = {}
   let userPoolIds = new Set<string>()
 
   if (poolIds.length > 0) {
@@ -88,11 +88,17 @@ export default async function EventDetailPage({ params }: PageProps) {
       .select('pool_id, user_id')
       .in('pool_id', poolIds)
 
+    // Count unique users per pool (not entries) for accurate member count
+    const poolUsers: Record<string, Set<string>> = {}
     for (const entry of entries || []) {
-      entryCounts[entry.pool_id] = (entryCounts[entry.pool_id] || 0) + 1
+      if (!poolUsers[entry.pool_id]) poolUsers[entry.pool_id] = new Set()
+      if (entry.user_id) poolUsers[entry.pool_id].add(entry.user_id)
       if (user && entry.user_id === user.id) {
         userPoolIds.add(entry.pool_id)
       }
+    }
+    for (const [poolId, users] of Object.entries(poolUsers)) {
+      memberCounts[poolId] = users.size
     }
   }
 
@@ -105,7 +111,7 @@ export default async function EventDetailPage({ params }: PageProps) {
     )
     .map(p => ({
       ...p,
-      entry_count: entryCounts[p.id] || 0,
+      entry_count: memberCounts[p.id] || 0,
       is_member: userPoolIds.has(p.id),
     }))
 
