@@ -633,11 +633,15 @@ export async function fetchHockeyTournamentGames(
   const games: ESPNHockeyGame[] = []
 
   try {
-    // Use today's date (YYYYMMDD) — ESPN returns first 100 postseason games with just year,
-    // which misses late-season tournaments like the Frozen Four
+    // Fetch both today and yesterday (UTC) to cover US timezone offset.
+    // US evening games (e.g., 9 PM ET = March 26) are March 27 in UTC,
+    // so we need both dates to catch all active games.
     const today = new Date()
     const dateStr = today.toISOString().split('T')[0].replace(/-/g, '')
-    const url = `${SITE_API_BASE}/hockey/mens-college-hockey/scoreboard?dates=${dateStr}&limit=100`
+    const yesterday = new Date(today)
+    yesterday.setDate(yesterday.getDate() - 1)
+    const yesterdayStr = yesterday.toISOString().split('T')[0].replace(/-/g, '')
+    const url = `${SITE_API_BASE}/hockey/mens-college-hockey/scoreboard?dates=${yesterdayStr}-${dateStr}&limit=100`
     const { data } = await monitoredEventFetch(
       supabase,
       `events/hockey/ncaa/scoreboard?seasontype=3&year=${year}`,
