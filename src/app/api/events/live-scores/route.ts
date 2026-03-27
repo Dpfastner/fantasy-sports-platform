@@ -1,16 +1,18 @@
 /**
- * Live Scores API — On-demand ESPN score refresh.
+ * Live Scores API — On-demand ESPN score refresh for event tournaments.
  *
  * Called by client-side polling (every 30s) when games are live.
  * Checks staleness: if scores were updated <30s ago, returns cached DB data.
  * If stale, fetches ESPN, updates DB, triggers scoring if games completed.
+ *
+ * Supports: hockey, rugby, golf
  */
 
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/server'
 import { requireAuth } from '@/lib/auth'
 import { createRateLimiter, getClientIp } from '@/lib/api/rate-limit'
-import { syncHockeyScores } from '@/lib/events/sync-scores'
+import { syncHockeyScores, syncRugbyScores, syncGolfScores } from '@/lib/events/sync-scores'
 
 const limiter = createRateLimiter({ windowMs: 60_000, max: 10 })
 
@@ -31,7 +33,7 @@ export async function GET(request: NextRequest) {
   // Get tournament info
   const { data: tournament } = await admin
     .from('event_tournaments')
-    .select('id, sport, format, status')
+    .select('id, sport, format, status, config')
     .eq('id', tournamentId)
     .single()
 
@@ -55,30 +57,34 @@ export async function GET(request: NextRequest) {
   let syncResult = null
 
   if (isStale) {
-    // Fetch fresh scores from ESPN
+    const config = (tournament.config || {}) as Record<string, unknown>
+
     if (tournament.sport === 'hockey') {
       syncResult = await syncHockeyScores(admin, tournamentId)
+    } else if (tournament.sport === 'rugby') {
+      syncResult = await syncRugbyScores(admin, tournamentId, config)
+    } else if (tournament.sport === 'golf') {
+      syncResult = await syncGolfScores(admin, tournamentId, config)
+    }
 
-      // Trigger scoring if games newly completed
-      if (syncResult.newCompletions) {
-        try {
-          const scoreRes = await fetch(
-            `${process.env.NEXT_PUBLIC_SITE_URL || 'https://www.rivyls.com'}/api/events/score`,
-            {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ tournamentId }),
-            }
-          )
-          if (!scoreRes.ok) {
-            console.error('[live-scores] Scoring trigger failed:', scoreRes.status)
+    // Trigger scoring if games newly completed
+    if (syncResult?.newCompletions) {
+      try {
+        const scoreRes = await fetch(
+          `${process.env.NEXT_PUBLIC_SITE_URL || 'https://www.rivyls.com'}/api/events/score`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ tournamentId }),
           }
-        } catch (err) {
-          console.error('[live-scores] Scoring trigger error:', err)
+        )
+        if (!scoreRes.ok) {
+          console.error('[live-scores] Scoring trigger failed:', scoreRes.status)
         }
+      } catch (err) {
+        console.error('[live-scores] Scoring trigger error:', err)
       }
     }
-    // TODO: Add rugby, golf adapters when needed
   }
 
   // Return current game state from DB
@@ -88,8 +94,19 @@ export async function GET(request: NextRequest) {
     .eq('tournament_id', tournamentId)
     .order('game_number')
 
+  // For golf: also return participant metadata (leaderboard data)
+  let participants = null
+  if (tournament.sport === 'golf') {
+    const { data: parts } = await admin
+      .from('event_participants')
+      .select('id, name, short_name, seed, logo_url, external_id, metadata')
+      .eq('tournament_id', tournamentId)
+    participants = parts
+  }
+
   return NextResponse.json({
     games: games || [],
+    participants,
     synced: isStale,
     syncResult,
   })
