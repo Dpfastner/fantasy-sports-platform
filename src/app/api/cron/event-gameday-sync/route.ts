@@ -522,9 +522,12 @@ export async function GET(request: Request) {
     // ── Step 5: Trigger scoring for newly completed games ──
     // Also re-score any tournament that has completed games (safety net for missed scoring)
     const scoredTournaments = new Set<string>()
+    // Track which tournaments had genuinely new completions (for notifications)
+    const trulyNewCompletions = new Set(newlyCompleted.map(nc => nc.tournamentId))
 
     // Add tournaments with any completed games to ensure scoring runs even if
     // the newlyCompleted tracking missed a transition (e.g. cron failure, race condition)
+    // This is a safety net — re-scoring is idempotent but we skip notifications for these
     for (const tournament of tournaments) {
       const { count } = await admin.from('event_games')
         .select('id', { count: 'exact', head: true })
@@ -565,20 +568,22 @@ export async function GET(request: Request) {
         }
         results[`scoring_${tournamentId}`] = { triggered: true, format }
 
-        // Notify pool members about results (fire-and-forget)
-        const { data: scoredPools } = await admin
-          .from('event_pools')
-          .select('id, name, tournament_id, event_tournaments(slug)')
-          .eq('tournament_id', tournamentId)
-        for (const sp of scoredPools || []) {
-          const slug = (sp.event_tournaments as unknown as { slug: string })?.slug
-          notifyPoolMembers({
-            poolId: sp.id,
-            type: 'event_results',
-            title: 'Scores updated',
-            body: `Games have finished and scores have been updated in ${sp.name}.`,
-            data: { poolId: sp.id, tournamentSlug: slug },
-          })
+        // Only notify on genuinely new completions (not safety-net re-scores)
+        if (trulyNewCompletions.has(tournamentId)) {
+          const { data: scoredPools } = await admin
+            .from('event_pools')
+            .select('id, name, tournament_id, event_tournaments(slug)')
+            .eq('tournament_id', tournamentId)
+          for (const sp of scoredPools || []) {
+            const slug = (sp.event_tournaments as unknown as { slug: string })?.slug
+            notifyPoolMembers({
+              poolId: sp.id,
+              type: 'event_results',
+              title: 'Scores updated',
+              body: `Games have finished and scores have been updated in ${sp.name}.`,
+              data: { poolId: sp.id, tournamentSlug: slug },
+            })
+          }
         }
       } catch (err) {
         console.error(`[event-gameday-sync] Scoring error for ${tournamentId}:`, err)
