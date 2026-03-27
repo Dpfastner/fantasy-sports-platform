@@ -68,7 +68,8 @@ export async function GET(request: Request) {
       .lte('starts_at', `${todayStr}T23:59:59Z`)
       .order('starts_at', { ascending: true })
 
-    // Also check for carryover live games (started yesterday, still in progress)
+    // Also check yesterday's games (UTC) — US evening games are "yesterday" in UTC
+    // Include both live and scheduled since the sync may not have marked them live yet
     const yesterday = new Date(now)
     yesterday.setDate(yesterday.getDate() - 1)
     const yesterdayStr = yesterday.toISOString().split('T')[0]
@@ -77,7 +78,7 @@ export async function GET(request: Request) {
       .select('id, tournament_id, starts_at, status')
       .gte('starts_at', `${yesterdayStr}T00:00:00Z`)
       .lte('starts_at', `${yesterdayStr}T23:59:59Z`)
-      .eq('status', 'live')
+      .in('status', ['live', 'scheduled'])
 
     const allRelevantGames = [
       ...(todaysGames || []),
