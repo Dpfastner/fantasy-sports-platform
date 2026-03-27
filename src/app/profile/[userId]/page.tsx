@@ -156,11 +156,6 @@ export default async function PublicProfilePage({ params }: PageProps) {
               </div>
             )}
           </div>
-          {viewer && viewer.id !== userId && (
-            <div className="mt-4 pt-4 border-t border-border">
-              <BlockUserButton targetUserId={userId} initiallyBlocked={isBlocked} />
-            </div>
-          )}
         </div>
 
         {/* Trophy Case */}
@@ -189,6 +184,13 @@ export default async function PublicProfilePage({ params }: PageProps) {
             Get Started Free
           </Link>
         </div>
+
+        {/* Block user — intentionally at the bottom */}
+        {viewer && viewer.id !== userId && (
+          <div className="mt-6 text-center">
+            <BlockUserButton targetUserId={userId} initiallyBlocked={isBlocked} />
+          </div>
+        )}
       </main>
     </div>
   )

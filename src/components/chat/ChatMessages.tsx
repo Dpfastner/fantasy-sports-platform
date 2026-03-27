@@ -137,7 +137,22 @@ export function ChatMessages({ channelType, channelEntityId, currentUserId, isCo
   useEffect(() => {
     if (onSendRef) {
       onSendRef.current = (msg: ChatMessage) => {
-        setMessages(prev => prev.some(m => m.id === msg.id) ? prev : [...prev, msg])
+        setMessages(prev => {
+          if (prev.some(m => m.id === msg.id)) return prev
+          // Resolve reply_to from existing messages for optimistic rendering
+          if (msg.reply_to_id && !msg.reply_to) {
+            const replyMsg = prev.find(m => m.id === msg.reply_to_id)
+            if (replyMsg) {
+              msg = { ...msg, reply_to: {
+                id: replyMsg.id,
+                user_id: replyMsg.user_id || '',
+                message: replyMsg.message,
+                display_name: replyMsg.display_name || 'Unknown',
+              }}
+            }
+          }
+          return [...prev, msg]
+        })
       }
     }
     return () => { if (onSendRef) onSendRef.current = null }
