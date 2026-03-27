@@ -310,7 +310,7 @@ export function PoolDetailClient({
         ? (((pool.scoringRules?.draft_mode as string) === 'snake_draft' || (pool.scoringRules?.draft_mode as string) === 'linear_draft') ? 'Draft Room' : 'My Roster')
       : 'My Picks', requiresMember: true },
     { key: 'schedule', label: effectiveFormat === 'roster' ? 'Leaderboard' : 'Schedule' },
-    { key: 'members', label: `Members (${members.length})` },
+    { key: 'members', label: `Members (${uniqueMembers.length})` },
     { key: 'settings' as Tab, label: 'Settings' },
   ]
 

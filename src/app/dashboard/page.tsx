@@ -197,15 +197,20 @@ export default async function DashboardPage() {
       .select('id, name, status, tournament_id, event_tournaments(name, slug, sport, format, status)')
       .in('id', poolIds)
 
-    // Get entry counts per pool
+    // Get unique member counts per pool (not entry counts)
     const { data: allEntries } = await admin
       .from('event_entries')
-      .select('pool_id')
+      .select('pool_id, user_id')
       .in('pool_id', poolIds)
 
-    const countMap: Record<string, number> = {}
+    const poolUsers: Record<string, Set<string>> = {}
     for (const e of allEntries || []) {
-      countMap[e.pool_id] = (countMap[e.pool_id] || 0) + 1
+      if (!poolUsers[e.pool_id]) poolUsers[e.pool_id] = new Set()
+      if (e.user_id) poolUsers[e.pool_id].add(e.user_id)
+    }
+    const countMap: Record<string, number> = {}
+    for (const [poolId, users] of Object.entries(poolUsers)) {
+      countMap[poolId] = users.size
     }
 
     // Check for live games in each tournament

@@ -2,7 +2,7 @@
 
 > **Platform Name**: Rivyls (rivyls.com)
 > **Current Sport**: College Football (base for multi-sport expansion)
-> **Last Updated**: March 22, 2026 (Phases 0-32, 34, 36a-c, 37-42, Platform Audit, 43A-D, 44, 44b complete)
+> **Last Updated**: March 25, 2026 (Phases 0-32, 34, 36a-c, 37-42, Platform Audit, 43A-D, 44, 44b-c, 45a-b complete)
 > **Audit Date**: February 27, 2026 (full codebase audit of Phases 0-21)
 
 ---
@@ -52,8 +52,11 @@
     - Phase 37: Bracket Polish ✅
     - Phase 38: Multi-Entry Per User ✅
     - Phase 39: Event Polish — Toggle Styling, Legal/Help Audit ✅
-18. **UPCOMING**
-    - [Future Phases 33, 35, 36c-d, 40+](#future-phases)
+18. **COMPLETE — Pre-Launch & Live Operations**
+    - Phase 45a: Color Picker, DM Chat, Admin Cleanup ✅
+    - Phase 45b: Stripe SDK & Voluntary Contributions ✅
+19. **UPCOMING**
+    - [Future Phases](#future-phases)
 
 ---
 
@@ -462,14 +465,12 @@ Phase 23: Legal & Compliance           ████████████  ✅
 Phase 24: Schema Additions             ████████████  ✅ COMPLETE
 ```
 
-### SEASON 1 FEATURES — Build First
-
-*Free features and draft improvements needed before August 2026 season.*
+### SEASON 1 FEATURES — Complete
 
 ```
-Phase 25: Free Feature Enhancements     ████████░░░░  Presets ✅, Watchlist ✅, Announcements ✅, Chat ✅, notifications, history
-Phase 26: Draft Enhancements            ░░░░░░░░░░░░  Auto-pick, pause/resume
-Phase 27: Team-to-Team Trading          ░░░░░░░░░░░░  Trade proposals, review, veto (FREE tier)
+Phase 25: Free Feature Enhancements     ████████████  COMPLETE ✅
+Phase 26: Draft Enhancements            ████████████  COMPLETE ✅
+Phase 27: Team-to-Team Trading          ████████████  COMPLETE ✅
 ```
 
 ### PRE-LAUNCH — UX Polish
@@ -488,13 +489,12 @@ Phase 29: Mobile Responsiveness          ████████████  C
 Phase 30: Favorite Teams & Banners       ████████████  COMPLETE ✅
 ```
 
-### POST-LAUNCH / YEAR 2
+### POST-LAUNCH — Complete
 
 ```
-Phase 31: Historical Season Caching      ░░░░░░░░░░░░  Archive past seasons, returning users
-Phase 32: Multi-Sport Architecture       ░░░░░░░░░░░░  Year 2 expansion prep
+Phase 31: Historical Season Caching      ████████████  COMPLETE ✅
+Phase 32: Pre-Launch Tasks               ████████████  COMPLETE ✅
 Phase 34: Browser Push Notifications     ████████████  COMPLETE ✅
-Future Phases 33, 35, 40+                ░░░░░░░░░░░░  Year 2+ features (incl. email post-DNS)
 ```
 
 ### Visual Build Order
@@ -534,13 +534,10 @@ Phase 23 (Legal/Compliance)  ████████████  ✅ COMPLETE
         ↓
 Phase 24 (Schema Additions)  ████████████  ✅ COMPLETE
 
-━━━ SEASON 1 FEATURES (Build First) ━━━━━━━━━━━━━━━━━━━━━━━━━
-        ↓
-Phase 25 (Free Features)     ████████████  25.1 ✅ 25.2 ✅ 25.3 ✅ 25.4 ✅ 25.5 ✅ 25.6 ✅ 25.7 ✅
-        ↓
-Phase 26 (Draft Enhancements)░░░░░░░░░░░░
-        ↓
-Phase 27 (Trading — FREE)    ░░░░░░░░░░░░
+━━━ SEASON 1 FEATURES (Complete) ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Phase 25 (Free Features)     ████████████  COMPLETE ✅
+Phase 26 (Draft Enhancements)████████████  COMPLETE ✅
+Phase 27 (Trading — FREE)    ████████████  COMPLETE ✅
 
 ━━━ PRE-LAUNCH (UX Polish) ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         ↓
@@ -576,15 +573,19 @@ Phase 41a (Support Tickets)  ████████████  COMPLETE ✅
 Phase 42 (UX Friction Audit) ████████████  5/5 items done ✅
 Platform Audit (Pre-Tester)  ████████████  16/16 items done ✅
 
+━━━ PRE-LAUNCH & LIVE OPS (Complete) ━━━━━━━━━━━━━━━━━━━━━━━━
+Phase 43A-D (Game Rules/Biz/Simplify/Social) ████████████  COMPLETE ✅
+Phase 44, 44b, 44c (Audit/Support/Frozen Four) ████████████  COMPLETE ✅
+Phase 45a (Color Picker/DM/Admin) ████████████  COMPLETE ✅
+Phase 45b (Stripe SDK)       ████████████  COMPLETE ✅
+
 ━━━ UPCOMING ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Phase 41b (Claude AI)        ░░░░░░░░░░░░  Deferred (no API key yet)
+Phase 45c (Draft Improvements) ░░░░░░░░░░░░  TV mode, manual input, sound effects
+Phase 46 (Cross-Sport Continuity) ░░░░░░░░░░░░  CFB → CBB → Hockey → Baseball
+Phase 47 (Game Night Live)   ░░░░░░░░░░░░  Game Night Live + Halftime Heist
+Phase 48 (PWA & Mobile App)  ░░░░░░░░░░░░  PWA manifest, Capacitor wrapper
 Phase 33 (Email Notifs)      ░░░░░░░░░░░░  Blocked until DNS transfer (Apr 21)
-Phase 35b (Pro Infrastructure)░░░░░░░░░░░░  Feature gating, Pro badge, Founding status
-Phase 35c (Pro Features)     ░░░░░░░░░░░░  AI Draft Assistant, Projections, etc.
-Phase 35a (Stripe Billing)   ░░░░░░░░░░░░  Subscriptions, checkout, customer portal
-Phase 35d (New Game Modes)   ░░░░░░░░░░░░  H2H Matchups, Conference Leagues
-Phase 36d (Multi-Sport)      ░░░░░░░░░░░░  Summer 2026
-Future Phases 43, 44         ░░░░░░░░░░░░
+Phase 49+ (Future)           ░░░░░░░░░░░░  Rivalry Wagers, Campus Conquest, and more
 ```
 
 ### June Deadline Decision Framework
@@ -1784,30 +1785,35 @@ This breaks leagues mid-season. A team vanishing from the leaderboard with all h
 | Phase | Features | Notes | Timeline |
 |-------|----------|-------|----------|
 | **Phase 33** | Email Notifications | Transactional emails via Resend: draft reminders, trade proposals, weekly recaps, commissioner nudge delivery, pre-season reactivation reminders. Unsubscribe links on all non-transactional (CAN-SPAM). Extends Phase 25.5 in-app notifications + Phase 31.4/31.5 commissioner notifications. Uses `notification_preferences` schema from Phase 14.12. **Blocked until DNS transfer to Cloudflare (April 21, 2026).** | Post-Apr 21 |
-| **Phase 34** ✅ | Browser Push Notifications | Service worker + Web Push API. VAPID auth, per-type push preferences (push_draft, push_game_results, etc.), auto-prompt on first login, dead subscription cleanup, fire-and-forget delivery integrated into createNotification/notifyLeagueMembers/notifyDraftPickThrottled. Settings UI with master toggle + 7 per-type toggles. Migrations: 043 (push_subscriptions), 044 (per-type prefs), 045 (default push_enabled=true). | ✅ Mar 12, 2026 |
-| **Phase 35** | Pro Tier + Stripe | **Additive features only** — do NOT gate existing features (per business strategy). Split into sub-phases: **35b** Pro infrastructure (feature gating, Pro badge, Founding Commissioner logic), **35c** Pro features (AI Draft Assistant, Season Projections, Transaction Intelligence, Live Game Insights, Waiver Wire Rankings), **35a** Stripe billing ($4.99/mo or $29.99/yr, checkout, customer portal, webhooks), **35d** New game modes (H2H Weekly Matchups, Conference-Specific Leagues). Implementation order: 35b → 35c → 35a → 35d. | Year 2 |
-| **Phase 36a** ✅ | Event System Core (Tier 0) | Database schema (migrations 046-048): `event_tournaments`, `event_pools`, `event_entries`, `event_picks`, `event_games`, `event_participants`, `event_pool_weeks`, `event_activity_log`. Three game engines: bracket, pick'em, survivor. ESPN adapters for hockey/rugby/golf. Event pages: `/events`, `/events/[slug]`, `/events/[slug]/pools/[poolId]`. Seeded Frozen Four 2026 (16 teams, 15 games). Pool create/join flow with invite codes. Bracket picker, pick'em picker, survivor picker UIs. Leaderboard component. `event-sync` cron (6-hourly). | ✅ Mar 12, 2026 |
-| **Phase 36b** ✅ | Event Pool Feature Parity | **Live scores**: `event-gameday-sync` cron (GitHub Actions, every 10min, smart windowing 30min before→4hr after games). Period/clock/live_status columns on `event_games`. **Pool detail parity**: Activity feed, chat + reactions, announcements (creator-only), schedule view with live scores, scoring breakdown on all 3 picker formats, rules display. **Scoring customization**: Per-round point values with presets (Standard, Upset Heavy, Final Four Focus). **Share/invite**: ShareButton with social sharing (X, Facebook, WhatsApp, Instagram, TikTok), OG image generation (`/api/og/pool`), OpenGraph + Twitter Card metadata. **Dashboard**: Live game badges on event cards, "Events" in header nav. **Notifications**: Pool joined, deadline reminders (24hr), results posted, elimination/survived, tournament starting — all wired into existing `createNotification`/`notifyPoolMembers` with preference checking. **DB fix**: Code referenced nonexistent `score`/`rank` columns on `event_entries` — fixed to use `total_points` (rank computed at read time). | ✅ Mar 12, 2026 |
-| **Phase 36c** ✅ | Event System Remaining | **Member management**: Remove member API + Members tab UI (kick with activity logging, pick status display). **Additional sports**: Masters Tournament (golf roster/pick'em — parallel chat), Women's Six Nations (survivor, seeded), Men's Six Nations (pick'em, seeded). **Polish**: Unsaved changes detection on settings, "Start Your Bracket" hero CTA, collapsible rules section, team logos in sidebar, pool overview reordered to match league (Announcements → Leaderboard → Chat → Activity), chat height capped at 300px, leaderboard shows Pts/Max when picks submitted, Custom scoring preset button, pool settings save bug fixed. | ✅ Mar 13, 2026 |
-| **Phase 36d** | Multi-Sport Season Engine (Tier 1) | Full multi-sport season refactor. Add Men's/Women's CBB, NCAA Hockey, College Baseball, Women's Volleyball. **Tier 2 (Year 1)**: WNBA, MLS, Softball, Lacrosse, March Madness, annual events. **Tier 3 (Year 2+)**: NFL (Winner/Loser format), Premier League, Champions League, Liga MX, NBA/MLB/NHL (innovative formats). | Tier 1: Summer 2026, Tier 2-3: Year 1-2 |
-| **Phase 37** ✅ | Bracket Polish | Tiebreaker validation (championship_score requires championship game exists), named brackets with display_name on entries, profile links from leaderboard, live bracket view with real-time game scores, champion display fix (gameMap lookup instead of BracketGame.winnerId), later round date display. Migration: 049_named_brackets.sql. | ✅ Mar 12, 2026 |
-| **Phase 38** ✅ | Multi-Entry Per User | Allow multiple bracket entries per pool (pool setting `max_entries_per_user`, default 1). Dropped unique constraint on `event_entries(pool_id, user_id)`. Entry selector UI with pill buttons + "+ Add Entry". Count-based join validation. Server page returns `userEntries[]` array with `userPicksByEntry` record. Settings tab includes entries-per-user select (1/3/5/10). New API: `POST /api/events/pools/[poolId]/entries`. Migration: 050_multi_entry.sql. | ✅ Mar 12, 2026 |
-| **Phase 39** ✅ | Event Polish — Toggle Styling, Legal/Help Audit | Schedule/Bracket toggle restyled to match league toggle (full-width, `flex-1 py-3 px-4 text-sm`, `bg-brand`/`bg-accent` active states). Terms of Service updated: Section 4 now covers prediction-based games (bracket, pick'em, survivor), multi-sport, free-to-play status. Help Center: added "Events & Prediction Games" FAQ category (6 Q&As). | ✅ Mar 12, 2026 |
-| **Phase 40** ✅ | Unified Dashboard Redesign | **Header**: Sleeper-inspired minimal header — logo only, no nav text links, hamburger menu on mobile. **Dashboard**: Unified leagues + events view with full-width sections (Fan Zone transparent, Locker Room bg-surface, Featured Events bg-tertiary with bg-card-neutral cards, Past & Completed bg-surface). Live status badges, quick-action buttons. 4 sports (CFB, Hockey, Golf, Rugby) in sports-config.ts. **Toast**: Single bottom-right Toast component (111+ usages). **Navigation**: BackButton component. **Landing/Welcome**: 4 clickable sport cards linking to signup with sport context, "Sign Up Free" CTA, events page ?sport= filter. **Palette**: card-neutral/card-text/card-text-muted tokens, Heritage/Royal neutral fix (Tailwind neutral collision). | ✅ Mar 13, 2026 |
-| **Phase 41a** ✅ | Support Ticket System | Enhance `issue_reports` into ticket system with conversation threads (`ticket_responses` table, migration 054). User-facing `/support` pages (ticket list + thread detail). Shared `TicketThread` and `TicketReplyForm` components. Admin ticket detail at `/admin/reports/[reportId]` with status/priority management, admin notes. API routes for ticket CRUD and responses. `support_response` notification type. | ✅ Mar 13, 2026 |
-| **Phase 41b** | Claude AI Integration (Deferred) | Auto-triage on submission (priority, category, summary), admin-triggered suggested responses, FAQ knowledge base search. Uses `@anthropic-ai/sdk` with Sonnet. Claude never auto-responds — admin reviews all. **Deferred until Anthropic API key is set up.** Admin UI shows "AI not configured" placeholder. | Deferred |
-| **Phase 42** ✅ | UX Friction Audit | **5 items**: (1) League Settings — extracted 2,105-line page into 6 sub-components + shared types (BasicSettings, RosterSettings, ScoringSettings, TransactionSettings, DraftSettings, MembersSettings). (2) Notification Settings — collapsible category groups with master toggles (In-App/Push/Email). (3) Pool Detail — extracted MembersTab + SettingsTab components. (4) Trade System — single-view trade builder with chip selections, inline drop picker, live roster preview. (5) Event Entry Identity — wired up existing customization columns to entry pills + members tab. | ✅ Mar 13, 2026 |
-| **Platform Audit** ✅ | Pre-Tester Launch Standardization | Full audit of leagues vs events for uniformity. **API safety**: Added Sentry to all 21 missing routes (16 league + 5 event), rate limiting to 17 routes (7 league + 10 event), try/catch to standings route. **UX consistency**: PoolChat error toasts, BracketPicker/SurvivorPicker router.refresh(), URL-based tabs (?tab=), ErrorBoundary wrappers on all event components, loading.tsx skeletons for 3 event pages, activity feed 30s polling, announcements 60s polling. **UI fixes**: Typography standardization (brand-h3), form placeholder styling, empty state padding/card wrappers, PoolChat input rounding. **Cleanup**: Removed 4 legacy scrollTo calls from league settings. **Survivor standardized**: Default tiebreaker set to first_match_score, tiebreaker column in leaderboard with sorting. | ✅ Mar 13, 2026 |
-| **Phase 43A** ✅ | Game Rules, Feature Test & Multi-Sport Abstraction | Created `docs/GAME_RULES.md` (core game rules, feature test filter, multi-sport scoring table). Built sport scoring registry (`src/lib/scoring/sport-scoring-registry.ts` — `SportScoringConfig` with CFB's 21 fields + 4 presets). Built sport season config (`src/lib/constants/sport-seasons.ts` — `SportSeasonConfig` with CFB week 0-22 structure). Migration 055: `scoring_values JSONB` column on `league_settings` with backfill. Refactored `scoring-presets.ts`, `season.ts`, `week.ts` to read from registries. Added `SportCalculator` interface to `points/shared.ts`. Created sport calculator router (`points/index.ts`). All 149 tests pass, build clean. | ✅ Mar 15, 2026 |
-| **Phase 43B** ✅ | Business Doc Updates | Updated `BUSINESS_STATUS.md` (metrics: 60+ tables, 73 routes, 43 pages, 63 components, 62 migrations; added Phases 32-43C; fixed outdated age gate warning, legal section, Claude Code tasks, multi-sport section, checklist). Updated `BUSINESS_UPDATE_FOR_CLAUDE_CODE.md` (marked completed items: age gate, ESPN monitoring, manual override, FAQ, multi-sport arch; fixed phase numbers; updated priority order). | ✅ Mar 15, 2026 |
-| **Phase 43C** ✅ | Platform Simplification | **Progressive disclosure across 6 areas**: (1) League creation — 5 fields + "Customize" expander (was 9 fields). (2) Scoring settings — preset summary view, 21 fields only shown for Custom. (3) Settings page — Quick Setup mode (scoring preset, draft type/date, max teams) with "Show All Settings" to reveal full tabs; auto-advances to advanced if custom scoring. (4) League join — invite code primary view, browse as text link below, step indicators removed. (5) League detail sidebar — 3 static cards (League Info, Key Dates, League History) collapsed to 1 dynamic card with `<details>` expander. (6) First-visit explainer — dismissible localStorage one-liner on league page. No features removed; social features stay visible. | ✅ Mar 15, 2026 |
-| **Phase 43D** ✅ | Social Features | Chat sidebar, DMs, @mentions with notifications, GIPHY integration, trash talk prompts, reaction detail view, commissioner message pinning, native Web Share API, bulletin board with scheduled posts, weekly recap share. Migrations 056-057. | ✅ Mar 15, 2026 |
-| **Phase 44** ✅ | Game Audit — Rivalry Board, Nav Cleanup | Renamed "Leaderboard" → "Rivalry Board" across all user-facing text (LeaderboardClient, PoolDetailClient tabs, landing page, share copy). Bracket nav item hidden during regular season, shown postseason only (Week 15+) via LeagueContext `currentWeek`. Added `sportSlug` prop to LeaderboardClient for future multi-sport. Added `currentWeek` and `sportSlug` to LeagueContext. Event format audit confirmed RosterPicker tier config already reads from `scoring_rules` JSONB. | ✅ Mar 15, 2026 |
-| **Phase 44b** ✅ | Support Page (Voluntary Contributions) | Moved support ticket system from `/support` → `/tickets` (updated 4 references: `ReportIssue.tsx` toast, `notifications.ts` deep-links, `[reportId]` redirect + back link). Created `/support` page — voluntary contributions via Stripe Payment Links (external URLs, no backend). 6 sections: header, legal disclaimer callout (border-l brand), "Where your support goes" 2×2 card grid, $3/$5/$10/Custom amount buttons, alternative support (ShareButton reuse), tax disclaimer. Env vars `NEXT_PUBLIC_STRIPE_SUPPORT_3/5/10/CUSTOM` with graceful disabled fallback when not set. Footer link "Support Rivyls" added. No auth required, palette-aware, no "donation" language (NAICS 713990 positioning). | ✅ Mar 22, 2026 |
-| **Phase 44c** ✅ | Frozen Four Bracket Audit & UX | **Bracket audit (5 critical fixes):** (1) Fixed scoring rules mismatch — `DEFAULT_BRACKET_SCORING` used wrong round names (`round_1`/`quarterfinal` vs actual `regional_quarterfinal`/`regional_final`); added `DEFAULT_FROZEN_FOUR_SCORING`; fixed empty-object `scoring_rules` check in score route that caused all picks to score 0. (2) Fixed ESPN live scoring — extended `syncHockeyLogos` to store ESPN team IDs on participants; added team-name fallback matching in gameday-sync cron for hockey (writes back `external_id` on match). (3) Updated teams with actual 2026 NCAA bracket from ESPN (16 teams with ESPN IDs, per-game start times, ESPN event IDs on games). (4) Wired `validateBracketConsistency` into pick submission to reject impossible brackets. (5) Added bracket completeness tracking (`is_complete`, `pick_count` in entry metadata; partial saves allowed). **Copy bracket feature:** `GET /api/events/picks/copyable` endpoint + `CopyBracketButton` component lets users copy picks from one pool to another for the same tournament. **Bracket naming UX:** Inline "Name your bracket" input in BracketPicker with auto-save on blur via `saveEntryName` server action. **Rivalry Board two-line display:** Leaderboard shows entry name (line 1, bold) + user name (line 2, muted) when entry has a display_name. **View other brackets:** Clicking entry name on Rivalry Board opens `ViewBracketModal` showing that user's full bracket (read-only) with tiebreaker prediction and score. **Naming fix:** Roster Schedule tab renamed from "Rivalry Board" → "Leaderboard" (shows tournament golfer standings); "Rivalry Board" heading added above user standings on Overview tab. Fixed `generateBracketStructure(16)` round names to match actual game data. | ✅ Mar 22-23, 2026 |
-| **Phase 45** | Ads Infrastructure | Non-intrusive ads on free tier (footer banners, interstitials between pages — NOT during drafts or live scoring). Pro users see no ads. Ad impression tracking for revenue reporting. | Year 2 |
-| **Phase 46** | Mobile App | PWA manifest + service worker (installable web app), then Capacitor wrapper for App Store ($99/yr Apple + $25 Google). Full native iOS/Android via Expo + React Native for Year 2-3. Native push, offline support, App Store presence. | Year 2 |
-| **Phase 47** | Cross-Sport League Continuity | Commissioners continue leagues into next NCAA sport (CFB → CBB → Hockey → Baseball). Migration: `sport_slug` on `league_seasons`, `original_sport_id` on `leagues`. New `/api/leagues/[id]/continue` route. Mid-season entry allowed. Multi-sport history display with sport icons per archived season. | Year 1-2 |
+| **Phase 34** ✅ | Browser Push Notifications | Service worker, Web Push API, VAPID auth, per-type push preferences, dead subscription cleanup. Migrations 043-045. | ✅ Mar 12, 2026 |
+| **Phase 35** | Pro Tier + Stripe | Additive features only (no gating). Sub-phases: 35b (Pro infrastructure), 35c (Pro features), 35a (Stripe billing $4.99/mo), 35d (new game modes). Stripe foundation already built in Phase 45b. | Year 2 |
+| **Phase 36a** ✅ | Event System Core (Tier 0) | Event schema (migrations 046-048), 3 game engines (bracket/pick'em/survivor), ESPN adapters, event pages, pool create/join, Frozen Four seeded. | ✅ Mar 12, 2026 |
+| **Phase 36b** ✅ | Event Pool Feature Parity | Live scores via gameday-sync cron, pool chat/announcements/activity feed, scoring customization with presets, share/invite with OG images, dashboard live badges, notifications. | ✅ Mar 12, 2026 |
+| **Phase 36c** ✅ | Event System Remaining | Member management, Masters/Six Nations seeded, pool overview reordered, team logos, custom scoring preset, settings save bug fixed. | ✅ Mar 13, 2026 |
+| **Phase 36d** | Multi-Sport Season Engine (Tier 1) | Full multi-sport season refactor. CBB, NCAA Hockey, College Baseball, Women's Volleyball. Tier 2: WNBA, MLS, Softball, Lacrosse. Tier 3: NFL, Premier League, Champions League, NBA/MLB/NHL. **Open items:** (1) Automated team record fetching per sport — ESPN API returns full records for football but only partial for hockey; ESPN rankings pages are client-rendered (JS) so server-side scraping fails. Need a scalable solution (per-sport API adapters, headless browser, or manual seed with records). (2) Sport-specific data source mapping — which ESPN endpoints/polls provide accurate data per sport. (3) `schools` table sport filtering — queries that fetch schools by ID should filter by `sport_id` to prevent cross-sport data leaking into single-sport leagues. | Summer 2026+ |
+| **Phase 46a** | Event Pool Members Table | Create `event_pool_members` table to formally separate membership from entries. Currently `event_entries` serves as both bracket submissions AND membership — multi-entry users appear as duplicates without client-side dedup. New table: `event_pool_members (pool_id, user_id, role, joined_at)` with unique constraint. Enables pool-level roles (admin/member), bans, membership independent of entries. Migrate all membership queries from event_entries to event_pool_members. Backfill from existing entries. | Future |
+| **Phase 37** ✅ | Bracket Polish | Tiebreaker validation, named brackets, profile links, live bracket view, champion display fix. Migration 049. | ✅ Mar 12, 2026 |
+| **Phase 38** ✅ | Multi-Entry Per User | Multiple bracket entries per pool (`max_entries_per_user`), entry selector UI, count-based validation. Migration 050. | ✅ Mar 12, 2026 |
+| **Phase 39** ✅ | Event Polish | Schedule/Bracket toggle restyled, ToS updated for prediction games, Help Center FAQ added. | ✅ Mar 12, 2026 |
+| **Phase 40** ✅ | Unified Dashboard Redesign | Sleeper-inspired header, unified leagues+events dashboard, Toast component, BackButton, sport cards on landing page. | ✅ Mar 13, 2026 |
+| **Phase 41a** ✅ | Support Ticket System | Ticket system with conversation threads, user-facing `/tickets` pages, admin management. Migration 054. | ✅ Mar 13, 2026 |
+| **Phase 41b** | Claude AI Integration (Deferred) | Auto-triage, suggested responses, FAQ search. **Deferred until Anthropic API key is set up.** | Deferred |
+| **Phase 42** ✅ | UX Friction Audit | 5 items: League Settings extraction (6 sub-components), notification settings groups, pool detail extraction, trade builder, event entry identity. | ✅ Mar 13, 2026 |
+| **Platform Audit** ✅ | Pre-Tester Launch Standardization | Sentry on 21 routes, rate limiting on 17 routes, UX consistency fixes, typography standardization, survivor standardized. | ✅ Mar 13, 2026 |
+| **Phase 43A** ✅ | Game Rules & Multi-Sport Abstraction | Game rules doc, sport scoring registry, sport season config, `scoring_values` JSONB migration 055, sport calculator router. | ✅ Mar 15, 2026 |
+| **Phase 43B** ✅ | Business Doc Updates | Updated BUSINESS_STATUS.md and BUSINESS_UPDATE_FOR_CLAUDE_CODE.md with current metrics and completed phases. | ✅ Mar 15, 2026 |
+| **Phase 43C** ✅ | Platform Simplification | Progressive disclosure across 6 areas: league creation, scoring settings, settings page, league join, sidebar, first-visit explainer. | ✅ Mar 15, 2026 |
+| **Phase 43D** ✅ | Social Features | Chat sidebar, DMs, @mentions, GIPHY, trash talk prompts, pinning, bulletin board, weekly recap share. Migrations 056-057. | ✅ Mar 15, 2026 |
+| **Phase 44** ✅ | Game Audit — Rivalry Board, Nav Cleanup | "Leaderboard" renamed to "Rivalry Board", bracket nav conditional on postseason, `sportSlug` prop added. | ✅ Mar 15, 2026 |
+| **Phase 44b** ✅ | Support Page (Voluntary Contributions) | `/support` page with Stripe Payment Links, `/tickets` for support tickets, footer link, palette-aware. | ✅ Mar 22, 2026 |
+| **Phase 44c** ✅ | Frozen Four Bracket Audit & UX | 5 scoring/sync fixes, copy bracket feature, inline bracket naming, ViewBracketModal, two-line Rivalry Board display, actual 2026 NCAA bracket seeded. | ✅ Mar 22-23, 2026 |
+| **Phase 45a** ✅ | Color Picker, DM Chat, Admin Cleanup | Team color picker, DM chat improvements, admin panel cleanup. | ✅ Mar 24, 2026 |
+| **Phase 45b** ✅ | Stripe SDK & Voluntary Contributions | Installed `stripe` npm package. Created `/src/lib/stripe.ts` (Stripe client, `getOrCreateCustomer()`, `createCheckoutSession()`, `createPortalSession()`). Created `/src/app/api/stripe/checkout/route.ts` (Checkout Sessions for support contributions). Created `/src/app/api/stripe/portal/route.ts` (customer portal for payment management). Created `/src/app/api/webhooks/stripe/route.ts` (handles `checkout.session.completed` + `charge.refunded`, awards Supporter badge, logs donations, sends admin email notification). Created `/src/app/support/SupportButtons.tsx` ($5/$10/$20 presets + custom amount, embedded Stripe Checkout). Migration 059: `donations` table + `stripe_customer_id` on profiles + Supporter badge definition. Future-proofed: customer creation, portal, webhook infrastructure ready for Year 2 Pro subscriptions. | ✅ Mar 25, 2026 |
+| **Phase 45c** | Draft Improvements | TV mode for live drafts, manual player input, sound effects for draft events. | Next |
+| **Phase 46** | Cross-Sport League Continuity | Commissioners continue leagues into next NCAA sport (CFB → CBB → Hockey → Baseball). Migration: `sport_slug` on `league_seasons`, `original_sport_id` on `leagues`. New `/api/leagues/[id]/continue` route. Mid-season entry allowed. Multi-sport history display with sport icons per archived season. | Year 1-2 |
+| **Phase 47** | Game Night Live + Halftime Heist | Live game night experience with real-time engagement features and halftime prediction mini-games. **Pre-req (before Aug 2026):** Wire client-side live score polling to CFB league pages (endpoint `/api/leagues/live-scores` already built, needs client `useEffect` polling in league schedule/standings pages). Also: update `IMPLEMENTATION_PLAN.md` live scoring architecture docs — GitHub Actions is now a backup, client-side polling is primary. | Year 1-2 |
+| **Phase 48** | PWA & Mobile App | PWA manifest + service worker (installable web app), then Capacitor wrapper for App Store ($99/yr Apple + $25 Google). Full native iOS/Android via Expo + React Native for Year 2-3. Native push, offline support, App Store presence. | Year 2 |
+| **Phase 49+** | Future Game Modes | Rivalry Wagers, Campus Conquest, Time Capsules, Chaos Mode, Dynasty/Keeper, Auction Draft, Stock Market, AI Commentator. | Year 2+ |
 
 ---
 
@@ -1891,6 +1897,7 @@ The platform is classified as recreation/entertainment, NOT gambling. This means
 | Error Monitoring | Sentry | @sentry/nextjs ^10.40.0 |
 | Testing | Vitest | ^4.0.18 |
 | Analytics | Vercel Analytics | @vercel/analytics ^1.6.1 |
+| Payments | Stripe | stripe ^20.4.1 |
 | External Data | ESPN API | Public endpoints |
 | CI/CD | GitHub Actions | ci.yml, gameday-sync.yml, nightly-reconcile.yml |
 | Hosting | Vercel | — |
@@ -1898,4 +1905,4 @@ The platform is classified as recreation/entertainment, NOT gambling. This means
 
 ---
 
-*Last Updated: March 22, 2026 (Phases 0-44b COMPLETE)*
+*Last Updated: March 25, 2026 (Phases 0-44c, 45a-b COMPLETE)*
