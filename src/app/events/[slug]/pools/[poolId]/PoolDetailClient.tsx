@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
@@ -187,6 +187,68 @@ export function PoolDetailClient({
 
     return () => { supabase.removeChannel(channel) }
   }, [pool.id])
+
+  // Live game scores: poll when games are live or starting soon
+  const [liveGames, setLiveGames] = useState(games)
+  useEffect(() => { setLiveGames(games) }, [games])
+  const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null)
+
+  const hasLiveOrUpcoming = useCallback(() => {
+    const now = Date.now()
+    return liveGames.some(g =>
+      g.status === 'live' ||
+      (g.status === 'scheduled' && new Date(g.startsAt).getTime() - now < 15 * 60 * 1000)
+    )
+  }, [liveGames])
+
+  useEffect(() => {
+    if (!hasLiveOrUpcoming()) return
+
+    const poll = async () => {
+      // Skip if tab is hidden
+      if (document.hidden) return
+      try {
+        const res = await fetch(`/api/events/live-scores?tournamentId=${tournament.id}`)
+        if (!res.ok) return
+        const data = await res.json()
+        if (data.games?.length) {
+          setLiveGames(data.games.map((g: Record<string, unknown>) => ({
+            id: g.id as string,
+            round: g.round as string,
+            gameNumber: g.game_number as number,
+            participant1Id: g.participant_1_id as string | null,
+            participant2Id: g.participant_2_id as string | null,
+            participant1Score: g.participant_1_score as number | null,
+            participant2Score: g.participant_2_score as number | null,
+            startsAt: g.starts_at as string,
+            status: g.status as string,
+            result: g.result as Record<string, unknown> | null,
+            period: g.period as string | null,
+            clock: g.clock as string | null,
+            liveStatus: g.live_status as string | null,
+            winnerId: g.winner_id as string | null,
+          })))
+        }
+      } catch {
+        // Silent fail — next poll will retry
+      }
+    }
+
+    // Poll immediately, then every 30 seconds
+    poll()
+    pollingRef.current = setInterval(poll, 30_000)
+
+    // Pause/resume on visibility change
+    const onVisibility = () => {
+      if (!document.hidden) poll()
+    }
+    document.addEventListener('visibilitychange', onVisibility)
+
+    return () => {
+      if (pollingRef.current) clearInterval(pollingRef.current)
+      document.removeEventListener('visibilitychange', onVisibility)
+    }
+  }, [hasLiveOrUpcoming, tournament.id])
 
   const setActiveTab = (tab: Tab) => {
     setActiveTabState(tab)
@@ -584,7 +646,7 @@ export function PoolDetailClient({
             tournament={tournament}
             activeEntry={activeEntry}
             participants={participants}
-            games={games}
+            games={liveGames}
             existingPicks={activeEntryPicks}
             poolWeeks={poolWeeks}
             members={members}
@@ -663,7 +725,7 @@ export function PoolDetailClient({
         ) : (
           <ErrorBoundary sectionName="Schedule">
           <ScheduleView
-            games={games}
+            games={liveGames}
             participants={participants}
             format={effectiveFormat}
             tournamentId={tournament.id}
@@ -696,7 +758,7 @@ export function PoolDetailClient({
           primaryColor={viewingMember.primaryColor}
           secondaryColor={viewingMember.secondaryColor}
           imageUrl={viewingMember.imageUrl}
-          games={games.map(g => ({
+          games={liveGames.map(g => ({
             id: g.id,
             round: g.round,
             gameNumber: g.gameNumber,
