@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { useChatContext, Channel } from '@/contexts/ChatContext'
 import { ChannelList } from './ChannelList'
-import { ChatMessages, ChatMessage } from './ChatMessages'
+import { ChatMessages, ChatMessage, ReplyingTo } from './ChatMessages'
 import { ChatInput } from './ChatInput'
 
 const TYPE_ICONS: Record<Channel['type'], string> = {
@@ -26,6 +26,7 @@ export function ChatSidebar() {
   const dropdownRef = useRef<HTMLDivElement>(null)
   const triggerRef = useRef<HTMLButtonElement>(null)
   const sendRef = useRef<((msg: ChatMessage) => void) | null>(null)
+  const [replyingTo, setReplyingTo] = useState<ReplyingTo | null>(null)
 
   // Delay render until after first paint so sidebar doesn't flash before page content
   useEffect(() => {
@@ -136,6 +137,7 @@ export function ChatSidebar() {
     setShowChannelDropdown(false)
     setPendingDmPicker(false)
     setShowPinnedOnly(false)
+    setReplyingTo(null)
   }
 
   return (
@@ -256,6 +258,7 @@ export function ChatSidebar() {
               isCommissioner={activeChannel.isAdmin}
               onSendRef={sendRef}
               showPinnedOnly={showPinnedOnly}
+              onReply={setReplyingTo}
             />
             <ChatInput
               channelType={activeChannel.type}
@@ -263,6 +266,8 @@ export function ChatSidebar() {
               currentUserId={userId}
               currentDisplayName={displayName}
               onMessageSent={(msg) => sendRef.current?.(msg)}
+              replyingTo={replyingTo}
+              onCancelReply={() => setReplyingTo(null)}
             />
           </div>
         ) : (

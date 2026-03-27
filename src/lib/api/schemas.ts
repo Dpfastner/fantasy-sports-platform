@@ -101,6 +101,7 @@ export const announcementUpdateSchema = z.object({
 
 export const chatMessageSchema = z.object({
   message: z.string().min(1, 'Message is required').max(500, 'Message too long'),
+  replyToId: z.string().uuid().optional().nullable(),
 })
 
 export const reactionToggleSchema = z.object({
@@ -112,6 +113,7 @@ export const reactionToggleSchema = z.object({
 
 export const poolChatMessageSchema = z.object({
   message: z.string().min(1, 'Message is required').max(2000, 'Message too long'),
+  replyToId: z.string().uuid().optional().nullable(),
 })
 
 // ── Draft Chat ──────────────────────────────────────────────

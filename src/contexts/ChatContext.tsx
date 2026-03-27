@@ -13,6 +13,7 @@ export interface Channel {
   imageUrl?: string
   entityId: string // leagueId, poolId, or conversationId
   isAdmin?: boolean // commissioner/co-commissioner for leagues, creator for pools
+  partnerId?: string // for DM channels — the other user's ID
 }
 
 interface ChatContextValue {
@@ -26,6 +27,7 @@ interface ChatContextValue {
   unreadCounts: Record<string, number>
   userId: string | null
   refreshChannels: () => void
+  blockedIds: Set<string>
 }
 
 const ChatContext = createContext<ChatContextValue | null>(null)
@@ -47,6 +49,7 @@ export function ChatContextProvider({ children }: { children: ReactNode }) {
   const [channels, setChannels] = useState<Channel[]>([])
   const [unreadCounts, setUnreadCounts] = useState<Record<string, number>>({})
   const [userId, setUserId] = useState<string | null>(null)
+  const [blockedIds, setBlockedIds] = useState<Set<string>>(new Set())
 
   // Persist sidebar open state
   const setIsOpen = useCallback((open: boolean) => {
@@ -68,6 +71,18 @@ export function ChatContextProvider({ children }: { children: ReactNode }) {
       }
     })
   }, [])
+
+  // Fetch blocked user IDs when userId is available
+  useEffect(() => {
+    if (!userId) return
+    fetch('/api/users/blocked')
+      .then(res => res.ok ? res.json() : { blockedUsers: [] })
+      .then(data => {
+        const ids = new Set<string>((data.blockedUsers || []).map((u: { id: string }) => u.id))
+        setBlockedIds(ids)
+      })
+      .catch(() => { /* silently fail */ })
+  }, [userId])
 
   // Fetch channels when userId is available
   const refreshChannels = useCallback(async () => {
@@ -121,11 +136,12 @@ export function ChatContextProvider({ children }: { children: ReactNode }) {
       const dmRes = await fetch('/api/conversations')
       if (dmRes.ok) {
         const dmData = await dmRes.json()
-        dmChannels = (dmData.conversations || []).map((c: { id: string; partnerName: string }) => ({
+        dmChannels = (dmData.conversations || []).map((c: { id: string; partnerId: string; partnerName: string }) => ({
           id: `dm:${c.id}`,
           type: 'dm' as const,
           name: c.partnerName,
           entityId: c.id,
+          partnerId: c.partnerId,
         }))
       }
     } catch { /* skip — DMs just won't appear */ }
@@ -237,6 +253,7 @@ export function ChatContextProvider({ children }: { children: ReactNode }) {
       unreadCounts,
       userId,
       refreshChannels,
+      blockedIds,
     }}>
       {children}
     </ChatContext.Provider>

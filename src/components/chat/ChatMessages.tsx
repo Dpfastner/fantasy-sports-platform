@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { ReportContentButton } from '@/components/ReportContentButton'
+import { useChatContext } from '@/contexts/ChatContext'
 
 const EMOJI_SET = ['👍', '👎', '😂', '🔥', '❤️', '😮', '🏈', '🏆', '🎉']
 
@@ -52,6 +53,13 @@ function isGifUrl(text: string): boolean {
     trimmed.includes('giphy.com')
 }
 
+export interface ReplyTo {
+  id: string
+  user_id: string
+  message: string
+  display_name: string
+}
+
 export interface ChatMessage {
   id: string
   message: string
@@ -60,6 +68,14 @@ export interface ChatMessage {
   display_name: string
   pinned_at?: string | null
   pinned_by?: string | null
+  reply_to_id?: string | null
+  reply_to?: ReplyTo | null
+}
+
+export interface ReplyingTo {
+  id: string
+  senderName: string
+  message: string
 }
 
 export interface ReactionData {
@@ -75,6 +91,7 @@ interface ChatMessagesProps {
   isCommissioner?: boolean
   onSendRef?: React.MutableRefObject<((msg: ChatMessage) => void) | null>
   showPinnedOnly?: boolean
+  onReply?: (info: ReplyingTo) => void
 }
 
 function formatTimeAgo(dateStr: string): string {
@@ -90,7 +107,17 @@ function formatTimeAgo(dateStr: string): string {
   return new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
 }
 
-export function ChatMessages({ channelType, channelEntityId, currentUserId, isCommissioner, onSendRef, showPinnedOnly }: ChatMessagesProps) {
+function scrollToMessage(messageId: string) {
+  const el = document.querySelector(`[data-message-id="${messageId}"]`)
+  if (!el) return
+  el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+  el.classList.add('ring-2', 'ring-brand', 'rounded')
+  setTimeout(() => {
+    el.classList.remove('ring-2', 'ring-brand', 'rounded')
+  }, 1500)
+}
+
+export function ChatMessages({ channelType, channelEntityId, currentUserId, isCommissioner, onSendRef, showPinnedOnly, onReply }: ChatMessagesProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [reactions, setReactions] = useState<Record<string, ReactionData[]>>({})
   const [pickerOpenFor, setPickerOpenFor] = useState<string | null>(null)
@@ -188,27 +215,43 @@ export function ChatMessages({ channelType, channelEntityId, currentUserId, isCo
       }, async (payload) => {
         const raw = payload.new as Record<string, string>
         // Normalize column name: league_messages uses 'message', event_pool_messages uses 'content'
-        const newMsg = {
+        const newMsg: Partial<ChatMessage> = {
           id: raw.id,
           message: raw.message || raw.content,
           created_at: raw.created_at,
           user_id: raw.user_id,
+          reply_to_id: raw.reply_to_id || null,
         }
 
-        let displayName = nameCache.current[newMsg.user_id]
+        let displayName = nameCache.current[newMsg.user_id!]
         if (!displayName) {
           const { data } = await supabase
             .from('profiles')
             .select('display_name, email')
-            .eq('id', newMsg.user_id)
+            .eq('id', newMsg.user_id!)
             .single()
           displayName = data?.display_name || data?.email?.split('@')[0] || 'Unknown'
-          nameCache.current[newMsg.user_id] = displayName
+          nameCache.current[newMsg.user_id!] = displayName
         }
 
         setMessages(prev => {
           if (prev.some(m => m.id === newMsg.id)) return prev
-          return [...prev, { ...newMsg, display_name: displayName }]
+
+          // If message has a reply_to_id, try to resolve reply_to from existing messages
+          let replyTo: ReplyTo | null = null
+          if (newMsg.reply_to_id) {
+            const replyMsg = prev.find(m => m.id === newMsg.reply_to_id)
+            if (replyMsg) {
+              replyTo = {
+                id: replyMsg.id,
+                user_id: replyMsg.user_id,
+                message: replyMsg.message,
+                display_name: replyMsg.display_name,
+              }
+            }
+          }
+
+          return [...prev, { ...newMsg, display_name: displayName, reply_to: replyTo } as ChatMessage]
         })
       })
 
@@ -358,11 +401,16 @@ export function ChatMessages({ channelType, channelEntityId, currentUserId, isCo
     }
   }
 
+  // Get blocked IDs from chat context
+  const ctx = useChatContext()
+  const blockedIds = ctx?.blockedIds ?? new Set<string>()
+
   // Find pinned message
   const pinnedMessage = messages.find(m => m.pinned_at)
 
-  // Filter messages when showPinnedOnly is active
-  const displayMessages = showPinnedOnly ? messages.filter(m => m.pinned_at) : messages
+  // Filter messages: hide blocked users, optionally show only pinned
+  const visibleMessages = messages.filter(m => !blockedIds.has(m.user_id))
+  const displayMessages = showPinnedOnly ? visibleMessages.filter(m => m.pinned_at) : visibleMessages
 
   if (loading) {
     return (
@@ -405,7 +453,22 @@ export function ChatMessages({ channelType, channelEntityId, currentUserId, isCo
             const isOwn = msg.user_id === currentUserId
             const msgReactions = reactions[msg.id] || []
             return (
-              <div key={msg.id} className="group">
+              <div key={msg.id} data-message-id={msg.id} className="group transition-all duration-300">
+                {/* Reply quote block */}
+                {msg.reply_to && (
+                  <button
+                    onClick={() => scrollToMessage(msg.reply_to!.id)}
+                    className="flex items-start gap-0 mb-1 border-l-[3px] border-brand bg-surface-subtle rounded-r-md px-2 py-1 cursor-pointer hover:bg-surface-inset transition-colors w-fit max-w-full"
+                  >
+                    <div className="min-w-0">
+                      <span className="text-xs font-bold text-text-primary">{msg.reply_to.display_name}</span>
+                      <p className="text-xs text-text-muted truncate max-w-[240px]">
+                        {isGifUrl(msg.reply_to.message || '') ? 'GIF' : (msg.reply_to.message || '').slice(0, 100)}
+                      </p>
+                    </div>
+                  </button>
+                )}
+
                 <div className="flex items-baseline gap-2">
                   <Link
                     href={`/profile/${msg.user_id}`}
@@ -432,37 +495,51 @@ export function ChatMessages({ channelType, channelEntityId, currentUserId, isCo
                     {renderMessageText(msg.message || '')}
                   </p>
                 )}
-                {channelType !== 'dm' && (
-                  <span className="md:opacity-0 md:group-hover:opacity-100 transition-opacity inline-flex items-center gap-1 ml-1 align-middle">
+                <span className="md:opacity-0 md:group-hover:opacity-100 transition-opacity inline-flex items-center gap-1 ml-1 align-middle">
+                  {/* Reply button */}
+                  {onReply && (
                     <button
-                      onClick={() => setPickerOpenFor(pickerOpenFor === msg.id ? null : msg.id)}
+                      onClick={() => onReply({ id: msg.id, senderName: msg.display_name, message: msg.message || '' })}
                       className="p-0.5 text-text-muted hover:text-text-secondary rounded transition-colors"
-                      title="Add reaction"
+                      title="Reply"
                     >
                       <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a5 5 0 015 5v4M3 10l6-6M3 10l6 6" />
                       </svg>
                     </button>
-                    {isCommissioner && (channelType === 'league' || channelType === 'pool') && (
+                  )}
+                  {channelType !== 'dm' && (
+                    <>
                       <button
-                        onClick={() => handleTogglePin(msg.id)}
+                        onClick={() => setPickerOpenFor(pickerOpenFor === msg.id ? null : msg.id)}
                         className="p-0.5 text-text-muted hover:text-text-secondary rounded transition-colors"
-                        title={msg.pinned_at ? 'Unpin message' : 'Pin message'}
+                        title="Add reaction"
                       >
-                        <svg className="w-3.5 h-3.5" fill={msg.pinned_at ? 'currentColor' : 'none'} stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
                       </button>
-                    )}
-                    {!isOwn && (
-                      <ReportContentButton
-                        contentType="chat_message"
-                        contentId={msg.id}
-                        contentPreview={msg.message || ''}
-                      />
-                    )}
-                  </span>
-                )}
+                      {isCommissioner && (channelType === 'league' || channelType === 'pool') && (
+                        <button
+                          onClick={() => handleTogglePin(msg.id)}
+                          className="p-0.5 text-text-muted hover:text-text-secondary rounded transition-colors"
+                          title={msg.pinned_at ? 'Unpin message' : 'Pin message'}
+                        >
+                          <svg className="w-3.5 h-3.5" fill={msg.pinned_at ? 'currentColor' : 'none'} stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+                          </svg>
+                        </button>
+                      )}
+                      {!isOwn && (
+                        <ReportContentButton
+                          contentType="chat_message"
+                          contentId={msg.id}
+                          contentPreview={msg.message || ''}
+                        />
+                      )}
+                    </>
+                  )}
+                </span>
 
                 {/* Emoji picker */}
                 {pickerOpenFor === msg.id && (

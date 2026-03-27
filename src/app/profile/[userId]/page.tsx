@@ -6,6 +6,7 @@ import { getUserBadges } from '@/lib/badges'
 import { TrophyCase } from '@/components/TrophyCase'
 import { Pennant } from '@/components/Pennant'
 import { Header } from '@/components/Header'
+import { BlockUserButton } from '@/components/BlockUserButton'
 import { SITE_URL } from '@/lib/og/constants'
 
 interface PageProps {
@@ -49,9 +50,21 @@ export default async function PublicProfilePage({ params }: PageProps) {
   const viewerSupabase = await createClient()
   const { data: { user: viewer } } = await viewerSupabase.auth.getUser()
   let viewerProfile: { display_name: string | null } | null = null
+  let isBlocked = false
   if (viewer) {
     const { data } = await supabase.from('profiles').select('display_name').eq('id', viewer.id).single()
     viewerProfile = data
+
+    // Check if viewer has blocked this user
+    if (viewer.id !== userId) {
+      const { data: blockData } = await supabase
+        .from('blocked_users')
+        .select('id')
+        .eq('blocker_id', viewer.id)
+        .eq('blocked_id', userId)
+        .maybeSingle()
+      isBlocked = !!blockData
+    }
   }
 
   const [badges, sportFavoritesResult] = await Promise.all([
@@ -143,6 +156,11 @@ export default async function PublicProfilePage({ params }: PageProps) {
               </div>
             )}
           </div>
+          {viewer && viewer.id !== userId && (
+            <div className="mt-4 pt-4 border-t border-border">
+              <BlockUserButton targetUserId={userId} initiallyBlocked={isBlocked} />
+            </div>
+          )}
         </div>
 
         {/* Trophy Case */}

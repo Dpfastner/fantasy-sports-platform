@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { useChatContext } from '@/contexts/ChatContext'
 import { ChannelList } from './ChannelList'
-import { ChatMessages, ChatMessage } from './ChatMessages'
+import { ChatMessages, ChatMessage, ReplyingTo } from './ChatMessages'
 import { ChatInput } from './ChatInput'
 
 export function MobileChatPeek() {
@@ -15,6 +15,7 @@ export function MobileChatPeek() {
   const [displayName, setDisplayName] = useState<string>('You')
   const [showPinnedOnly, setShowPinnedOnly] = useState(false)
   const sendRef = useRef<((msg: ChatMessage) => void) | null>(null)
+  const [replyingTo, setReplyingTo] = useState<ReplyingTo | null>(null)
 
   // Fetch a latest message preview for the peek bar
   useEffect(() => {
@@ -67,7 +68,7 @@ export function MobileChatPeek() {
           {activeChannel ? (
             <div className="flex items-center gap-2 min-w-0">
               <button
-                onClick={() => { setActiveChannel(null); setShowPinnedOnly(false) }}
+                onClick={() => { setActiveChannel(null); setShowPinnedOnly(false); setReplyingTo(null) }}
                 className="p-1 text-text-muted hover:text-text-primary transition-colors"
               >
                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>

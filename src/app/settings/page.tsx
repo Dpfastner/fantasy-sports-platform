@@ -724,6 +724,9 @@ export default function SettingsPage() {
           </button>
         </div>
 
+        {/* Blocked Users */}
+        <BlockedUsersSection />
+
         {/* Danger Zone — Account Deletion */}
         <div className="bg-surface rounded-lg p-6 mt-6 border border-danger/30">
           <h2 className="text-xl font-semibold text-danger-text mb-2">Danger Zone</h2>
@@ -938,6 +941,86 @@ function PushMasterToggle({
           enabled ? 'translate-x-5' : 'translate-x-1'
         }`}
       />
+    </div>
+  )
+}
+
+function BlockedUsersSection() {
+  const [blockedUsers, setBlockedUsers] = useState<{ id: string; display_name: string; blocked_at: string }[]>([])
+  const [loading, setLoading] = useState(true)
+  const [expanded, setExpanded] = useState(false)
+  const [unblocking, setUnblocking] = useState<string | null>(null)
+
+  useEffect(() => {
+    fetch('/api/users/blocked')
+      .then(res => res.ok ? res.json() : { blockedUsers: [] })
+      .then(data => setBlockedUsers(data.blockedUsers || []))
+      .catch(() => {})
+      .finally(() => setLoading(false))
+  }, [])
+
+  const handleUnblock = async (userId: string) => {
+    setUnblocking(userId)
+    try {
+      const res = await fetch(`/api/users/${userId}/block`, { method: 'DELETE' })
+      if (res.ok) {
+        setBlockedUsers(prev => prev.filter(u => u.id !== userId))
+      }
+    } catch {
+      // silently fail
+    } finally {
+      setUnblocking(null)
+    }
+  }
+
+  return (
+    <div className="bg-surface rounded-lg p-6 mt-6">
+      <button
+        type="button"
+        onClick={() => setExpanded(!expanded)}
+        className="w-full flex items-center justify-between"
+      >
+        <h2 className="text-xl font-semibold text-text-primary">Blocked Users</h2>
+        <svg
+          className={`w-5 h-5 text-text-muted transition-transform ${expanded ? 'rotate-180' : ''}`}
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+          strokeWidth={2}
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
+
+      {expanded && (
+        <div className="mt-4">
+          {loading ? (
+            <p className="text-text-muted text-sm">Loading...</p>
+          ) : blockedUsers.length === 0 ? (
+            <p className="text-text-muted text-sm">You haven&apos;t blocked anyone.</p>
+          ) : (
+            <div className="space-y-2">
+              {blockedUsers.map(user => (
+                <div key={user.id} className="flex items-center justify-between py-2 px-3 bg-surface-subtle rounded-lg">
+                  <div>
+                    <p className="text-text-primary text-sm font-medium">{user.display_name}</p>
+                    <p className="text-text-muted text-xs">
+                      Blocked {new Date(user.blocked_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => handleUnblock(user.id)}
+                    disabled={unblocking === user.id}
+                    className="text-sm font-medium py-1.5 px-3 rounded-lg bg-surface hover:bg-surface-inset text-text-secondary border border-border transition-colors disabled:opacity-50"
+                  >
+                    {unblocking === user.id ? '...' : 'Unblock'}
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   )
 }

@@ -31,11 +31,16 @@ export function ChannelList({ autoOpenDmPicker }: { autoOpenDmPicker?: boolean }
 
   if (!ctx) return null
 
-  const { channels, activeChannel, setActiveChannel, unreadCounts, userId, refreshChannels } = ctx
+  const { channels, activeChannel, setActiveChannel, unreadCounts, userId, refreshChannels, blockedIds } = ctx
 
-  // Group channels by section
+  // Group channels by section, filtering out DMs where the other user is blocked
   const getChannelsForSection = (types: Channel['type'][]) =>
-    channels.filter(ch => types.includes(ch.type))
+    channels.filter(ch => {
+      if (!types.includes(ch.type)) return false
+      // Hide DM channels where the partner is blocked
+      if (ch.type === 'dm' && ch.partnerId && blockedIds.has(ch.partnerId)) return false
+      return true
+    })
 
   // Fetch league members when DM picker opens
   const openNewDm = async () => {

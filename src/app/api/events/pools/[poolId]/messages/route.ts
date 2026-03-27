@@ -21,7 +21,7 @@ export async function GET(
 
     const { data: messages } = await admin
       .from('event_pool_messages')
-      .select('id, user_id, content, created_at, pinned_at, pinned_by')
+      .select('id, user_id, content, created_at, pinned_at, pinned_by, reply_to_id')
       .eq('pool_id', poolId)
       .order('created_at', { ascending: true })
       .limit(200)
@@ -35,6 +35,40 @@ export async function GET(
         .select('id, display_name')
         .in('id', userIds)
       profileMap = Object.fromEntries((profiles || []).map(p => [p.id, p.display_name]))
+    }
+
+    // Fetch reply-to messages
+    const replyToIds = [...new Set((messages || []).map(m => m.reply_to_id).filter(Boolean))] as string[]
+    let replyToMap: Record<string, { id: string; user_id: string; message: string; display_name: string }> = {}
+    if (replyToIds.length > 0) {
+      const { data: replyMessages } = await admin
+        .from('event_pool_messages')
+        .select('id, user_id, content')
+        .in('id', replyToIds)
+
+      if (replyMessages) {
+        const replyUserIds = [...new Set(replyMessages.map(m => m.user_id).filter(uid => !profileMap[uid]))]
+        if (replyUserIds.length > 0) {
+          const { data: replyProfiles } = await admin
+            .from('profiles')
+            .select('id, display_name')
+            .in('id', replyUserIds)
+          if (replyProfiles) {
+            for (const p of replyProfiles) {
+              profileMap[p.id] = p.display_name || 'Unknown'
+            }
+          }
+        }
+
+        replyToMap = Object.fromEntries(
+          replyMessages.map(m => [m.id, {
+            id: m.id,
+            user_id: m.user_id,
+            message: m.content,
+            display_name: profileMap[m.user_id] || 'Unknown',
+          }])
+        )
+      }
     }
 
     // Get reactions (grouped by message + emoji with counts)
@@ -66,6 +100,8 @@ export async function GET(
         created_at: m.created_at,
         pinned_at: m.pinned_at,
         pinned_by: m.pinned_by,
+        reply_to_id: m.reply_to_id,
+        reply_to: m.reply_to_id ? replyToMap[m.reply_to_id] || null : null,
         display_name: profileMap[m.user_id] || 'Unknown',
       })),
       reactions,
@@ -94,11 +130,12 @@ export async function POST(
 
     const body = await request.json()
     // Normalize: ChatInput sends 'message', legacy callers may send 'content'
-    const normalizedBody = { message: body.message || body.content }
+    const normalizedBody = { message: body.message || body.content, replyToId: body.replyToId }
     const validation = validateBody(poolChatMessageSchema, normalizedBody)
     if (!validation.success) return validation.response
 
     const content = validation.data.message
+    const replyToId = validation.data.replyToId
 
     // Content moderation
     const contentCheck = checkContent(content.trim())
@@ -127,9 +164,14 @@ export async function POST(
       }
     }
 
+    const insertData: Record<string, string> = { pool_id: poolId, user_id: user.id, content: content.trim() }
+    if (replyToId) {
+      insertData.reply_to_id = replyToId
+    }
+
     const { data: message, error } = await admin
       .from('event_pool_messages')
-      .insert({ pool_id: poolId, user_id: user.id, content: content.trim() })
+      .insert(insertData)
       .select('id, content, created_at, user_id')
       .single()
 

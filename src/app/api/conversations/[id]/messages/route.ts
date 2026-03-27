@@ -37,7 +37,7 @@ export async function GET(
 
     const { data: messages, error } = await supabase
       .from('direct_messages')
-      .select('id, message, created_at, user_id')
+      .select('id, message, created_at, user_id, reply_to_id')
       .eq('conversation_id', conversationId)
       .order('created_at', { ascending: false })
       .limit(50)
@@ -64,10 +64,45 @@ export async function GET(
       }
     }
 
+    // Fetch reply-to messages
+    const replyToIds = [...new Set((messages || []).map(m => m.reply_to_id).filter(Boolean))] as string[]
+    let replyToMap: Record<string, { id: string; user_id: string; message: string; display_name: string }> = {}
+    if (replyToIds.length > 0) {
+      const { data: replyMessages } = await supabase
+        .from('direct_messages')
+        .select('id, user_id, message')
+        .in('id', replyToIds)
+
+      if (replyMessages) {
+        const replyUserIds = [...new Set(replyMessages.map(m => m.user_id).filter(uid => !profiles[uid]))]
+        if (replyUserIds.length > 0) {
+          const { data: replyProfiles } = await supabase
+            .from('profiles')
+            .select('id, display_name, email')
+            .in('id', replyUserIds)
+          if (replyProfiles) {
+            for (const p of replyProfiles) {
+              profiles[p.id] = p.display_name || p.email?.split('@')[0] || 'Unknown'
+            }
+          }
+        }
+
+        replyToMap = Object.fromEntries(
+          replyMessages.map(m => [m.id, {
+            id: m.id,
+            user_id: m.user_id,
+            message: m.message,
+            display_name: profiles[m.user_id] || 'Unknown',
+          }])
+        )
+      }
+    }
+
     // Return in chronological order (oldest first)
     const enriched = (messages || []).reverse().map(m => ({
       ...m,
       display_name: profiles[m.user_id] || 'Unknown',
+      reply_to: m.reply_to_id ? replyToMap[m.reply_to_id] || null : null,
     }))
 
     return NextResponse.json({ messages: enriched })
@@ -107,11 +142,31 @@ export async function POST(
       return NextResponse.json({ error: "You don't have permission to do this." }, { status: 403 })
     }
 
+    // Check if either user has blocked the other
+    const { data: otherMembers } = await supabase
+      .from('conversation_members')
+      .select('user_id')
+      .eq('conversation_id', conversationId)
+      .neq('user_id', user.id)
+
+    if (otherMembers && otherMembers.length > 0) {
+      const otherId = otherMembers[0].user_id
+      const { data: blockCheck } = await supabase
+        .from('blocked_users')
+        .select('id')
+        .or(`and(blocker_id.eq.${user.id},blocked_id.eq.${otherId}),and(blocker_id.eq.${otherId},blocked_id.eq.${user.id})`)
+        .limit(1)
+
+      if (blockCheck && blockCheck.length > 0) {
+        return NextResponse.json({ error: 'Cannot send messages to this user.' }, { status: 403 })
+      }
+    }
+
     const rawBody = await request.json()
     const validation = validateBody(chatMessageSchema, rawBody)
     if (!validation.success) return validation.response
 
-    const { message } = validation.data
+    const { message, replyToId } = validation.data
 
     // Content moderation
     const contentCheck = checkContent(message)
@@ -119,13 +174,18 @@ export async function POST(
       return NextResponse.json({ error: contentCheck.reason }, { status: 400 })
     }
 
+    const insertData: Record<string, string> = {
+      conversation_id: conversationId,
+      user_id: user.id,
+      message,
+    }
+    if (replyToId) {
+      insertData.reply_to_id = replyToId
+    }
+
     const { data: newMessage, error } = await supabase
       .from('direct_messages')
-      .insert({
-        conversation_id: conversationId,
-        user_id: user.id,
-        message,
-      })
+      .insert(insertData)
       .select()
       .single()
 

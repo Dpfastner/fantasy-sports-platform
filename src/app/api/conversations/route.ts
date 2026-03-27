@@ -84,6 +84,17 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 })
     }
 
+    // Check if either user has blocked the other
+    const { data: blockCheck } = await supabase
+      .from('blocked_users')
+      .select('id')
+      .or(`and(blocker_id.eq.${user.id},blocked_id.eq.${partnerId}),and(blocker_id.eq.${partnerId},blocked_id.eq.${user.id})`)
+      .limit(1)
+
+    if (blockCheck && blockCheck.length > 0) {
+      return NextResponse.json({ error: 'Cannot start a conversation with this user.' }, { status: 403 })
+    }
+
     // Check if conversation already exists between these two users
     const { data: myConvs } = await supabase
       .from('conversation_members')

@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { TrashTalkPicker } from './TrashTalkPicker'
 import { GifPicker } from './GifPicker'
+import type { ReplyingTo } from './ChatMessages'
 
 interface MemberOption {
   id: string
@@ -14,10 +15,12 @@ interface ChatInputProps {
   channelEntityId: string
   currentUserId?: string
   currentDisplayName?: string
-  onMessageSent?: (msg: { id: string; message: string; created_at: string; user_id: string; display_name: string }) => void
+  onMessageSent?: (msg: { id: string; message: string; created_at: string; user_id: string; display_name: string; reply_to_id?: string | null }) => void
+  replyingTo?: ReplyingTo | null
+  onCancelReply?: () => void
 }
 
-export function ChatInput({ channelType, channelEntityId, currentUserId, currentDisplayName, onMessageSent }: ChatInputProps) {
+export function ChatInput({ channelType, channelEntityId, currentUserId, currentDisplayName, onMessageSent, replyingTo, onCancelReply }: ChatInputProps) {
   const [input, setInput] = useState('')
   const [sending, setSending] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -28,6 +31,13 @@ export function ChatInput({ channelType, channelEntityId, currentUserId, current
   const [showGifPicker, setShowGifPicker] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
   const mentionsRef = useRef<Map<string, string>>(new Map())
+
+  // Focus input when replying to a message
+  useEffect(() => {
+    if (replyingTo) {
+      inputRef.current?.focus()
+    }
+  }, [replyingTo])
 
   // Fetch members for @mention autocomplete
   useEffect(() => {
@@ -117,16 +127,23 @@ export function ChatInput({ channelType, channelEntityId, currentUserId, current
       message = message.replace(new RegExp(`@${name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'g'), `@[${name}](${id})`)
     })
 
+    const body: { message: string; replyToId?: string } = { message }
+    if (replyingTo) {
+      body.replyToId = replyingTo.id
+    }
+
     try {
       const res = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message }),
+        body: JSON.stringify(body),
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Couldn\'t send message. Try again.')
       setInput('')
       mentionsRef.current.clear()
+      // Clear reply state after successful send
+      if (onCancelReply) onCancelReply()
       // Optimistically add message to the list so it appears immediately
       if (onMessageSent && data.message && currentUserId) {
         onMessageSent({
@@ -135,6 +152,7 @@ export function ChatInput({ channelType, channelEntityId, currentUserId, current
           created_at: data.message.created_at,
           user_id: currentUserId,
           display_name: currentDisplayName || 'You',
+          reply_to_id: replyingTo?.id || null,
         })
       }
     } catch (err) {
@@ -170,6 +188,13 @@ export function ChatInput({ channelType, channelEntityId, currentUserId, current
       }
     }
 
+    // Escape cancels reply
+    if (e.key === 'Escape' && replyingTo && onCancelReply) {
+      e.preventDefault()
+      onCancelReply()
+      return
+    }
+
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault()
       handleSend()
@@ -178,12 +203,34 @@ export function ChatInput({ channelType, channelEntityId, currentUserId, current
 
   return (
     <div className="border-t border-border flex flex-col" style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}>
+      {/* Reply preview bar */}
+      {replyingTo && (
+        <div className="border-l-[3px] border-brand bg-surface-subtle px-3 py-2 flex items-center justify-between gap-2">
+          <div className="flex-1 min-w-0">
+            <span className="text-xs text-text-muted">Replying to </span>
+            <span className="text-xs font-bold text-text-primary">{replyingTo.senderName}</span>
+            <p className="text-xs text-text-muted truncate">
+              {replyingTo.message.slice(0, 60)}{replyingTo.message.length > 60 ? '...' : ''}
+            </p>
+          </div>
+          <button
+            onClick={onCancelReply}
+            className="p-1 text-text-muted hover:text-text-primary transition-colors shrink-0"
+            title="Cancel reply"
+          >
+            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+      )}
+
       {/* Trash Talk picker */}
       {showTrashTalk && (
         <div className="max-h-48 overflow-y-auto border-b border-border">
           <TrashTalkPicker
             onSelect={(prompt) => {
-              setInput(prompt)
+              setInput(prev => prev ? prev + ' ' + prompt : prompt)
               setShowTrashTalk(false)
               inputRef.current?.focus()
             }}
@@ -242,7 +289,7 @@ export function ChatInput({ channelType, channelEntityId, currentUserId, current
           value={input}
           onChange={e => handleInputChange(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder="Message..."
+          placeholder={replyingTo ? `Reply to ${replyingTo.senderName}...` : 'Message...'}
           maxLength={500}
           disabled={sending}
           className="flex-1 min-w-0 px-3 py-2 bg-surface-inset border border-border rounded-lg text-text-primary text-sm placeholder:text-text-muted disabled:opacity-50"

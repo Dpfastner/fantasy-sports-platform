@@ -31,7 +31,7 @@ export async function GET(
 
     const { data: messages, error } = await supabase
       .from('league_messages')
-      .select('id, message, created_at, user_id, pinned_at, pinned_by')
+      .select('id, message, created_at, user_id, pinned_at, pinned_by, reply_to_id')
       .eq('league_id', leagueId)
       .order('created_at', { ascending: false })
       .limit(50)
@@ -54,6 +54,41 @@ export async function GET(
       if (profilesData) {
         profiles = Object.fromEntries(
           profilesData.map(p => [p.id, p.display_name || p.email?.split('@')[0] || 'Unknown'])
+        )
+      }
+    }
+
+    // Fetch reply-to messages
+    const replyToIds = [...new Set((messages || []).map(m => m.reply_to_id).filter(Boolean))] as string[]
+    let replyToMap: Record<string, { id: string; user_id: string; message: string; display_name: string }> = {}
+    if (replyToIds.length > 0) {
+      const { data: replyMessages } = await supabase
+        .from('league_messages')
+        .select('id, user_id, message')
+        .in('id', replyToIds)
+
+      if (replyMessages) {
+        // Collect any user IDs we haven't fetched profiles for yet
+        const replyUserIds = [...new Set(replyMessages.map(m => m.user_id).filter(uid => !profiles[uid]))]
+        if (replyUserIds.length > 0) {
+          const { data: replyProfiles } = await supabase
+            .from('profiles')
+            .select('id, display_name, email')
+            .in('id', replyUserIds)
+          if (replyProfiles) {
+            for (const p of replyProfiles) {
+              profiles[p.id] = p.display_name || p.email?.split('@')[0] || 'Unknown'
+            }
+          }
+        }
+
+        replyToMap = Object.fromEntries(
+          replyMessages.map(m => [m.id, {
+            id: m.id,
+            user_id: m.user_id,
+            message: m.message,
+            display_name: profiles[m.user_id] || 'Unknown',
+          }])
         )
       }
     }
@@ -85,6 +120,7 @@ export async function GET(
     const enriched = (messages || []).reverse().map(m => ({
       ...m,
       display_name: profiles[m.user_id] || 'Unknown',
+      reply_to: m.reply_to_id ? replyToMap[m.reply_to_id] || null : null,
     }))
 
     return NextResponse.json({ messages: enriched, reactions })
@@ -121,7 +157,7 @@ export async function POST(
     const validation = validateBody(chatMessageSchema, rawBody)
     if (!validation.success) return validation.response
 
-    const { message } = validation.data
+    const { message, replyToId } = validation.data
 
     // Content moderation
     const contentCheck = checkContent(message)
@@ -131,13 +167,18 @@ export async function POST(
 
     const supabase = createAdminClient()
 
+    const insertData: Record<string, string> = {
+      league_id: leagueId,
+      user_id: user.id,
+      message,
+    }
+    if (replyToId) {
+      insertData.reply_to_id = replyToId
+    }
+
     const { data: newMessage, error } = await supabase
       .from('league_messages')
-      .insert({
-        league_id: leagueId,
-        user_id: user.id,
-        message,
-      })
+      .insert(insertData)
       .select()
       .single()
 
