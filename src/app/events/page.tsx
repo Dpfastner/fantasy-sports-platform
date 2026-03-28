@@ -3,17 +3,17 @@ import { createClient, createAdminClient } from '@/lib/supabase/server'
 import { Header } from '@/components/Header'
 
 // Sport metadata (matches Locker Room dashboard)
-const sportMeta: Record<string, { icon: string; label: string; borderColor: string }> = {
-  college_football: { icon: '\uD83C\uDFC8', label: 'Football', borderColor: 'border-l-orange-500' },
-  hockey: { icon: '\uD83C\uDFD2', label: 'Hockey', borderColor: 'border-l-blue-500' },
-  golf: { icon: '\u26F3', label: 'Golf', borderColor: 'border-l-green-500' },
-  rugby: { icon: '\uD83C\uDFC9', label: 'Rugby', borderColor: 'border-l-red-500' },
-  football: { icon: '\uD83C\uDFC8', label: 'Football', borderColor: 'border-l-orange-500' },
-  basketball: { icon: '\uD83C\uDFC0', label: 'Basketball', borderColor: 'border-l-amber-500' },
-  baseball: { icon: '\u26BE', label: 'Baseball', borderColor: 'border-l-red-500' },
-  soccer: { icon: '\u26BD', label: 'Soccer', borderColor: 'border-l-green-500' },
+const sportMeta: Record<string, { icon: string; label: string; borderColor: string; gradient: string }> = {
+  college_football: { icon: '\uD83C\uDFC8', label: 'Football', borderColor: 'border-l-orange-500', gradient: 'from-orange-900/20 to-orange-800/5' },
+  hockey: { icon: '\uD83C\uDFD2', label: 'Hockey', borderColor: 'border-l-blue-500', gradient: 'from-blue-900/20 to-blue-800/5' },
+  golf: { icon: '\u26F3', label: 'Golf', borderColor: 'border-l-green-500', gradient: 'from-green-900/20 to-green-800/5' },
+  rugby: { icon: '\uD83C\uDFC9', label: 'Rugby', borderColor: 'border-l-red-500', gradient: 'from-red-900/20 to-red-800/5' },
+  football: { icon: '\uD83C\uDFC8', label: 'Football', borderColor: 'border-l-orange-500', gradient: 'from-orange-900/20 to-orange-800/5' },
+  basketball: { icon: '\uD83C\uDFC0', label: 'Basketball', borderColor: 'border-l-amber-500', gradient: 'from-amber-900/20 to-amber-800/5' },
+  baseball: { icon: '\u26BE', label: 'Baseball', borderColor: 'border-l-red-500', gradient: 'from-red-900/20 to-red-800/5' },
+  soccer: { icon: '\u26BD', label: 'Soccer', borderColor: 'border-l-green-500', gradient: 'from-green-900/20 to-green-800/5' },
 }
-const defaultSportMeta = { icon: '\uD83C\uDFC8', label: 'Football', borderColor: 'border-l-orange-500' }
+const defaultSportMeta = { icon: '\uD83C\uDFC8', label: 'Football', borderColor: 'border-l-orange-500', gradient: 'from-orange-900/20 to-orange-800/5' }
 
 const formatLabel: Record<string, string> = {
   bracket: 'Bracket',
@@ -189,28 +189,26 @@ export default async function EventsPage({ searchParams }: { searchParams: Promi
                 <Link
                   key={`league-${league.id}`}
                   href={`/leagues/${league.id}`}
-                  className={`bg-surface rounded-lg border border-border hover:border-brand/40 hover:shadow-md transition-all group border-l-4 ${leagueMeta.borderColor}`}
+                  className={`rounded-xl border-l-4 ${leagueMeta.borderColor} bg-gradient-to-br ${leagueMeta.gradient} border border-border hover:border-brand/40 hover:shadow-lg transition-all group overflow-hidden`}
                 >
-                  <div className="p-5 pb-3">
-                    <div className="flex items-start justify-between mb-2">
-                      <div className="min-w-0 flex-1 flex items-center gap-2">
-                        <span className="text-2xl shrink-0">{leagueMeta.icon}</span>
-                        <div className="min-w-0">
-                          <h2 className="brand-h3 text-lg text-text-primary group-hover:text-brand transition-colors truncate">
-                            {league.name}
-                          </h2>
-                        </div>
-                      </div>
+                  <div className="p-5">
+                    <div className="flex items-start justify-between mb-3">
+                      <span className="text-3xl">{leagueMeta.icon}</span>
+                      <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-brand/15 text-brand-text">
+                        Open
+                      </span>
                     </div>
-                    <p className="text-text-muted text-sm ml-9">
+                    <h2 className="text-text-primary font-bold text-lg mb-1 group-hover:text-brand transition-colors truncate">
+                      {league.name}
+                    </h2>
+                    <div className="flex items-center gap-2 text-sm text-text-muted">
+                      <span>{league.sport_name}</span>
+                      <span className="w-1 h-1 rounded-full bg-text-muted" />
+                      <span>Season League</span>
+                    </div>
+                    <p className="text-xs text-text-muted mt-2">
                       {league.memberCount}/{league.max_teams} teams
                     </p>
-                  </div>
-                  <div className="px-5 py-3 border-t border-border-subtle flex items-center justify-between text-sm">
-                    <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-brand/15 text-brand-text">
-                      Season League
-                    </span>
-                    <span className="text-text-muted text-xs">{league.sport_name}</span>
                   </div>
                 </Link>
               )
@@ -233,59 +231,45 @@ export default async function EventsPage({ searchParams }: { searchParams: Promi
               const isJoined = userTournamentIds.has(tournament.id)
               const pools = poolCounts[tournament.id] || 0
               const meta = sportMeta[tournament.sport] || defaultSportMeta
+              const isLive = tournament.status === 'active'
 
               return (
                 <Link
                   key={tournament.id}
                   href={`/events/${tournament.slug}`}
-                  className={`bg-surface rounded-lg border border-border hover:border-brand/40 hover:shadow-md transition-all group border-l-4 ${meta.borderColor}`}
+                  className={`rounded-xl border-l-4 ${meta.borderColor} bg-gradient-to-br ${meta.gradient} border border-border hover:border-brand/40 hover:shadow-lg transition-all group overflow-hidden`}
                 >
-                  {/* Card Header */}
-                  <div className="p-5 pb-3">
-                    <div className="flex items-start justify-between mb-2">
-                      <div className="min-w-0 flex-1 flex items-center gap-2">
-                        <span className="text-2xl shrink-0">{meta.icon}</span>
-                        <div className="min-w-0">
-                          <h2 className="brand-h3 text-lg text-text-primary group-hover:text-brand transition-colors truncate">
-                            {tournament.name}
-                          </h2>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-1.5 shrink-0 ml-2">
-                        <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${statusStyles[tournament.status] || ''}`}>
+                  <div className="p-5">
+                    <div className="flex items-start justify-between mb-3">
+                      <span className="text-3xl">{meta.icon}</span>
+                      <div className="flex items-center gap-1.5">
+                        <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
+                          isLive ? 'bg-success/20 text-success-text' : statusStyles[tournament.status] || 'bg-brand/15 text-brand-text'
+                        }`}>
                           {tournament.status === 'upcoming' && daysUntil > 0
                             ? `Starts in ${daysUntil}d`
-                            : tournament.status === 'active'
+                            : isLive
                             ? 'Live'
                             : tournament.status}
                         </span>
                         {isJoined && (
-                          <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-success/20 text-success-text">
+                          <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-success/20 text-success-text">
                             Joined
                           </span>
                         )}
                       </div>
                     </div>
-
-                    <p className="text-text-muted text-sm line-clamp-2 ml-9">
-                      {tournament.description}
-                    </p>
-                  </div>
-
-                  {/* Card Footer */}
-                  <div className="px-5 py-3 border-t border-border-subtle flex items-center justify-between text-sm">
-                    <div className="flex items-center gap-4 text-text-secondary">
-                      <span className={`text-xs font-medium px-2 py-0.5 rounded-full bg-accent/15 text-accent-text`}>
-                        {formatLabel[tournament.format] || tournament.format}
-                      </span>
-                      <span>{pools} pool{pools !== 1 ? 's' : ''}</span>
+                    <h2 className="text-text-primary font-bold text-lg mb-1 group-hover:text-brand transition-colors truncate">
+                      {tournament.name}
+                    </h2>
+                    <div className="flex items-center gap-2 text-sm text-text-muted">
+                      <span>{meta.label}</span>
+                      <span className="w-1 h-1 rounded-full bg-text-muted" />
+                      <span>{formatLabel[tournament.format] || tournament.format}</span>
                     </div>
-                    <span className="text-text-muted text-xs">
-                      {startsAt.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                      {tournament.ends_at && (
-                        <> &ndash; {new Date(tournament.ends_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</>
-                      )}
-                    </span>
+                    {pools > 0 && (
+                      <p className="text-xs text-text-muted mt-2">{pools} pool{pools !== 1 ? 's' : ''} active</p>
+                    )}
                   </div>
                 </Link>
               )
