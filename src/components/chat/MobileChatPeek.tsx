@@ -43,27 +43,51 @@ export function MobileChatPeek() {
       })
   }, [ctx?.userId])
 
-  // Lock body scroll when chat is expanded to prevent background showing behind keyboard
+  // Lock both html and body scroll when chat is expanded
   const isMobileExpanded = ctx?.isMobileExpanded ?? false
   useEffect(() => {
     if (isMobileExpanded) {
+      document.documentElement.style.overflow = 'hidden'
+      document.documentElement.style.position = 'fixed'
+      document.documentElement.style.width = '100%'
+      document.documentElement.style.height = '100%'
       document.body.style.overflow = 'hidden'
-      return () => { document.body.style.overflow = '' }
+      document.body.style.position = 'fixed'
+      document.body.style.width = '100%'
+      document.body.style.height = '100%'
+      return () => {
+        document.documentElement.style.overflow = ''
+        document.documentElement.style.position = ''
+        document.documentElement.style.width = ''
+        document.documentElement.style.height = ''
+        document.body.style.overflow = ''
+        document.body.style.position = ''
+        document.body.style.width = ''
+        document.body.style.height = ''
+      }
     }
   }, [isMobileExpanded])
 
-  // Track visual viewport height to eliminate gap between chat and iOS keyboard
-  const [viewportHeight, setViewportHeight] = useState<number | null>(null)
+  // Track visual viewport to eliminate gap between chat and iOS keyboard.
+  // When keyboard opens, visualViewport shrinks AND may shift (offsetTop).
+  // We position the chat exactly over the visual viewport.
+  const [vpStyle, setVpStyle] = useState<{ top: number; height: number } | null>(null)
   useEffect(() => {
-    if (!isMobileExpanded) { setViewportHeight(null); return }
+    if (!isMobileExpanded) { setVpStyle(null); return }
 
     const vv = window.visualViewport
     if (!vv) return
 
-    const onResize = () => setViewportHeight(vv.height)
+    const onResize = () => {
+      setVpStyle({ top: vv.offsetTop, height: vv.height })
+    }
     onResize()
     vv.addEventListener('resize', onResize)
-    return () => vv.removeEventListener('resize', onResize)
+    vv.addEventListener('scroll', onResize)
+    return () => {
+      vv.removeEventListener('resize', onResize)
+      vv.removeEventListener('scroll', onResize)
+    }
   }, [isMobileExpanded])
 
   if (!ctx) return null
@@ -76,7 +100,7 @@ export function MobileChatPeek() {
   // Full-screen expanded view
   if (isMobileExpanded) {
     return (
-      <div className="md:hidden fixed inset-x-0 top-0 z-50 bg-surface flex flex-col overflow-hidden overscroll-none" style={{ height: viewportHeight ? `${viewportHeight}px` : '100dvh' }}>
+      <div className="md:hidden fixed left-0 right-0 z-50 bg-surface flex flex-col overflow-hidden overscroll-none" style={vpStyle ? { top: `${vpStyle.top}px`, height: `${vpStyle.height}px` } : { top: 0, bottom: 0 }}>
         {/* Top bar */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-border shrink-0">
           {activeChannel ? (
