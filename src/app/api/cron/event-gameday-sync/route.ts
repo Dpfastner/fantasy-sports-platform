@@ -661,19 +661,30 @@ async function scoreBracketPicks(admin: ReturnType<typeof createAdminClient>, to
     for (const entry of entries) {
       const { data: picks } = await admin
         .from('event_picks')
-        .select('game_id, participant_id')
+        .select('id, game_id, participant_id')
         .eq('entry_id', entry.id)
 
       if (!picks?.length) continue
 
       let score = 0
+      const now = new Date().toISOString()
+
       for (const pick of picks) {
         if (!pick.game_id) continue
         const correctWinner = gameResults[pick.game_id]
-        if (correctWinner && correctWinner === pick.participant_id) {
-          const game = games.find(g => g.id === pick.game_id)
+        const game = games.find(g => g.id === pick.game_id)
+
+        if (correctWinner) {
+          const isCorrect = correctWinner === pick.participant_id
           const roundPoints = game ? (scoring[game.round] || 1) : 1
-          score += roundPoints
+          const pointsEarned = isCorrect ? roundPoints : 0
+          if (isCorrect) score += roundPoints
+
+          // Update individual pick record
+          await admin
+            .from('event_picks')
+            .update({ is_correct: isCorrect, points_earned: pointsEarned, resolved_at: now })
+            .eq('id', pick.id)
         }
       }
 

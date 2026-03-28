@@ -70,11 +70,15 @@ export async function GET(request: NextRequest) {
     // Trigger scoring if games newly completed
     if (syncResult?.newCompletions) {
       try {
+        const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || `https://${process.env.VERCEL_URL}` || 'https://www.rivyls.com'
         const scoreRes = await fetch(
-          `${process.env.NEXT_PUBLIC_SITE_URL || 'https://www.rivyls.com'}/api/events/score`,
+          `${baseUrl}/api/events/score`,
           {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${process.env.CRON_SECRET}`,
+            },
             body: JSON.stringify({ tournamentId }),
           }
         )
