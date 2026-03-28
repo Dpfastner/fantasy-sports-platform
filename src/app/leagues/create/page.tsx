@@ -560,30 +560,55 @@ function PoolTournamentBrowser() {
     )
   }
 
+  const sportStyles: Record<string, { icon: string; gradient: string; border: string }> = {
+    hockey: { icon: '🏒', gradient: 'from-blue-900/20 to-blue-800/5', border: 'border-l-blue-500' },
+    golf: { icon: '⛳', gradient: 'from-green-900/20 to-green-800/5', border: 'border-l-green-500' },
+    rugby: { icon: '🏉', gradient: 'from-red-900/20 to-red-800/5', border: 'border-l-red-500' },
+    college_football: { icon: '🏈', gradient: 'from-orange-900/20 to-orange-800/5', border: 'border-l-orange-500' },
+  }
+  const defaultStyle = { icon: '🏆', gradient: 'from-brand/20 to-brand/5', border: 'border-l-brand' }
+
+  const statusLabel = (status: string) => {
+    if (status === 'active' || status === 'in_progress') return 'Live Now'
+    return 'Upcoming'
+  }
+
   return (
-    <div className="space-y-3">
+    <div className="space-y-4">
       <p className="text-text-muted text-sm">Select a tournament to create your pool:</p>
-      {tournaments.map(t => (
-        <Link
-          key={t.id}
-          href={`/events/${t.slug}`}
-          className="block bg-surface rounded-lg border border-border hover:border-brand/40 hover:shadow-md transition-all p-4"
-        >
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="text-text-primary font-medium mb-1">{t.name}</h3>
-              <div className="flex items-center gap-2 text-sm text-text-muted">
-                <span>{t.sport_name}</span>
-                <span className="px-1.5 py-0.5 bg-accent/20 text-accent-text rounded text-xs font-medium">{formatBadge(t.format)}</span>
-                {t.pool_count > 0 && <span>{t.pool_count} pool{t.pool_count !== 1 ? 's' : ''}</span>}
+      <div className="grid gap-4 sm:grid-cols-2">
+        {tournaments.map(t => {
+          const style = sportStyles[t.sport_name.toLowerCase()] || sportStyles[t.format] || defaultStyle
+          const isLive = t.status === 'active' || t.status === 'in_progress'
+          return (
+            <Link
+              key={t.id}
+              href={`/events/${t.slug}`}
+              className={`block rounded-xl border-l-4 ${style.border} bg-gradient-to-br ${style.gradient} border border-border hover:border-brand/40 hover:shadow-lg transition-all overflow-hidden`}
+            >
+              <div className="p-5">
+                <div className="flex items-start justify-between mb-3">
+                  <span className="text-3xl">{style.icon}</span>
+                  <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
+                    isLive ? 'bg-success/20 text-success-text' : 'bg-brand/15 text-brand-text'
+                  }`}>
+                    {statusLabel(t.status)}
+                  </span>
+                </div>
+                <h3 className="text-text-primary font-bold text-lg mb-1">{t.name}</h3>
+                <div className="flex items-center gap-2 text-sm text-text-muted">
+                  <span>{t.sport_name}</span>
+                  <span className="w-1 h-1 rounded-full bg-text-muted" />
+                  <span>{formatBadge(t.format)}</span>
+                </div>
+                {t.pool_count > 0 && (
+                  <p className="text-xs text-text-muted mt-2">{t.pool_count} pool{t.pool_count !== 1 ? 's' : ''} active</p>
+                )}
               </div>
-            </div>
-            <svg className="w-5 h-5 text-text-muted shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-            </svg>
-          </div>
-        </Link>
-      ))}
+            </Link>
+          )
+        })}
+      </div>
     </div>
   )
 }
