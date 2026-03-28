@@ -490,19 +490,19 @@ export default async function DashboardPage() {
                 href="/leagues/join"
                 className="bg-surface-subtle hover:bg-surface-inset text-text-primary font-semibold py-2 px-4 rounded-lg transition-all border border-border hover:border-brand/40 hover:shadow-md text-sm"
               >
-                Join League
+                Join Competition
               </Link>
               <Link
                 href="/leagues/create"
                 className="bg-brand hover:bg-brand-hover text-text-primary font-semibold py-2 px-4 rounded-lg transition-colors text-sm"
               >
-                Create League
+                Create Competition
               </Link>
               <Link
                 href="/events"
                 className="bg-surface-subtle hover:bg-surface-inset text-text-primary font-semibold py-2 px-4 rounded-lg transition-all border border-border hover:border-brand/40 hover:shadow-md text-sm"
               >
-                Browse Events &rarr;
+                Browse Competitions &rarr;
               </Link>
             </div>
           </div>
@@ -527,13 +527,13 @@ export default async function DashboardPage() {
                   href="/leagues/create"
                   className="bg-brand hover:bg-brand-hover text-text-primary font-semibold py-2 px-6 rounded-lg transition-colors"
                 >
-                  Create League
+                  Create Competition
                 </Link>
                 <Link
                   href="/events"
                   className="bg-surface-subtle hover:bg-surface-inset text-text-primary font-semibold py-2 px-6 rounded-lg transition-all border border-border hover:border-brand/40 hover:shadow-md"
                 >
-                  Browse Events
+                  Browse Competitions
                 </Link>
               </div>
             </div>

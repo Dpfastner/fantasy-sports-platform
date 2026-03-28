@@ -331,77 +331,66 @@ function JoinLeagueForm() {
                 </div>
               ) : (
                 <div className="space-y-6">
-                  {/* Public Leagues */}
-                  {publicLeagues.length > 0 && (
-                    <div>
-                      <h3 className="text-xs text-text-muted mb-2 uppercase tracking-wide">Open Leagues</h3>
-                      <div className="space-y-3">
-                        {publicLeagues.map((league) => (
-                          <Link
-                            key={league.id}
-                            href={`/leagues/${league.id}`}
-                            className="block bg-surface rounded-lg border border-border hover:border-brand/40 hover:shadow-md transition-all p-4"
-                          >
-                            <div className="flex items-center justify-between">
-                              <div>
-                                <h3 className="text-text-primary font-medium mb-1">{league.name}</h3>
-                                <div className="flex items-center gap-3 text-sm text-text-muted">
-                                  <span>{league.sport}</span>
-                                  <span>{league.season}</span>
-                                  <span>{league.memberCount}/{league.maxTeams} members</span>
-                                </div>
-                              </div>
-                              <svg className="w-5 h-5 text-text-muted shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-                              </svg>
+                  <h3 className="text-xs text-text-muted mb-2 uppercase tracking-wide">Open Competitions</h3>
+                  <div className="space-y-3">
+                    {publicLeagues.map((league) => (
+                      <Link
+                        key={`league-${league.id}`}
+                        href={`/leagues/${league.id}`}
+                        className="block bg-surface rounded-lg border border-border hover:border-brand/40 hover:shadow-md transition-all p-4"
+                      >
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <div className="flex items-center gap-2 mb-1">
+                              <h3 className="text-text-primary font-medium">{league.name}</h3>
+                              <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-brand/15 text-brand-text">Season League</span>
                             </div>
-                          </Link>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Events */}
-                  {openEvents.length > 0 && (
-                    <div>
-                      <h3 className="text-xs text-text-muted mb-2 uppercase tracking-wide">Events &amp; Tournaments</h3>
-                      <div className="space-y-3">
-                        {openEvents.map((event) => {
-                          const sportIcon: Record<string, string> = {
-                            hockey: '\uD83C\uDFD2', golf: '\u26F3', rugby: '\uD83C\uDFC9',
-                            football: '\uD83C\uDFC8', basketball: '\uD83C\uDFC0',
-                          }
-                          const formatLabel: Record<string, string> = {
-                            bracket: 'Bracket', pickem: "Pick'em", survivor: 'Survivor',
-                          }
-                          return (
-                            <Link
-                              key={event.id}
-                              href={`/events/${event.slug}`}
-                              className="block bg-surface rounded-lg border border-border hover:border-brand/40 hover:shadow-md transition-all p-4"
-                            >
-                              <div className="flex items-center justify-between">
-                                <div>
-                                  <div className="flex items-center gap-2 mb-1">
-                                    <span className="text-lg">{sportIcon[event.sport] || '\uD83C\uDFC6'}</span>
-                                    <h3 className="text-text-primary font-medium">{event.name}</h3>
-                                  </div>
-                                  <div className="flex items-center gap-3 text-sm text-text-muted">
-                                    <span>{formatLabel[event.format] || event.format}</span>
-                                    <span>{event.poolCount} pool{event.poolCount !== 1 ? 's' : ''}</span>
-                                    <span>{new Date(event.startsAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
-                                  </div>
-                                </div>
-                                <svg className="w-5 h-5 text-text-muted shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-                                </svg>
+                            <div className="flex items-center gap-3 text-sm text-text-muted">
+                              <span>{league.sport}</span>
+                              <span>{league.season}</span>
+                              <span>{league.memberCount}/{league.maxTeams} members</span>
+                            </div>
+                          </div>
+                          <svg className="w-5 h-5 text-text-muted shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                          </svg>
+                        </div>
+                      </Link>
+                    ))}
+                    {openEvents.map((event) => {
+                      const sportIcon: Record<string, string> = {
+                        hockey: '\uD83C\uDFD2', golf: '\u26F3', rugby: '\uD83C\uDFC9',
+                        football: '\uD83C\uDFC8', basketball: '\uD83C\uDFC0',
+                      }
+                      const formatLabel: Record<string, string> = {
+                        bracket: 'Bracket', pickem: "Pick'em", survivor: 'Survivor',
+                      }
+                      return (
+                        <Link
+                          key={`event-${event.id}`}
+                          href={`/events/${event.slug}`}
+                          className="block bg-surface rounded-lg border border-border hover:border-brand/40 hover:shadow-md transition-all p-4"
+                        >
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <div className="flex items-center gap-2 mb-1">
+                                <span className="text-lg">{sportIcon[event.sport] || '\uD83C\uDFC6'}</span>
+                                <h3 className="text-text-primary font-medium">{event.name}</h3>
+                                <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-accent/15 text-accent-text">{formatLabel[event.format] || event.format}</span>
                               </div>
-                            </Link>
-                          )
-                        })}
-                      </div>
-                    </div>
-                  )}
+                              <div className="flex items-center gap-3 text-sm text-text-muted">
+                                <span>{event.poolCount} pool{event.poolCount !== 1 ? 's' : ''}</span>
+                                <span>{new Date(event.startsAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
+                              </div>
+                            </div>
+                            <svg className="w-5 h-5 text-text-muted shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                            </svg>
+                          </div>
+                        </Link>
+                      )
+                    })}
+                  </div>
                 </div>
               )}
             </div>
@@ -547,7 +536,7 @@ function JoinLeagueForm() {
                 onClick={() => setJoinMode('browse')}
                 className="text-brand-text hover:underline"
               >
-                browse open leagues and events
+                browse open competitions
               </button>
             </p>
           )}

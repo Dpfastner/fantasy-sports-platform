@@ -24,6 +24,7 @@ interface Season {
 }
 
 export default function CreateLeaguePage() {
+  const [competitionType, setCompetitionType] = useState<'league' | 'pool'>('league')
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
   const [teamName, setTeamName] = useState('')
@@ -269,12 +270,49 @@ export default function CreateLeaguePage() {
             </button>
           </div>
 
-          <h1 className="text-3xl font-bold text-text-primary mb-2">Create a League</h1>
-          <p className="text-text-secondary mb-2">Draft teams and compete across a full season with your friends.</p>
-          <p className="text-text-muted text-sm mb-6">
-            Looking for brackets or pick&apos;em? <Link href="/events" className="text-brand hover:underline">Browse events</Link>
-          </p>
+          <h1 className="text-3xl font-bold text-text-primary mb-6">Create a Competition</h1>
 
+          {/* Type Selector */}
+          <div className="grid grid-cols-2 gap-3 mb-6">
+            <button
+              type="button"
+              onClick={() => setCompetitionType('league')}
+              className={`p-4 rounded-lg border-2 text-left transition-all ${
+                competitionType === 'league'
+                  ? 'border-brand bg-brand/10'
+                  : 'border-border bg-surface hover:border-brand/40'
+              }`}
+            >
+              <span className="text-2xl block mb-1">{'\uD83C\uDFC8'}</span>
+              <span className="text-text-primary font-semibold block">Season League</span>
+              <span className="text-text-muted text-sm">Draft teams and compete across a full season</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setCompetitionType('pool')}
+              className={`p-4 rounded-lg border-2 text-left transition-all ${
+                competitionType === 'pool'
+                  ? 'border-brand bg-brand/10'
+                  : 'border-border bg-surface hover:border-brand/40'
+              }`}
+            >
+              <span className="text-2xl block mb-1">{'\uD83C\uDFC6'}</span>
+              <span className="text-text-primary font-semibold block">Prediction Pool</span>
+              <span className="text-text-muted text-sm">Brackets, pick&apos;em, and survivor competitions</span>
+            </button>
+          </div>
+
+          {competitionType === 'pool' ? (
+            <div className="bg-surface rounded-lg p-8 text-center">
+              <p className="text-text-secondary mb-4">Browse active tournaments to create your pool</p>
+              <Link
+                href="/events"
+                className="inline-block bg-brand hover:bg-brand-hover text-text-primary font-semibold py-3 px-6 rounded-lg transition-colors"
+              >
+                Browse Tournaments &rarr;
+              </Link>
+            </div>
+          ) : (
           <form onSubmit={handleSubmit} className="bg-surface rounded-lg p-8">
             {error && (
               <div className="bg-danger/10 border border-danger text-danger px-4 py-3 rounded-lg mb-6">
@@ -458,6 +496,7 @@ export default function CreateLeaguePage() {
               )}
             </div>
           </form>
+          )}
         </div>
       </main>
     </div>

@@ -29,8 +29,8 @@ const statusStyles: Record<string, string> = {
 }
 
 export const metadata = {
-  title: 'Events — Rivyls',
-  description: 'Browse and join bracket predictions, survivor leagues, and pick\'em competitions across multiple sports.',
+  title: 'Browse Competitions — Rivyls',
+  description: 'Season leagues, brackets, pick\'em, and survivor competitions across every sport.',
 }
 
 // Map sport config IDs to DB sport slugs
@@ -149,12 +149,12 @@ export default async function EventsPage({ searchParams }: { searchParams: Promi
         <div className="flex items-start justify-between mb-8">
           <div>
             <h1 className="brand-h1 text-3xl sm:text-4xl text-text-primary mb-2">
-              {sportFilter ? `${sportLabel} Competitions` : 'Events'}
+              {sportFilter ? `${sportLabel} Competitions` : 'Browse Competitions'}
             </h1>
             <p className="text-text-secondary text-lg">
               {sportFilter
-                ? `Join a league, bracket, or pick'em for ${sportLabel}.`
-                : "Brackets, survivor leagues, and pick'em competitions across every sport."
+                ? `Season leagues, brackets, pick'em, and survivor competitions for ${sportLabel}.`
+                : "Season leagues, brackets, pick'em, and survivor competitions across every sport."
               }
             </p>
           </div>
@@ -166,26 +166,7 @@ export default async function EventsPage({ searchParams }: { searchParams: Promi
           </Link>
         </div>
 
-        {/* Public Leagues Section */}
-        {publicLeagues.length > 0 && (
-          <div className="mb-8">
-            <h2 className="brand-h3 text-lg text-text-primary mb-3">Open Leagues</h2>
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {publicLeagues.map((league) => (
-                <Link
-                  key={league.id}
-                  href={`/leagues/${league.id}`}
-                  className="bg-surface rounded-lg border border-border hover:border-brand/40 hover:shadow-md transition-all p-5 border-l-4 border-l-orange-500"
-                >
-                  <h3 className="brand-h3 text-base text-text-primary mb-1">{league.name}</h3>
-                  <p className="text-text-muted text-sm">Season League · {league.memberCount}/{league.max_teams} teams</p>
-                </Link>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Tournament Grid */}
+        {/* Competitions Grid */}
         {!hasContent ? (
           <div className="bg-surface rounded-lg p-12 text-center border border-border">
             <p className="text-text-secondary text-lg mb-2">No competitions available yet</p>
@@ -197,9 +178,44 @@ export default async function EventsPage({ searchParams }: { searchParams: Promi
               Create Competition
             </Link>
           </div>
-        ) : !tournaments?.length ? null : (
+        ) : (
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {[...tournaments]
+            {/* Public League Cards */}
+            {publicLeagues.map((league) => {
+              const leagueMeta = sportMeta[sportFilter || 'college_football'] || defaultSportMeta
+              return (
+                <Link
+                  key={`league-${league.id}`}
+                  href={`/leagues/${league.id}`}
+                  className={`bg-surface rounded-lg border border-border hover:border-brand/40 hover:shadow-md transition-all group border-l-4 ${leagueMeta.borderColor}`}
+                >
+                  <div className="p-5 pb-3">
+                    <div className="flex items-start justify-between mb-2">
+                      <div className="min-w-0 flex-1 flex items-center gap-2">
+                        <span className="text-2xl shrink-0">{leagueMeta.icon}</span>
+                        <div className="min-w-0">
+                          <h2 className="brand-h3 text-lg text-text-primary group-hover:text-brand transition-colors truncate">
+                            {league.name}
+                          </h2>
+                        </div>
+                      </div>
+                    </div>
+                    <p className="text-text-muted text-sm ml-9">
+                      {league.memberCount}/{league.max_teams} teams
+                    </p>
+                  </div>
+                  <div className="px-5 py-3 border-t border-border-subtle flex items-center justify-between text-sm">
+                    <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-brand/15 text-brand-text">
+                      Season League
+                    </span>
+                    <span className="text-text-muted text-xs">{league.sport_name}</span>
+                  </div>
+                </Link>
+              )
+            })}
+
+            {/* Tournament Cards */}
+            {[...(tournaments || [])]
               .sort((a, b) => {
                 // Group by sport, then by start date
                 if (a.sport !== b.sport) {
