@@ -52,6 +52,20 @@ export function MobileChatPeek() {
     }
   }, [isMobileExpanded])
 
+  // Track visual viewport height to eliminate gap between chat and iOS keyboard
+  const [viewportHeight, setViewportHeight] = useState<number | null>(null)
+  useEffect(() => {
+    if (!isMobileExpanded) { setViewportHeight(null); return }
+
+    const vv = window.visualViewport
+    if (!vv) return
+
+    const onResize = () => setViewportHeight(vv.height)
+    onResize()
+    vv.addEventListener('resize', onResize)
+    return () => vv.removeEventListener('resize', onResize)
+  }, [isMobileExpanded])
+
   if (!ctx) return null
 
   // Hide for unauthenticated users and on draft pages (draft has its own chat)
@@ -62,7 +76,7 @@ export function MobileChatPeek() {
   // Full-screen expanded view
   if (isMobileExpanded) {
     return (
-      <div className="md:hidden fixed inset-0 z-50 bg-surface flex flex-col overflow-hidden overscroll-none" style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}>
+      <div className="md:hidden fixed inset-x-0 top-0 z-50 bg-surface flex flex-col overflow-hidden overscroll-none" style={{ height: viewportHeight ? `${viewportHeight}px` : '100dvh' }}>
         {/* Top bar */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-border shrink-0">
           {activeChannel ? (
