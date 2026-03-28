@@ -97,16 +97,18 @@ export default async function EventsPage({ searchParams }: { searchParams: Promi
     }
   }
 
-  // Also fetch public leagues for this sport (so the page isn't empty when there are no events)
+  // Fetch public leagues (all sports, or filtered)
   const admin = createAdminClient()
   let publicLeagues: Array<{ id: string; name: string; invite_code: string; max_teams: number; memberCount: number; sport_name: string }> = []
-  if (sportFilter) {
-    const { data: leagues } = await admin
+  {
+    let query = admin
       .from('leagues')
       .select('id, name, invite_code, max_teams, sports(name, slug)')
       .eq('is_public', true)
-      .eq('sports.slug', sportFilter)
-      .not('sports', 'is', null)
+    if (sportFilter) {
+      query = query.eq('sports.slug', sportFilter).not('sports', 'is', null)
+    }
+    const { data: leagues } = await query
 
     if (leagues) {
       // Get member counts

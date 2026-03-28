@@ -303,15 +303,7 @@ export default function CreateLeaguePage() {
           </div>
 
           {competitionType === 'pool' ? (
-            <div className="bg-surface rounded-lg p-8 text-center">
-              <p className="text-text-secondary mb-4">Browse active tournaments to create your pool</p>
-              <Link
-                href="/events"
-                className="inline-block bg-brand hover:bg-brand-hover text-text-primary font-semibold py-3 px-6 rounded-lg transition-colors"
-              >
-                Browse Tournaments &rarr;
-              </Link>
-            </div>
+            <PoolTournamentBrowser />
           ) : (
           <form onSubmit={handleSubmit} className="bg-surface rounded-lg p-8">
             {error && (
@@ -499,6 +491,98 @@ export default function CreateLeaguePage() {
           )}
         </div>
       </main>
+    </div>
+  )
+}
+
+function PoolTournamentBrowser() {
+  const [tournaments, setTournaments] = useState<Array<{
+    id: string
+    name: string
+    slug: string
+    format: string
+    status: string
+    starts_at: string | null
+    sport_name: string
+    pool_count: number
+  }>>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    async function load() {
+      const supabase = createClient()
+      const { data } = await supabase
+        .from('event_tournaments')
+        .select('id, name, slug, format, status, starts_at, sports(name)')
+        .in('status', ['upcoming', 'active', 'in_progress'])
+        .order('starts_at', { ascending: true })
+
+      const items = []
+      for (const t of data || []) {
+        const { count } = await supabase
+          .from('event_pools')
+          .select('id', { count: 'exact', head: true })
+          .eq('tournament_id', t.id)
+
+        items.push({
+          id: t.id,
+          name: t.name,
+          slug: t.slug,
+          format: t.format,
+          status: t.status,
+          starts_at: t.starts_at,
+          sport_name: (t.sports as unknown as { name: string })?.name || 'Unknown',
+          pool_count: count || 0,
+        })
+      }
+      setTournaments(items)
+      setLoading(false)
+    }
+    load()
+  }, [])
+
+  const formatBadge = (format: string) => {
+    const labels: Record<string, string> = { bracket: 'Bracket', pickem: "Pick'em", survivor: 'Survivor', multi: 'Multi-Format', roster: 'Roster' }
+    return labels[format] || format
+  }
+
+  if (loading) {
+    return <div className="bg-surface rounded-lg p-8 text-center text-text-muted">Loading tournaments...</div>
+  }
+
+  if (tournaments.length === 0) {
+    return (
+      <div className="bg-surface rounded-lg p-8 text-center">
+        <p className="text-text-secondary mb-2">No active tournaments right now</p>
+        <p className="text-text-muted text-sm">Check back soon — new competitions are added regularly.</p>
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-3">
+      <p className="text-text-muted text-sm">Select a tournament to create your pool:</p>
+      {tournaments.map(t => (
+        <Link
+          key={t.id}
+          href={`/events/${t.slug}`}
+          className="block bg-surface rounded-lg border border-border hover:border-brand/40 hover:shadow-md transition-all p-4"
+        >
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-text-primary font-medium mb-1">{t.name}</h3>
+              <div className="flex items-center gap-2 text-sm text-text-muted">
+                <span>{t.sport_name}</span>
+                <span className="px-1.5 py-0.5 bg-accent/20 text-accent-text rounded text-xs font-medium">{formatBadge(t.format)}</span>
+                {t.pool_count > 0 && <span>{t.pool_count} pool{t.pool_count !== 1 ? 's' : ''}</span>}
+              </div>
+            </div>
+            <svg className="w-5 h-5 text-text-muted shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+            </svg>
+          </div>
+        </Link>
+      ))}
     </div>
   )
 }
