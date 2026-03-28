@@ -304,7 +304,7 @@ export function BracketPicker({
             <span className="text-danger-text">{scoringBreakdown.incorrectCount} incorrect</span>
             <span>{totalGames - scoringBreakdown.correctCount - scoringBreakdown.incorrectCount} remaining</span>
           </div>
-          <div className="mt-2 flex gap-1">
+          <div className="mt-2 grid grid-cols-2 sm:grid-cols-4 gap-1">
             {Object.entries(roundScoring).map(([round, pts]) => {
               const roundGames = roundGroups[round] || []
               const roundCorrect = roundGames.filter(g => scoringBreakdown.perGame[g.id]?.correct === true).length
