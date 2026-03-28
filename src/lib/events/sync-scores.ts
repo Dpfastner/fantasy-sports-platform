@@ -84,6 +84,8 @@ export async function syncHockeyScores(
       status: espnGame.status === 'completed' ? 'completed' : 'live',
       period: espnGame.period,
       clock: espnGame.clock,
+      // Sync start time from ESPN (fixes placeholder times from seeding)
+      starts_at: espnGame.date || undefined,
       updated_at: now,
     }
 
@@ -186,6 +188,7 @@ export async function syncRugbyScores(
       period: match.period ? `${match.period}` : null,
       clock: match.displayClock || null,
       is_draw: match.isDraw,
+      starts_at: match.date || undefined,
       updated_at: now,
     }
 
