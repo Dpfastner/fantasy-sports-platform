@@ -131,6 +131,7 @@ export function MobileChatPeek() {
               isCommissioner={activeChannel.isAdmin}
               onSendRef={sendRef}
               showPinnedOnly={showPinnedOnly}
+              onReply={setReplyingTo}
             />
             <ChatInput
               channelType={activeChannel.type}
@@ -138,6 +139,8 @@ export function MobileChatPeek() {
               currentUserId={userId}
               currentDisplayName={displayName}
               onMessageSent={(msg) => sendRef.current?.(msg)}
+              replyingTo={replyingTo}
+              onCancelReply={() => setReplyingTo(null)}
             />
           </div>
         ) : (
