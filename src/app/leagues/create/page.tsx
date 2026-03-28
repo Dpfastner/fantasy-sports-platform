@@ -513,7 +513,7 @@ function PoolTournamentBrowser() {
       const supabase = createClient()
       const { data } = await supabase
         .from('event_tournaments')
-        .select('id, name, slug, format, status, starts_at, sports(name)')
+        .select('id, name, slug, format, status, starts_at, sport')
         .in('status', ['upcoming', 'active', 'in_progress'])
         .order('starts_at', { ascending: true })
 
@@ -524,6 +524,7 @@ function PoolTournamentBrowser() {
           .select('id', { count: 'exact', head: true })
           .eq('tournament_id', t.id)
 
+        const sportLabels: Record<string, string> = { hockey: 'Hockey', golf: 'Golf', rugby: 'Rugby', college_football: 'Football' }
         items.push({
           id: t.id,
           name: t.name,
@@ -531,7 +532,7 @@ function PoolTournamentBrowser() {
           format: t.format,
           status: t.status,
           starts_at: t.starts_at,
-          sport_name: (t.sports as unknown as { name: string })?.name || 'Unknown',
+          sport_name: sportLabels[t.sport] || t.sport || 'Unknown',
           pool_count: count || 0,
         })
       }
