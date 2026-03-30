@@ -25,10 +25,13 @@ const SPORT_LABELS: Record<string, string> = {
   cricket: 'Cricket',
 }
 
+// Use simple Unicode chars that exist in standard fonts (Satori can't render emoji)
 const ICON_CHARS: Record<string, string> = {
-  star: '\u2605',
-  trophy: '\uD83C\uDFC6',
-  medal: '\uD83E\uDD47',
+  star: '\u2605',     // ★
+  trophy: '\u2605',   // ★ (no trophy in standard fonts)
+  medal: '\u2605',    // ★
+  flag: '\u2691',     // ⚑
+  crown: '\u265B',    // ♛
 }
 
 export async function GET(request: Request) {
@@ -103,7 +106,12 @@ export async function GET(request: Request) {
               fontSize: 72,
             }}
           >
-            {iconChar}
+            {def.icon_url ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={def.icon_url} width={80} height={80} style={{ objectFit: 'contain' }} />
+            ) : (
+              iconChar
+            )}
           </div>
 
           {/* Badge label */}
