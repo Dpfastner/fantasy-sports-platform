@@ -10,6 +10,7 @@ interface Commissioner {
   email: string
   displayName: string | null
   leagueCount: number
+  poolCount: number
   totalMembers: number
   draftsCompleted: number
   meetsThreshold: boolean
@@ -239,7 +240,7 @@ export function BadgeAdminTable({ commissioners, badgeDefinitions }: BadgeAdminT
             <tr className="text-left text-text-secondary border-b border-border">
               <th className="px-4 py-3 font-medium">Commissioner</th>
               <th className="px-4 py-3 font-medium">Badges</th>
-              <th className="px-4 py-3 font-medium text-right">Leagues</th>
+              <th className="px-4 py-3 font-medium text-right">Competitions</th>
               <th className="px-4 py-3 font-medium text-right">Members</th>
               <th className="px-4 py-3 font-medium text-right">Drafts Done</th>
               <th className="px-4 py-3 font-medium text-right">Actions</th>
@@ -287,7 +288,12 @@ export function BadgeAdminTable({ commissioners, badgeDefinitions }: BadgeAdminT
                       )}
                     </div>
                   </td>
-                  <td className="px-4 py-3 text-text-primary font-medium text-right">{c.leagueCount}</td>
+                  <td className="px-4 py-3 text-text-primary font-medium text-right">
+                    {c.leagueCount > 0 && <span>{c.leagueCount}L</span>}
+                    {c.leagueCount > 0 && c.poolCount > 0 && <span className="text-text-muted"> / </span>}
+                    {c.poolCount > 0 && <span>{c.poolCount}P</span>}
+                    {c.leagueCount === 0 && c.poolCount === 0 && <span className="text-text-muted">0</span>}
+                  </td>
                   <td className="px-4 py-3 text-text-primary font-medium text-right">{c.totalMembers}</td>
                   <td className="px-4 py-3 text-text-primary font-medium text-right">{c.draftsCompleted}</td>
                   <td className="px-4 py-3 text-right">
