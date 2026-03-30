@@ -31,7 +31,7 @@ export default async function ProfilePage() {
     redirect('/login')
   }
 
-  const [profileResult, leaguesResult, badges] = await Promise.all([
+  const [profileResult, leaguesResult, poolsResult, badges] = await Promise.all([
     supabase
       .from('profiles')
       .select('id, display_name, email, tier, referred_by, created_at, favorite_school_id, featured_favorite_id')
@@ -40,6 +40,10 @@ export default async function ProfilePage() {
     supabase
       .from('league_members')
       .select('league_id, role, leagues(id, name, status, max_teams)')
+      .eq('user_id', user.id),
+    supabase
+      .from('event_entries')
+      .select('pool_id, event_pools(id, name, status, created_by, event_tournaments(slug, name, sport))')
       .eq('user_id', user.id),
     getUserBadges(user.id),
   ])
@@ -79,6 +83,37 @@ export default async function ProfilePage() {
   const dormantLeagues = allLeagues.filter(l => l.leagues.status === 'dormant')
   const commissionerLeagues = leagues.filter(l => l.role === 'commissioner' || l.role === 'co_commissioner')
   const memberLeagues = leagues.filter(l => l.role === 'member')
+
+  // Deduplicate pools by pool_id (user may have multiple entries)
+  interface PoolEntry {
+    poolId: string
+    poolName: string
+    poolStatus: string
+    isCreator: boolean
+    tournamentSlug: string
+    tournamentName: string
+    sport: string
+  }
+  const seenPoolIds = new Set<string>()
+  const userPools: PoolEntry[] = []
+  for (const entry of (poolsResult.data || []) as { pool_id: string; event_pools: { id: string; name: string; status: string; created_by: string; event_tournaments: { slug: string; name: string; sport: string } | { slug: string; name: string; sport: string }[] | null } | { id: string; name: string; status: string; created_by: string; event_tournaments: { slug: string; name: string; sport: string } | { slug: string; name: string; sport: string }[] | null }[] | null }[]) {
+    if (seenPoolIds.has(entry.pool_id)) continue
+    seenPoolIds.add(entry.pool_id)
+    const pool = Array.isArray(entry.event_pools) ? entry.event_pools[0] : entry.event_pools
+    if (!pool) continue
+    const tournament = Array.isArray(pool.event_tournaments) ? pool.event_tournaments[0] : pool.event_tournaments
+    userPools.push({
+      poolId: pool.id,
+      poolName: pool.name,
+      poolStatus: pool.status,
+      isCreator: pool.created_by === user.id,
+      tournamentSlug: tournament?.slug || '',
+      tournamentName: tournament?.name || '',
+      sport: tournament?.sport || '',
+    })
+  }
+  const activePools = userPools.filter(p => p.poolStatus !== 'completed')
+  const completedPools = userPools.filter(p => p.poolStatus === 'completed')
 
   const joinDate = new Date(profile.created_at).toLocaleDateString('en-US', {
     year: 'numeric',
@@ -162,15 +197,15 @@ export default async function ProfilePage() {
           </div>
         )}
 
-        {/* My Leagues */}
+        {/* My Competitions */}
         <div className="bg-surface rounded-lg p-6 mb-6">
-          <h2 className="text-xl font-semibold text-text-primary mb-4">My Leagues</h2>
+          <h2 className="text-xl font-semibold text-text-primary mb-4">My Competitions</h2>
 
-          {allLeagues.length === 0 ? (
+          {allLeagues.length === 0 && userPools.length === 0 ? (
             <p className="text-text-secondary">
-              You haven&apos;t joined any leagues yet.{' '}
+              You haven&apos;t joined any competitions yet.{' '}
               <Link href="/leagues/create" className="text-brand hover:text-brand-hover">
-                Create one
+                Create a league
               </Link>{' '}
               or{' '}
               <Link href="/leagues/join" className="text-brand hover:text-brand-hover">
@@ -220,10 +255,31 @@ export default async function ProfilePage() {
                 </div>
               )}
 
-              {dormantLeagues.length > 0 && (
+              {activePools.length > 0 && (
+                <div>
+                  <h3 className="text-text-muted text-sm font-medium mb-2 uppercase tracking-wider">
+                    Event Pools
+                  </h3>
+                  {activePools.map((p) => (
+                    <Link
+                      key={p.poolId}
+                      href={`/events/${p.tournamentSlug}/pools/${p.poolId}`}
+                      className="flex items-center justify-between py-3 px-4 rounded-lg hover:bg-surface-subtle transition-colors"
+                    >
+                      <div>
+                        <span className="text-text-primary font-medium">{p.poolName}</span>
+                        {p.isCreator && <span className="text-text-muted text-xs ml-2">(Creator)</span>}
+                      </div>
+                      <span className="text-text-muted text-sm">{p.tournamentName}</span>
+                    </Link>
+                  ))}
+                </div>
+              )}
+
+              {(dormantLeagues.length > 0 || completedPools.length > 0) && (
                 <div className="pt-3 mt-3 border-t border-border">
                   <h3 className="text-text-muted text-sm font-medium mb-2 uppercase tracking-wider">
-                    Past Seasons
+                    Past Competitions
                   </h3>
                   {dormantLeagues.map((l) => (
                     <Link
@@ -236,6 +292,19 @@ export default async function ProfilePage() {
                         <span className="bg-surface-inset text-text-muted text-xs px-1.5 py-0.5 rounded">Dormant</span>
                       </div>
                       <span className="text-text-muted text-sm">{l.leagues.max_teams} teams</span>
+                    </Link>
+                  ))}
+                  {completedPools.map((p) => (
+                    <Link
+                      key={p.poolId}
+                      href={`/events/${p.tournamentSlug}/pools/${p.poolId}`}
+                      className="flex items-center justify-between py-3 px-4 rounded-lg hover:bg-surface-subtle transition-colors opacity-75 hover:opacity-100"
+                    >
+                      <div className="flex items-center gap-2">
+                        <span className="text-text-secondary font-medium">{p.poolName}</span>
+                        <span className="bg-surface-inset text-text-muted text-xs px-1.5 py-0.5 rounded">Completed</span>
+                      </div>
+                      <span className="text-text-muted text-sm">{p.tournamentName}</span>
                     </Link>
                   ))}
                 </div>
