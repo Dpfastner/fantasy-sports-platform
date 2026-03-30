@@ -305,7 +305,14 @@ export function BracketPicker({
             <span>{totalGames - scoringBreakdown.correctCount - scoringBreakdown.incorrectCount} remaining</span>
           </div>
           <div className="mt-2 grid grid-cols-2 sm:grid-cols-4 gap-1">
-            {Object.entries(roundScoring).map(([round, pts]) => {
+            {Object.entries(roundScoring)
+              .sort(([a], [b]) => {
+                const order = ['round_1', 'round_of_64', 'round_of_32', 'regional_quarterfinal', 'quarterfinal', 'regional_final', 'sweet_sixteen', 'elite_eight', 'semifinal', 'final_four', 'championship']
+                const ai = order.indexOf(a)
+                const bi = order.indexOf(b)
+                return (ai === -1 ? 99 : ai) - (bi === -1 ? 99 : bi)
+              })
+              .map(([round, pts]) => {
               const roundGames = roundGroups[round] || []
               const roundCorrect = roundGames.filter(g => scoringBreakdown.perGame[g.id]?.correct === true).length
               const roundTotal = roundGames.length

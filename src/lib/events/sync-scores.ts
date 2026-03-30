@@ -4,6 +4,7 @@
  */
 
 import { SupabaseClient } from '@supabase/supabase-js'
+import { generateBracketStructure } from './shared'
 import {
   fetchHockeyTournamentGames,
   fetchRugbyMatches,
@@ -118,6 +119,11 @@ export async function syncHockeyScores(
     }
   }
 
+  // Advance winners to next round
+  if (newCompletions || completed > 0) {
+    await advanceBracketWinners(admin, tournamentId)
+  }
+
   return { gamesUpdated: updated, live, completed, newCompletions }
 }
 
@@ -208,6 +214,11 @@ export async function syncRugbyScores(
         newCompletions = true
       }
     }
+  }
+
+  // Advance winners to next round (for bracket-format rugby tournaments)
+  if (newCompletions || completed > 0) {
+    await advanceBracketWinners(admin, tournamentId)
   }
 
   return { gamesUpdated: updated, live, completed, newCompletions }
@@ -312,4 +323,78 @@ export async function syncGolfScores(
   }
 
   return { gamesUpdated: updated, live: 0, completed, newCompletions, participantsUpdated }
+}
+
+/**
+ * Advance bracket winners to downstream games.
+ * For each completed game with a winner, populate the correct participant
+ * slot on the next-round game. Idempotent — safe to call on every sync.
+ *
+ * Works for any bracket size (4, 8, 16) by using generateBracketStructure.
+ */
+export async function advanceBracketWinners(
+  admin: SupabaseClient,
+  tournamentId: string
+): Promise<number> {
+  const { data: allGames } = await admin
+    .from('event_games')
+    .select('id, game_number, winner_id, participant_1_id, participant_2_id, status')
+    .eq('tournament_id', tournamentId)
+    .order('game_number')
+
+  if (!allGames?.length) return 0
+
+  // Derive bracket size from game count: 15 games = 16 teams, 7 = 8, 3 = 4
+  const totalGames = allGames.length
+  let bracketSize = 4
+  if (totalGames >= 15) bracketSize = 16
+  else if (totalGames >= 7) bracketSize = 8
+
+  const structure = generateBracketStructure(bracketSize)
+
+  // Build reverse map: feederGameNumber → { targetGameNumber, slot }
+  const feedsInto: Record<number, { target: number; slot: 1 | 2 }> = {}
+  for (const [gameNumStr, info] of Object.entries(structure)) {
+    const gameNum = Number(gameNumStr)
+    for (let i = 0; i < info.feeds_from.length; i++) {
+      feedsInto[info.feeds_from[i]] = { target: gameNum, slot: (i + 1) as 1 | 2 }
+    }
+  }
+
+  // Map game_number to game row for quick lookup
+  const gameByNumber: Record<number, typeof allGames[0]> = {}
+  for (const g of allGames) gameByNumber[g.game_number] = g
+
+  let advanced = 0
+
+  for (const game of allGames) {
+    if (!game.winner_id) continue
+    if (game.status !== 'completed' && game.status !== 'final') continue
+
+    const downstream = feedsInto[game.game_number]
+    if (!downstream) continue // championship has no downstream
+
+    const targetGame = gameByNumber[downstream.target]
+    if (!targetGame) continue
+
+    const field = downstream.slot === 1 ? 'participant_1_id' : 'participant_2_id'
+    const currentValue = downstream.slot === 1 ? targetGame.participant_1_id : targetGame.participant_2_id
+
+    // Already set correctly — skip
+    if (currentValue === game.winner_id) continue
+
+    const { error } = await admin
+      .from('event_games')
+      .update({ [field]: game.winner_id, updated_at: new Date().toISOString() })
+      .eq('id', targetGame.id)
+
+    if (!error) {
+      // Update local cache so subsequent iterations see the change
+      if (downstream.slot === 1) targetGame.participant_1_id = game.winner_id
+      else targetGame.participant_2_id = game.winner_id
+      advanced++
+    }
+  }
+
+  return advanced
 }
