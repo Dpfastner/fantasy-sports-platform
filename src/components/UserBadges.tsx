@@ -61,7 +61,7 @@ function HeartIcon({ className }: { className?: string }) {
 function FlagIcon({ className }: { className?: string }) {
   return (
     <svg className={className} viewBox="0 0 24 24" fill="currentColor">
-      <path d="M5 21V4h1c1.1 0 2-.9 2-2h1c0 1.1.9 2 2 2h4c1.1 0 2-.9 2-2h1c0 1.1.9 2 2 2h1v10h-1c-1.1 0-2 .9-2 2h-1c0-1.1-.9-2-2-2h-4c-1.1 0-2 .9-2 2H8c0-1.1-.9-2-2-2H5v7z" />
+      <path d="M4 2v20h2v-8h4l2 2h8V4h-8l-2-2H4zm2 2h4l2 2h6v6h-6l-2-2H6V4z" />
     </svg>
   )
 }
