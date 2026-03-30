@@ -307,6 +307,15 @@ export default async function PoolDetailPage({ params }: PageProps) {
 
     const effectiveFormat = pool.game_type || tournament.format
     if (effectiveFormat === 'bracket') {
+      // Build set of eliminated participants (lost in any completed game)
+      const eliminated = new Set<string>()
+      for (const g of (games || [])) {
+        if ((g.status === 'completed' || g.status === 'final') && g.winner_id) {
+          if (g.participant_1_id && g.participant_1_id !== g.winner_id) eliminated.add(g.participant_1_id)
+          if (g.participant_2_id && g.participant_2_id !== g.winner_id) eliminated.add(g.participant_2_id)
+        }
+      }
+
       for (const pick of entryPicks) {
         if (!pick.game_id) continue
         const game = gameById[pick.game_id]
@@ -314,17 +323,9 @@ export default async function PoolDetailPage({ params }: PageProps) {
         const roundPts = (scoringRules as Record<string, number>)[game.round] || 0
         const isResolved = game.status === 'completed' || game.status === 'final'
 
-        if (!isResolved) {
-          // Game not resolved yet — pick could still be correct
+        if (!isResolved && !eliminated.has(pick.participant_id)) {
+          // Game not resolved AND picked team still alive — could still earn
           maxPossible += roundPts
-        }
-      }
-
-      // Also add points for games the user hasn't picked yet (still possible)
-      const pickedGameIds = new Set(entryPicks.map(p => p.game_id))
-      for (const g of (games || [])) {
-        if (!pickedGameIds.has(g.id) && g.status !== 'completed' && g.status !== 'final') {
-          maxPossible += (scoringRules as Record<string, number>)[g.round] || 0
         }
       }
     }
