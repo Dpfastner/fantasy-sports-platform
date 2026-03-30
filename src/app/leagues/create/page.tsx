@@ -236,6 +236,9 @@ export default function CreateLeaguePage() {
       trackActivity('league.created', league.id, { leagueName: name.trim(), maxTeams })
       track('league_created')
 
+      // Auto-grant Founding Commissioner badge (fire-and-forget)
+      fetch('/api/badges/auto-grant', { method: 'POST' }).catch(() => {})
+
       // Redirect to the new league page
       router.push(`/leagues/${league.id}`)
     } catch {

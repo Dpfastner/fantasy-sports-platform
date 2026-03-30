@@ -569,6 +569,25 @@ export async function GET(request: Request) {
         }
         results[`scoring_${tournamentId}`] = { triggered: true, format }
 
+        // Check if ALL games in tournament are completed — if so, award champion badges
+        const { count: totalGames } = await admin.from('event_games')
+          .select('id', { count: 'exact', head: true })
+          .eq('tournament_id', tournamentId)
+        const { count: completedGames } = await admin.from('event_games')
+          .select('id', { count: 'exact', head: true })
+          .eq('tournament_id', tournamentId)
+          .eq('status', 'completed')
+
+        if (totalGames && completedGames && totalGames === completedGames) {
+          try {
+            const { autoGrantChampionBadges } = await import('@/lib/badges-auto')
+            await autoGrantChampionBadges(tournamentId)
+            results[`champion_badges_${tournamentId}`] = { triggered: true }
+          } catch (badgeErr) {
+            console.error(`[event-gameday-sync] Champion badge error for ${tournamentId}:`, badgeErr)
+          }
+        }
+
         // Only notify on genuinely new completions (not safety-net re-scores)
         if (trulyNewCompletions.has(tournamentId)) {
           const { data: scoredPools } = await admin

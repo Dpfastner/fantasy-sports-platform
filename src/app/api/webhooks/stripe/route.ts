@@ -110,6 +110,13 @@ export async function POST(req: NextRequest) {
           }
 
           console.log(`[stripe/webhook] Donation recorded: $${((session.amount_total || 0) / 100).toFixed(2)} from ${userId}`)
+
+          // Auto-grant Supporter badge
+          if (userId) {
+            import('@/lib/badges-auto').then(({ autoGrantSupporter }) => {
+              autoGrantSupporter(userId).catch(err => console.error('[stripe/webhook] Supporter badge error:', err))
+            })
+          }
         }
         break
       }

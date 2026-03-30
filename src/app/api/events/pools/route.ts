@@ -366,6 +366,11 @@ export async function POST(request: Request) {
     })
     logActivity({ userId: user.id, action: 'event.pool_created', details: { poolId: pool.id, tournamentId, gameType: resolvedGameType } })
 
+    // Auto-grant Founding Commissioner badge (fire-and-forget)
+    import('@/lib/badges-auto').then(({ autoGrantFoundingCommissioner }) => {
+      autoGrantFoundingCommissioner(user.id).catch(() => {})
+    })
+
     return NextResponse.json({
       success: true,
       poolId: pool.id,
