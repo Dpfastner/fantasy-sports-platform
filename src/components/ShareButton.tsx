@@ -44,8 +44,8 @@ export function ShareButton({
   }, [showDropdown])
 
   const handleClick = async () => {
-    // Use native Web Share API on supported devices
-    if (typeof navigator !== 'undefined' && navigator.share) {
+    // On mobile with native Web Share API, use it exclusively (don't show dropdown)
+    if (typeof navigator !== 'undefined' && navigator.share && 'ontouchstart' in window) {
       try {
         const shareUrl = new URL(shareData.url)
         shareUrl.searchParams.set('utm_medium', 'webshare')
@@ -54,11 +54,12 @@ export function ShareButton({
           text: shareData.text,
           url: shareUrl.toString(),
         })
-        return
       } catch {
-        // User cancelled or API failed — fall through to dropdown
+        // User cancelled — do nothing (don't show dropdown)
       }
+      return
     }
+    // Desktop or no native share: show our dropdown
     setShowDropdown((prev) => !prev)
   }
 

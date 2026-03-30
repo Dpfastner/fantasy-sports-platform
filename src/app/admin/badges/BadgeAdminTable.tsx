@@ -267,22 +267,26 @@ export function BadgeAdminTable({ commissioners, badgeDefinitions }: BadgeAdminT
                     </div>
                   </td>
                   <td className="px-4 py-3">
-                    <div className="flex items-center gap-1 flex-wrap">
+                    <div className="flex items-center gap-1.5 flex-wrap">
                       {badges.length > 0 ? (
-                        <>
-                          <UserBadges badges={badges} size="sm" />
-                          {badges.map(b => (
+                        badges.map(b => (
+                          <span key={b.id} className="inline-flex items-center gap-0.5">
+                            <span
+                              className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold"
+                              style={{ backgroundColor: b.badge_definitions.bg_color, color: b.badge_definitions.color }}
+                            >
+                              {b.badge_definitions.label}
+                            </span>
                             <button
-                              key={b.id}
                               onClick={() => handleRevoke(c.userId, b.id)}
                               disabled={isLoading}
-                              className="px-1.5 py-0.5 text-xs rounded bg-danger/10 hover:bg-danger/20 text-danger-text transition-colors disabled:opacity-50"
+                              className="px-1 py-0.5 text-[10px] rounded bg-danger/10 hover:bg-danger/20 text-danger-text transition-colors disabled:opacity-50"
                               title={`Revoke ${b.badge_definitions.label}`}
                             >
                               x
                             </button>
-                          ))}
-                        </>
+                          </span>
+                        ))
                       ) : (
                         <span className="text-text-muted text-sm">-</span>
                       )}
