@@ -133,11 +133,11 @@ export function BadgeCelebration() {
 
   return (
     <div
-      className="fixed inset-0 z-[9998] flex items-center justify-center bg-black/70 p-4"
+      className="fixed inset-0 z-[9998] flex items-center justify-center bg-black/70 p-4 overflow-y-auto"
       onClick={handleDismiss}
     >
       <div
-        className="bg-surface border border-border rounded-2xl shadow-2xl max-w-sm w-full p-8 text-center animate-scale-in"
+        className="bg-surface border border-border rounded-2xl shadow-2xl max-w-sm w-full p-8 text-center animate-scale-in my-8"
         onClick={e => e.stopPropagation()}
       >
         {/* Badge icon */}
