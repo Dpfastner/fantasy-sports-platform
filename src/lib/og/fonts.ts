@@ -32,9 +32,8 @@ let emojiCache: ArrayBuffer | null = null
 export async function loadEmojiFont(): Promise<ArrayBuffer | null> {
   if (emojiCache) return emojiCache
   try {
-    const res = await fetch('https://cdn.jsdelivr.net/npm/@fontsource/noto-color-emoji/files/noto-color-emoji-emoji-400-normal.woff', {
-      next: { revalidate: 86400 },
-    })
+    // Google's Noto Emoji (monochrome) — known to work with Satori
+    const res = await fetch('https://raw.githubusercontent.com/googlefonts/noto-emoji/main/fonts/NotoEmoji-Bold.ttf')
     if (!res.ok) return null
     emojiCache = await res.arrayBuffer()
     return emojiCache
