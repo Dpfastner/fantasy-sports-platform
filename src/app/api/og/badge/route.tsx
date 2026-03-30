@@ -1,7 +1,7 @@
 import { ImageResponse } from 'next/og'
 import { createAdminClient } from '@/lib/supabase/server'
 import { TradingCardLayout } from '@/lib/og/trading-card-layout'
-import { loadFonts, loadEmojiFont } from '@/lib/og/fonts'
+import { loadFonts } from '@/lib/og/fonts'
 import { OG } from '@/lib/og/constants'
 
 export const runtime = 'nodejs'
@@ -62,7 +62,6 @@ export async function GET(request: Request) {
     .single()
 
   const fonts = await loadFonts()
-  const emojiFont = await loadEmojiFont()
   const defRaw = userBadge.badge_definitions as unknown
   const def = (Array.isArray(defRaw) ? defRaw[0] : defRaw) as BadgeDefinitionRow
   const meta = (userBadge.metadata || {}) as Record<string, unknown>
@@ -109,12 +108,8 @@ export async function GET(request: Request) {
             {def.icon_url ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img src={def.icon_url} width={80} height={80} style={{ objectFit: 'contain' }} />
-            ) : emojiFont ? (
-              <div style={{ fontSize: 72, fontFamily: 'NotoEmoji' }}>{iconSvg.emoji}</div>
             ) : (
-              <svg width="72" height="72" viewBox={iconSvg.viewBox} fill={accentColor}>
-                <path d={iconSvg.path} />
-              </svg>
+              <div style={{ fontSize: 72 }}>{iconSvg.emoji}</div>
             )}
           </div>
 
@@ -191,7 +186,6 @@ export async function GET(request: Request) {
       fonts: [
         { name: 'Montserrat', data: fonts.montserratBold, weight: 700 as const },
         { name: 'Inter', data: fonts.interRegular, weight: 400 as const },
-        ...(emojiFont ? [{ name: 'NotoEmoji', data: emojiFont, weight: 400 as const }] : []),
       ],
     }
   )
