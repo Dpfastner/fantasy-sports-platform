@@ -1,6 +1,7 @@
 /**
  * Brand colors and dimensions for OG image generation.
- * Hardcoded from the "Collegiate Fire" palette since Satori can't use CSS variables.
+ * Hardcoded from the default Rivyls palette since Satori can't use CSS variables.
+ * Updated March 2026 to match current palette (deep purple + amber).
  */
 
 export const OG = {
@@ -8,16 +9,16 @@ export const OG = {
   width: 1200,
   height: 630,
 
-  // Colors from Collegiate Fire palette
-  bgPage: '#0D1520',
-  bgSurface: '#1E293B',
-  bgSurfaceHover: '#243556',
-  gold: '#F5A623',
+  // Colors from default Rivyls palette
+  bgPage: '#1A0F28',
+  bgSurface: '#2A1A3E',
+  bgSurfaceHover: '#362650',
+  gold: '#F59E0B',
   red: '#E8513D',
-  textPrimary: '#F7F8FA',
-  textSecondary: '#94A3B8',
-  textMuted: '#64748B',
-  border: '#334155',
+  textPrimary: '#FAF5EE',
+  textSecondary: '#C4B5D4',
+  textMuted: '#8B7BA0',
+  border: '#4A3066',
   success: '#22C55E',
 } as const
 
