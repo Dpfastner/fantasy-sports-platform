@@ -25,18 +25,19 @@ const SPORT_LABELS: Record<string, string> = {
   cricket: 'Cricket',
 }
 
-// SVG icon paths for OG images (Satori can't render emoji or special Unicode)
-const ICON_SVGS: Record<string, { viewBox: string; path: string }> = {
-  star: { viewBox: '0 0 24 24', path: 'M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z' },
-  trophy: { viewBox: '0 0 24 24', path: 'M19 5h-2V3H7v2H5c-1.1 0-2 .9-2 2v1c0 2.55 1.92 4.63 4.39 4.94.63 1.5 1.98 2.63 3.61 2.96V19H7v2h10v-2h-4v-3.1c1.63-.33 2.98-1.46 3.61-2.96C19.08 12.63 21 10.55 21 8V7c0-1.1-.9-2-2-2zM5 8V7h2v3.82C5.84 10.4 5 9.3 5 8zm14 0c0 1.3-.84 2.4-2 2.82V7h2v1z' },
-  medal: { viewBox: '0 0 24 24', path: 'M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z' },
-  flag: { viewBox: '0 0 24 24', path: 'M14.4 6L14 4H5v17h2v-7h5.6l.4 2h7V6h-5.6z' },
-  crown: { viewBox: '0 0 24 24', path: 'M5 16L3 5l5.5 5L12 4l3.5 6L21 5l-2 11H5zm0 2h14v2H5v-2z' },
+// Three icon rendering approaches for comparison (add ?style=emoji or ?style=unicode to URL)
+const ICON_SVGS: Record<string, { viewBox: string; path: string; emoji: string; unicode: string }> = {
+  star:   { viewBox: '0 0 24 24', path: 'M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z', emoji: '\uD83C\uDF1F', unicode: '\u2605' },
+  trophy: { viewBox: '0 0 24 24', path: 'M19 5h-2V3H7v2H5c-1.1 0-2 .9-2 2v1c0 2.55 1.92 4.63 4.39 4.94.63 1.5 1.98 2.63 3.61 2.96V19H7v2h10v-2h-4v-3.1c1.63-.33 2.98-1.46 3.61-2.96C19.08 12.63 21 10.55 21 8V7c0-1.1-.9-2-2-2zM5 8V7h2v3.82C5.84 10.4 5 9.3 5 8zm14 0c0 1.3-.84 2.4-2 2.82V7h2v1z', emoji: '\uD83C\uDFC6', unicode: '\u2605' },
+  medal:  { viewBox: '0 0 24 24', path: 'M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z', emoji: '\uD83C\uDFC5', unicode: '\u2605' },
+  flag:   { viewBox: '0 0 24 24', path: 'M14.4 6L14 4H5v17h2v-7h5.6l.4 2h7V6h-5.6z', emoji: '\uD83D\uDEA9', unicode: '\u2691' },
+  crown:  { viewBox: '0 0 24 24', path: 'M5 16L3 5l5.5 5L12 4l3.5 6L21 5l-2 11H5zm0 2h14v2H5v-2z', emoji: '\uD83D\uDC51', unicode: '\u265B' },
 }
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
   const badgeId = searchParams.get('badgeId')
+  const iconStyle = searchParams.get('style') || 'svg' // svg | emoji | unicode
 
   if (!badgeId) {
     return new Response('Missing badgeId', { status: 400 })
@@ -108,6 +109,10 @@ export async function GET(request: Request) {
             {def.icon_url ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img src={def.icon_url} width={80} height={80} style={{ objectFit: 'contain' }} />
+            ) : iconStyle === 'emoji' ? (
+              <div style={{ fontSize: 72 }}>{iconSvg.emoji}</div>
+            ) : iconStyle === 'unicode' ? (
+              <div style={{ fontSize: 72, color: accentColor }}>{iconSvg.unicode}</div>
             ) : (
               <svg width="72" height="72" viewBox={iconSvg.viewBox} fill={accentColor}>
                 <path d={iconSvg.path} />
