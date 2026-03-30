@@ -271,12 +271,7 @@ export function BadgeAdminTable({ commissioners, badgeDefinitions }: BadgeAdminT
                       {badges.length > 0 ? (
                         badges.map(b => (
                           <span key={b.id} className="inline-flex items-center gap-0.5">
-                            <span
-                              className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold"
-                              style={{ backgroundColor: b.badge_definitions.bg_color, color: b.badge_definitions.color }}
-                            >
-                              {b.badge_definitions.label}
-                            </span>
+                            <UserBadges badges={[b]} size="sm" />
                             <button
                               onClick={() => handleRevoke(c.userId, b.id)}
                               disabled={isLoading}
