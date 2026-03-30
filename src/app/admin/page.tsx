@@ -38,19 +38,80 @@ export default async function AdminPage() {
       .order('created_at', { ascending: false }),
   ])
 
-  // Get member counts for all leagues
+  // Build unified competitions list
   const allLeagues = allLeaguesResult.data || []
-  const leagueIds = allLeagues.map(l => l.id)
   const memberCounts: Record<string, number> = {}
-  if (leagueIds.length > 0) {
-    for (const league of allLeagues) {
-      const { count } = await supabase
-        .from('league_members')
-        .select('id', { count: 'exact', head: true })
-        .eq('league_id', league.id)
-      memberCounts[league.id] = count || 0
-    }
+  for (const league of allLeagues) {
+    const { count } = await supabase
+      .from('league_members')
+      .select('id', { count: 'exact', head: true })
+      .eq('league_id', league.id)
+    memberCounts[league.id] = count || 0
   }
+
+  // Fetch all event pools
+  const { data: allPools } = await supabase
+    .from('event_pools')
+    .select('id, name, status, visibility, max_entries, invite_code, created_at, game_type, tournament_id, event_tournaments(name, sport, slug)')
+    .order('created_at', { ascending: false })
+
+  const poolEntryCount: Record<string, number> = {}
+  for (const pool of allPools || []) {
+    const { count } = await supabase
+      .from('event_entries')
+      .select('id', { count: 'exact', head: true })
+      .eq('pool_id', pool.id)
+    poolEntryCount[pool.id] = count || 0
+  }
+
+  // Merge into one list
+  interface Competition {
+    id: string
+    name: string
+    type: string
+    sport: string
+    members: number
+    capacity: number | null
+    visibility: string
+    status: string
+    code: string
+    created: string
+    href: string
+  }
+
+  const allCompetitions: Competition[] = [
+    ...allLeagues.map(l => ({
+      id: l.id,
+      name: l.name,
+      type: 'Season League',
+      sport: (l.sports as unknown as { name: string })?.name || '—',
+      members: memberCounts[l.id] || 0,
+      capacity: l.max_teams,
+      visibility: l.is_public ? 'Public' : 'Private',
+      status: l.status,
+      code: l.invite_code,
+      created: l.created_at,
+      href: `/leagues/${l.id}`,
+    })),
+    ...(allPools || []).map(p => {
+      const tournament = p.event_tournaments as unknown as { name: string; sport: string; slug: string } | null
+      const formatLabels: Record<string, string> = { bracket: 'Bracket', pickem: "Pick'em", survivor: 'Survivor', roster: 'Roster' }
+      const sportLabels: Record<string, string> = { hockey: 'Hockey', golf: 'Golf', rugby: 'Rugby', college_football: 'Football' }
+      return {
+        id: p.id,
+        name: `${p.name} (${tournament?.name || 'Event'})`,
+        type: formatLabels[p.game_type || ''] || p.game_type || 'Pool',
+        sport: sportLabels[tournament?.sport || ''] || tournament?.sport || '—',
+        members: poolEntryCount[p.id] || 0,
+        capacity: p.max_entries,
+        visibility: p.visibility === 'public' ? 'Public' : 'Private',
+        status: p.status,
+        code: p.invite_code,
+        created: p.created_at,
+        href: `/events/${tournament?.slug}/pools/${p.id}`,
+      }
+    }),
+  ].sort((a, b) => new Date(b.created).getTime() - new Date(a.created).getTime())
 
   const totalUsers = totalUsersResult.count ?? 0
   const newToday = newTodayResult.count ?? 0
@@ -61,7 +122,7 @@ export default async function AdminPage() {
   const stats = [
     { label: 'Total Users', value: totalUsers },
     { label: 'New Today', value: newToday },
-    { label: 'Active Leagues', value: activeLeagues },
+    { label: 'Competitions', value: allCompetitions.length },
     { label: 'Open Bug Reports', value: openReports },
     { label: 'Active Events', value: activeEvents },
   ]
@@ -105,7 +166,7 @@ export default async function AdminPage() {
       title: 'Scores',
       emoji: '🏆',
       description: 'Review and manage scoring, points, and leaderboard calculations.',
-      stat: `${activeLeagues} active leagues`,
+      stat: `${allCompetitions.length} competitions`,
     },
     {
       href: '/admin/monitoring',
@@ -135,15 +196,16 @@ export default async function AdminPage() {
           ))}
         </div>
 
-        {/* All Leagues */}
+        {/* All Competitions */}
         <div className="mb-8">
-          <h2 className="text-lg font-semibold text-text-primary mb-3">All Leagues ({allLeagues.length})</h2>
+          <h2 className="text-lg font-semibold text-text-primary mb-3">All Competitions ({allCompetitions.length})</h2>
           <div className="bg-surface rounded-lg border border-border overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-border text-left text-text-muted">
                     <th className="px-4 py-2 font-medium">Name</th>
+                    <th className="px-4 py-2 font-medium">Type</th>
                     <th className="px-4 py-2 font-medium">Sport</th>
                     <th className="px-4 py-2 font-medium">Members</th>
                     <th className="px-4 py-2 font-medium">Visibility</th>
@@ -153,45 +215,53 @@ export default async function AdminPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {allLeagues.map((league) => {
-                    const sport = (league.sports as unknown as { name: string })?.name || '—'
-                    const members = memberCounts[league.id] || 0
-                    const created = new Date(league.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+                  {allCompetitions.map((comp) => {
+                    const created = new Date(comp.created).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+                    const typeColors: Record<string, string> = {
+                      'Season League': 'bg-brand/15 text-brand-text',
+                      'Bracket': 'bg-blue-500/15 text-blue-400',
+                      "Pick'em": 'bg-green-500/15 text-green-400',
+                      'Survivor': 'bg-red-500/15 text-red-400',
+                      'Roster': 'bg-amber-500/15 text-amber-400',
+                    }
                     return (
-                      <tr key={league.id} className="border-b border-border/50 hover:bg-surface-subtle transition-colors">
+                      <tr key={comp.id} className="border-b border-border/50 hover:bg-surface-subtle transition-colors">
                         <td className="px-4 py-2">
-                          <Link href={`/leagues/${league.id}`} className="text-text-primary font-medium hover:text-brand transition-colors">
-                            {league.name}
+                          <Link href={comp.href} className="text-text-primary font-medium hover:text-brand transition-colors">
+                            {comp.name}
                           </Link>
                         </td>
-                        <td className="px-4 py-2 text-text-muted">{sport}</td>
-                        <td className="px-4 py-2 text-text-muted">{members}/{league.max_teams}</td>
+                        <td className="px-4 py-2">
+                          <span className={`text-xs font-medium px-1.5 py-0.5 rounded ${typeColors[comp.type] || 'bg-surface-subtle text-text-muted'}`}>
+                            {comp.type}
+                          </span>
+                        </td>
+                        <td className="px-4 py-2 text-text-muted">{comp.sport}</td>
+                        <td className="px-4 py-2 text-text-muted">{comp.members}{comp.capacity ? `/${comp.capacity}` : ''}</td>
                         <td className="px-4 py-2">
                           <span className={`text-xs font-medium px-1.5 py-0.5 rounded ${
-                            league.is_public
-                              ? 'bg-success/15 text-success-text'
-                              : 'bg-warning/15 text-warning-text'
+                            comp.visibility === 'Public' ? 'bg-success/15 text-success-text' : 'bg-warning/15 text-warning-text'
                           }`}>
-                            {league.is_public ? 'Public' : 'Private'}
+                            {comp.visibility}
                           </span>
                         </td>
                         <td className="px-4 py-2">
                           <span className={`text-xs font-medium px-1.5 py-0.5 rounded ${
-                            league.status === 'active' ? 'bg-success/15 text-success-text'
-                              : league.status === 'archived' ? 'bg-surface-subtle text-text-muted'
+                            comp.status === 'active' || comp.status === 'open' ? 'bg-success/15 text-success-text'
+                              : comp.status === 'completed' || comp.status === 'archived' ? 'bg-surface-subtle text-text-muted'
                               : 'bg-brand/15 text-brand-text'
                           }`}>
-                            {league.status}
+                            {comp.status}
                           </span>
                         </td>
-                        <td className="px-4 py-2 font-mono text-xs text-text-muted">{league.invite_code}</td>
+                        <td className="px-4 py-2 font-mono text-xs text-text-muted">{comp.code}</td>
                         <td className="px-4 py-2 text-text-muted text-xs">{created}</td>
                       </tr>
                     )
                   })}
-                  {allLeagues.length === 0 && (
+                  {allCompetitions.length === 0 && (
                     <tr>
-                      <td colSpan={7} className="px-4 py-6 text-center text-text-muted">No leagues yet</td>
+                      <td colSpan={8} className="px-4 py-6 text-center text-text-muted">No competitions yet</td>
                     </tr>
                   )}
                 </tbody>
