@@ -5,7 +5,7 @@
 
 import { MONTSERRAT_BOLD_BASE64, INTER_REGULAR_BASE64 } from './font-data'
 
-let fontCache: { montserratBold: ArrayBuffer; interRegular: ArrayBuffer } | null = null
+let fontCache: { montserratBold: ArrayBuffer; interRegular: ArrayBuffer; notoEmoji?: ArrayBuffer } | null = null
 
 function base64ToArrayBuffer(base64: string): ArrayBuffer {
   const binary = atob(base64)
@@ -24,4 +24,21 @@ export function loadFonts() {
     interRegular: base64ToArrayBuffer(INTER_REGULAR_BASE64),
   }
   return fontCache
+}
+
+let emojiCache: ArrayBuffer | null = null
+
+/** Load Noto Emoji font for rendering emoji in OG images. Cached after first fetch. */
+export async function loadEmojiFont(): Promise<ArrayBuffer | null> {
+  if (emojiCache) return emojiCache
+  try {
+    const res = await fetch('https://cdn.jsdelivr.net/npm/@fontsource/noto-color-emoji/files/noto-color-emoji-emoji-400-normal.woff', {
+      next: { revalidate: 86400 },
+    })
+    if (!res.ok) return null
+    emojiCache = await res.arrayBuffer()
+    return emojiCache
+  } catch {
+    return null
+  }
 }
