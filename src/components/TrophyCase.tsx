@@ -17,6 +17,8 @@ const FALLBACK_CHARS: Record<string, string> = {
   star: '\u2605',
   trophy: '\uD83C\uDFC6',
   medal: '\uD83E\uDD47',
+  flag: '\uD83D\uDEA9',
+  crown: '\uD83D\uDC51',
 }
 
 interface TrophyCaseProps {

@@ -28,6 +28,7 @@ export type NotificationType =
   | 'event_pool_joined'
   | 'event_tournament_starting'
   | 'support_response'
+  | 'badge_awarded'
   | 'system'
 
 /**
@@ -138,6 +139,11 @@ function buildNotificationUrl(
       const reportId = data?.reportId as string
       if (reportId) return `${base}/tickets/${reportId}`
       return `${base}/tickets`
+    }
+    case 'badge_awarded': {
+      const badgeId = data?.badgeId as string
+      if (badgeId) return `${base}/profile?celebrate=${badgeId}`
+      return `${base}/profile`
     }
     default:
       return `${base}/dashboard`

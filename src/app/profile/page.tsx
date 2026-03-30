@@ -9,6 +9,7 @@ import { buildShareUrl } from '@/lib/share'
 import { SITE_URL } from '@/lib/og/constants'
 import { getUserBadges } from '@/lib/badges'
 import { ProfileBannerCollection } from '@/components/ProfileBannerCollection'
+import { BadgeCelebration } from '@/components/BadgeCelebration'
 import type { UserTier } from '@/types/database'
 
 interface LeagueRow {
@@ -89,6 +90,7 @@ export default async function ProfilePage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gradient-from to-gradient-to">
+      <BadgeCelebration />
       <header className="bg-surface/50 border-b border-border">
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
           <Link href="/dashboard" className="text-2xl font-bold text-text-primary">

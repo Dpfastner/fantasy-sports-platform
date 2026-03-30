@@ -32,7 +32,7 @@ export async function grantBadge(
   // Look up badge definition
   const { data: badgeDef, error: defError } = await supabase
     .from('badge_definitions')
-    .select('id, slug, requires_metadata')
+    .select('id, slug, label, description, requires_metadata')
     .eq('slug', badgeSlug)
     .single()
 
@@ -51,7 +51,7 @@ export async function grantBadge(
     if (existing) return { error: 'User already has this badge' }
   }
 
-  const { error } = await supabase
+  const { data: newBadge, error } = await supabase
     .from('user_badges')
     .insert({
       user_id: targetUserId,
@@ -60,8 +60,19 @@ export async function grantBadge(
       granted_by: auth.userId,
       source: 'manual',
     })
+    .select('id')
+    .single()
 
   if (error) return { error: error.message }
+
+  // Send celebration notification
+  await supabase.from('notifications').insert({
+    user_id: targetUserId,
+    type: 'badge_awarded',
+    title: 'You earned a badge!',
+    body: `${badgeDef.label} — ${badgeDef.description}`,
+    data: { badgeId: newBadge.id },
+  })
 
   logActivity({
     userId: auth.userId,

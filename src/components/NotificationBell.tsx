@@ -56,6 +56,13 @@ function getNotificationIcon(type: string): string {
 }
 
 function getNotificationHref(notification: Notification): string | null {
+  // Badge award — go to profile with celebration
+  if (notification.type === 'badge_awarded') {
+    const badgeId = notification.data?.badgeId as string
+    if (badgeId) return `/profile?celebrate=${badgeId}`
+    return '/profile'
+  }
+
   // Event notifications use poolId + tournamentSlug for routing
   if (notification.type.startsWith('event_')) {
     const poolId = notification.data?.poolId as string

@@ -8,6 +8,7 @@ import { Pennant } from '@/components/Pennant'
 import { Header } from '@/components/Header'
 import { BlockUserButton } from '@/components/BlockUserButton'
 import { SITE_URL } from '@/lib/og/constants'
+import { BadgeCelebration } from '@/components/BadgeCelebration'
 
 interface PageProps {
   params: Promise<{ userId: string }>
@@ -104,6 +105,7 @@ export default async function PublicProfilePage({ params }: PageProps) {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gradient-from to-gradient-to">
+      <BadgeCelebration />
       {viewer ? (
         <Header userName={viewerProfile?.display_name} userEmail={viewer.email} userId={viewer.id} />
       ) : (

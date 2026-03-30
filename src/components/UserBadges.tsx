@@ -58,11 +58,29 @@ function HeartIcon({ className }: { className?: string }) {
   )
 }
 
+function FlagIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="currentColor">
+      <path d="M5 21V4h1c1.1 0 2-.9 2-2h1c0 1.1.9 2 2 2h4c1.1 0 2-.9 2-2h1c0 1.1.9 2 2 2h1v10h-1c-1.1 0-2 .9-2 2h-1c0-1.1-.9-2-2-2h-4c-1.1 0-2 .9-2 2H8c0-1.1-.9-2-2-2H5v7z" />
+    </svg>
+  )
+}
+
+function CrownIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="currentColor">
+      <path d="M5 16L3 5l5.5 5L12 4l3.5 6L21 5l-2 11H5zm0 2h14v2H5v-2z" />
+    </svg>
+  )
+}
+
 const FALLBACK_ICONS: Record<string, React.FC<{ className?: string }>> = {
   star: StarIcon,
   trophy: TrophyIcon,
   medal: MedalIcon,
   heart: HeartIcon,
+  flag: FlagIcon,
+  crown: CrownIcon,
 }
 
 /**
