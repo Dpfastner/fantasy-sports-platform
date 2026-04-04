@@ -52,7 +52,7 @@ export async function GET(request: NextRequest) {
     .single()
 
   const lastUpdate = recentGame?.updated_at ? new Date(recentGame.updated_at).getTime() : 0
-  const isStale = Date.now() - lastUpdate > 30_000
+  const isStale = Date.now() - lastUpdate > 60_000
 
   let syncResult = null
 
