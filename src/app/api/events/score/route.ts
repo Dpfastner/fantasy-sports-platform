@@ -142,13 +142,15 @@ async function scoreBracketPool(
   participants: EventParticipant[]
 ): Promise<number> {
   const poolId = pool.id as string
-  const scoringRules = (
-    pool.scoring_rules &&
-    typeof pool.scoring_rules === 'object' &&
-    Object.keys(pool.scoring_rules as object).length > 0
-  )
-    ? pool.scoring_rules as BracketScoringRules
-    : DEFAULT_FROZEN_FOUR_SCORING
+  // Use pool's custom scoring, or detect correct default from game round names
+  let scoringRules: BracketScoringRules
+  if (pool.scoring_rules && typeof pool.scoring_rules === 'object' && Object.keys(pool.scoring_rules as object).length > 0) {
+    scoringRules = pool.scoring_rules as BracketScoringRules
+  } else {
+    // Check if games use Frozen Four round names or generic bracket round names
+    const hasRegionalRounds = games.some(g => g.round === 'regional_quarterfinal' || g.round === 'regional_final')
+    scoringRules = hasRegionalRounds ? DEFAULT_FROZEN_FOUR_SCORING : DEFAULT_BRACKET_SCORING
+  }
 
   // Get all entries for this pool
   const { data: entries } = await admin

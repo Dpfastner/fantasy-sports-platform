@@ -1,9 +1,10 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useToast } from '@/components/Toast'
 import { trackEventActivity } from '@/app/actions/activity'
+import { saveEntryName } from '@/app/actions/entry'
 import { track } from '@vercel/analytics'
 
 interface Participant {
@@ -106,6 +107,9 @@ export function SurvivorPicker({
   const [selectedParticipant, setSelectedParticipant] = useState<string | null>(
     activeWeek ? picksByWeek[activeWeek.week_number] || null : null
   )
+  useEffect(() => {
+    setSelectedParticipant(activeWeek ? picksByWeek[activeWeek.week_number] || null : null)
+  }, [activeWeek, picksByWeek])
 
   const participantMap = useMemo(() => {
     const m: Record<string, Participant> = {}

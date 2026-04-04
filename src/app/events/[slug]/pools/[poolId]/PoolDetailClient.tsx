@@ -321,7 +321,7 @@ export function PoolDetailClient({
               )}
             </div>
             <p className="text-text-muted text-sm">
-              {tournament.name} &middot; {members.length} member{members.length !== 1 ? 's' : ''}
+              {tournament.name} &middot; {uniqueMembers.length} member{uniqueMembers.length !== 1 ? 's' : ''}
               {pool.maxEntries && ` / ${pool.maxEntries} max`}
             </p>
           </div>
@@ -630,6 +630,7 @@ export function PoolDetailClient({
           )}
 
           <GamePicker
+            key={activeEntry?.id || 'no-entry'}
             format={effectiveFormat}
             pool={pool}
             tournament={tournament}

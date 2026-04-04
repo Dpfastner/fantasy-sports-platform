@@ -1,9 +1,10 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useToast } from '@/components/Toast'
 import { trackEventActivity } from '@/app/actions/activity'
+import { saveEntryName } from '@/app/actions/entry'
 import { track } from '@vercel/analytics'
 
 interface Participant {
@@ -75,11 +76,15 @@ export function PickemPicker({
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   // Build picks map: gameId -> participantId
-  const initialPicksMap: Record<string, string> = {}
-  for (const pick of existingPicks) {
-    if (pick.gameId) initialPicksMap[pick.gameId] = pick.participantId
-  }
+  const initialPicksMap = useMemo(() => {
+    const m: Record<string, string> = {}
+    for (const pick of existingPicks) {
+      if (pick.gameId) m[pick.gameId] = pick.participantId
+    }
+    return m
+  }, [existingPicks])
   const [picks, setPicks] = useState<Record<string, string>>(initialPicksMap)
+  useEffect(() => { setPicks(initialPicksMap) }, [initialPicksMap])
 
   const participantMap = useMemo(() => {
     const m: Record<string, Participant> = {}

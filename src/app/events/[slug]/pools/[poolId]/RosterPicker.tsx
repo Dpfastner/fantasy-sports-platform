@@ -1,9 +1,10 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useToast } from '@/components/Toast'
 import { trackEventActivity } from '@/app/actions/activity'
+import { saveEntryName } from '@/app/actions/entry'
 import { track } from '@vercel/analytics'
 import { formatGolfScore } from '@/lib/events/shared'
 import { DEFAULT_TIERS, TIER_COLORS, CountryFlag, type RosterTier } from '@/lib/events/tiers'
@@ -78,6 +79,7 @@ export function RosterPicker({
   )
 
   const [selectedIds, setSelectedIds] = useState<Set<string>>(existingPickIds)
+  useEffect(() => { setSelectedIds(existingPickIds) }, [existingPickIds])
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   // Group participants by tier based on OWGR
