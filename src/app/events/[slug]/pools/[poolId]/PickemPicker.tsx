@@ -44,6 +44,7 @@ interface PickemPickerProps {
   participants: Participant[]
   existingPicks: UserPick[]
   submittedAt: string | null
+  existingDisplayName?: string | null
 }
 
 function CountryFlag({ country, countryCode }: { country?: string; countryCode?: string }) {
@@ -70,10 +71,13 @@ export function PickemPicker({
   participants,
   existingPicks,
   submittedAt,
+  existingDisplayName,
 }: PickemPickerProps) {
   const { addToast } = useToast()
   const router = useRouter()
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [entryName, setEntryName] = useState(existingDisplayName || '')
+  useEffect(() => { setEntryName(existingDisplayName || '') }, [existingDisplayName])
 
   // Build picks map: gameId -> participantId
   const initialPicksMap = useMemo(() => {
@@ -192,13 +196,28 @@ export function PickemPicker({
           )}
         </div>
         {!isLocked && (
-          <button
-            onClick={handleSubmit}
-            disabled={isSubmitting || pickedCount === 0}
-            className="px-6 py-2.5 text-sm font-semibold rounded-lg bg-brand hover:bg-brand-hover text-text-primary transition-colors disabled:bg-brand/50 disabled:cursor-not-allowed"
-          >
-            {isSubmitting ? 'Saving...' : submittedAt ? 'Update Picks' : 'Submit Picks'}
-          </button>
+          <div className="flex items-center gap-3">
+            <input
+              type="text"
+              value={entryName}
+              onChange={e => setEntryName(e.target.value.slice(0, 50))}
+              onBlur={async () => {
+                const trimmed = entryName.trim()
+                if (trimmed === (existingDisplayName || '')) return
+                const result = await saveEntryName(entryId, trimmed)
+                if (result.success) addToast('Name saved', 'success')
+              }}
+              placeholder="Name your picks"
+              className="w-40 sm:w-52 px-3 py-1.5 text-sm rounded-md border border-border bg-surface text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-1 focus:ring-brand"
+            />
+            <button
+              onClick={handleSubmit}
+              disabled={isSubmitting || pickedCount === 0}
+              className="px-6 py-2.5 text-sm font-semibold rounded-lg bg-brand hover:bg-brand-hover text-text-primary transition-colors disabled:bg-brand/50 disabled:cursor-not-allowed"
+            >
+              {isSubmitting ? 'Saving...' : submittedAt ? 'Update Picks' : 'Submit Picks'}
+            </button>
+          </div>
         )}
       </div>
 

@@ -37,6 +37,7 @@ interface RosterPickerProps {
   deadline: string | null
   /** For limited mode: how many times each participant has been picked by OTHER entries */
   selectionCounts?: Record<string, number>
+  existingDisplayName?: string | null
 }
 
 
@@ -51,9 +52,12 @@ export function RosterPicker({
   scoringRules,
   deadline,
   selectionCounts,
+  existingDisplayName,
 }: RosterPickerProps) {
   const { addToast } = useToast()
   const router = useRouter()
+  const [entryName, setEntryName] = useState(existingDisplayName || '')
+  useEffect(() => { setEntryName(existingDisplayName || '') }, [existingDisplayName])
 
   // Parse tier config from scoring_rules or use defaults
   const tiers = useMemo(() => {
@@ -279,13 +283,28 @@ export function RosterPicker({
           )}
         </div>
         {canEdit && (
-          <button
-            onClick={handleSubmit}
-            disabled={isSubmitting || selectedIds.size !== rosterSize}
-            className="px-6 py-2.5 text-sm font-semibold rounded-lg bg-brand hover:bg-brand-hover text-text-primary transition-colors disabled:bg-brand/50 disabled:cursor-not-allowed"
-          >
-            {isSubmitting ? 'Saving...' : submittedAt ? 'Update Roster' : 'Submit Roster'}
-          </button>
+          <div className="flex items-center gap-3">
+            <input
+              type="text"
+              value={entryName}
+              onChange={e => setEntryName(e.target.value.slice(0, 50))}
+              onBlur={async () => {
+                const trimmed = entryName.trim()
+                if (trimmed === (existingDisplayName || '')) return
+                const result = await saveEntryName(entryId, trimmed)
+                if (result.success) addToast('Name saved', 'success')
+              }}
+              placeholder="Name your roster"
+              className="w-40 sm:w-52 px-3 py-1.5 text-sm rounded-md border border-border bg-surface text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-1 focus:ring-brand"
+            />
+            <button
+              onClick={handleSubmit}
+              disabled={isSubmitting || selectedIds.size !== rosterSize}
+              className="px-6 py-2.5 text-sm font-semibold rounded-lg bg-brand hover:bg-brand-hover text-text-primary transition-colors disabled:bg-brand/50 disabled:cursor-not-allowed"
+            >
+              {isSubmitting ? 'Saving...' : submittedAt ? 'Update Roster' : 'Submit Roster'}
+            </button>
+          </div>
         )}
       </div>
 

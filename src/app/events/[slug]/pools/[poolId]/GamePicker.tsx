@@ -116,6 +116,7 @@ export function GamePicker({
         poolWeeks={poolWeeks}
         isActive={activeEntry.isActive}
         games={games}
+        existingDisplayName={activeEntry.displayName}
       />
     )
   }
@@ -131,6 +132,7 @@ export function GamePicker({
         participants={participants}
         existingPicks={existingPicks}
         submittedAt={activeEntry.submittedAt}
+        existingDisplayName={activeEntry.displayName}
       />
     )
   }
@@ -162,6 +164,7 @@ export function GamePicker({
         scoringRules={pool.scoringRules}
         deadline={pool.deadline}
         selectionCounts={rosterSelectionCounts}
+        existingDisplayName={activeEntry.displayName}
       />
     )
   }

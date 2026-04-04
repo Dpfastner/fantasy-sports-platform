@@ -55,6 +55,7 @@ interface SurvivorPickerProps {
   poolWeeks: PoolWeek[]
   isActive: boolean
   games: Game[]
+  existingDisplayName?: string | null
 }
 
 export function SurvivorPicker({
@@ -67,10 +68,13 @@ export function SurvivorPicker({
   poolWeeks,
   isActive,
   games,
+  existingDisplayName,
 }: SurvivorPickerProps) {
   const router = useRouter()
   const { addToast } = useToast()
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [entryName, setEntryName] = useState(existingDisplayName || '')
+  useEffect(() => { setEntryName(existingDisplayName || '') }, [existingDisplayName])
 
   const now = new Date()
 
@@ -525,19 +529,34 @@ export function SurvivorPicker({
             </div>
           )}
 
-          {/* Submit button — only when actively picking */}
+          {/* Entry name + Submit button */}
           {canPick && (
-            <button
-              onClick={handleSubmit}
-              disabled={isSubmitting || !selectedParticipant}
-              className="w-full py-3 text-sm font-medium rounded-lg bg-brand text-text-primary hover:bg-brand-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isSubmitting
-                ? 'Saving...'
-                : activeWeek && picksByWeek[activeWeek.week_number]
-                ? 'Update Pick'
-                : 'Lock In Pick'}
-            </button>
+            <div className="space-y-2">
+              <input
+                type="text"
+                value={entryName}
+                onChange={e => setEntryName(e.target.value.slice(0, 50))}
+                onBlur={async () => {
+                  const trimmed = entryName.trim()
+                  if (trimmed === (existingDisplayName || '')) return
+                  const result = await saveEntryName(entryId, trimmed)
+                  if (result.success) addToast('Name saved', 'success')
+                }}
+                placeholder="Name your entry"
+                className="w-full px-3 py-1.5 text-sm rounded-md border border-border bg-surface text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-1 focus:ring-brand"
+              />
+              <button
+                onClick={handleSubmit}
+                disabled={isSubmitting || !selectedParticipant}
+                className="w-full py-3 text-sm font-medium rounded-lg bg-brand text-text-primary hover:bg-brand-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isSubmitting
+                  ? 'Saving...'
+                  : activeWeek && picksByWeek[activeWeek.week_number]
+                  ? 'Update Pick'
+                  : 'Lock In Pick'}
+              </button>
+            </div>
           )}
 
           {/* Locked indicator */}
