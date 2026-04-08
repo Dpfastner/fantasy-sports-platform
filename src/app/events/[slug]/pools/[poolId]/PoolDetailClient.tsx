@@ -11,6 +11,8 @@ import { RosterLeaderboard } from './RosterLeaderboard'
 import { PoolActivityFeed } from './PoolActivityFeed'
 import { PoolAnnouncements } from './PoolAnnouncements'
 import { TournamentCountdown } from '@/components/TournamentCountdown'
+import { RosterOwnership } from '@/components/RosterOwnership'
+import { AugustaCourseGuide } from '@/components/AugustaCourseGuide'
 import { EntryAvatar } from '@/components/EntryAvatar'
 import { ScheduleView } from './ScheduleView'
 import { ShareButton } from '@/components/ShareButton'
@@ -551,6 +553,11 @@ export function PoolDetailClient({
             />
           )}
 
+          {/* Augusta course guide — only for Masters golf tournaments */}
+          {tournament.sport === 'golf' && tournament.slug?.includes('masters') && (
+            <AugustaCourseGuide />
+          )}
+
           {/* Announcements */}
           <PoolAnnouncements poolId={pool.id} isCreator={isCreator} />
 
@@ -578,6 +585,14 @@ export function PoolDetailClient({
           )}
           </ErrorBoundary>
 
+          {/* Roster Ownership — for roster pools with picks */}
+          {effectiveFormat === 'roster' && rosterSelectionCounts && rosterTotalEntries !== undefined && (
+            <RosterOwnership
+              participants={participants}
+              selectionCounts={rosterSelectionCounts}
+              totalEntries={rosterTotalEntries}
+            />
+          )}
 
           {/* Activity Feed */}
           <ErrorBoundary sectionName="Activity Feed">
