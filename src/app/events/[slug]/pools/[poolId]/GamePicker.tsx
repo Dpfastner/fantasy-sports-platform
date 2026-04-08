@@ -70,6 +70,7 @@ interface GamePickerProps {
   members: { id: string; displayName: string }[]
   isCreator: boolean
   rosterSelectionCounts?: Record<string, number>
+  rosterTotalEntries?: number
 }
 
 export function GamePicker({
@@ -84,6 +85,7 @@ export function GamePicker({
   members,
   isCreator,
   rosterSelectionCounts,
+  rosterTotalEntries,
 }: GamePickerProps) {
   if (format === 'bracket') {
     return (
@@ -164,6 +166,7 @@ export function GamePicker({
         scoringRules={pool.scoringRules}
         deadline={pool.deadline}
         selectionCounts={rosterSelectionCounts}
+        totalEntries={rosterTotalEntries}
         existingDisplayName={activeEntry.displayName}
       />
     )

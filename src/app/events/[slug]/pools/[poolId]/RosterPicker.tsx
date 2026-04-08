@@ -37,6 +37,8 @@ interface RosterPickerProps {
   deadline: string | null
   /** For limited mode: how many times each participant has been picked by OTHER entries */
   selectionCounts?: Record<string, number>
+  /** Total submitted entries in the pool (for ownership % calculation) */
+  totalEntries?: number
   existingDisplayName?: string | null
 }
 
@@ -52,6 +54,7 @@ export function RosterPicker({
   scoringRules,
   deadline,
   selectionCounts,
+  totalEntries,
   existingDisplayName,
 }: RosterPickerProps) {
   const { addToast } = useToast()
@@ -434,6 +437,11 @@ export function RosterPicker({
                   const countryCode = meta.country_code as string | undefined
                   const pickCount = isLimitedMode && selectionCounts ? (selectionCounts[p.id] || 0) : 0
                   const isAtCap = isLimitedMode && pickCount >= selectionCap
+                  // Ownership % — show for all roster pools with submitted entries
+                  const ownershipCount = selectionCounts?.[p.id] || 0
+                  const ownershipPct = totalEntries && totalEntries > 0
+                    ? Math.round((ownershipCount / totalEntries) * 100)
+                    : 0
 
                   return (
                     <button
@@ -461,9 +469,12 @@ export function RosterPicker({
                               <CountryFlag country={country} countryCode={countryCode} />
                               {p.name}
                             </p>
-                            {owgr && (
-                              <span className="text-xs text-text-muted">Rank #{owgr}</span>
-                            )}
+                            <div className="flex items-center gap-2 text-xs text-text-muted">
+                              {owgr && <span>Rank #{owgr}</span>}
+                              {totalEntries && totalEntries > 0 && (
+                                <span className="text-text-muted">· {ownershipPct}% picked</span>
+                              )}
+                            </div>
                           </div>
                         </div>
                         <div className="flex items-center gap-2 shrink-0 ml-2">

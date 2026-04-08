@@ -10,6 +10,7 @@ import { Leaderboard } from './Leaderboard'
 import { RosterLeaderboard } from './RosterLeaderboard'
 import { PoolActivityFeed } from './PoolActivityFeed'
 import { PoolAnnouncements } from './PoolAnnouncements'
+import { TournamentCountdown } from '@/components/TournamentCountdown'
 import { EntryAvatar } from '@/components/EntryAvatar'
 import { ScheduleView } from './ScheduleView'
 import { ShareButton } from '@/components/ShareButton'
@@ -131,6 +132,7 @@ interface PoolDetailClientProps {
   hasFavoriteSchool: boolean
   uniqueMembers: Member[]
   rosterSelectionCounts?: Record<string, number>
+  rosterTotalEntries?: number
   /** All submitted entries' roster picks: entryId → participantIds */
   allRosterPicks?: Record<string, string[]>
 }
@@ -153,6 +155,7 @@ export function PoolDetailClient({
   hasFavoriteSchool,
   uniqueMembers,
   rosterSelectionCounts,
+  rosterTotalEntries,
   allRosterPicks,
 }: PoolDetailClientProps) {
   const searchParams = useSearchParams()
@@ -539,6 +542,15 @@ export function PoolDetailClient({
       {/* Tab Content */}
       {activeTab === 'overview' && (
         <div className="space-y-6">
+          {/* Countdown to tournament start */}
+          {tournament.startsAt && new Date(tournament.startsAt).getTime() > Date.now() && (
+            <TournamentCountdown
+              startsAt={tournament.startsAt}
+              label="Tournament starts in"
+              tournamentName={tournament.name}
+            />
+          )}
+
           {/* Announcements */}
           <PoolAnnouncements poolId={pool.id} isCreator={isCreator} />
 
@@ -642,6 +654,7 @@ export function PoolDetailClient({
             members={members}
             isCreator={isCreator}
             rosterSelectionCounts={rosterSelectionCounts}
+            rosterTotalEntries={rosterTotalEntries}
           />
         </div>
       )}
