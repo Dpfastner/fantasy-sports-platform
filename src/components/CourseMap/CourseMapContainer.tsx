@@ -43,7 +43,7 @@ export function CourseMapContainer({ participants }: CourseMapContainerProps) {
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-3">
             <Image
-              src="/masters-logo.png"
+              src="/Masters-Logo.png"
               alt="Masters Tournament"
               width={48}
               height={48}
