@@ -58,45 +58,67 @@ export function GolfHoleGrid({ holes, currentHole, thru, label, hideLabel }: Gol
   const roundHoles = holes.filter(h => h.round === latestRound)
   const holeByNum = new Map(roundHoles.map(h => [h.hole, h]))
 
+  const renderCell = (holeNum: number) => {
+    const h = holeByNum.get(holeNum)
+    const isCurrent = currentHole === holeNum
+    if (!h) {
+      return (
+        <div
+          key={holeNum}
+          className={`shrink-0 w-7 h-7 flex items-center justify-center rounded text-[10px] ${
+            isCurrent ? 'border border-brand text-brand' : 'text-text-muted/40'
+          }`}
+          title={`Hole ${holeNum}`}
+        >
+          —
+        </div>
+      )
+    }
+    return (
+      <div
+        key={holeNum}
+        className={`shrink-0 w-7 h-7 flex items-center justify-center rounded text-[11px] ${scoreTypeClass(h.scoreType, h.strokes, h.par)}`}
+        title={`Hole ${holeNum} · Par ${h.par} · ${h.scoreType.toLowerCase()}`}
+      >
+        {h.strokes}
+      </div>
+    )
+  }
+
+  const renderHoleLabel = (holeNum: number) => (
+    <div
+      key={`label-${holeNum}`}
+      className="shrink-0 w-7 text-center text-[9px] text-text-muted font-mono"
+    >
+      {holeNum}
+    </div>
+  )
+
   return (
     <div>
       {!hideLabel && (
-        <div className="flex items-center justify-between mb-1">
-          <span className="text-xs text-text-primary truncate">{label || ''}</span>
-          <span className="text-[10px] text-text-muted">
-            R{latestRound}
+        <div className="flex items-center justify-between mb-1.5">
+          <span className="text-xs text-text-primary font-medium truncate">{label || ''}</span>
+          <span className="text-[10px] text-text-muted uppercase tracking-wider">
+            Round {latestRound}
             {typeof thru === 'number' && ` · Thru ${thru}`}
-            {typeof currentHole === 'number' && ` · On #${currentHole}`}
+            {typeof currentHole === 'number' && currentHole > 0 && ` · On #${currentHole}`}
           </span>
         </div>
       )}
-      <div className="flex gap-0.5 overflow-x-auto pb-1">
-        {Array.from({ length: 18 }, (_, i) => i + 1).map(holeNum => {
-          const h = holeByNum.get(holeNum)
-          const isCurrent = currentHole === holeNum
-          if (!h) {
-            return (
-              <div
-                key={holeNum}
-                className={`shrink-0 w-7 h-7 flex items-center justify-center rounded text-[10px] border ${
-                  isCurrent ? 'border-brand text-brand' : 'border-border-subtle text-text-muted'
-                }`}
-                title={`Hole ${holeNum}`}
-              >
-                {holeNum}
-              </div>
-            )
-          }
-          return (
-            <div
-              key={holeNum}
-              className={`shrink-0 w-7 h-7 flex items-center justify-center rounded text-[11px] ${scoreTypeClass(h.scoreType, h.strokes, h.par)}`}
-              title={`Hole ${holeNum} · Par ${h.par} · ${h.scoreType.toLowerCase()}`}
-            >
-              {h.strokes}
-            </div>
-          )
-        })}
+      <div className="overflow-x-auto pb-1">
+        {/* Hole number header row */}
+        <div className="flex gap-0.5 mb-1">
+          {Array.from({ length: 9 }, (_, i) => i + 1).map(renderHoleLabel)}
+          <div className="shrink-0 w-3" aria-hidden />
+          {Array.from({ length: 9 }, (_, i) => i + 10).map(renderHoleLabel)}
+        </div>
+        {/* Strokes row — front 9 | back 9 separator */}
+        <div className="flex gap-0.5">
+          {Array.from({ length: 9 }, (_, i) => i + 1).map(renderCell)}
+          <div className="shrink-0 w-3 flex items-center justify-center text-text-muted/40 text-[10px]" aria-hidden>|</div>
+          {Array.from({ length: 9 }, (_, i) => i + 10).map(renderCell)}
+        </div>
       </div>
     </div>
   )

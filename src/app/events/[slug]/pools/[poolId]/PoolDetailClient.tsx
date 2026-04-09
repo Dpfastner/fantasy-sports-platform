@@ -13,6 +13,7 @@ import { PoolAnnouncements } from './PoolAnnouncements'
 import { TournamentCountdown } from '@/components/TournamentCountdown'
 import { RulesHighlights } from '@/components/RulesHighlights'
 import { GolfHoleGrid, type GolfHole } from '@/components/GolfHoleGrid'
+import { CourseMapContainer } from '@/components/CourseMap/CourseMapContainer'
 import { RosterOwnership } from '@/components/RosterOwnership'
 import { EntryAvatar } from '@/components/EntryAvatar'
 import { ScheduleView } from './ScheduleView'
@@ -141,7 +142,7 @@ interface PoolDetailClientProps {
   allRosterPicks?: Record<string, string[]>
 }
 
-type Tab = 'overview' | 'picks' | 'schedule' | 'members' | 'settings'
+type Tab = 'overview' | 'picks' | 'schedule' | 'course' | 'members' | 'settings'
 
 export function PoolDetailClient({
   pool,
@@ -175,6 +176,28 @@ export function PoolDetailClient({
   const { addToast } = useToast()
   const router = useRouter()
 
+  // Tournament palette override — swap the global palette while on this pool
+  // page only. Read from tournament.config.palette_override (set per tournament
+  // via SQL) and restore the previous palette on unmount so dashboard/other
+  // pages keep the user's chosen theme.
+  useEffect(() => {
+    const override = (tournament.config as Record<string, unknown> | null | undefined)?.palette_override as string | undefined
+    if (!override) return
+    const html = document.documentElement
+    const prevPalette = html.getAttribute('data-palette')
+    const prevMode = html.getAttribute('data-palette-mode')
+    html.setAttribute('data-palette', override)
+    // Heritage Field, Collegiate Fire, Warm Kickoff all have specific modes —
+    // for simplicity default to dark unless the override is known light.
+    html.setAttribute('data-palette-mode', override === 'warm-kickoff' ? 'light' : 'dark')
+    return () => {
+      if (prevPalette === null) html.removeAttribute('data-palette')
+      else html.setAttribute('data-palette', prevPalette)
+      if (prevMode === null) html.removeAttribute('data-palette-mode')
+      else html.setAttribute('data-palette-mode', prevMode)
+    }
+  }, [tournament.config])
+
   // Live-updating members: subscribe to event_entries changes for this pool
   const [liveMembers, setLiveMembers] = useState(members)
   useEffect(() => { setLiveMembers(members) }, [members])
@@ -198,6 +221,35 @@ export function PoolDetailClient({
 
     return () => { supabase.removeChannel(channel) }
   }, [pool.id])
+
+  // Live-updating participants (golfer scores, hole data, current hole).
+  // Fed by ESPN sync → event_participants.metadata updates → Supabase Realtime
+  // pushes here. Drives the Leaderboard tab and the Course tab visualizations.
+  const [liveParticipants, setLiveParticipants] = useState(participants)
+  useEffect(() => { setLiveParticipants(participants) }, [participants])
+
+  useEffect(() => {
+    const supabase = createClient()
+    const channel = supabase
+      .channel(`pool-participants-${tournament.id}`)
+      .on('postgres_changes', {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'event_participants',
+        filter: `tournament_id=eq.${tournament.id}`,
+      }, (payload) => {
+        const updated = payload.new as Record<string, unknown>
+        setLiveParticipants(prev => prev.map(p =>
+          p.id === updated.id ? {
+            ...p,
+            metadata: (updated.metadata as Record<string, unknown>) || p.metadata,
+          } : p
+        ))
+      })
+      .subscribe()
+
+    return () => { supabase.removeChannel(channel) }
+  }, [tournament.id])
 
   // Live game scores: Supabase Realtime subscription (replaces polling)
   // When game scores change in the DB (via Apps Script, GitHub Actions, or manual refresh),
@@ -306,6 +358,7 @@ export function PoolDetailClient({
         ? (((pool.scoringRules?.draft_mode as string) === 'snake_draft' || (pool.scoringRules?.draft_mode as string) === 'linear_draft') ? 'Draft Room' : 'My Roster')
       : 'My Picks', requiresMember: true },
     { key: 'schedule', label: effectiveFormat === 'roster' ? 'Leaderboard' : 'Schedule' },
+    ...(tournament.sport === 'golf' && tournament.slug === 'masters-2026' ? [{ key: 'course' as Tab, label: 'Course' }] : []),
     { key: 'members', label: `Members (${uniqueMembers.length})` },
     { key: 'settings' as Tab, label: 'Settings' },
   ]
@@ -574,7 +627,7 @@ export function PoolDetailClient({
           {effectiveFormat === 'roster' ? (
             <RosterLeaderboard
               members={liveMembers}
-              participants={participants}
+              participants={liveParticipants}
               poolStatus={pool.status}
               scoringRules={pool.scoringRules}
               allRosterPicks={allRosterPicks}
@@ -594,7 +647,7 @@ export function PoolDetailClient({
               (prevents spoiling other members' picks before you've locked yours in) */}
           {effectiveFormat === 'roster' && rosterSelectionCounts && rosterTotalEntries !== undefined && userEntries.some(e => e.submittedAt) && (
             <RosterOwnership
-              participants={participants}
+              participants={liveParticipants}
               selectionCounts={rosterSelectionCounts}
               totalEntries={rosterTotalEntries}
             />
@@ -693,7 +746,7 @@ export function PoolDetailClient({
                 <span className="text-center">R4</span>
                 <span className="text-right">Score</span>
               </div>
-              {[...participants]
+              {[...liveParticipants]
                 .filter(p => p.metadata?.score_to_par != null || p.metadata?.status === 'active')
                 .sort((a, b) => {
                   const aScore = (a.metadata?.score_to_par as number) ?? 999
@@ -767,7 +820,7 @@ export function PoolDetailClient({
                     </div>
                   )
                 })}
-              {participants.every(p => p.metadata?.score_to_par == null) && (
+              {liveParticipants.every(p => p.metadata?.score_to_par == null) && (
                 <div className="p-6 text-center text-text-muted text-sm">
                   No scores yet. Leaderboard will update when the tournament begins.
                 </div>
@@ -785,6 +838,12 @@ export function PoolDetailClient({
           />
           </ErrorBoundary>
         )
+      )}
+
+      {activeTab === 'course' && tournament.sport === 'golf' && (
+        <ErrorBoundary sectionName="Course Map">
+          <CourseMapContainer participants={liveParticipants} />
+        </ErrorBoundary>
       )}
 
       {activeTab === 'members' && (
