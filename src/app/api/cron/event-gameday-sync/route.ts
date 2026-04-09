@@ -247,9 +247,15 @@ export async function GET(request: Request) {
             if (espnGame.status === 'live') live++
             if (espnGame.status === 'completed') completed++
 
+            // Match scores to participants by ESPN team ID (not by positional home/away)
+            // Our participant_1 may be home OR away — must check.
+            const p1 = participants?.find(p => p.id === ourGame!.participant_1_id)
+            const p1EspnId = p1?.external_id || (p1?.metadata as Record<string, unknown>)?.espn_team_id
+            const p1IsHome = String(p1EspnId) === String(espnGame.homeTeamId)
+
             const updateData: Record<string, unknown> = {
-              participant_1_score: espnGame.homeScore,
-              participant_2_score: espnGame.awayScore,
+              participant_1_score: p1IsHome ? espnGame.homeScore : espnGame.awayScore,
+              participant_2_score: p1IsHome ? espnGame.awayScore : espnGame.homeScore,
               status: espnGame.status === 'completed' ? 'completed' : 'live',
               period: espnGame.period,
               clock: espnGame.clock,
@@ -354,9 +360,14 @@ export async function GET(request: Request) {
             if (match.status === 'live') live++
             if (match.status === 'completed') completed++
 
+            // Match scores to participants by team code (not by positional home/away)
+            const rugbyP1 = participants?.find(p => p.id === ourGame!.participant_1_id)
+            const p1Code = (rugbyP1?.metadata as Record<string, unknown>)?.team_code || rugbyP1?.external_id
+            const rugbyP1IsHome = String(p1Code) === String(match.homeTeamCode)
+
             const updateData: Record<string, unknown> = {
-              participant_1_score: match.homeScore,
-              participant_2_score: match.awayScore,
+              participant_1_score: rugbyP1IsHome ? match.homeScore : match.awayScore,
+              participant_2_score: rugbyP1IsHome ? match.awayScore : match.homeScore,
               status: match.status === 'completed' ? 'completed' : 'live',
               period: match.period ? `${match.period}` : null,
               clock: match.displayClock || null,
