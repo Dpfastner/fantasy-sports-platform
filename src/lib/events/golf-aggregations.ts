@@ -121,6 +121,50 @@ export function getLatestRound(golfers: GolferLite[]): number {
 }
 
 /**
+ * Compute the scoring distribution across the field for a specific hole in a specific round.
+ * Buckets every golfer who finished the hole into eagle/birdie/par/bogey/double+ using the
+ * same classification rules as the GolfHoleGrid pill coloring.
+ */
+export interface HoleScoringDistribution {
+  eagles: number      // -2 or better
+  birdies: number     // -1
+  pars: number        // E
+  bogeys: number      // +1
+  doublesPlus: number // +2 or worse
+  total: number
+  avgVsPar: number | null
+  par: number | null
+}
+
+export function computeHoleScoringDistribution(
+  golfers: GolferLite[],
+  holeNumber: number,
+  round: number
+): HoleScoringDistribution {
+  let eagles = 0, birdies = 0, pars = 0, bogeys = 0, doublesPlus = 0
+  let sumVsPar = 0
+  let par: number | null = null
+  for (const g of golfers) {
+    const h = g.holes.find(x => x.hole === holeNumber && x.round === round)
+    if (!h) continue
+    par = h.par
+    const diff = h.strokes - h.par
+    sumVsPar += diff
+    if (diff <= -2) eagles++
+    else if (diff === -1) birdies++
+    else if (diff === 0) pars++
+    else if (diff === 1) bogeys++
+    else doublesPlus++
+  }
+  const total = eagles + birdies + pars + bogeys + doublesPlus
+  return {
+    eagles, birdies, pars, bogeys, doublesPlus, total,
+    avgVsPar: total > 0 ? sumVsPar / total : null,
+    par,
+  }
+}
+
+/**
  * Find the hardest and easiest holes on the course for a given round.
  */
 export function findExtremeHoles(golfers: GolferLite[], round: number): {

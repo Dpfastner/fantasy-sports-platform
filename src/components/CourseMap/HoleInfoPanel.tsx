@@ -1,21 +1,23 @@
 'use client'
 
 /**
- * Right-panel hole detail view.
- * Shows hole metadata + live data:
- * - Hole name, par, yardage, nickname
- * - Description
- * - Field average score vs par (difficulty)
- * - List of golfers currently playing the hole
- * - Top scores on the hole today (per-hole leaderboard)
+ * Right-panel hole detail view with two view modes:
+ * - Info (default): hole name, par, yardage, description, top scores, on-the-tee list
+ * - Stats: scoring distribution bars + aggregate field stats for the selected round
+ *
+ * The user toggles between views via a segmented control at the top of the panel.
  */
 
+import { useState } from 'react'
 import { type AugustaHole } from '@/lib/events/augusta-holes'
 import {
   computeHoleLeaderboard,
   computeHoleDifficulty,
+  computeHoleScoringDistribution,
   type GolferLite,
 } from '@/lib/events/golf-aggregations'
+
+type ViewMode = 'info' | 'stats'
 
 interface HoleInfoPanelProps {
   hole: AugustaHole | null
@@ -24,6 +26,8 @@ interface HoleInfoPanelProps {
 }
 
 export function HoleInfoPanel({ hole, round, golfers }: HoleInfoPanelProps) {
+  const [viewMode, setViewMode] = useState<ViewMode>('info')
+
   if (!hole) {
     return (
       <div className="bg-surface rounded-lg border border-border p-6 text-center">
@@ -37,6 +41,7 @@ export function HoleInfoPanel({ hole, round, golfers }: HoleInfoPanelProps) {
   const playingNow = golfers
     .filter(g => g.currentHole === hole.number && g.status !== 'cut' && g.status !== 'wd' && g.status !== 'dq')
     .sort((a, b) => (a.position ?? 999) - (b.position ?? 999))
+  const distribution = computeHoleScoringDistribution(golfers, hole.number, round)
 
   const vsPar = difficulty.avgVsPar
   const difficultyLabel = vsPar == null
@@ -68,8 +73,32 @@ export function HoleInfoPanel({ hole, round, golfers }: HoleInfoPanelProps) {
         </div>
       </div>
 
+      {/* View mode toggle */}
+      <div className="flex gap-1 px-5 pt-4">
+        <button
+          onClick={() => setViewMode('info')}
+          className={`flex-1 text-xs font-semibold uppercase tracking-wider py-1.5 rounded transition-colors ${
+            viewMode === 'info' ? 'bg-brand text-text-primary' : 'bg-surface-inset text-text-muted hover:text-text-primary'
+          }`}
+        >
+          Info
+        </button>
+        <button
+          onClick={() => setViewMode('stats')}
+          className={`flex-1 text-xs font-semibold uppercase tracking-wider py-1.5 rounded transition-colors ${
+            viewMode === 'stats' ? 'bg-brand text-text-primary' : 'bg-surface-inset text-text-muted hover:text-text-primary'
+          }`}
+        >
+          Stats
+        </button>
+      </div>
+
       {/* Body */}
       <div className="p-5 space-y-4">
+        {viewMode === 'stats' ? (
+          <HoleStatsView distribution={distribution} round={round} holeNumber={hole.number} />
+        ) : (
+        <>
         {/* Description */}
         <p className="text-sm text-text-secondary italic leading-relaxed">{hole.description}</p>
 
@@ -151,6 +180,8 @@ export function HoleInfoPanel({ hole, round, golfers }: HoleInfoPanelProps) {
             No live data for this hole yet.
           </p>
         )}
+        </>
+        )}
       </div>
     </div>
   )
@@ -163,4 +194,96 @@ function scoreColor(strokes: number, par: number): string {
   if (diff === 0) return 'text-text-secondary' // par
   if (diff === 1) return 'text-warning-text'  // bogey
   return 'text-danger-text'                    // double+
+}
+
+// ============================================================
+// Stats view — scoring distribution bar chart
+// ============================================================
+
+import type { HoleScoringDistribution } from '@/lib/events/golf-aggregations'
+
+interface HoleStatsViewProps {
+  distribution: HoleScoringDistribution
+  round: number
+  holeNumber: number
+}
+
+function HoleStatsView({ distribution, round, holeNumber }: HoleStatsViewProps) {
+  const { eagles, birdies, pars, bogeys, doublesPlus, total, avgVsPar } = distribution
+
+  if (total === 0) {
+    return (
+      <p className="text-sm text-text-muted italic text-center py-8">
+        No scoring data for Hole {holeNumber} in Round {round} yet.
+      </p>
+    )
+  }
+
+  const rows: Array<{ label: string; count: number; barClass: string; textClass: string }> = [
+    { label: 'Eagle+', count: eagles, barClass: 'bg-brand', textClass: 'text-brand' },
+    { label: 'Birdie', count: birdies, barClass: 'bg-success', textClass: 'text-success-text' },
+    { label: 'Par', count: pars, barClass: 'bg-surface-inset', textClass: 'text-text-secondary' },
+    { label: 'Bogey', count: bogeys, barClass: 'bg-warning/70', textClass: 'text-warning-text' },
+    { label: 'Double+', count: doublesPlus, barClass: 'bg-danger/70', textClass: 'text-danger-text' },
+  ]
+
+  const avgLabel = avgVsPar == null
+    ? '—'
+    : avgVsPar > 0.005 ? `+${avgVsPar.toFixed(2)}`
+    : avgVsPar < -0.005 ? avgVsPar.toFixed(2)
+    : 'E'
+  const avgColor = avgVsPar == null
+    ? 'text-text-muted'
+    : avgVsPar > 0.2 ? 'text-danger-text'
+    : avgVsPar < -0.2 ? 'text-success-text'
+    : 'text-text-secondary'
+
+  const birdieOrBetterPct = total > 0 ? Math.round(((eagles + birdies) / total) * 100) : 0
+  const bogeyOrWorsePct = total > 0 ? Math.round(((bogeys + doublesPlus) / total) * 100) : 0
+
+  return (
+    <>
+      {/* Aggregate strip */}
+      <div className="grid grid-cols-3 gap-2">
+        <div className="bg-surface-inset rounded-lg p-2.5 text-center">
+          <div className="text-[9px] text-text-muted uppercase tracking-wider mb-0.5">Field Avg</div>
+          <div className={`text-base font-bold ${avgColor}`}>{avgLabel}</div>
+        </div>
+        <div className="bg-surface-inset rounded-lg p-2.5 text-center">
+          <div className="text-[9px] text-text-muted uppercase tracking-wider mb-0.5">Birdie+</div>
+          <div className="text-base font-bold text-success-text">{birdieOrBetterPct}%</div>
+        </div>
+        <div className="bg-surface-inset rounded-lg p-2.5 text-center">
+          <div className="text-[9px] text-text-muted uppercase tracking-wider mb-0.5">Bogey+</div>
+          <div className="text-base font-bold text-danger-text">{bogeyOrWorsePct}%</div>
+        </div>
+      </div>
+
+      {/* Distribution bars */}
+      <div>
+        <div className="text-[10px] text-text-muted uppercase tracking-wider mb-2">
+          Scoring Distribution · R{round} · {total} finished
+        </div>
+        <div className="space-y-1.5">
+          {rows.map(row => {
+            const pct = total > 0 ? (row.count / total) * 100 : 0
+            return (
+              <div key={row.label} className="grid grid-cols-[3.5rem_1fr_2.5rem] items-center gap-2">
+                <span className={`text-xs font-medium ${row.textClass}`}>{row.label}</span>
+                <div className="h-2.5 bg-surface-inset rounded-full overflow-hidden">
+                  <div
+                    className={`h-full ${row.barClass} transition-all`}
+                    style={{ width: `${pct}%` }}
+                  />
+                </div>
+                <span className="text-xs tabular-nums text-text-muted text-right">
+                  {row.count} · {Math.round(pct)}%
+                </span>
+              </div>
+            )
+          })}
+        </div>
+      </div>
+    </>
+  )
 }
