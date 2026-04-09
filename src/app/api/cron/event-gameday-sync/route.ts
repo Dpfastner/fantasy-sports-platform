@@ -360,10 +360,9 @@ export async function GET(request: Request) {
             if (match.status === 'live') live++
             if (match.status === 'completed') completed++
 
-            // Match scores to participants by team code (not by positional home/away)
+            // Match scores to participants by short_name (not by positional home/away)
             const rugbyP1 = participants?.find(p => p.id === ourGame!.participant_1_id)
-            const p1Code = (rugbyP1?.metadata as Record<string, unknown>)?.team_code || rugbyP1?.external_id
-            const rugbyP1IsHome = String(p1Code) === String(match.homeTeamCode)
+            const rugbyP1IsHome = rugbyP1?.short_name === match.homeTeamCode
 
             const updateData: Record<string, unknown> = {
               participant_1_score: rugbyP1IsHome ? match.homeScore : match.awayScore,
