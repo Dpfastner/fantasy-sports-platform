@@ -9,9 +9,14 @@
  *
  * Each marker shows the hole number + optional golfer count badge + pulse
  * ring on hardest/easiest holes of the current round.
+ *
+ * Dev-mode coordinate readout: when NEXT_PUBLIC_COURSE_MAP_DEV=true, hovering
+ * the map displays the x/y percentage at the cursor position so coordinates
+ * can be read off the actual pin locations and pasted into augusta-holes.ts.
  */
 
 import Image from 'next/image'
+import { useRef, useState } from 'react'
 import { AUGUSTA_HOLES } from '@/lib/events/augusta-holes'
 
 interface AugustaMapProps {
@@ -23,6 +28,8 @@ interface AugustaMapProps {
   easiestHole?: number | null
 }
 
+const DEV_MODE = process.env.NEXT_PUBLIC_COURSE_MAP_DEV === 'true'
+
 export function AugustaMap({
   selectedHole,
   onHoleClick,
@@ -30,8 +37,29 @@ export function AugustaMap({
   hardestHole,
   easiestHole,
 }: AugustaMapProps) {
+  const containerRef = useRef<HTMLDivElement>(null)
+  const [hoverPos, setHoverPos] = useState<{ x: number; y: number } | null>(null)
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!DEV_MODE) return
+    const rect = containerRef.current?.getBoundingClientRect()
+    if (!rect) return
+    const x = ((e.clientX - rect.left) / rect.width) * 100
+    const y = ((e.clientY - rect.top) / rect.height) * 100
+    setHoverPos({ x, y })
+  }
+
+  const handleMouseLeave = () => {
+    if (DEV_MODE) setHoverPos(null)
+  }
+
   return (
-    <div className="relative w-full aspect-[5/4] bg-surface">
+    <div
+      ref={containerRef}
+      onMouseMove={handleMouseMove}
+      onMouseLeave={handleMouseLeave}
+      className="relative w-full aspect-[5/4] bg-surface"
+    >
       {/* Course map image */}
       <Image
         src="/Augusta%20Course%20Map.jpg"
@@ -92,6 +120,23 @@ export function AugustaMap({
           )
         })}
       </div>
+
+      {/* Dev mode: hover coordinate readout + crosshair */}
+      {DEV_MODE && hoverPos && (
+        <>
+          <div
+            className="absolute w-px h-full bg-brand/70 pointer-events-none"
+            style={{ left: `${hoverPos.x}%`, top: 0 }}
+          />
+          <div
+            className="absolute w-full h-px bg-brand/70 pointer-events-none"
+            style={{ top: `${hoverPos.y}%`, left: 0 }}
+          />
+          <div className="absolute top-2 right-2 bg-page border border-brand rounded px-2 py-1 text-xs font-mono text-brand pointer-events-none shadow-lg">
+            x: {hoverPos.x.toFixed(1)}% · y: {hoverPos.y.toFixed(1)}%
+          </div>
+        </>
+      )}
     </div>
   )
 }
