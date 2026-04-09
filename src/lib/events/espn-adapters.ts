@@ -918,6 +918,204 @@ export async function fetchGolfField(
 }
 
 // ============================================
+// Golf Core API — hole-by-hole data
+// ============================================
+
+export interface ESPNGolfHole {
+  hole: number           // 1-18 (from period)
+  round: number          // 1-4 (which round)
+  strokes: number        // actual score on this hole
+  par: number            // hole par
+  scoreType: string      // PAR | BIRDIE | EAGLE | BOGEY | DOUBLE_BOGEY | etc.
+}
+
+export interface ESPNGolferLive extends ESPNGolfer {
+  currentHole: number | null    // status.hole — hole currently playing
+  thru: number | null           // status.thru — holes completed in current round
+  startHole: number | null      // status.startHole — teed off from (1 or 10)
+  teeTime: string | null        // status.teeTime ISO string
+  currentRound: number | null   // status.period
+  holes: ESPNGolfHole[]         // flat list of all holes played across all rounds
+}
+
+export interface ESPNCourseHole {
+  number: number
+  par: number
+  yards: number
+}
+
+export interface ESPNCourseData {
+  name: string
+  totalYards: number
+  totalPar: number
+  parOut: number
+  parIn: number
+  holes: ESPNCourseHole[]
+}
+
+/**
+ * Fetch course layout from ESPN Core API. Returns 18-hole data (par, yardage) plus course meta.
+ * Cache this — course data doesn't change during a tournament.
+ */
+export async function fetchCourseData(
+  espnEventId: string,
+  courseId: string
+): Promise<ESPNCourseData | null> {
+  try {
+    const url = `${CORE_API_BASE}/golf/leagues/pga/events/${espnEventId}/courses/${courseId}?lang=en&region=us`
+    const res = await fetch(url, {
+      headers: { 'User-Agent': 'Rivyls/1.0' },
+      next: { revalidate: 86400 }, // cache 24h
+    })
+    if (!res.ok) return null
+    const data = await res.json()
+
+    const holesRaw = (data.holes || []) as Array<Record<string, unknown>>
+    const holes: ESPNCourseHole[] = holesRaw.map(h => ({
+      number: Number(h.number) || 0,
+      par: Number(h.shotsToPar) || 4,
+      yards: Number(h.totalYards) || 0,
+    }))
+
+    return {
+      name: String(data.name || ''),
+      totalYards: Number(data.totalYards) || 0,
+      totalPar: Number(data.shotsToPar) || 72,
+      parOut: Number(data.parOut) || 36,
+      parIn: Number(data.parIn) || 36,
+      holes,
+    }
+  } catch (err) {
+    console.error('[espn-golf-core] fetchCourseData failed:', err)
+    Sentry.captureException(err, { tags: { sport: 'golf', api: 'core', fn: 'fetchCourseData' } })
+    return null
+  }
+}
+
+/**
+ * Fetch a single golfer's live status + per-hole linescores from ESPN Core API.
+ * Two HTTP calls per golfer (status + linescores), executed in parallel.
+ * Returns null on any error — caller should degrade gracefully.
+ */
+export async function fetchGolferLive(
+  espnEventId: string,
+  athleteId: string
+): Promise<{
+  espnPlayerId: string
+  currentHole: number | null
+  thru: number | null
+  startHole: number | null
+  teeTime: string | null
+  currentRound: number | null
+  position: number | null
+  status: 'active' | 'cut' | 'wd' | 'dq'
+  courseId: string | null
+  holes: ESPNGolfHole[]
+} | null> {
+  try {
+    const base = `${CORE_API_BASE}/golf/leagues/pga/events/${espnEventId}/competitions/${espnEventId}/competitors/${athleteId}`
+    const [statusRes, linescoresRes] = await Promise.all([
+      fetch(`${base}/status?lang=en&region=us`, { headers: { 'User-Agent': 'Rivyls/1.0' }, next: { revalidate: 30 } }),
+      fetch(`${base}/linescores?lang=en&region=us`, { headers: { 'User-Agent': 'Rivyls/1.0' }, next: { revalidate: 30 } }),
+    ])
+
+    if (!statusRes.ok) return null
+    const status = await statusRes.json() as Record<string, unknown>
+    const statusType = (status.type || {}) as Record<string, unknown>
+    const statusName = String(statusType.name || '').toUpperCase()
+
+    // Parse course $ref → extract course id
+    let courseId: string | null = null
+    if (status.course && typeof status.course === 'object') {
+      const ref = (status.course as Record<string, unknown>).$ref as string | undefined
+      if (ref) {
+        const match = ref.match(/\/courses\/(\d+)/)
+        if (match) courseId = match[1]
+      }
+    }
+
+    // Position object → number
+    let position: number | null = null
+    const posObj = status.position as Record<string, unknown> | undefined
+    if (posObj && posObj.displayName) {
+      const parsed = parseInt(String(posObj.displayName).replace(/\D/g, ''), 10)
+      if (!isNaN(parsed)) position = parsed
+    }
+
+    // Parse linescores — items[] is per round, each has nested linescores[] of hole data
+    const holes: ESPNGolfHole[] = []
+    if (linescoresRes.ok) {
+      const ls = await linescoresRes.json() as Record<string, unknown>
+      const items = (ls.items || []) as Array<Record<string, unknown>>
+      for (const item of items) {
+        const roundNum = Number(item.period) || 0
+        const holeEntries = (item.linescores || []) as Array<Record<string, unknown>>
+        for (const h of holeEntries) {
+          const strokes = Number(h.value)
+          if (!strokes) continue  // unplayed hole
+          const scoreTypeObj = (h.scoreType || {}) as Record<string, unknown>
+          holes.push({
+            hole: Number(h.period) || 0,
+            round: roundNum,
+            strokes,
+            par: Number(h.par) || 4,
+            scoreType: String(scoreTypeObj.name || 'PAR'),
+          })
+        }
+      }
+    }
+
+    return {
+      espnPlayerId: String(athleteId),
+      currentHole: typeof status.hole === 'number' ? (status.hole as number) : null,
+      thru: typeof status.thru === 'number' ? (status.thru as number) : null,
+      startHole: typeof status.startHole === 'number' ? (status.startHole as number) : null,
+      teeTime: (status.teeTime as string) || null,
+      currentRound: typeof status.period === 'number' ? (status.period as number) : null,
+      position,
+      status: statusName.includes('CUT') ? 'cut'
+        : statusName.includes('WD') ? 'wd'
+        : statusName.includes('DQ') ? 'dq'
+        : 'active',
+      courseId,
+      holes,
+    }
+  } catch (err) {
+    console.error(`[espn-golf-core] fetchGolferLive(${athleteId}) failed:`, err)
+    return null
+  }
+}
+
+/**
+ * Fetch live hole-by-hole data for a list of golfers with bounded concurrency.
+ * Skips cut/WD/DQ golfers automatically.
+ */
+export async function fetchGolfFieldFromCore(
+  espnEventId: string,
+  athleteIds: string[],
+  opts: { concurrency?: number } = {}
+): Promise<Map<string, Awaited<ReturnType<typeof fetchGolferLive>>>> {
+  const concurrency = opts.concurrency ?? 10
+  const results = new Map<string, Awaited<ReturnType<typeof fetchGolferLive>>>()
+
+  // Simple concurrency pool
+  let index = 0
+  async function worker() {
+    while (index < athleteIds.length) {
+      const i = index++
+      const id = athleteIds[i]
+      const data = await fetchGolferLive(espnEventId, id)
+      results.set(id, data)
+    }
+  }
+
+  const workers = Array.from({ length: Math.min(concurrency, athleteIds.length) }, () => worker())
+  await Promise.all(workers)
+
+  return results
+}
+
+// ============================================
 // Golf OWGR Rankings — HTML scrape from ESPN
 // ============================================
 

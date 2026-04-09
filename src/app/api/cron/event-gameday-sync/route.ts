@@ -24,6 +24,8 @@ import {
   fetchRugbyMatches,
   fetchRugbyMatchesSportsDb,
   fetchGolfLeaderboard,
+  fetchGolfFieldFromCore,
+  fetchCourseData,
   syncGameResults,
   type ESPNHockeyGame,
   type ESPNRugbyMatch,
@@ -395,6 +397,7 @@ export async function GET(request: Request) {
         } else if (sport === 'golf') {
           const config = (tournament.config || {}) as Record<string, unknown>
           const espnTournamentId = config.espn_tournament_id as string | undefined
+          const useCoreApi = config.use_core_api === true
           const golfers = await fetchGolfLeaderboard(espnTournamentId, admin)
 
           // Get participants with external IDs
@@ -405,34 +408,108 @@ export async function GET(request: Request) {
 
           const golferById = new Map(golfers.map(g => [g.espnPlayerId, g]))
 
+          // ── Core API: fetch per-hole + current-hole data for active golfers ──
+          // Feature-flagged via tournament.config.use_core_api = true
+          type CoreLive = Awaited<ReturnType<typeof fetchGolfFieldFromCore>>
+          let coreData: CoreLive | null = null
+          if (useCoreApi && espnTournamentId) {
+            const activeAthleteIds = (participants || [])
+              .filter(p => p.external_id)
+              .filter(p => {
+                const m = (p.metadata || {}) as Record<string, unknown>
+                const s = String(m.status || 'active')
+                return s !== 'cut' && s !== 'wd' && s !== 'dq'
+              })
+              .map(p => p.external_id as string)
+
+            try {
+              coreData = await fetchGolfFieldFromCore(espnTournamentId, activeAthleteIds, { concurrency: 10 })
+            } catch (err) {
+              console.error(`[event-gameday-sync] Core API fetch failed for tournament ${tournamentId}:`, err)
+              Sentry.captureException(err, { tags: { cron: 'event-gameday-sync', sport: 'golf', api: 'core' } })
+              coreData = null
+            }
+
+            // Populate course_data on tournament if missing and we can pick a courseId from any golfer
+            if (coreData && !(tournament as Record<string, unknown>).course_data) {
+              let courseId: string | null = null
+              for (const v of coreData.values()) {
+                if (v?.courseId) { courseId = v.courseId; break }
+              }
+              if (courseId) {
+                const courseData = await fetchCourseData(espnTournamentId, courseId)
+                if (courseData) {
+                  await admin
+                    .from('event_tournaments')
+                    .update({ course_data: courseData })
+                    .eq('id', tournamentId)
+                }
+              }
+            }
+          }
+
           // ── Update participant metadata with live scores (for roster pools) ──
           let participantsUpdated = 0
           for (const participant of participants || []) {
             if (!participant.external_id) continue
             const golfer = golferById.get(participant.external_id)
-            if (!golfer) continue
+            const live = coreData?.get(participant.external_id) ?? null
+
+            // Require either legacy scoreboard entry OR core live data to update
+            if (!golfer && !live) continue
 
             const existingMeta = (participant.metadata || {}) as Record<string, unknown>
+
+            // Core API status is authoritative when available; else fall back to scoreboard
+            const newStatus = live?.status ?? golfer?.status ?? existingMeta.status ?? 'active'
+            const newPosition = live?.position ?? golfer?.position ?? existingMeta.position ?? null
+
+            // Round scores: compute from core holes if present, else fallback to scoreboard
+            let r1 = existingMeta.r1 ?? null
+            let r2 = existingMeta.r2 ?? null
+            let r3 = existingMeta.r3 ?? null
+            let r4 = existingMeta.r4 ?? null
+            if (live?.holes && live.holes.length > 0) {
+              // Sum strokes per round from per-hole data
+              const roundTotals: Record<number, number> = {}
+              for (const h of live.holes) {
+                roundTotals[h.round] = (roundTotals[h.round] || 0) + h.strokes
+              }
+              r1 = roundTotals[1] ?? r1
+              r2 = roundTotals[2] ?? r2
+              r3 = roundTotals[3] ?? r3
+              r4 = roundTotals[4] ?? r4
+            } else if (golfer?.roundScores) {
+              r1 = golfer.roundScores[0] ?? r1
+              r2 = golfer.roundScores[1] ?? r2
+              r3 = golfer.roundScores[2] ?? r3
+              r4 = golfer.roundScores[3] ?? r4
+            }
+
             const updatedMeta = {
               ...existingMeta,
-              r1: golfer.roundScores?.[0] ?? existingMeta.r1 ?? null,
-              r2: golfer.roundScores?.[1] ?? existingMeta.r2 ?? null,
-              r3: golfer.roundScores?.[2] ?? existingMeta.r3 ?? null,
-              r4: golfer.roundScores?.[3] ?? existingMeta.r4 ?? null,
-              total_strokes: golfer.roundScores
-                ? golfer.roundScores.filter((s): s is number => s !== null).reduce((a, b) => a + b, 0) || null
-                : existingMeta.total_strokes,
-              score_to_par: golfer.scoreToPar ?? existingMeta.score_to_par ?? null,
-              status: golfer.status || existingMeta.status || 'active',
-              position: golfer.position || existingMeta.position || null,
-              score_display: golfer.score || existingMeta.score_display || null,
-              country: golfer.country || existingMeta.country || null,
-              country_code: golfer.countryCode || existingMeta.country_code || null,
+              r1, r2, r3, r4,
+              total_strokes: [r1, r2, r3, r4]
+                .filter((s): s is number => typeof s === 'number')
+                .reduce((a, b) => a + b, 0) || existingMeta.total_strokes || null,
+              score_to_par: golfer?.scoreToPar ?? existingMeta.score_to_par ?? null,
+              status: newStatus,
+              position: newPosition,
+              score_display: golfer?.score || existingMeta.score_display || null,
+              country: golfer?.country || existingMeta.country || null,
+              country_code: golfer?.countryCode || existingMeta.country_code || null,
+              // Core API hole-level fields
+              current_hole: live?.currentHole ?? existingMeta.current_hole ?? null,
+              thru: live?.thru ?? existingMeta.thru ?? null,
+              start_hole: live?.startHole ?? existingMeta.start_hole ?? null,
+              tee_time: live?.teeTime ?? existingMeta.tee_time ?? null,
+              current_round: live?.currentRound ?? existingMeta.current_round ?? null,
+              holes: live?.holes ?? existingMeta.holes ?? [],
             }
 
             const { error } = await admin
               .from('event_participants')
-              .update({ metadata: updatedMeta, updated_at: now.toISOString() })
+              .update({ metadata: updatedMeta })
               .eq('id', participant.id)
 
             if (!error) participantsUpdated++
