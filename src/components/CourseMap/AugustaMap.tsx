@@ -94,8 +94,8 @@ export function AugustaMap({
                 top: `${hole.y}%`,
                 // -100% moves the marker's RIGHT edge to the pin location,
                 // placing the entire circle to the LEFT of the flag.
-                // -12px adds a visible gap between marker and flag.
-                transform: 'translate(calc(-100% - 12px), -50%)',
+                // -16px adds a visible gap between marker and flag.
+                transform: 'translate(calc(-100% - 16px), -50%)',
               }}
             >
               {/* Pulse ring for hardest / easiest */}
