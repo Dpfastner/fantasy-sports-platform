@@ -70,9 +70,11 @@ export function AugustaMap({
         sizes="(max-width: 1024px) 100vw, 50vw"
       />
 
-      {/* Hole marker overlay — circles centered on coordinate.
-          Coordinates in augusta-holes.ts should point directly at each
-          flag icon; tune them there if markers drift off their pins. */}
+      {/* Hole marker overlay.
+          AUGUSTA_HOLES coordinates point at the actual yellow flag pin.
+          We render the clickable circle with a consistent LEFT offset
+          (pixel-based so it stays uniform regardless of map size) so the
+          pin stays visible to the right of each marker. */}
       <div className="absolute inset-0">
         {AUGUSTA_HOLES.map(hole => {
           const isSelected = selectedHole === hole.number
@@ -86,8 +88,15 @@ export function AugustaMap({
               type="button"
               onClick={() => onHoleClick(hole.number)}
               aria-label={`Hole ${hole.number} · ${hole.name} · Par ${hole.par}`}
-              className="absolute -translate-x-1/2 -translate-y-1/2 group"
-              style={{ left: `${hole.x}%`, top: `${hole.y}%` }}
+              className="absolute group"
+              style={{
+                left: `${hole.x}%`,
+                top: `${hole.y}%`,
+                // -100% moves the marker's RIGHT edge to the pin location,
+                // placing the entire circle to the LEFT of the flag.
+                // -4px adds a small gap between marker and flag.
+                transform: 'translate(calc(-100% - 4px), -50%)',
+              }}
             >
               {/* Pulse ring for hardest / easiest */}
               {(isHardest || isEasiest) && (
