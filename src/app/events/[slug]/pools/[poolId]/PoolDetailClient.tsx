@@ -12,6 +12,7 @@ import { PoolActivityFeed } from './PoolActivityFeed'
 import { PoolAnnouncements } from './PoolAnnouncements'
 import { TournamentCountdown } from '@/components/TournamentCountdown'
 import { RulesHighlights } from '@/components/RulesHighlights'
+import { GolfHoleGrid, type GolfHole } from '@/components/GolfHoleGrid'
 import { RosterOwnership } from '@/components/RosterOwnership'
 import { EntryAvatar } from '@/components/EntryAvatar'
 import { ScheduleView } from './ScheduleView'
@@ -166,6 +167,7 @@ export function PoolDetailClient({
   const initialTab = (searchParams.get('tab') as Tab) || 'overview'
   const [activeTab, setActiveTabState] = useState<Tab>(initialTab)
   const [showRules, setShowRules] = useState(false)
+  const [expandedGolferId, setExpandedGolferId] = useState<string | null>(null)
   const [codeCopied, setCodeCopied] = useState(false)
   const [showSchoolPrompt, setShowSchoolPrompt] = useState(false)
   const [selectedSchoolId, setSelectedSchoolId] = useState<string | null>(null)
@@ -702,40 +704,66 @@ export function PoolDetailClient({
                   const meta = (p.metadata || {}) as Record<string, unknown>
                   const isCut = String(meta.status || '') === 'cut'
                   const scoreToPar = meta.score_to_par as number | null
+                  const holes = (meta.holes as GolfHole[] | undefined) || []
+                  const hasHoleData = holes.length > 0
+                  const currentHole = meta.current_hole as number | null | undefined
+                  const thru = meta.thru as number | null | undefined
+                  const isExpanded = expandedGolferId === p.id
                   return (
-                    <div
-                      key={p.id}
-                      className={`grid grid-cols-[2rem_minmax(12rem,1fr)_3rem_3rem_3rem_3rem_4rem] gap-1 px-3 py-2 border-b border-border-subtle last:border-0 text-sm ${isCut ? 'opacity-50' : ''}`}
-                    >
-                      <span className="text-right text-text-muted">{i + 1}</span>
-                      <div className="flex items-center gap-1.5 min-w-0">
-                        {typeof meta.country_code === 'string' && (
-                          <img
-                            src={`https://flagcdn.com/24x18/${meta.country_code}.png`}
-                            alt={String(meta.country || '')}
-                            title={String(meta.country || '')}
-                            width={18}
-                            height={14}
-                            className="inline-block shrink-0 rounded-[2px]"
-                            loading="lazy"
+                    <div key={p.id}>
+                      <button
+                        type="button"
+                        onClick={() => hasHoleData && setExpandedGolferId(isExpanded ? null : p.id)}
+                        className={`w-full grid grid-cols-[2rem_minmax(12rem,1fr)_3rem_3rem_3rem_3rem_4rem] gap-1 px-3 py-2 border-b border-border-subtle last:border-0 text-sm text-left transition-colors ${isCut ? 'opacity-50' : ''} ${hasHoleData ? 'hover:bg-surface-inset/40 cursor-pointer' : 'cursor-default'} ${isExpanded ? 'bg-surface-inset/30' : ''}`}
+                      >
+                        <span className="text-right text-text-muted">{i + 1}</span>
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          {typeof meta.country_code === 'string' && (
+                            <img
+                              src={`https://flagcdn.com/24x18/${meta.country_code}.png`}
+                              alt={String(meta.country || '')}
+                              title={String(meta.country || '')}
+                              width={18}
+                              height={14}
+                              className="inline-block shrink-0 rounded-[2px]"
+                              loading="lazy"
+                            />
+                          )}
+                          <span className="text-text-primary truncate">{p.name}</span>
+                          {isCut && <span className="text-xs text-danger-text shrink-0">CUT</span>}
+                          {hasHoleData && (
+                            <svg
+                              className={`w-3 h-3 text-text-muted shrink-0 transition-transform ${isExpanded ? 'rotate-90' : ''}`}
+                              fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                            >
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                            </svg>
+                          )}
+                        </div>
+                        <span className="text-center text-text-secondary">{meta.r1 != null ? String(meta.r1) : '—'}</span>
+                        <span className="text-center text-text-secondary">{meta.r2 != null ? String(meta.r2) : '—'}</span>
+                        <span className="text-center text-text-secondary">{meta.r3 != null ? String(meta.r3) : '—'}</span>
+                        <span className="text-center text-text-secondary">{meta.r4 != null ? String(meta.r4) : '—'}</span>
+                        <span className={`text-right font-medium ${
+                          scoreToPar != null && scoreToPar < 0 ? 'text-success-text' :
+                          scoreToPar != null && scoreToPar > 0 ? 'text-danger-text' :
+                          'text-text-primary'
+                        }`}>
+                          {scoreToPar != null
+                            ? scoreToPar === 0 ? 'E' : scoreToPar > 0 ? `+${scoreToPar}` : String(scoreToPar)
+                            : '—'}
+                        </span>
+                      </button>
+                      {isExpanded && hasHoleData && (
+                        <div className="px-4 py-3 bg-surface-inset/20 border-b border-border-subtle">
+                          <GolfHoleGrid
+                            holes={holes}
+                            currentHole={currentHole ?? null}
+                            thru={thru ?? null}
+                            label={p.name}
                           />
-                        )}
-                        <span className="text-text-primary truncate">{p.name}</span>
-                        {isCut && <span className="text-xs text-danger-text shrink-0">CUT</span>}
-                      </div>
-                      <span className="text-center text-text-secondary">{meta.r1 != null ? String(meta.r1) : '—'}</span>
-                      <span className="text-center text-text-secondary">{meta.r2 != null ? String(meta.r2) : '—'}</span>
-                      <span className="text-center text-text-secondary">{meta.r3 != null ? String(meta.r3) : '—'}</span>
-                      <span className="text-center text-text-secondary">{meta.r4 != null ? String(meta.r4) : '—'}</span>
-                      <span className={`text-right font-medium ${
-                        scoreToPar != null && scoreToPar < 0 ? 'text-success-text' :
-                        scoreToPar != null && scoreToPar > 0 ? 'text-danger-text' :
-                        'text-text-primary'
-                      }`}>
-                        {scoreToPar != null
-                          ? scoreToPar === 0 ? 'E' : scoreToPar > 0 ? `+${scoreToPar}` : String(scoreToPar)
-                          : '—'}
-                      </span>
+                        </div>
+                      )}
                     </div>
                   )
                 })}
