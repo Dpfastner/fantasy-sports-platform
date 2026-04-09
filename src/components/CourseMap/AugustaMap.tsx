@@ -31,7 +31,7 @@ export function AugustaMap({
   easiestHole,
 }: AugustaMapProps) {
   return (
-    <div className="relative w-full aspect-[5/4] bg-surface-inset">
+    <div className="relative w-full aspect-[5/4] bg-tertiary">
       {/* Course map image */}
       <Image
         src="/Augusta%20Course%20Map.jpg"
@@ -42,7 +42,7 @@ export function AugustaMap({
         sizes="(max-width: 1024px) 100vw, 50vw"
       />
 
-      {/* Hole marker overlay */}
+      {/* Hole marker overlay — circles sit UP-RIGHT of the flag icons in the image */}
       <div className="absolute inset-0">
         {AUGUSTA_HOLES.map(hole => {
           const isSelected = selectedHole === hole.number
@@ -56,8 +56,14 @@ export function AugustaMap({
               type="button"
               onClick={() => onHoleClick(hole.number)}
               aria-label={`Hole ${hole.number} · ${hole.name} · Par ${hole.par}`}
-              className="absolute -translate-x-1/2 -translate-y-1/2 group"
-              style={{ left: `${hole.x}%`, top: `${hole.y}%` }}
+              className="absolute group"
+              style={{
+                // Offset the circle slightly up-right from the flag anchor
+                // so the flag icon remains visible beneath it.
+                left: `calc(${hole.x}% + 1.1rem)`,
+                top: `calc(${hole.y}% - 1.1rem)`,
+                transform: 'translate(-50%, -50%)',
+              }}
             >
               {/* Pulse ring for hardest / easiest */}
               {(isHardest || isEasiest) && (
@@ -65,16 +71,16 @@ export function AugustaMap({
                   className={`absolute inset-0 rounded-full animate-ping ${
                     isHardest ? 'bg-danger/40' : 'bg-success/40'
                   }`}
-                  style={{ width: '1.75rem', height: '1.75rem', left: '-0.125rem', top: '-0.125rem' }}
+                  style={{ width: '1.25rem', height: '1.25rem' }}
                 />
               )}
 
-              {/* Hole pin — circle with number */}
+              {/* Hole pin — smaller circle, clearly styled against cream bg */}
               <div
-                className={`relative w-6 h-6 sm:w-7 sm:h-7 rounded-full flex items-center justify-center text-xs font-bold border-2 transition-all shadow-md ${
+                className={`relative w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold border-2 transition-all shadow-md ${
                   isSelected
-                    ? 'bg-brand text-text-primary border-text-primary scale-125'
-                    : 'bg-page text-brand border-brand group-hover:scale-110 group-hover:bg-brand group-hover:text-text-primary'
+                    ? 'bg-page text-brand border-brand scale-125 ring-2 ring-brand/40'
+                    : 'bg-brand text-text-inverse border-page group-hover:scale-110'
                 }`}
               >
                 {hole.number}
@@ -82,7 +88,7 @@ export function AugustaMap({
 
               {/* Golfer count badge */}
               {count > 0 && (
-                <div className="absolute -top-1.5 -right-1.5 min-w-[1rem] h-4 px-1 rounded-full bg-accent text-text-primary text-[9px] font-bold flex items-center justify-center border border-page shadow-md">
+                <div className="absolute -top-1 -right-1 min-w-[0.9rem] h-3.5 px-1 rounded-full bg-accent text-text-primary text-[8px] font-bold flex items-center justify-center border border-page shadow-sm">
                   {count}
                 </div>
               )}

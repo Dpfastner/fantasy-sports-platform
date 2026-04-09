@@ -6,6 +6,7 @@
  */
 
 import { useMemo, useState } from 'react'
+import Image from 'next/image'
 import { AugustaMap } from './AugustaMap'
 import { HoleInfoPanel } from './HoleInfoPanel'
 import { getHoleByNumber, AUGUSTA_META } from '@/lib/events/augusta-holes'
@@ -37,22 +38,31 @@ export function CourseMapContainer({ participants }: CourseMapContainerProps) {
 
   return (
     <div className="space-y-4">
-      {/* Header strip — course meta + hardest/easiest chips */}
-      <div className="bg-surface rounded-lg border border-border p-4">
+      {/* Header strip — cream box with Masters logo + course meta + hardest/easiest chips */}
+      <div className="bg-tertiary rounded-lg border border-border p-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <h3 className="brand-h3 text-base text-text-primary">{AUGUSTA_META.name}</h3>
-            <p className="text-xs text-text-muted mt-0.5">
-              Par {AUGUSTA_META.par} · {AUGUSTA_META.totalYards.toLocaleString()} yds · {AUGUSTA_META.designers} · Opened {AUGUSTA_META.opened}
-            </p>
+          <div className="flex items-center gap-3">
+            <Image
+              src="/masters-logo.png"
+              alt="Masters Tournament"
+              width={48}
+              height={48}
+              className="shrink-0 object-contain"
+            />
+            <div>
+              <h3 className="brand-h3 text-base text-text-inverse">{AUGUSTA_META.name}</h3>
+              <p className="text-xs text-card-text-muted mt-0.5">
+                Par {AUGUSTA_META.par} · {AUGUSTA_META.totalYards.toLocaleString()} yds · {AUGUSTA_META.designers} · Opened {AUGUSTA_META.opened}
+              </p>
+            </div>
           </div>
           <div className="flex gap-2">
             {extremes.hardest && (
               <button
                 onClick={() => setSelectedHole(extremes.hardest!.hole)}
-                className="text-xs bg-surface-inset hover:bg-surface-hover border border-danger/30 rounded px-2.5 py-1.5 transition-colors"
+                className="text-xs bg-page-alt hover:bg-surface border border-danger/40 rounded px-2.5 py-1.5 transition-colors"
               >
-                <span className="text-text-muted uppercase tracking-wider mr-1.5">Hardest</span>
+                <span className="text-card-text-muted uppercase tracking-wider mr-1.5">Hardest</span>
                 <span className="text-danger-text font-semibold">
                   #{extremes.hardest.hole} (+{extremes.hardest.avgVsPar.toFixed(2)})
                 </span>
@@ -61,9 +71,9 @@ export function CourseMapContainer({ participants }: CourseMapContainerProps) {
             {extremes.easiest && (
               <button
                 onClick={() => setSelectedHole(extremes.easiest!.hole)}
-                className="text-xs bg-surface-inset hover:bg-surface-hover border border-success/30 rounded px-2.5 py-1.5 transition-colors"
+                className="text-xs bg-page-alt hover:bg-surface border border-success/40 rounded px-2.5 py-1.5 transition-colors"
               >
-                <span className="text-text-muted uppercase tracking-wider mr-1.5">Easiest</span>
+                <span className="text-card-text-muted uppercase tracking-wider mr-1.5">Easiest</span>
                 <span className="text-success-text font-semibold">
                   #{extremes.easiest.hole} ({extremes.easiest.avgVsPar.toFixed(2)})
                 </span>
@@ -75,8 +85,8 @@ export function CourseMapContainer({ participants }: CourseMapContainerProps) {
 
       {/* Two-panel layout */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {/* Map panel */}
-        <div className="bg-surface rounded-lg border border-border overflow-hidden">
+        {/* Map panel — cream background */}
+        <div className="bg-tertiary rounded-lg border border-border overflow-hidden">
           <AugustaMap
             selectedHole={selectedHole}
             onHoleClick={setSelectedHole}
@@ -86,7 +96,7 @@ export function CourseMapContainer({ participants }: CourseMapContainerProps) {
           />
         </div>
 
-        {/* Info panel */}
+        {/* Info panel — dark surface for contrast with cream blocks */}
         <HoleInfoPanel
           hole={selectedHoleData ?? null}
           round={round}
