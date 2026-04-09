@@ -366,7 +366,7 @@ async function seedMasters(admin: ReturnType<typeof createAdminClient>) {
       status: 'upcoming',
       description: 'The 90th Masters at Augusta National. Pick matchup winners or draft a golfer roster.',
       rules_text: `## Pick'em\nPick matchup winners each round.\n\n## Roster\nDraft 7 golfers — 2 from Tier A (OWGR 1–15), 2 from Tier B (16–30), 3 from Tier C (31+). Your best 5 of 7 scores count. Lowest total score-to-par wins. Cut golfers get the field high + 1 per missed round. Rosters lock at first tee time.\n\nCheck your pool's Settings tab for scoring and tiebreaker details.`,
-      starts_at: '2026-04-09T00:00:00Z',
+      starts_at: '2026-04-09T11:30:00Z', // 7:30 AM ET first tee
       ends_at: '2026-04-12T23:59:00Z',
       config: {
         venue: 'Augusta National Golf Club',
@@ -497,7 +497,7 @@ async function seedMasters(admin: ReturnType<typeof createAdminClient>) {
       participant_1_id: seedToId[i + 1],
       participant_2_id: seedToId[40 - i],
       status: 'scheduled',
-      starts_at: '2026-04-09T12:00:00Z', // Tournament start
+      starts_at: '2026-04-09T11:30:00Z', // 7:30 AM ET first tee
     })
   }
 
@@ -646,7 +646,7 @@ async function reseedMastersGames(admin: ReturnType<typeof createAdminClient>) {
       participant_1_id: seedToId[i + 1],
       participant_2_id: seedToId[40 - i],
       status: 'scheduled',
-      starts_at: '2026-04-09T12:00:00Z',
+      starts_at: '2026-04-09T11:30:00Z', // 7:30 AM ET first tee
     })
   }
 
