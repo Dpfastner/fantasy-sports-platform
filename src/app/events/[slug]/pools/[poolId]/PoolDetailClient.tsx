@@ -176,6 +176,28 @@ export function PoolDetailClient({
   const { addToast } = useToast()
   const router = useRouter()
 
+  // Tournament palette override — swap the global palette while on this pool
+  // page only. Read from tournament.config.palette_override (set per tournament
+  // via SQL) and restore the previous palette on unmount so dashboard/other
+  // pages keep the user's chosen theme.
+  useEffect(() => {
+    const override = (tournament.config as Record<string, unknown> | null | undefined)?.palette_override as string | undefined
+    if (!override) return
+    const html = document.documentElement
+    const prevPalette = html.getAttribute('data-palette')
+    const prevMode = html.getAttribute('data-palette-mode')
+    html.setAttribute('data-palette', override)
+    // Heritage Field, Collegiate Fire, Warm Kickoff all have specific modes —
+    // for simplicity default to dark unless the override is known light.
+    html.setAttribute('data-palette-mode', override === 'warm-kickoff' ? 'light' : 'dark')
+    return () => {
+      if (prevPalette === null) html.removeAttribute('data-palette')
+      else html.setAttribute('data-palette', prevPalette)
+      if (prevMode === null) html.removeAttribute('data-palette-mode')
+      else html.setAttribute('data-palette-mode', prevMode)
+    }
+  }, [tournament.config])
+
   // Live-updating members: subscribe to event_entries changes for this pool
   const [liveMembers, setLiveMembers] = useState(members)
   useEffect(() => { setLiveMembers(members) }, [members])
