@@ -14,7 +14,7 @@ import { TournamentCountdown } from '@/components/TournamentCountdown'
 import { RulesHighlights } from '@/components/RulesHighlights'
 import { GolfHoleGrid, type GolfHole } from '@/components/GolfHoleGrid'
 import { CourseMapContainer } from '@/components/CourseMap/CourseMapContainer'
-import { RosterOwnership } from '@/components/RosterOwnership'
+import { PlayerOwnershipCard } from '@/components/PlayerOwnershipCard'
 import { EntryAvatar } from '@/components/EntryAvatar'
 import { ScheduleView } from './ScheduleView'
 import { ShareButton } from '@/components/ShareButton'
@@ -643,13 +643,23 @@ export function PoolDetailClient({
           )}
           </ErrorBoundary>
 
-          {/* Roster Ownership — hidden until current user has submitted an entry
-              (prevents spoiling other members' picks before you've locked yours in) */}
-          {effectiveFormat === 'roster' && rosterSelectionCounts && rosterTotalEntries !== undefined && userEntries.some(e => e.submittedAt) && (
-            <RosterOwnership
+          {/* Player Ownership card (collapsible) — hidden until current user
+              has submitted an entry (prevents spoiling other members' picks
+              before you've locked yours in). Offers Ownership list view and
+              Matrix heatmap view of roster picks. */}
+          {effectiveFormat === 'roster' && rosterSelectionCounts && rosterTotalEntries !== undefined && userEntries.some(e => e.submittedAt) && allRosterPicks && (
+            <PlayerOwnershipCard
               participants={liveParticipants}
               selectionCounts={rosterSelectionCounts}
               totalEntries={rosterTotalEntries}
+              entries={liveMembers.map(m => ({
+                id: m.id,
+                displayName: m.displayName,
+                entryName: m.entryName,
+                userName: m.userName,
+                score: m.score,
+              }))}
+              allRosterPicks={allRosterPicks}
             />
           )}
 

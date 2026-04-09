@@ -15,6 +15,9 @@ interface RosterOwnershipProps {
   participants: Participant[]
   selectionCounts: Record<string, number>
   totalEntries: number
+  /** When 'embedded', the component drops its own card chrome (background,
+   *  border, padding, header) because a parent is providing those. */
+  variant?: 'standalone' | 'embedded'
 }
 
 // Royal Gambit palette — warm / neutral / cool trio.
@@ -24,7 +27,8 @@ const TIER_COLORS: Record<string, { bar: string; dot: string }> = {
   C: { bar: 'bg-text-secondary', dot: 'bg-text-secondary' },    // lavender #C4B5D4
 }
 
-export function RosterOwnership({ participants, selectionCounts, totalEntries }: RosterOwnershipProps) {
+export function RosterOwnership({ participants, selectionCounts, totalEntries, variant = 'standalone' }: RosterOwnershipProps) {
+  const embedded = variant === 'embedded'
   const rows = useMemo(() => {
     return participants
       .map(p => {
@@ -44,6 +48,9 @@ export function RosterOwnership({ participants, selectionCounts, totalEntries }:
   }, [participants, selectionCounts, totalEntries])
 
   if (totalEntries === 0) {
+    if (embedded) {
+      return <p className="text-sm text-text-muted">No entries submitted yet. Ownership will appear once members lock in their picks.</p>
+    }
     return (
       <div className="bg-surface rounded-lg p-5 border border-border">
         <h3 className="text-sm font-semibold text-text-primary mb-3">Player Ownership</h3>
@@ -54,13 +61,8 @@ export function RosterOwnership({ participants, selectionCounts, totalEntries }:
 
   if (rows.length === 0) return null
 
-  return (
-    <div className="bg-surface rounded-lg p-5 border border-border">
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-sm font-semibold text-text-primary">Player Ownership</h3>
-        <span className="text-xs text-text-muted">{totalEntries} {totalEntries === 1 ? 'entry' : 'entries'}</span>
-      </div>
-      <div className="space-y-2">
+  const body = (
+    <div className="space-y-2">
         {rows.map(row => {
           const colors = TIER_COLORS[row.tier] || TIER_COLORS.C
           return (
@@ -77,7 +79,18 @@ export function RosterOwnership({ participants, selectionCounts, totalEntries }:
             </div>
           )
         })}
+    </div>
+  )
+
+  if (embedded) return body
+
+  return (
+    <div className="bg-surface rounded-lg p-5 border border-border">
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="text-sm font-semibold text-text-primary">Player Ownership</h3>
+        <span className="text-xs text-text-muted">{totalEntries} {totalEntries === 1 ? 'entry' : 'entries'}</span>
       </div>
+      {body}
     </div>
   )
 }
