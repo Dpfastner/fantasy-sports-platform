@@ -21,96 +21,98 @@ export interface AugustaHole {
   y: number
 }
 
+// Coordinates are hand-placed to approximately match the flag pin positions
+// in public/augusta-map.jpg. Tune these if pins drift off their flags on screen.
 export const AUGUSTA_HOLES: AugustaHole[] = [
   {
     number: 1, name: 'Tea Olive', par: 4, yards: 445,
     description: 'Uphill opener with a fairway bunker right; demands an accurate approach to an elevated green.',
-    x: 24, y: 58,
+    x: 28, y: 57,
   },
   {
     number: 2, name: 'Pink Dogwood', par: 5, yards: 585,
     description: 'Downhill par 5 that produces more off-the-tee variety than almost any other par 5 in pro golf.',
-    x: 32, y: 70,
+    x: 42, y: 66,
   },
   {
     number: 3, name: 'Flowering Peach', par: 4, yards: 350,
     description: 'Short, strategically layered par 4; multiple tee-shot options into a narrow shelf green.',
-    x: 44, y: 66,
+    x: 56, y: 65,
   },
   {
     number: 4, name: 'Flowering Crab Apple', par: 3, yards: 240,
     description: 'The first and longest par 3; historically demands a towering long iron, hybrid, or fairway wood.',
-    x: 52, y: 82,
+    x: 58, y: 76,
   },
   {
     number: 5, name: 'Magnolia', par: 4, yards: 495,
     description: 'Honest, lengthy challenge with one of the most artfully shaped greens on the course.',
-    x: 76, y: 74,
+    x: 78, y: 68,
   },
   {
     number: 6, name: 'Juniper', par: 3, yards: 180,
     description: 'Severely contoured green where each pin position yields completely different challenges.',
-    x: 74, y: 66,
+    x: 73, y: 59,
   },
   {
     number: 7, name: 'Pampas', par: 4, yards: 450,
     description: 'Evolved from a short strategic par 4 into a narrow, length-defended test with playful green contours.',
-    x: 64, y: 56,
+    x: 63, y: 51,
   },
   {
     number: 8, name: 'Yellow Jasmine', par: 5, yards: 570,
     description: 'Uphill three-shotter that consistently yields the highest scoring average among Augusta\u2019s par 5s.',
-    x: 50, y: 64,
+    x: 47, y: 56,
   },
   {
     number: 9, name: 'Carolina Cherry', par: 4, yards: 460,
     description: 'High point down into a valley and back up to the clubhouse; severe false-front green.',
-    x: 32, y: 56,
+    x: 35, y: 48,
   },
   {
     number: 10, name: 'Camellia', par: 4, yards: 495,
     description: 'Plunges roughly 100 feet into a valley of tall pines; the 1938 Perry Maxwell redesign is a rare improvement on MacKenzie/Jones.',
-    x: 42, y: 44,
+    x: 44, y: 37,
   },
   {
     number: 11, name: 'White Dogwood', par: 4, yards: 520,
     description: 'Start of Amen Corner and often the hardest hole to par at Augusta National.',
-    x: 58, y: 18,
+    x: 62, y: 15,
   },
   {
     number: 12, name: 'Golden Bell', par: 3, yards: 155,
     description: 'The focal point of Amen Corner — as terrifying as it is beautiful, guarded by Rae\u2019s Creek and swirling winds.',
-    x: 78, y: 26,
+    x: 80, y: 22,
   },
   {
     number: 13, name: 'Azalea', par: 5, yards: 545,
     description: 'Iconic risk-reward par 5 wrapping around Rae\u2019s Creek; the first of the home-stretch birdie chances.',
-    x: 84, y: 36,
+    x: 83, y: 32,
   },
   {
     number: 14, name: 'Chinese Fir', par: 4, yards: 440,
     description: 'The only hole on the course without a bunker; rewards precise shot-shaping into a contoured green.',
-    x: 70, y: 32,
+    x: 72, y: 29,
   },
   {
     number: 15, name: 'Firethorn', par: 5, yards: 550,
     description: 'Go for it over the pond in two, or lay up to one of the most demanding wedge shots in golf.',
-    x: 66, y: 42,
+    x: 62, y: 36,
   },
   {
     number: 16, name: 'Redbud', par: 3, yards: 170,
     description: 'Par 3 across water at the base of a ridge; stage for many championship-defining moments.',
-    x: 82, y: 60,
+    x: 78, y: 56,
   },
   {
     number: 17, name: 'Nandina', par: 4, yards: 450,
     description: 'Simple tee-to-green by Augusta standards and widely regarded as the least-loved hole on the second nine.',
-    x: 60, y: 46,
+    x: 62, y: 43,
   },
   {
     number: 18, name: 'Holly', par: 4, yards: 465,
     description: 'Uphill finisher that rewards bending the tee shot around the right-side trees to bypass natural difficulty.',
-    x: 44, y: 40,
+    x: 48, y: 39,
   },
 ]
 
