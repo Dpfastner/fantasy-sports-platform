@@ -47,7 +47,7 @@ export function PlayerOwnershipCard({
   entries,
   allRosterPicks,
 }: PlayerOwnershipCardProps) {
-  const [isOpen, setIsOpen] = useState(false)
+  const [isOpen, setIsOpen] = useState(true)
   const [viewMode, setViewMode] = useState<ViewMode>('ownership')
 
   if (totalEntries === 0) return null

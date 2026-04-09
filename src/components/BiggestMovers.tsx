@@ -37,11 +37,39 @@ export function BiggestMovers({ participants }: BiggestMoversProps) {
   const golfers = useMemo(() => extractGolfers(participants), [participants])
   const { climbers, droppers } = useMemo(() => computeMovers(golfers), [golfers])
 
+  // Diagnose the empty state: is the baseline set? Is it stale?
+  const snapshotInfo = useMemo(() => {
+    const withPrev = golfers.filter(g => g.prevScoreAt)
+    if (withPrev.length === 0) return { status: 'no_baseline' as const, at: null }
+    // Use the oldest prev_at as a rough "when was the rolling window captured"
+    const oldest = withPrev
+      .map(g => (g.prevScoreAt ? new Date(g.prevScoreAt).getTime() : 0))
+      .filter(t => t > 0)
+      .sort((a, b) => a - b)[0]
+    if (!oldest) return { status: 'no_baseline' as const, at: null }
+    return {
+      status: 'has_baseline' as const,
+      at: new Date(oldest),
+    }
+  }, [golfers])
+
   if (climbers.length === 0 && droppers.length === 0) {
+    let emptyMessage = 'No movement in the last 30 minutes.'
+    if (snapshotInfo.status === 'no_baseline') {
+      emptyMessage = 'Baseline forming — check back after the next sync.'
+    } else if (snapshotInfo.at) {
+      const ago = Math.round((Date.now() - snapshotInfo.at.getTime()) / 60000)
+      emptyMessage = ago > 0
+        ? `No movement since ${ago} min ago. Waiting for golfers to score.`
+        : 'No movement yet. Snapshot just captured.'
+    }
     return (
       <div className="bg-surface rounded-lg border border-border p-5">
-        <h3 className="text-sm font-semibold text-text-primary mb-1">Biggest Movers</h3>
-        <p className="text-xs text-text-muted italic">No movement in the last 30 minutes.</p>
+        <div className="flex items-center justify-between mb-1">
+          <h3 className="text-sm font-semibold text-text-primary">Biggest Movers</h3>
+          <span className="text-[10px] text-text-muted uppercase tracking-wider">Last 30 min</span>
+        </div>
+        <p className="text-xs text-text-muted italic">{emptyMessage}</p>
       </div>
     )
   }

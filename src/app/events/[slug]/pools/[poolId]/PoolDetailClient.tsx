@@ -13,6 +13,7 @@ import { PoolAnnouncements } from './PoolAnnouncements'
 import { TournamentCountdown } from '@/components/TournamentCountdown'
 import { RulesHighlights } from '@/components/RulesHighlights'
 import { GolfHoleGrid, type GolfHole } from '@/components/GolfHoleGrid'
+import { TIER_COLORS } from '@/lib/events/tiers'
 import { CourseMapContainer } from '@/components/CourseMap/CourseMapContainer'
 import { PlayerOwnershipCard } from '@/components/PlayerOwnershipCard'
 import { BiggestMovers } from '@/components/BiggestMovers'
@@ -680,14 +681,14 @@ export function PoolDetailClient({
           )}
           </ErrorBoundary>
 
-          {/* Biggest Movers + Projected Cut — golf roster pools only */}
+          {/* Biggest Movers — golf roster pools only, full width */}
           {effectiveFormat === 'roster' && tournament.sport === 'golf' && (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              <BiggestMovers participants={liveParticipants} />
-              {cutRule && (
-                <ProjectedCutTracker participants={liveParticipants} cutRule={cutRule} />
-              )}
-            </div>
+            <BiggestMovers participants={liveParticipants} />
+          )}
+
+          {/* Projected Cut Tracker — golf roster pools with cut_rule config */}
+          {effectiveFormat === 'roster' && tournament.sport === 'golf' && cutRule && (
+            <ProjectedCutTracker participants={liveParticipants} cutRule={cutRule} />
           )}
 
           {/* Player Ownership card (collapsible) — hidden until current user
@@ -793,10 +794,12 @@ export function PoolDetailClient({
       {activeTab === 'schedule' && (
         effectiveFormat === 'roster' ? (
           <div className="bg-surface rounded-lg border border-border overflow-x-auto">
-            <div className="min-w-[34rem]">
-              <div className="grid grid-cols-[2rem_minmax(12rem,1fr)_3rem_3rem_3rem_3rem_4rem] gap-1 px-3 py-2 bg-surface-inset border-b border-border text-xs text-text-muted uppercase tracking-wide">
+            <div className="min-w-[44rem]">
+              <div className="grid grid-cols-[2rem_minmax(10rem,1fr)_2.5rem_4.5rem_2.5rem_2.5rem_2.5rem_2.5rem_3.5rem] gap-1 px-3 py-2 bg-surface-inset border-b border-border text-xs text-text-muted uppercase tracking-wide">
                 <span className="text-right">#</span>
                 <span>Golfer</span>
+                <span className="text-center">Tier</span>
+                <span className="text-center">Tee</span>
                 <span className="text-center">R1</span>
                 <span className="text-center">R2</span>
                 <span className="text-center">R3</span>
@@ -819,12 +822,26 @@ export function PoolDetailClient({
                   const currentHole = meta.current_hole as number | null | undefined
                   const thru = meta.thru as number | null | undefined
                   const isExpanded = expandedGolferId === p.id
+                  const tier = String(meta.tier || 'C')
+                  const teeTimeIso = meta.tee_time as string | null | undefined
+                  const teeLabel = (() => {
+                    if (!teeTimeIso) return '—'
+                    if (typeof thru === 'number' && thru >= 18) return 'Done'
+                    try {
+                      const d = new Date(teeTimeIso)
+                      const day = d.toLocaleDateString('en-US', { weekday: 'short' })
+                      const time = d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
+                      return `${day} ${time}`
+                    } catch {
+                      return '—'
+                    }
+                  })()
                   return (
                     <div key={p.id}>
                       <button
                         type="button"
                         onClick={() => hasHoleData && setExpandedGolferId(isExpanded ? null : p.id)}
-                        className={`w-full grid grid-cols-[2rem_minmax(12rem,1fr)_3rem_3rem_3rem_3rem_4rem] gap-1 px-3 py-2 border-b border-border-subtle last:border-0 text-sm text-left transition-colors ${isCut ? 'opacity-50' : ''} ${hasHoleData ? 'hover:bg-surface-inset/40 cursor-pointer' : 'cursor-default'} ${isExpanded ? 'bg-surface-inset/30' : ''}`}
+                        className={`w-full grid grid-cols-[2rem_minmax(10rem,1fr)_2.5rem_4.5rem_2.5rem_2.5rem_2.5rem_2.5rem_3.5rem] gap-1 px-3 py-2 border-b border-border-subtle last:border-0 text-sm text-left transition-colors ${isCut ? 'opacity-50' : ''} ${hasHoleData ? 'hover:bg-surface-inset/40 cursor-pointer' : 'cursor-default'} ${isExpanded ? 'bg-surface-inset/30' : ''}`}
                       >
                         <span className="text-right text-text-muted">{i + 1}</span>
                         <div className="flex items-center gap-1.5 min-w-0">
@@ -850,6 +867,12 @@ export function PoolDetailClient({
                             </svg>
                           )}
                         </div>
+                        <div className="text-center">
+                          <span className={`text-[10px] px-1 py-0.5 rounded ${TIER_COLORS[tier]?.bg || 'bg-surface-inset'} ${TIER_COLORS[tier]?.text || 'text-text-muted'}`}>
+                            {tier}
+                          </span>
+                        </div>
+                        <span className="text-center text-[10px] text-text-muted tabular-nums">{teeLabel}</span>
                         <span className="text-center text-text-secondary">{meta.r1 != null ? String(meta.r1) : '—'}</span>
                         <span className="text-center text-text-secondary">{meta.r2 != null ? String(meta.r2) : '—'}</span>
                         <span className="text-center text-text-secondary">{meta.r3 != null ? String(meta.r3) : '—'}</span>

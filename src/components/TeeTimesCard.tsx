@@ -34,7 +34,9 @@ type ViewMode = 'mine' | 'featured'
 function formatTeeTime(iso: string): string {
   try {
     const d = new Date(iso)
-    return d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
+    const day = d.toLocaleDateString('en-US', { weekday: 'short' })
+    const time = d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
+    return `${day} · ${time}`
   } catch {
     return iso
   }
@@ -118,7 +120,7 @@ export function TeeTimesCard({ participants, myRosterPicks }: TeeTimesCardProps)
           myRows.length === 0 ? (
             <p className="text-xs text-text-muted italic">No tee times for your roster today.</p>
           ) : (
-            <div className="space-y-1.5">
+            <div className="divide-y divide-border-subtle">
               {myRows.map(row => (
                 <TeeTimeRowView key={row.id} row={row} />
               ))}
@@ -141,7 +143,7 @@ export function TeeTimesCard({ participants, myRosterPicks }: TeeTimesCardProps)
 function TeeTimeRowView({ row }: { row: TeeTimeRow }) {
   const chip = statusChip(row.status)
   return (
-    <div className="grid grid-cols-[1fr_auto_auto] items-center gap-3 text-sm py-1">
+    <div className="grid grid-cols-[1fr_auto_auto] items-center gap-3 text-sm py-2">
       <div className="flex items-center gap-1.5 min-w-0">
         {row.countryCode && (
           <img
@@ -176,9 +178,9 @@ function FeaturedGroupView({ group }: { group: { teeTime: string; startHole: num
           {formatTeeTime(group.teeTime)} · Tee {group.startHole}
         </span>
       </div>
-      <div className="space-y-1">
+      <div className="divide-y divide-border-subtle">
         {group.golfers.map(g => (
-          <div key={g.id} className="flex items-center justify-between gap-2 text-sm">
+          <div key={g.id} className="flex items-center justify-between gap-2 text-sm py-1.5 first:pt-0 last:pb-0">
             <div className="flex items-center gap-1.5 min-w-0 flex-1">
               {g.countryCode && (
                 <img

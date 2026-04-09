@@ -95,92 +95,27 @@ export function HoleInfoPanel({ hole, round, golfers }: HoleInfoPanelProps) {
 
       {/* Body */}
       <div className="p-5 space-y-4">
-        {viewMode === 'stats' ? (
-          <HoleStatsView distribution={distribution} round={round} holeNumber={hole.number} />
+        {viewMode === 'info' ? (
+          /* INFO VIEW: pure hole facts, never changes mid-round */
+          <div>
+            {hole.description ? (
+              <p className="text-sm text-text-secondary italic leading-relaxed">{hole.description}</p>
+            ) : (
+              <p className="text-sm text-text-muted italic text-center py-4">No hole info available.</p>
+            )}
+          </div>
         ) : (
-        <>
-        {/* Description */}
-        <p className="text-sm text-text-secondary italic leading-relaxed">{hole.description}</p>
-
-        {/* Difficulty strip */}
-        <div className="grid grid-cols-2 gap-3">
-          <div className="bg-surface-inset rounded-lg p-3">
-            <div className="text-[10px] text-text-muted uppercase tracking-wider mb-1">Field Avg R{round}</div>
-            <div className={`text-lg font-bold ${difficultyColor}`}>{difficultyLabel}</div>
-            <div className="text-[10px] text-text-muted">{difficulty.playersFinished} finished</div>
-          </div>
-          <div className="bg-surface-inset rounded-lg p-3">
-            <div className="text-[10px] text-text-muted uppercase tracking-wider mb-1">Now Playing</div>
-            <div className="text-lg font-bold text-text-primary">{playingNow.length}</div>
-            <div className="text-[10px] text-text-muted">golfer{playingNow.length === 1 ? '' : 's'} on hole</div>
-          </div>
-        </div>
-
-        {/* Top scores this round */}
-        {leaderboard.length > 0 && (
-          <div>
-            <div className="text-[10px] text-text-muted uppercase tracking-wider mb-2">
-              Best on Hole {hole.number} · R{round}
-            </div>
-            <div className="space-y-1">
-              {leaderboard.map((g, i) => (
-                <div key={g.id} className="flex items-center justify-between text-sm gap-2">
-                  <div className="flex items-center gap-1.5 min-w-0 flex-1">
-                    <span className="text-xs text-text-muted w-4 text-right">{i + 1}</span>
-                    {g.countryCode && (
-                      <img
-                        src={`https://flagcdn.com/24x18/${g.countryCode}.png`}
-                        alt=""
-                        width={18}
-                        height={14}
-                        className="inline-block shrink-0 rounded-[2px]"
-                        loading="lazy"
-                      />
-                    )}
-                    <span className="text-text-primary truncate">{g.name}</span>
-                  </div>
-                  <span className={`text-sm font-medium tabular-nums shrink-0 ${scoreColor(g.holeStrokes, g.holePar)}`}>
-                    {g.holeStrokes}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Currently playing list */}
-        {playingNow.length > 0 && (
-          <div>
-            <div className="text-[10px] text-text-muted uppercase tracking-wider mb-2">On The Tee Now</div>
-            <div className="flex flex-wrap gap-1.5">
-              {playingNow.map(g => (
-                <span
-                  key={g.id}
-                  className="inline-flex items-center gap-1 text-xs bg-surface-inset rounded px-2 py-1 text-text-secondary"
-                >
-                  {g.countryCode && (
-                    <img
-                      src={`https://flagcdn.com/24x18/${g.countryCode}.png`}
-                      alt=""
-                      width={14}
-                      height={11}
-                      className="inline-block shrink-0 rounded-[1px]"
-                      loading="lazy"
-                    />
-                  )}
-                  {g.name}
-                </span>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {leaderboard.length === 0 && playingNow.length === 0 && (
-          <p className="text-sm text-text-muted italic text-center py-4">
-            No live data for this hole yet.
-          </p>
-        )}
-        </>
+          /* STATS VIEW: all live tournament data for this hole */
+          <HoleStatsView
+            distribution={distribution}
+            round={round}
+            holeNumber={hole.number}
+            difficultyLabel={difficultyLabel}
+            difficultyColor={difficultyColor}
+            playersFinished={difficulty.playersFinished}
+            leaderboard={leaderboard}
+            playingNow={playingNow}
+          />
         )}
       </div>
     </div>
@@ -202,52 +137,60 @@ function scoreColor(strokes: number, par: number): string {
 
 import type { HoleScoringDistribution } from '@/lib/events/golf-aggregations'
 
+type HoleLeaderboardEntry = GolferLite & { holeStrokes: number; holePar: number; holeScoreType: string }
+
 interface HoleStatsViewProps {
   distribution: HoleScoringDistribution
   round: number
   holeNumber: number
+  difficultyLabel: string
+  difficultyColor: string
+  playersFinished: number
+  leaderboard: HoleLeaderboardEntry[]
+  playingNow: GolferLite[]
 }
 
-function HoleStatsView({ distribution, round, holeNumber }: HoleStatsViewProps) {
-  const { eagles, birdies, pars, bogeys, doublesPlus, total, avgVsPar } = distribution
-
-  if (total === 0) {
-    return (
-      <p className="text-sm text-text-muted italic text-center py-8">
-        No scoring data for Hole {holeNumber} in Round {round} yet.
-      </p>
-    )
-  }
+function HoleStatsView({
+  distribution,
+  round,
+  holeNumber,
+  difficultyLabel,
+  difficultyColor,
+  playersFinished,
+  leaderboard,
+  playingNow,
+}: HoleStatsViewProps) {
+  const { eagles, birdies, pars, bogeys, doublesPlus, total } = distribution
 
   const rows: Array<{ label: string; count: number; barClass: string; textClass: string }> = [
     { label: 'Eagle+', count: eagles, barClass: 'bg-brand', textClass: 'text-brand' },
     { label: 'Birdie', count: birdies, barClass: 'bg-success', textClass: 'text-success-text' },
-    { label: 'Par', count: pars, barClass: 'bg-surface-inset', textClass: 'text-text-secondary' },
+    { label: 'Par', count: pars, barClass: 'bg-surface-hover', textClass: 'text-text-secondary' },
     { label: 'Bogey', count: bogeys, barClass: 'bg-warning/70', textClass: 'text-warning-text' },
     { label: 'Double+', count: doublesPlus, barClass: 'bg-danger/70', textClass: 'text-danger-text' },
   ]
 
-  const avgLabel = avgVsPar == null
-    ? '—'
-    : avgVsPar > 0.005 ? `+${avgVsPar.toFixed(2)}`
-    : avgVsPar < -0.005 ? avgVsPar.toFixed(2)
-    : 'E'
-  const avgColor = avgVsPar == null
-    ? 'text-text-muted'
-    : avgVsPar > 0.2 ? 'text-danger-text'
-    : avgVsPar < -0.2 ? 'text-success-text'
-    : 'text-text-secondary'
-
   const birdieOrBetterPct = total > 0 ? Math.round(((eagles + birdies) / total) * 100) : 0
   const bogeyOrWorsePct = total > 0 ? Math.round(((bogeys + doublesPlus) / total) * 100) : 0
 
+  const hasNoLiveData = total === 0 && leaderboard.length === 0 && playingNow.length === 0
+
+  if (hasNoLiveData) {
+    return (
+      <p className="text-sm text-text-muted italic text-center py-8">
+        No live data for Hole {holeNumber} yet.
+      </p>
+    )
+  }
+
   return (
     <>
-      {/* Aggregate strip */}
+      {/* Aggregate strip — Field Avg / Birdie+ / Bogey+ */}
       <div className="grid grid-cols-3 gap-2">
         <div className="bg-surface-inset rounded-lg p-2.5 text-center">
           <div className="text-[9px] text-text-muted uppercase tracking-wider mb-0.5">Field Avg</div>
-          <div className={`text-base font-bold ${avgColor}`}>{avgLabel}</div>
+          <div className={`text-base font-bold ${difficultyColor}`}>{difficultyLabel}</div>
+          <div className="text-[9px] text-text-muted mt-0.5">{playersFinished} finished</div>
         </div>
         <div className="bg-surface-inset rounded-lg p-2.5 text-center">
           <div className="text-[9px] text-text-muted uppercase tracking-wider mb-0.5">Birdie+</div>
@@ -259,31 +202,100 @@ function HoleStatsView({ distribution, round, holeNumber }: HoleStatsViewProps) 
         </div>
       </div>
 
-      {/* Distribution bars */}
-      <div>
-        <div className="text-[10px] text-text-muted uppercase tracking-wider mb-2">
-          Scoring Distribution · R{round} · {total} finished
-        </div>
-        <div className="space-y-1.5">
-          {rows.map(row => {
-            const pct = total > 0 ? (row.count / total) * 100 : 0
-            return (
-              <div key={row.label} className="grid grid-cols-[3.5rem_1fr_2.5rem] items-center gap-2">
-                <span className={`text-xs font-medium ${row.textClass}`}>{row.label}</span>
-                <div className="h-2.5 bg-surface-inset rounded-full overflow-hidden">
-                  <div
-                    className={`h-full ${row.barClass} transition-all`}
-                    style={{ width: `${pct}%` }}
-                  />
+      {/* Distribution bars — with grid lines */}
+      {total > 0 && (
+        <div>
+          <div className="text-[10px] text-text-muted uppercase tracking-wider mb-2">
+            Scoring Distribution · R{round} · {total} finished
+          </div>
+          <div className="border border-border-subtle rounded overflow-hidden divide-y divide-border-subtle">
+            {rows.map(row => {
+              const pct = total > 0 ? (row.count / total) * 100 : 0
+              return (
+                <div key={row.label} className="grid grid-cols-[3.5rem_1fr_3.5rem] items-center gap-2 px-2 py-1.5 bg-surface-inset/20">
+                  <span className={`text-xs font-medium ${row.textClass}`}>{row.label}</span>
+                  <div className="relative h-2.5 bg-surface-inset rounded-full overflow-hidden">
+                    {/* Quarter tick marks as grid lines */}
+                    <div className="absolute inset-0 flex justify-between pointer-events-none">
+                      <div className="w-px bg-border-subtle opacity-0" />
+                      <div className="w-px bg-border-subtle/40" />
+                      <div className="w-px bg-border-subtle/40" />
+                      <div className="w-px bg-border-subtle/40" />
+                      <div className="w-px bg-border-subtle opacity-0" />
+                    </div>
+                    <div
+                      className={`relative h-full ${row.barClass} transition-all`}
+                      style={{ width: `${pct}%` }}
+                    />
+                  </div>
+                  <span className="text-xs tabular-nums text-text-muted text-right">
+                    {row.count} · {Math.round(pct)}%
+                  </span>
                 </div>
-                <span className="text-xs tabular-nums text-text-muted text-right">
-                  {row.count} · {Math.round(pct)}%
+              )
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Top 5 best scores on hole */}
+      {leaderboard.length > 0 && (
+        <div>
+          <div className="text-[10px] text-text-muted uppercase tracking-wider mb-2">
+            Best on Hole {holeNumber} · R{round}
+          </div>
+          <div className="divide-y divide-border-subtle border border-border-subtle rounded overflow-hidden">
+            {leaderboard.map((g, i) => (
+              <div key={g.id} className="flex items-center justify-between text-sm gap-2 px-2 py-1.5 bg-surface-inset/20">
+                <div className="flex items-center gap-1.5 min-w-0 flex-1">
+                  <span className="text-xs text-text-muted w-4 text-right">{i + 1}</span>
+                  {g.countryCode && (
+                    <img
+                      src={`https://flagcdn.com/24x18/${g.countryCode}.png`}
+                      alt=""
+                      width={18}
+                      height={14}
+                      className="inline-block shrink-0 rounded-[2px]"
+                      loading="lazy"
+                    />
+                  )}
+                  <span className="text-text-primary truncate">{g.name}</span>
+                </div>
+                <span className={`text-sm font-medium tabular-nums shrink-0 ${scoreColor(g.holeStrokes, g.holePar)}`}>
+                  {g.holeStrokes}
                 </span>
               </div>
-            )
-          })}
+            ))}
+          </div>
         </div>
-      </div>
+      )}
+
+      {/* Currently playing list */}
+      {playingNow.length > 0 && (
+        <div>
+          <div className="text-[10px] text-text-muted uppercase tracking-wider mb-2">On The Tee Now</div>
+          <div className="flex flex-wrap gap-1.5">
+            {playingNow.map(g => (
+              <span
+                key={g.id}
+                className="inline-flex items-center gap-1 text-xs bg-surface-inset rounded px-2 py-1 text-text-secondary"
+              >
+                {g.countryCode && (
+                  <img
+                    src={`https://flagcdn.com/24x18/${g.countryCode}.png`}
+                    alt=""
+                    width={14}
+                    height={11}
+                    className="inline-block shrink-0 rounded-[1px]"
+                    loading="lazy"
+                  />
+                )}
+                {g.name}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
     </>
   )
 }

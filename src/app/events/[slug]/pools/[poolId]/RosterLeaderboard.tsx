@@ -156,9 +156,9 @@ export function RosterLeaderboard({
         </div>
       ) : (
         <div className="bg-surface rounded-lg border border-border overflow-x-auto">
-          <div className="min-w-[38rem]">
+          <div className="min-w-[34rem]">
           {/* Header */}
-          <div className="grid grid-cols-[2rem_minmax(10rem,1fr)_2.25rem_2.25rem_2.25rem_2.25rem_3rem_4rem] gap-2 px-3 py-2 bg-surface-inset border-b border-border text-xs text-text-muted uppercase tracking-wide">
+          <div className="grid grid-cols-[2rem_10rem_2.25rem_2.25rem_2.25rem_2.25rem_3rem_4rem] gap-2 px-3 py-2 bg-surface-inset border-b border-border text-xs text-text-muted uppercase tracking-wide">
             <span className="text-right">#</span>
             <span>Player</span>
             <span className="text-right">R1</span>
@@ -187,7 +187,7 @@ export function RosterLeaderboard({
                 <button
                   type="button"
                   onClick={() => canExpand && setExpandedId(isExpanded ? null : member.id)}
-                  className={`w-full grid grid-cols-[2rem_minmax(10rem,1fr)_2.25rem_2.25rem_2.25rem_2.25rem_3rem_4rem] gap-2 px-3 py-2.5 border-b border-border-subtle text-left transition-colors ${
+                  className={`w-full grid grid-cols-[2rem_10rem_2.25rem_2.25rem_2.25rem_2.25rem_3rem_4rem] gap-2 px-3 py-2.5 border-b border-border-subtle text-left transition-colors ${
                     canExpand ? 'hover:bg-surface-inset/50 cursor-pointer' : 'cursor-default'
                   } ${isExpanded ? 'bg-surface-inset/30' : ''}`}
                 >
@@ -269,8 +269,8 @@ export function RosterLeaderboard({
                       )}
                     </p>
                     <div className="overflow-x-auto">
-                      <div className="min-w-[58rem]">
-                        <div className="grid grid-cols-[minmax(10rem,1.2fr)_minmax(28rem,auto)_2.5rem_2.25rem_2.25rem_2.25rem_2.25rem_3.5rem] gap-2 px-2 py-1.5 text-xs text-text-muted uppercase tracking-wide border-b border-border">
+                      <div className="min-w-[56rem]">
+                        <div className="grid grid-cols-[8rem_minmax(28rem,auto)_2.5rem_2.25rem_2.25rem_2.25rem_2.25rem_3.5rem] gap-2 px-2 py-1.5 text-xs text-text-muted uppercase tracking-wide border-b border-border">
                           <span>Golfer</span>
                           <span>Holes</span>
                           <span className="text-center">Tier</span>
@@ -281,7 +281,7 @@ export function RosterLeaderboard({
                           <span className="text-right">Total</span>
                         </div>
                         {breakdown.counting.map(p => (
-                          <div key={p.id} className="grid grid-cols-[minmax(10rem,1.2fr)_minmax(28rem,auto)_2.5rem_2.25rem_2.25rem_2.25rem_2.25rem_3.5rem] gap-2 px-2 py-1.5 items-center border-b border-border-subtle">
+                          <div key={p.id} className="grid grid-cols-[8rem_minmax(28rem,auto)_2.5rem_2.25rem_2.25rem_2.25rem_2.25rem_3.5rem] gap-2 px-2 py-1.5 items-center border-b border-border-subtle">
                             <div className="flex items-center gap-1.5 min-w-0 text-sm text-text-primary">
                               {p.countryCode && (
                                 <img
@@ -319,7 +319,7 @@ export function RosterLeaderboard({
                           </div>
                         ))}
                         {breakdown.dropped.map(p => (
-                          <div key={p.id} className="grid grid-cols-[minmax(10rem,1.2fr)_minmax(28rem,auto)_2.5rem_2.25rem_2.25rem_2.25rem_2.25rem_3.5rem] gap-2 px-2 py-1.5 items-center border-b border-border-subtle opacity-50">
+                          <div key={p.id} className="grid grid-cols-[8rem_minmax(28rem,auto)_2.5rem_2.25rem_2.25rem_2.25rem_2.25rem_3.5rem] gap-2 px-2 py-1.5 items-center border-b border-border-subtle opacity-50">
                             <div className="flex items-center gap-1.5 min-w-0 text-sm text-text-muted">
                               {p.countryCode && (
                                 <img

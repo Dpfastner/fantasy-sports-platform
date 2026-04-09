@@ -1,15 +1,18 @@
 'use client'
 
 /**
- * Roster Matrix — a heatmap view showing every entry's 7 golfer picks,
- * colored by each golfer's current score-to-par.
+ * Roster Matrix — heatmap showing every picked golfer × every pool entry,
+ * with cells colored by each golfer's current score-to-par.
  *
- * Rows: pool entries (one per roster submission), sorted by entry total score
- * Columns: golfers picked by any entry, sorted by current to-par
- * Cells: filled square if that entry picked that golfer, colored by score-to-par
+ * Rows: picked golfers (sorted by current score-to-par)
+ * Columns: pool entries (sorted by current entry score)
+ * Cells: filled square if that entry picked that golfer, colored by golfer's
+ * to-par; empty bordered cell otherwise.
+ *
+ * Uses real borders (not gap) for crisp grid lines.
  */
 
-import { useMemo } from 'react'
+import { useMemo, Fragment } from 'react'
 
 interface Participant {
   id: string
@@ -50,7 +53,7 @@ function scoreLabel(scoreToPar: number | null): string {
 }
 
 export function RosterMatrix({ entries, participants, allRosterPicks }: RosterMatrixProps) {
-  // Build sorted list of golfers that have been picked by at least one entry
+  // Picked golfers sorted by current score
   const pickedGolfers = useMemo(() => {
     const pickedIds = new Set<string>()
     for (const picks of Object.values(allRosterPicks)) {
@@ -63,7 +66,7 @@ export function RosterMatrix({ entries, participants, allRosterPicks }: RosterMa
         return {
           id: p.id,
           name: p.name,
-          shortName: p.shortName || p.name.split(' ').pop() || p.name,
+          shortName: p.shortName || p.name,
           scoreToPar: (meta.score_to_par as number | null) ?? null,
           status: (meta.status as string) || 'active',
         }
@@ -75,7 +78,7 @@ export function RosterMatrix({ entries, participants, allRosterPicks }: RosterMa
       })
   }, [participants, allRosterPicks])
 
-  // Sort entries by total score ascending (best first)
+  // Entries sorted by total score
   const sortedEntries = useMemo(() => {
     return [...entries]
       .filter(e => allRosterPicks[e.id])
@@ -90,85 +93,95 @@ export function RosterMatrix({ entries, participants, allRosterPicks }: RosterMa
     )
   }
 
-  // For each entry, build a set of picked golfer IDs for fast lookup
+  // For each entry, a Set of picked golfer IDs for fast lookup
   const pickSets = new Map(sortedEntries.map(e => [e.id, new Set(allRosterPicks[e.id] || [])]))
+
+  // Row/col dimensions
+  const goldierCol = '12rem'                  // left header column for golfer info
+  const entryColWidth = '4.5rem'              // each entry column width
 
   return (
     <div className="overflow-x-auto -mx-1">
-      <div className="min-w-max px-1">
-        {/* Column header: golfer names (rotated) */}
-        <div className="grid" style={{ gridTemplateColumns: `10rem repeat(${pickedGolfers.length}, 1.5rem)`, gap: '2px' }}>
-          <div />
-          {pickedGolfers.map(g => (
-            <div
-              key={g.id}
-              className="flex items-end justify-center h-24"
-              title={`${g.name} · ${scoreLabel(g.scoreToPar)}`}
-            >
-              <span
-                className="text-[10px] text-text-muted whitespace-nowrap origin-bottom-left"
-                style={{ transform: 'rotate(-60deg) translateX(-0.25rem)' }}
-              >
-                {g.shortName}
-              </span>
-            </div>
-          ))}
+      <div
+        className="min-w-max px-1 text-xs"
+        style={{
+          display: 'grid',
+          gridTemplateColumns: `${goldierCol} repeat(${sortedEntries.length}, ${entryColWidth})`,
+        }}
+      >
+        {/* ── Top-left corner cell ── */}
+        <div className="border-b border-r border-border-subtle p-2 bg-surface-inset/50 sticky left-0 z-10">
+          <div className="text-[10px] text-text-muted uppercase tracking-wider">Golfer</div>
         </div>
 
-        {/* Row header summary (score badges) */}
-        <div className="grid mb-1" style={{ gridTemplateColumns: `10rem repeat(${pickedGolfers.length}, 1.5rem)`, gap: '2px' }}>
-          <div className="text-[9px] text-text-muted uppercase tracking-wider pr-2 flex items-end pb-0.5">Entry · Score</div>
-          {pickedGolfers.map(g => (
-            <div
-              key={g.id}
-              className={`h-4 flex items-center justify-center text-[8px] font-semibold text-text-primary rounded-sm ${scoreColorClass(g.scoreToPar)}`}
-              title={`${g.name} · ${scoreLabel(g.scoreToPar)}`}
-            >
-              {scoreLabel(g.scoreToPar)}
-            </div>
-          ))}
-        </div>
-
-        {/* Entry rows */}
+        {/* ── Entry column headers ── */}
         {sortedEntries.map(entry => {
-          const pickSet = pickSets.get(entry.id) || new Set<string>()
           const label = entry.entryName || entry.displayName
           return (
             <div
-              key={entry.id}
-              className="grid items-center hover:bg-surface-inset/30 rounded py-0.5"
-              style={{ gridTemplateColumns: `10rem repeat(${pickedGolfers.length}, 1.5rem)`, gap: '2px' }}
+              key={`h-${entry.id}`}
+              className="border-b border-r border-border-subtle p-2 bg-surface-inset/50 text-center flex flex-col items-center justify-end"
+              title={label}
             >
-              <div className="pr-2 min-w-0">
-                <div className="text-xs font-medium text-text-primary truncate">{label}</div>
-                {entry.entryName && entry.userName && (
-                  <div className="text-[10px] text-text-muted truncate">{entry.userName}</div>
-                )}
-                <div className="text-[10px] text-text-muted tabular-nums">{scoreLabel(entry.score)}</div>
-              </div>
-              {pickedGolfers.map(g => {
-                const picked = pickSet.has(g.id)
-                return (
-                  <div
-                    key={g.id}
-                    className={`h-6 rounded-sm ${picked ? scoreColorClass(g.scoreToPar) : 'bg-transparent'}`}
-                    title={picked ? `${label} picked ${g.name} · ${scoreLabel(g.scoreToPar)}` : ''}
-                  />
-                )
-              })}
+              <div className="text-[10px] text-text-primary font-medium truncate w-full">{label}</div>
+              <div className={`text-[10px] font-semibold tabular-nums ${
+                entry.score < 0 ? 'text-success-text'
+                : entry.score > 0 ? 'text-danger-text'
+                : 'text-text-muted'
+              }`}>{scoreLabel(entry.score)}</div>
             </div>
           )
         })}
 
-        {/* Legend */}
-        <div className="flex flex-wrap items-center gap-3 mt-3 pt-3 border-t border-border-subtle text-[10px] text-text-muted">
-          <span className="uppercase tracking-wider">Colors:</span>
-          <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-sm bg-brand" /> −3 or better</span>
-          <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-sm bg-success" /> −1 to −2</span>
-          <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-sm bg-surface-hover" /> Even</span>
-          <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-sm bg-warning/70" /> +1 to +2</span>
-          <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-sm bg-danger/70" /> +3 or worse</span>
-        </div>
+        {/* ── Golfer rows ── */}
+        {pickedGolfers.map(golfer => {
+          return (
+            <Fragment key={`row-${golfer.id}`}>
+              {/* Golfer name cell (row header) */}
+              <div
+                className="border-b border-r border-border-subtle px-2 py-1.5 bg-surface-inset/30 flex items-center justify-between gap-2 min-w-0 sticky left-0 z-10"
+              >
+                <span className="text-text-primary truncate">{golfer.name}</span>
+                <span className={`text-[10px] font-semibold tabular-nums shrink-0 ${
+                  golfer.scoreToPar != null && golfer.scoreToPar < 0 ? 'text-success-text'
+                  : golfer.scoreToPar != null && golfer.scoreToPar > 0 ? 'text-danger-text'
+                  : 'text-text-muted'
+                }`}>
+                  {scoreLabel(golfer.scoreToPar)}
+                </span>
+              </div>
+              {/* Entry cells */}
+              {sortedEntries.map(entry => {
+                const picked = pickSets.get(entry.id)?.has(golfer.id)
+                return (
+                  <div
+                    key={`c-${golfer.id}-${entry.id}`}
+                    className={`border-b border-r border-border-subtle h-8 flex items-center justify-center ${
+                      picked ? scoreColorClass(golfer.scoreToPar) : 'bg-surface'
+                    }`}
+                    title={picked ? `${entry.entryName || entry.displayName} picked ${golfer.name}` : ''}
+                  >
+                    {picked && (
+                      <span className="text-[10px] text-text-primary font-semibold tabular-nums">
+                        {scoreLabel(golfer.scoreToPar)}
+                      </span>
+                    )}
+                  </div>
+                )
+              })}
+            </Fragment>
+          )
+        })}
+      </div>
+
+      {/* Legend */}
+      <div className="flex flex-wrap items-center gap-3 mt-3 pt-3 border-t border-border-subtle text-[10px] text-text-muted px-1">
+        <span className="uppercase tracking-wider">Colors:</span>
+        <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-sm bg-brand" /> −3 or better</span>
+        <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-sm bg-success" /> −1 to −2</span>
+        <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-sm bg-surface-hover" /> Even</span>
+        <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-sm bg-warning/70" /> +1 to +2</span>
+        <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-sm bg-danger/70" /> +3 or worse</span>
       </div>
     </div>
   )
