@@ -17,6 +17,8 @@ import { CourseMapContainer } from '@/components/CourseMap/CourseMapContainer'
 import { PlayerOwnershipCard } from '@/components/PlayerOwnershipCard'
 import { BiggestMovers } from '@/components/BiggestMovers'
 import { TeeTimesCard } from '@/components/TeeTimesCard'
+import { ProjectedCutTracker } from '@/components/ProjectedCutTracker'
+import type { CutRule } from '@/lib/events/golf-aggregations'
 import { EntryAvatar } from '@/components/EntryAvatar'
 import { ScheduleView } from './ScheduleView'
 import { ShareButton } from '@/components/ShareButton'
@@ -329,6 +331,20 @@ export function PoolDetailClient({
     }
     return Array.from(ids)
   }, [userEntries, allRosterPicks])
+
+  // Tournament cut rule from config (for Projected Cut Tracker — golf only)
+  const cutRule = useMemo<CutRule>(() => {
+    const cfg = (tournament.config || {}) as Record<string, unknown>
+    const raw = cfg.cut_rule as Record<string, unknown> | undefined
+    if (!raw || typeof raw !== 'object') return null
+    if (raw.type === 'top_n_and_ties' && typeof raw.n === 'number') {
+      return { type: 'top_n_and_ties', n: raw.n }
+    }
+    if (raw.type === 'stroke_limit' && typeof raw.strokes === 'number') {
+      return { type: 'stroke_limit', strokes: raw.strokes }
+    }
+    return null
+  }, [tournament.config])
   const activeEntryPicks = activeEntry ? (userPicksByEntry[activeEntry.id] || []) : []
   const hasAnyEntry = userEntries.length > 0
   const canAddEntry = hasAnyEntry && userEntries.length < pool.maxEntriesPerUser && pool.status === 'open'
@@ -664,9 +680,14 @@ export function PoolDetailClient({
           )}
           </ErrorBoundary>
 
-          {/* Biggest Movers — golf roster pools only, shown when we have a rolling snapshot */}
+          {/* Biggest Movers + Projected Cut — golf roster pools only */}
           {effectiveFormat === 'roster' && tournament.sport === 'golf' && (
-            <BiggestMovers participants={liveParticipants} />
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              <BiggestMovers participants={liveParticipants} />
+              {cutRule && (
+                <ProjectedCutTracker participants={liveParticipants} cutRule={cutRule} />
+              )}
+            </div>
           )}
 
           {/* Player Ownership card (collapsible) — hidden until current user

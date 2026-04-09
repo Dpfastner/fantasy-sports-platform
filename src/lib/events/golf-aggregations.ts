@@ -336,3 +336,78 @@ export function getFeaturedGroups(
   out.sort((a, b) => new Date(a.teeTime).getTime() - new Date(b.teeTime).getTime())
   return out
 }
+
+// ============================================================
+// Feature 5 — Projected Cut Tracker
+// ============================================================
+
+export type CutRule =
+  | { type: 'top_n_and_ties'; n: number }
+  | { type: 'stroke_limit'; strokes: number }
+  | null
+
+export interface CutProjection {
+  cutLine: number | null       // score-to-par required to make the cut
+  fieldSize: number            // total golfers with a scoreToPar
+  insideCount: number          // number of golfers at or inside the line
+  bubble: GolferLite[]         // within ±2 of the line (excluding inside/outside)
+  inside: GolferLite[]         // comfortably inside (> 2 strokes ahead of line)
+  outside: GolferLite[]        // currently missing the cut
+}
+
+/**
+ * Compute the projected cut line and bubble players based on current
+ * score-to-par and the tournament's cut rule. Returns null if no rule
+ * or not enough field data.
+ */
+export function computeProjectedCut(
+  golfers: GolferLite[],
+  cutRule: CutRule
+): CutProjection | null {
+  if (!cutRule) return null
+
+  const active = golfers.filter(g =>
+    g.status !== 'wd' && g.status !== 'dq' && typeof g.scoreToPar === 'number'
+  )
+  if (active.length < 10) return null
+
+  // Sort ascending (lowest/best first)
+  const sorted = [...active].sort((a, b) => (a.scoreToPar ?? 999) - (b.scoreToPar ?? 999))
+
+  let cutLine: number | null = null
+
+  if (cutRule.type === 'top_n_and_ties') {
+    if (sorted.length <= cutRule.n) {
+      cutLine = sorted[sorted.length - 1].scoreToPar ?? null
+    } else {
+      // The score at index n-1 is the worst score that still makes the cut
+      cutLine = sorted[cutRule.n - 1].scoreToPar ?? null
+    }
+  } else if (cutRule.type === 'stroke_limit') {
+    cutLine = cutRule.strokes
+  }
+
+  if (cutLine == null) return null
+
+  const inside: GolferLite[] = []
+  const bubble: GolferLite[] = []
+  const outside: GolferLite[] = []
+
+  for (const g of sorted) {
+    const s = g.scoreToPar as number
+    if (s <= cutLine - 2) inside.push(g)
+    else if (s <= cutLine + 2) bubble.push(g)
+    else outside.push(g)
+  }
+
+  const insideCount = sorted.filter(g => (g.scoreToPar as number) <= cutLine!).length
+
+  return {
+    cutLine,
+    fieldSize: active.length,
+    insideCount,
+    inside,
+    bubble,
+    outside,
+  }
+}
