@@ -17,11 +17,11 @@ interface RosterOwnershipProps {
   totalEntries: number
 }
 
-// Royal Gambit palette — three maximally distinct colors (warm / neutral / cool).
+// Royal Gambit palette — warm / neutral / cool trio.
 const TIER_COLORS: Record<string, { bar: string; dot: string }> = {
-  A: { bar: 'bg-brand', dot: 'bg-brand' },          // amber #F59E0B
-  B: { bar: 'bg-tertiary', dot: 'bg-tertiary' },    // cream #FAF5EE
-  C: { bar: 'bg-success', dot: 'bg-success' },      // green #4ADE80
+  A: { bar: 'bg-brand', dot: 'bg-brand' },                      // amber    #F59E0B
+  B: { bar: 'bg-tertiary', dot: 'bg-tertiary' },                // cream    #FAF5EE
+  C: { bar: 'bg-text-secondary', dot: 'bg-text-secondary' },    // lavender #C4B5D4
 }
 
 export function RosterOwnership({ participants, selectionCounts, totalEntries }: RosterOwnershipProps) {
