@@ -346,9 +346,9 @@ export default function ScheduleClient({
                         key={game.id}
                         className={`bg-surface rounded-lg p-3 border ${
                           isLive
-                            ? 'border-danger/50 bg-danger/10'
+                            ? 'border-danger/50 bg-surface'
                             : isRosterGame
-                            ? 'border-info bg-info/10'
+                            ? 'border-info bg-surface'
                             : 'border-border'
                         }`}
                       >
@@ -398,9 +398,9 @@ export default function ScheduleClient({
                         key={game.id}
                         className={`bg-surface rounded-lg p-4 border ${
                           isLive
-                            ? 'border-danger/50 bg-danger/10'
+                            ? 'border-danger/50 bg-surface'
                             : isRosterGame
-                            ? 'border-info bg-info/10'
+                            ? 'border-info bg-surface'
                             : 'border-border'
                         }`}
                       >
@@ -548,7 +548,7 @@ export default function ScheduleClient({
         {/* Legend */}
         <div className="mt-6 flex items-center gap-4 text-xs text-text-secondary">
           <div className="flex items-center gap-1">
-            <div className="w-3 h-3 bg-info/10 border border-info rounded"></div>
+            <div className="w-3 h-3 bg-surface border border-info rounded"></div>
             <span>My Roster</span>
           </div>
           <div className="flex items-center gap-1">

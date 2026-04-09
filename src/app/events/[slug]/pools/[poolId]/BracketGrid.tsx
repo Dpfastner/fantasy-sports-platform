@@ -181,7 +181,7 @@ export function BracketGrid({
             <div className="flex flex-col items-center justify-center shrink-0 ml-4" style={{ marginTop: totalHeight / 2 - 20 }}>
               <div className="text-[10px] text-text-muted uppercase tracking-wider mb-1">Champion</div>
               <div className={`border rounded-lg px-4 py-2 text-center ${
-                champResult.eliminated ? 'bg-danger/5 border-danger/20' : 'bg-brand/10 border-brand/30'
+                champResult.eliminated ? 'bg-surface border-danger/20' : 'bg-surface border-brand/30'
               }`}>
                 <div className={`text-sm font-semibold ${
                   champResult.eliminated ? 'text-danger-text line-through opacity-60' : 'text-brand'

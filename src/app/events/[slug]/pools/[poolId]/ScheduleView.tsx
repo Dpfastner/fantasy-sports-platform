@@ -169,7 +169,7 @@ export function ScheduleView({ games, participants, format, tournamentId, sport 
                   >
                     {/* Status bar */}
                     <div className={`px-3 py-1.5 text-center border-b ${
-                      isLive ? 'bg-danger/5 border-danger/20' : 'bg-surface-inset border-border'
+                      isLive ? 'bg-surface border-danger/20' : 'bg-surface-inset border-border'
                     }`}>
                       <span className="text-[10px] text-text-muted">Game {game.gameNumber}</span>
                       {isLive ? (
@@ -200,7 +200,7 @@ export function ScheduleView({ games, participants, format, tournamentId, sport 
                     <div className="grid grid-cols-[1fr_auto_1fr] items-stretch">
                       {/* Team 1 — left */}
                       <div className={`flex flex-col items-center justify-center gap-1 p-3 min-h-[80px] ${
-                        p1Won ? 'bg-success/5' : ''
+                        p1Won ? 'bg-surface' : ''
                       }`}>
                         {p1?.logoUrl && <img src={p1.logoUrl} alt="" className="w-8 h-8 rounded-sm object-contain" />}
                         {p1?.seed ? <span className="text-[9px] text-text-muted">#{p1.seed}</span> : null}
@@ -235,7 +235,7 @@ export function ScheduleView({ games, participants, format, tournamentId, sport 
 
                       {/* Team 2 — right */}
                       <div className={`flex flex-col items-center justify-center gap-1 p-3 min-h-[80px] ${
-                        p2Won ? 'bg-success/5' : ''
+                        p2Won ? 'bg-surface' : ''
                       }`}>
                         {p2?.logoUrl && <img src={p2.logoUrl} alt="" className="w-8 h-8 rounded-sm object-contain" />}
                         {p2?.seed ? <span className="text-[9px] text-text-muted">#{p2.seed}</span> : null}

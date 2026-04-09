@@ -124,7 +124,7 @@ export function HistorySeasonCard({
             {seasonYear - 1}-{seasonYear} Season
           </h2>
           {championName && (
-            <div className="flex items-center gap-2 bg-warning/10 px-3 py-1.5 rounded-full">
+            <div className="flex items-center gap-2 bg-surface px-3 py-1.5 rounded-full">
               <span className="text-base">🏆</span>
               <span className="text-sm font-semibold text-warning-text">
                 {championUserName || championName}
@@ -173,7 +173,7 @@ export function HistorySeasonCard({
                   return (
                     <tr
                       key={teamV2?.teamId || idx}
-                      className={`border-t border-border/50 ${isChamp ? 'bg-warning/5' : ''} ${
+                      className={`border-t border-border/50 ${isChamp ? 'bg-surface' : ''} ${
                         teamV2?.roster ? 'cursor-pointer hover:bg-surface-subtle' : ''
                       }`}
                       onClick={() => teamV2?.roster && setExpandedTeam(isTeamExpanded ? null : idx)}
@@ -258,7 +258,7 @@ export function HistorySeasonCard({
                     </thead>
                     <tbody>
                       {finalStandings.standings.map((team, teamIdx) => (
-                        <tr key={teamIdx} className={`border-t border-border/30 ${teamIdx === 0 ? 'bg-warning/5' : ''}`}>
+                        <tr key={teamIdx} className={`border-t border-border/30 ${teamIdx === 0 ? 'bg-surface' : ''}`}>
                           <td className="py-1.5 pr-2 text-text-primary font-medium sticky left-0 bg-surface whitespace-nowrap">
                             {team.teamName}
                           </td>
@@ -341,7 +341,7 @@ export function HistorySeasonCard({
                             {finalStandings.standings.map((team, teamIdx) => {
                               const totalPrize = teamTotals.get(team.teamName) || 0
                               return (
-                                <tr key={teamIdx} className={`border-t border-border/30 ${teamIdx === 0 ? 'bg-warning/5' : ''}`}>
+                                <tr key={teamIdx} className={`border-t border-border/30 ${teamIdx === 0 ? 'bg-surface' : ''}`}>
                                   <td className="py-1.5 pr-2 text-text-primary font-medium sticky left-0 bg-surface whitespace-nowrap">
                                     {team.teamName}
                                   </td>

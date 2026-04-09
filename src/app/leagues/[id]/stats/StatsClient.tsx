@@ -241,7 +241,7 @@ export default function StatsClient({
         {activeSection === 'stats' && (
           <section>
             {/* Heisman Banner - Full Width */}
-            <div className="bg-warning/10 border border-warning/30 rounded-lg p-4 md:p-5 mb-6">
+            <div className="bg-surface border border-warning/30 rounded-lg p-4 md:p-5 mb-6">
               {heisman ? (
                 <div className="flex items-center gap-4">
                   <span className="text-warning-text text-2xl md:text-3xl">🏆</span>
@@ -414,7 +414,7 @@ export default function StatsClient({
                 </p>
                 {statsData?.idealTeam ? (
                   <>
-                    <div className="mb-4 p-3 bg-success/10 border border-success/30 rounded-lg text-center">
+                    <div className="mb-4 p-3 bg-surface border border-success/30 rounded-lg text-center">
                       <span className="text-3xl font-bold text-success-text">
                         {statsData.idealTeam.totalPoints.toLocaleString()}
                       </span>

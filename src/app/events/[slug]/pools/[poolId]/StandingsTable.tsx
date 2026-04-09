@@ -85,7 +85,7 @@ export function StandingsTable({ tournamentId }: { tournamentId: string }) {
               <tr
                 key={s.teamCode}
                 className={`border-b border-border last:border-b-0 ${
-                  i === 0 ? 'bg-success/5' : i === lastIdx ? 'bg-danger/5' : ''
+                  i === 0 ? 'bg-surface' : i === lastIdx ? 'bg-surface' : ''
                 }`}
               >
                 <td className="py-2.5 px-3 text-text-muted font-medium">{s.rank}</td>

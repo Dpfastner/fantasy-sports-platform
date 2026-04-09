@@ -158,7 +158,7 @@ export function AnnouncementsManager({
   return (
     <div className="space-y-3">
       {error && (
-        <div className="p-2 bg-danger/10 border border-danger rounded text-danger text-sm">
+        <div className="p-2 bg-surface border border-danger rounded text-danger text-sm">
           {error}
         </div>
       )}

@@ -12,7 +12,6 @@ import { PoolActivityFeed } from './PoolActivityFeed'
 import { PoolAnnouncements } from './PoolAnnouncements'
 import { TournamentCountdown } from '@/components/TournamentCountdown'
 import { RosterOwnership } from '@/components/RosterOwnership'
-import { AugustaCourseGuide } from '@/components/AugustaCourseGuide'
 import { EntryAvatar } from '@/components/EntryAvatar'
 import { ScheduleView } from './ScheduleView'
 import { ShareButton } from '@/components/ShareButton'
@@ -377,7 +376,7 @@ export function PoolDetailClient({
 
       {/* Not a member — join button or post-join school prompt */}
       {isLoggedIn && !hasAnyEntry && pool.status === 'open' && !showSchoolPrompt && (
-        <div className="bg-brand/5 border border-brand/20 rounded-lg p-5 mb-6 text-center">
+        <div className="bg-surface border border-brand/20 rounded-lg p-5 mb-6 text-center">
           <p className="text-text-secondary text-sm mb-3">You&apos;re not in this pool yet.</p>
           <button
             onClick={async () => {
@@ -410,7 +409,7 @@ export function PoolDetailClient({
       )}
 
       {showSchoolPrompt && (
-        <div className="bg-brand/5 border border-brand/20 rounded-lg p-5 mb-6 text-center">
+        <div className="bg-surface border border-brand/20 rounded-lg p-5 mb-6 text-center">
           <h3 className="text-base font-semibold text-text-primary mb-1">You&apos;re in! Rep your school?</h3>
           <p className="text-text-secondary text-sm mb-4">Pick your alma mater or favorite school to join the Fan Zone.</p>
           <div className="max-w-sm mx-auto text-left">
@@ -450,7 +449,7 @@ export function PoolDetailClient({
 
       {/* Start Your Bracket CTA — shown when member hasn't submitted picks */}
       {activeEntry && !activeEntry.submittedAt && pool.status === 'open' && activeTab !== 'picks' && (
-        <div className="bg-brand/5 border border-brand/20 rounded-lg p-5 mb-6 text-center">
+        <div className="bg-surface border border-brand/20 rounded-lg p-5 mb-6 text-center">
           <h3 className="brand-h3 text-base text-text-primary mb-1">
             {effectiveFormat === 'bracket' ? 'Fill out your bracket!' :
              effectiveFormat === 'roster' ? 'Build your roster!' : 'Make your picks!'}
@@ -553,11 +552,6 @@ export function PoolDetailClient({
             />
           )}
 
-          {/* Augusta course guide — only for Masters golf tournaments */}
-          {tournament.sport === 'golf' && tournament.slug?.includes('masters') && (
-            <AugustaCourseGuide />
-          )}
-
           {/* Announcements */}
           <PoolAnnouncements poolId={pool.id} isCreator={isCreator} />
 
@@ -625,7 +619,7 @@ export function PoolDetailClient({
                   onClick={() => setActiveEntryIndex(i)}
                   className={`flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-md border whitespace-nowrap transition-colors ${
                     i === activeEntryIndex
-                      ? 'border-brand bg-brand/10 text-brand'
+                      ? 'border-brand bg-surface text-brand'
                       : 'border-border text-text-muted hover:text-text-secondary'
                   }`}
                 >

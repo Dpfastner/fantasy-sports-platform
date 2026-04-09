@@ -186,7 +186,7 @@ export function SettingsTab({
                   onClick={() => setSettingsVisibility(vis)}
                   className={`flex-1 text-sm py-1.5 rounded-md border transition-colors ${
                     settingsVisibility === vis
-                      ? 'border-brand bg-brand/10 text-brand'
+                      ? 'border-brand bg-surface text-brand'
                       : 'border-border text-text-muted hover:text-text-secondary'
                   }`}
                 >
@@ -262,7 +262,7 @@ export function SettingsTab({
                       onClick={() => setSettingsDraftMode(opt.value)}
                       className={`text-left text-xs py-2 px-3 rounded-md border transition-colors ${
                         settingsDraftMode === opt.value
-                          ? 'border-brand bg-brand/10 text-brand'
+                          ? 'border-brand bg-surface text-brand'
                           : 'border-border text-text-muted hover:text-text-secondary'
                       }`}
                     >
@@ -331,7 +331,7 @@ export function SettingsTab({
                       onClick={() => setSettingsCutPenalty(opt.value)}
                       className={`flex-1 text-xs py-1.5 rounded-md border transition-colors ${
                         settingsCutPenalty === opt.value
-                          ? 'border-brand bg-brand/10 text-brand'
+                          ? 'border-brand bg-surface text-brand'
                           : 'border-border text-text-muted hover:text-text-secondary'
                       }`}
                     >
@@ -357,7 +357,7 @@ export function SettingsTab({
                     onClick={() => setSettingsScoringRules({ ...preset.rules })}
                     className={`flex-1 text-xs py-1.5 rounded-md border transition-colors ${
                       activePreset === key
-                        ? 'border-brand bg-brand/10 text-brand'
+                        ? 'border-brand bg-surface text-brand'
                         : 'border-border text-text-muted hover:text-text-secondary'
                     }`}
                   >
@@ -369,7 +369,7 @@ export function SettingsTab({
                   onClick={() => {/* no-op — values stay as-is, user edits below */}}
                   className={`flex-1 text-xs py-1.5 rounded-md border transition-colors ${
                     activePreset === 'custom'
-                      ? 'border-brand bg-brand/10 text-brand'
+                      ? 'border-brand bg-surface text-brand'
                       : 'border-border text-text-muted hover:text-text-secondary'
                   }`}
                 >

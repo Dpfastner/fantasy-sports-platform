@@ -330,7 +330,7 @@ export function LeagueChat({ leagueId, currentUserId, initialMessages, initialRe
 
       {/* Error display */}
       {error && (
-        <div className="mb-2 p-2 bg-danger/10 border border-danger rounded text-danger text-xs">
+        <div className="mb-2 p-2 bg-surface border border-danger rounded text-danger text-xs">
           {error}
         </div>
       )}

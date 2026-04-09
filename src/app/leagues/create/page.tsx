@@ -282,7 +282,7 @@ export default function CreateLeaguePage() {
               onClick={() => setCompetitionType('league')}
               className={`p-4 rounded-lg border-2 text-left transition-all ${
                 competitionType === 'league'
-                  ? 'border-brand bg-brand/10'
+                  ? 'border-brand bg-surface'
                   : 'border-border bg-surface hover:border-brand/40'
               }`}
             >
@@ -295,7 +295,7 @@ export default function CreateLeaguePage() {
               onClick={() => setCompetitionType('pool')}
               className={`p-4 rounded-lg border-2 text-left transition-all ${
                 competitionType === 'pool'
-                  ? 'border-brand bg-brand/10'
+                  ? 'border-brand bg-surface'
                   : 'border-border bg-surface hover:border-brand/40'
               }`}
             >
@@ -310,7 +310,7 @@ export default function CreateLeaguePage() {
           ) : (
           <form onSubmit={handleSubmit} className="bg-surface rounded-lg p-8">
             {error && (
-              <div className="bg-danger/10 border border-danger text-danger px-4 py-3 rounded-lg mb-6">
+              <div className="bg-surface border border-danger text-danger px-4 py-3 rounded-lg mb-6">
                 {error}
               </div>
             )}

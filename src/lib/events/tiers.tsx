@@ -12,9 +12,9 @@ export const DEFAULT_TIERS = DEFAULT_ROSTER_SCORING.tiers
 
 /** Tier display colors — superset shape with bg, text, and border */
 export const TIER_COLORS: Record<string, { bg: string; text: string; border: string }> = {
-  A: { bg: 'bg-success/10', text: 'text-success-text', border: 'border-success/30' },
-  B: { bg: 'bg-info/10', text: 'text-info-text', border: 'border-info/30' },
-  C: { bg: 'bg-warning/10', text: 'text-warning-text', border: 'border-warning/30' },
+  A: { bg: 'bg-surface', text: 'text-success-text', border: 'border-success/30' },
+  B: { bg: 'bg-surface', text: 'text-info-text', border: 'border-info/30' },
+  C: { bg: 'bg-surface', text: 'text-warning-text', border: 'border-warning/30' },
 }
 
 /**

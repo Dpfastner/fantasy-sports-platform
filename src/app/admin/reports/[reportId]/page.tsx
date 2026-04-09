@@ -248,7 +248,7 @@ export default function AdminTicketDetailPage() {
 
             {/* Resolved banner */}
             {ticket.status === 'resolved' && (
-              <div className="bg-success/10 border border-success/20 rounded-lg px-4 py-3 mb-4 text-success-text text-sm">
+              <div className="bg-surface border border-success/20 rounded-lg px-4 py-3 mb-4 text-success-text text-sm">
                 This ticket is resolved. Reply to reopen it.
               </div>
             )}

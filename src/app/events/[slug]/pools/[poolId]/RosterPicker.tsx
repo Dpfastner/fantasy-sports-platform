@@ -313,7 +313,7 @@ export function RosterPicker({
 
       {/* Locked warning */}
       {isLocked && (
-        <div className="bg-warning/10 border border-warning/20 rounded-lg p-3 mb-4 text-sm text-warning-text">
+        <div className="bg-surface border border-warning/20 rounded-lg p-3 mb-4 text-sm text-warning-text">
           Rosters are locked. {isDeadlinePassed ? 'The deadline has passed.' : 'The pool is no longer accepting changes.'}
         </div>
       )}
@@ -451,7 +451,7 @@ export function RosterPicker({
                       disabled={(!canEdit && !isSelected) || (isAtCap && !isSelected)}
                       className={`bg-surface rounded-lg border p-3 text-left transition-all ${
                         isSelected
-                          ? `border-brand bg-brand/5 shadow-sm`
+                          ? `border-brand bg-surface shadow-sm`
                           : `border-border hover:border-brand/40 hover:shadow-md`
                       } ${!canEdit ? 'cursor-default' : 'cursor-pointer'} ${isCut ? 'opacity-70' : ''}`}
                     >

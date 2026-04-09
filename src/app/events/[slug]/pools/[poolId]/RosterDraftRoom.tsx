@@ -243,7 +243,7 @@ export function RosterDraftRoom({
         <div className="flex flex-wrap gap-2 justify-center mb-4">
           {entries.map(e => (
             <span key={e.id} className={`text-xs px-2 py-1 rounded-full border ${
-              e.id === userEntryId ? 'border-brand bg-brand/10 text-brand' : 'border-border text-text-muted'
+              e.id === userEntryId ? 'border-brand bg-surface text-brand' : 'border-border text-text-muted'
             }`}>
               {e.displayName}
             </span>
@@ -266,7 +266,7 @@ export function RosterDraftRoom({
   if (draft.status === 'completed') {
     return (
       <div className="space-y-4">
-        <div className="bg-success/10 border border-success/20 rounded-lg p-4 text-center">
+        <div className="bg-surface border border-success/20 rounded-lg p-4 text-center">
           <h3 className="brand-h3 text-lg text-success-text mb-1">Draft Complete</h3>
           <p className="text-text-muted text-sm">All rosters have been filled.</p>
         </div>
@@ -314,9 +314,9 @@ export function RosterDraftRoom({
       {/* Draft status header */}
       <div className={`rounded-lg border p-4 ${
         draft.status === 'paused'
-          ? 'bg-warning/10 border-warning/20'
+          ? 'bg-surface border-warning/20'
           : isMyTurn
-            ? 'bg-brand/5 border-brand/20'
+            ? 'bg-surface border-brand/20'
             : 'bg-surface border-border'
       }`}>
         <div className="flex items-center justify-between mb-2">
@@ -384,7 +384,7 @@ export function RosterDraftRoom({
               <div
                 key={slot.pick_number}
                 className={`shrink-0 text-center px-2 py-1.5 rounded-md border text-xs min-w-[4rem] ${
-                  isCurrent ? 'border-brand bg-brand/10 text-brand font-medium' :
+                  isCurrent ? 'border-brand bg-surface text-brand font-medium' :
                   isPast ? 'border-border bg-surface-inset text-text-muted' :
                   'border-border text-text-muted'
                 }`}

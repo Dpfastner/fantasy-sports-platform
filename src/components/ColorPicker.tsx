@@ -66,7 +66,7 @@ export default function ColorPicker({
               onClick={() => { onPrimaryChange(preset.primary); onSecondaryChange(preset.secondary) }}
               className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border text-xs transition-colors ${
                 primaryColor === preset.primary && secondaryColor === preset.secondary
-                  ? 'border-brand bg-brand/10'
+                  ? 'border-brand bg-surface'
                   : 'border-border hover:border-text-muted'
               }`}
             >

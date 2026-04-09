@@ -439,7 +439,7 @@ export function ChatMessages({ channelType, channelEntityId, currentUserId, isCo
     <div className="flex-1 flex flex-col min-h-0">
       {/* Pinned message */}
       {pinnedMessage && (
-        <div className="px-3 py-2 bg-warning/10 border-b border-warning/30 flex items-start gap-2">
+        <div className="px-3 py-2 bg-surface border-b border-warning/30 flex items-start gap-2">
           <span className="text-xs">📌</span>
           <div className="flex-1 min-w-0">
             <span className="text-xs font-semibold text-text-primary">{pinnedMessage.display_name}: </span>

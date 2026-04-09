@@ -191,7 +191,7 @@ export default function AdminUsersPage() {
 
         {/* Action message */}
         {actionMessage && (
-          <div className={`mb-4 px-4 py-3 rounded-lg text-sm font-medium ${actionMessage.startsWith('Error') ? 'bg-danger/10 text-danger-text' : 'bg-success/10 text-success-text'}`}>
+          <div className={`mb-4 px-4 py-3 rounded-lg text-sm font-medium ${actionMessage.startsWith('Error') ? 'bg-surface text-danger-text' : 'bg-surface text-success-text'}`}>
             {actionMessage}
           </div>
         )}
@@ -243,7 +243,7 @@ export default function AdminUsersPage() {
 
         {/* Selection bar */}
         {selected.size > 0 && (
-          <div className="mb-4 px-4 py-3 bg-brand/10 border border-brand/20 rounded-lg flex items-center justify-between">
+          <div className="mb-4 px-4 py-3 bg-surface border border-brand/20 rounded-lg flex items-center justify-between">
             <span className="text-sm text-text-primary font-medium">{selected.size} selected</span>
             <button
               onClick={() => openGrantModal([...selected])}
@@ -292,7 +292,7 @@ export default function AdminUsersPage() {
                 </thead>
                 <tbody className="divide-y divide-border-subtle">
                   {sorted.map(u => (
-                    <tr key={u.id} className={`hover:bg-surface-inset/30 ${selected.has(u.id) ? 'bg-brand/5' : ''}`}>
+                    <tr key={u.id} className={`hover:bg-surface-inset/30 ${selected.has(u.id) ? 'bg-surface' : ''}`}>
                       <td className="px-4 py-3">
                         <input
                           type="checkbox"
@@ -317,7 +317,7 @@ export default function AdminUsersPage() {
                               </span>
                               <button
                                 onClick={() => handleRevoke(u.id, b.id)}
-                                className="px-1 py-0.5 text-[10px] rounded bg-danger/10 hover:bg-danger/20 text-danger-text transition-colors"
+                                className="px-1 py-0.5 text-[10px] rounded bg-surface hover:bg-danger/20 text-danger-text transition-colors"
                                 title={`Revoke ${b.label}`}
                               >
                                 x

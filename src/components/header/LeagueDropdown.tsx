@@ -62,7 +62,7 @@ export function LeagueDropdown({ currentLeague, leagues }: LeagueDropdownProps) 
                   setOpen(false)
                 }}
                 className={`w-full text-left px-3 py-2 flex items-center gap-2 hover:bg-surface-subtle transition-colors ${
-                  isCurrent ? 'bg-brand/10 text-brand-text font-medium' : 'text-text-primary'
+                  isCurrent ? 'bg-surface text-brand-text font-medium' : 'text-text-primary'
                 }`}
               >
                 <span className="text-base">{icon}</span>

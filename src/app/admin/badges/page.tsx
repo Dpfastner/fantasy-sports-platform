@@ -52,7 +52,7 @@ export default async function BadgesAdminPage() {
                 </div>
                 {def.requires_metadata && (
                   <div className="text-center mb-3">
-                    <span className="text-xs text-warning-text bg-warning/10 px-2 py-0.5 rounded">Requires metadata</span>
+                    <span className="text-xs text-warning-text bg-surface px-2 py-0.5 rounded">Requires metadata</span>
                   </div>
                 )}
                 <IconUploader badgeDefinitionId={def.id} currentIconUrl={def.icon_url} />

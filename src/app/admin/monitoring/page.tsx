@@ -88,8 +88,8 @@ export default function MonitoringPage() {
           <div
             className={`rounded-lg p-4 mb-6 text-sm ${
               message.type === 'success'
-                ? 'bg-success/10 text-success border border-success/20'
-                : 'bg-danger/10 text-danger border border-danger/20'
+                ? 'bg-surface text-success border border-success/20'
+                : 'bg-surface text-danger border border-danger/20'
             }`}
           >
             {message.text}
@@ -110,8 +110,8 @@ export default function MonitoringPage() {
                 <span
                   className={`px-2 py-0.5 rounded text-xs font-medium ${
                     summary.lastValid
-                      ? 'bg-success/10 text-success'
-                      : 'bg-danger/10 text-danger'
+                      ? 'bg-surface text-success'
+                      : 'bg-surface text-danger'
                   }`}
                 >
                   {summary.lastValid ? 'Valid' : 'Invalid'}
@@ -140,7 +140,7 @@ export default function MonitoringPage() {
                     <span className="font-mono text-xs">{summary.latest.structure_hash || '-'}</span>
                   </div>
                   {summary.latest.issues.length > 0 && (
-                    <div className="mt-2 p-2 bg-danger/5 rounded text-danger text-xs">
+                    <div className="mt-2 p-2 bg-surface rounded text-danger text-xs">
                       {summary.latest.issues.map((issue, i) => (
                         <div key={i}>{issue}</div>
                       ))}

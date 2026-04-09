@@ -205,7 +205,7 @@ export function SurvivorPicker({
       {/* Survival Status */}
       <div className={`rounded-lg border p-4 mb-4 ${
         !isActive
-          ? 'bg-danger/5 border-danger/20'
+          ? 'bg-surface border-danger/20'
           : 'bg-surface border-border'
       }`}>
         <div className="flex items-center justify-between">
@@ -264,10 +264,10 @@ export function SurvivorPicker({
                 <div
                   key={w.week_number}
                   className={`px-3 py-2 rounded-md border text-xs ${
-                    isLiveGame ? 'border-danger/30 bg-danger/5'
-                      : pickedWon ? 'border-success/30 bg-success/5'
-                      : pickedLost || isDraw ? 'border-danger/30 bg-danger/5'
-                      : resolved ? 'border-success/30 bg-success/5'
+                    isLiveGame ? 'border-danger/30 bg-surface'
+                      : pickedWon ? 'border-success/30 bg-surface'
+                      : pickedLost || isDraw ? 'border-danger/30 bg-surface'
+                      : resolved ? 'border-success/30 bg-surface'
                       : 'border-border bg-surface-inset'
                   }`}
                 >
@@ -405,7 +405,7 @@ export function SurvivorPicker({
                   >
                     {/* Status bar */}
                     <div className={`px-3 py-1.5 text-center border-b ${
-                      isLiveGame ? 'bg-danger/5 border-danger/20' : 'bg-surface-inset border-border'
+                      isLiveGame ? 'bg-surface border-danger/20' : 'bg-surface-inset border-border'
                     }`}>
                       <span className="text-[10px] text-text-muted">Game {game.gameNumber}</span>
                       {isLiveGame ? (
@@ -440,10 +440,10 @@ export function SurvivorPicker({
                         disabled={!canInteract || p1Used || !game.participant1Id}
                         onClick={() => canInteract && game.participant1Id && setSelectedParticipant(p1Selected ? null : game.participant1Id)}
                         className={`flex flex-col items-center justify-center gap-1 p-3 min-h-[80px] transition-colors rounded-bl-lg ${
-                          canPick && p1Selected ? 'bg-brand/10 ring-1 ring-inset ring-brand'
-                            : !canPick && p1IsPick ? 'bg-brand/10 ring-1 ring-inset ring-brand'
-                            : p1Won ? 'bg-success/5'
-                            : p1Used ? 'bg-danger/5 opacity-40 cursor-not-allowed'
+                          canPick && p1Selected ? 'bg-surface ring-1 ring-inset ring-brand'
+                            : !canPick && p1IsPick ? 'bg-surface ring-1 ring-inset ring-brand'
+                            : p1Won ? 'bg-surface'
+                            : p1Used ? 'bg-surface opacity-40 cursor-not-allowed'
                             : canInteract ? 'hover:bg-surface-subtle cursor-pointer'
                             : 'cursor-default'
                         }`}
@@ -487,10 +487,10 @@ export function SurvivorPicker({
                         disabled={!canInteract || p2Used || !game.participant2Id}
                         onClick={() => canInteract && game.participant2Id && setSelectedParticipant(p2Selected ? null : game.participant2Id)}
                         className={`flex flex-col items-center justify-center gap-1 p-3 min-h-[80px] transition-colors rounded-br-lg ${
-                          canPick && p2Selected ? 'bg-brand/10 ring-1 ring-inset ring-brand'
-                            : !canPick && p2IsPick ? 'bg-brand/10 ring-1 ring-inset ring-brand'
-                            : p2Won ? 'bg-success/5'
-                            : p2Used ? 'bg-danger/5 opacity-40 cursor-not-allowed'
+                          canPick && p2Selected ? 'bg-surface ring-1 ring-inset ring-brand'
+                            : !canPick && p2IsPick ? 'bg-surface ring-1 ring-inset ring-brand'
+                            : p2Won ? 'bg-surface'
+                            : p2Used ? 'bg-surface opacity-40 cursor-not-allowed'
                             : canInteract ? 'hover:bg-surface-subtle cursor-pointer'
                             : 'cursor-default'
                         }`}

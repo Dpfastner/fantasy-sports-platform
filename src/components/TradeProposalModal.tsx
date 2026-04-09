@@ -317,7 +317,7 @@ export default function TradeProposalModal({
 
         {/* Counter-offer context */}
         {counterToTrade?.message && (
-          <div className="mx-6 mt-4 bg-info/10 border border-info/30 rounded-lg px-4 py-3 flex-shrink-0">
+          <div className="mx-6 mt-4 bg-surface border border-info/30 rounded-lg px-4 py-3 flex-shrink-0">
             <p className="text-xs text-text-secondary">
               <span className="font-semibold">Message from {counterToTrade.proposerTeamName}:</span>{' '}
               <span className="italic">&ldquo;{counterToTrade.message}&rdquo;</span>
@@ -398,7 +398,7 @@ export default function TradeProposalModal({
 
           {/* Inline drop picker — appears automatically when needed */}
           {needsDrops && givingCount > 0 && receivingCount > 0 && (
-            <div className="bg-warning/5 border border-warning/30 rounded-lg p-4">
+            <div className="bg-surface border border-warning/30 rounded-lg p-4">
               <p className="text-sm font-semibold text-warning-text mb-2">
                 You need to drop {dropsNeeded} school{dropsNeeded > 1 ? 's' : ''} to make room
                 <span className="font-normal text-text-muted ml-1">({dropIds.size}/{dropsNeeded} selected)</span>

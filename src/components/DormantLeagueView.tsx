@@ -113,7 +113,7 @@ export function DormantLeagueView({
               <div
                 key={i}
                 className={`flex items-center justify-between px-3 py-2 rounded ${
-                  i === 0 ? 'bg-warning/10' : 'bg-surface-inset'
+                  i === 0 ? 'bg-surface' : 'bg-surface-inset'
                 }`}
               >
                 <div className="flex items-center gap-3">

@@ -330,7 +330,7 @@ export default function PendingTrades({
 
         {/* Drop picker for uneven incoming trades */}
         {isPending && needsDrops && isIncoming && showingDropPicker && (
-          <div className="bg-warning/10 border border-warning/30 rounded-lg p-3 mb-2">
+          <div className="bg-surface border border-warning/30 rounded-lg p-3 mb-2">
             <p className="text-xs font-semibold text-warning-text mb-2">
               Select {dropsNeeded} school(s) to drop ({dropIds.size}/{dropsNeeded})
             </p>
@@ -362,7 +362,7 @@ export default function PendingTrades({
   return (
     <>
       <details id="trades" className="bg-surface rounded-lg mb-8 border border-info/30 overflow-hidden">
-        <summary className="flex items-center justify-between px-4 py-3 cursor-pointer select-none bg-info/5 hover:bg-info/10 transition-colors">
+        <summary className="flex items-center justify-between px-4 py-3 cursor-pointer select-none bg-surface hover:bg-surface transition-colors">
           <h2 className="text-sm font-semibold text-text-primary flex items-center gap-2">
             Trade Offers
             {pendingTrades.length > 0 && (
