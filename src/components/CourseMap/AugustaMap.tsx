@@ -34,7 +34,7 @@ export function AugustaMap({
     <div className="relative w-full aspect-[5/4] bg-surface-inset">
       {/* Course map image */}
       <Image
-        src="/augusta-map.jpg"
+        src="/Augusta%20Course%20Map.jpg"
         alt="Augusta National Golf Club course map"
         fill
         className="object-contain"
