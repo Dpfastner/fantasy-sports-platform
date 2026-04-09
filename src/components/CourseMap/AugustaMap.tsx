@@ -31,7 +31,7 @@ export function AugustaMap({
   easiestHole,
 }: AugustaMapProps) {
   return (
-    <div className="relative w-full aspect-[5/4] bg-tertiary">
+    <div className="relative w-full aspect-[5/4] bg-surface">
       {/* Course map image */}
       <Image
         src="/Augusta%20Course%20Map.jpg"
@@ -42,7 +42,9 @@ export function AugustaMap({
         sizes="(max-width: 1024px) 100vw, 50vw"
       />
 
-      {/* Hole marker overlay — circles sit UP-RIGHT of the flag icons in the image */}
+      {/* Hole marker overlay — circles centered on coordinate.
+          Coordinates in augusta-holes.ts should point directly at each
+          flag icon; tune them there if markers drift off their pins. */}
       <div className="absolute inset-0">
         {AUGUSTA_HOLES.map(hole => {
           const isSelected = selectedHole === hole.number
@@ -56,14 +58,8 @@ export function AugustaMap({
               type="button"
               onClick={() => onHoleClick(hole.number)}
               aria-label={`Hole ${hole.number} · ${hole.name} · Par ${hole.par}`}
-              className="absolute group"
-              style={{
-                // Offset the circle slightly up-right from the flag anchor
-                // so the flag icon remains visible beneath it.
-                left: `calc(${hole.x}% + 1.1rem)`,
-                top: `calc(${hole.y}% - 1.1rem)`,
-                transform: 'translate(-50%, -50%)',
-              }}
+              className="absolute -translate-x-1/2 -translate-y-1/2 group"
+              style={{ left: `${hole.x}%`, top: `${hole.y}%` }}
             >
               {/* Pulse ring for hardest / easiest */}
               {(isHardest || isEasiest) && (

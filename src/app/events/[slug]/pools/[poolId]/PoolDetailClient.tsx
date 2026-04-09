@@ -222,6 +222,35 @@ export function PoolDetailClient({
     return () => { supabase.removeChannel(channel) }
   }, [pool.id])
 
+  // Live-updating participants (golfer scores, hole data, current hole).
+  // Fed by ESPN sync → event_participants.metadata updates → Supabase Realtime
+  // pushes here. Drives the Leaderboard tab and the Course tab visualizations.
+  const [liveParticipants, setLiveParticipants] = useState(participants)
+  useEffect(() => { setLiveParticipants(participants) }, [participants])
+
+  useEffect(() => {
+    const supabase = createClient()
+    const channel = supabase
+      .channel(`pool-participants-${tournament.id}`)
+      .on('postgres_changes', {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'event_participants',
+        filter: `tournament_id=eq.${tournament.id}`,
+      }, (payload) => {
+        const updated = payload.new as Record<string, unknown>
+        setLiveParticipants(prev => prev.map(p =>
+          p.id === updated.id ? {
+            ...p,
+            metadata: (updated.metadata as Record<string, unknown>) || p.metadata,
+          } : p
+        ))
+      })
+      .subscribe()
+
+    return () => { supabase.removeChannel(channel) }
+  }, [tournament.id])
+
   // Live game scores: Supabase Realtime subscription (replaces polling)
   // When game scores change in the DB (via Apps Script, GitHub Actions, or manual refresh),
   // Supabase pushes the update to all connected clients instantly. Zero Vercel CPU.
@@ -598,7 +627,7 @@ export function PoolDetailClient({
           {effectiveFormat === 'roster' ? (
             <RosterLeaderboard
               members={liveMembers}
-              participants={participants}
+              participants={liveParticipants}
               poolStatus={pool.status}
               scoringRules={pool.scoringRules}
               allRosterPicks={allRosterPicks}
@@ -618,7 +647,7 @@ export function PoolDetailClient({
               (prevents spoiling other members' picks before you've locked yours in) */}
           {effectiveFormat === 'roster' && rosterSelectionCounts && rosterTotalEntries !== undefined && userEntries.some(e => e.submittedAt) && (
             <RosterOwnership
-              participants={participants}
+              participants={liveParticipants}
               selectionCounts={rosterSelectionCounts}
               totalEntries={rosterTotalEntries}
             />
@@ -717,7 +746,7 @@ export function PoolDetailClient({
                 <span className="text-center">R4</span>
                 <span className="text-right">Score</span>
               </div>
-              {[...participants]
+              {[...liveParticipants]
                 .filter(p => p.metadata?.score_to_par != null || p.metadata?.status === 'active')
                 .sort((a, b) => {
                   const aScore = (a.metadata?.score_to_par as number) ?? 999
@@ -791,7 +820,7 @@ export function PoolDetailClient({
                     </div>
                   )
                 })}
-              {participants.every(p => p.metadata?.score_to_par == null) && (
+              {liveParticipants.every(p => p.metadata?.score_to_par == null) && (
                 <div className="p-6 text-center text-text-muted text-sm">
                   No scores yet. Leaderboard will update when the tournament begins.
                 </div>
@@ -813,7 +842,7 @@ export function PoolDetailClient({
 
       {activeTab === 'course' && tournament.sport === 'golf' && (
         <ErrorBoundary sectionName="Course Map">
-          <CourseMapContainer participants={participants} />
+          <CourseMapContainer participants={liveParticipants} />
         </ErrorBoundary>
       )}
 
