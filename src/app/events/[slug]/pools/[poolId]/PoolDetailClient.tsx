@@ -13,6 +13,7 @@ import { PoolAnnouncements } from './PoolAnnouncements'
 import { TournamentCountdown } from '@/components/TournamentCountdown'
 import { RulesHighlights } from '@/components/RulesHighlights'
 import { GolfHoleGrid, type GolfHole } from '@/components/GolfHoleGrid'
+import { CourseMapContainer } from '@/components/CourseMap/CourseMapContainer'
 import { RosterOwnership } from '@/components/RosterOwnership'
 import { EntryAvatar } from '@/components/EntryAvatar'
 import { ScheduleView } from './ScheduleView'
@@ -141,7 +142,7 @@ interface PoolDetailClientProps {
   allRosterPicks?: Record<string, string[]>
 }
 
-type Tab = 'overview' | 'picks' | 'schedule' | 'members' | 'settings'
+type Tab = 'overview' | 'picks' | 'schedule' | 'course' | 'members' | 'settings'
 
 export function PoolDetailClient({
   pool,
@@ -306,6 +307,7 @@ export function PoolDetailClient({
         ? (((pool.scoringRules?.draft_mode as string) === 'snake_draft' || (pool.scoringRules?.draft_mode as string) === 'linear_draft') ? 'Draft Room' : 'My Roster')
       : 'My Picks', requiresMember: true },
     { key: 'schedule', label: effectiveFormat === 'roster' ? 'Leaderboard' : 'Schedule' },
+    ...(tournament.sport === 'golf' && tournament.slug === 'masters-2026' ? [{ key: 'course' as Tab, label: 'Course' }] : []),
     { key: 'members', label: `Members (${uniqueMembers.length})` },
     { key: 'settings' as Tab, label: 'Settings' },
   ]
@@ -785,6 +787,12 @@ export function PoolDetailClient({
           />
           </ErrorBoundary>
         )
+      )}
+
+      {activeTab === 'course' && tournament.sport === 'golf' && (
+        <ErrorBoundary sectionName="Course Map">
+          <CourseMapContainer participants={participants} />
+        </ErrorBoundary>
       )}
 
       {activeTab === 'members' && (
