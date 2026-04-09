@@ -17,11 +17,11 @@ interface RosterOwnershipProps {
   totalEntries: number
 }
 
-// Royal Gambit palette — three distinct brand-palette colors per tier.
+// Royal Gambit palette — hierarchical trio (A loudest → C quietest).
 const TIER_COLORS: Record<string, { bar: string; dot: string }> = {
-  A: { bar: 'bg-brand', dot: 'bg-brand' },        // amber   #F59E0B
-  B: { bar: 'bg-accent', dot: 'bg-accent' },      // rose    #E74C6F
-  C: { bar: 'bg-tertiary', dot: 'bg-tertiary' },  // cream   #FAF5EE
+  A: { bar: 'bg-brand', dot: 'bg-brand' },                      // amber  #F59E0B
+  B: { bar: 'bg-info', dot: 'bg-info' },                        // violet #A78BFA
+  C: { bar: 'bg-text-secondary', dot: 'bg-text-secondary' },    // muted  #C4B5D4
 }
 
 export function RosterOwnership({ participants, selectionCounts, totalEntries }: RosterOwnershipProps) {
@@ -64,18 +64,16 @@ export function RosterOwnership({ participants, selectionCounts, totalEntries }:
         {rows.map(row => {
           const colors = TIER_COLORS[row.tier] || TIER_COLORS.C
           return (
-            <div key={row.id} className="grid grid-cols-[auto_1fr_auto] items-center gap-3">
+            <div key={row.id} className="grid grid-cols-[0.5rem_8rem_1fr_2.5rem] sm:grid-cols-[0.5rem_11rem_1fr_2.5rem] items-center gap-3">
               <div className={`w-2 h-2 rounded-full ${colors.dot}`} />
-              <div className="flex items-center gap-2 min-w-0">
-                <span className="text-sm text-text-primary truncate">{row.name}</span>
-                <div className="flex-1 h-1.5 bg-surface-inset rounded-full overflow-hidden">
-                  <div
-                    className={`h-full ${colors.bar} transition-all`}
-                    style={{ width: `${row.pct}%` }}
-                  />
-                </div>
+              <span className="text-sm text-text-primary truncate">{row.name}</span>
+              <div className="h-1.5 bg-surface-inset rounded-full overflow-hidden">
+                <div
+                  className={`h-full ${colors.bar} transition-all`}
+                  style={{ width: `${row.pct}%` }}
+                />
               </div>
-              <span className="text-xs text-text-muted tabular-nums w-10 text-right">{row.pct}%</span>
+              <span className="text-xs text-text-muted tabular-nums text-right">{row.pct}%</span>
             </div>
           )
         })}

@@ -43,7 +43,7 @@ export function TournamentCountdown({ startsAt, label = 'Starts in', tournamentN
     <div className="bg-tertiary border-l-4 border-brand rounded-lg p-4 mb-4">
       <div className="text-center">
         <div className="text-xs text-card-text-muted uppercase tracking-wider mb-1">
-          {label}{tournamentName && ` · ${tournamentName}`}
+          {tournamentName ? `${tournamentName} ${label}` : label}
         </div>
         <div className="flex items-center justify-center gap-3 sm:gap-4">
           <TimeUnit value={timeLeft.days} label="days" />
