@@ -11,6 +11,7 @@ import { RosterLeaderboard } from './RosterLeaderboard'
 import { PoolActivityFeed } from './PoolActivityFeed'
 import { PoolAnnouncements } from './PoolAnnouncements'
 import { TournamentCountdown } from '@/components/TournamentCountdown'
+import { RulesHighlights } from '@/components/RulesHighlights'
 import { RosterOwnership } from '@/components/RosterOwnership'
 import { EntryAvatar } from '@/components/EntryAvatar'
 import { ScheduleView } from './ScheduleView'
@@ -130,6 +131,7 @@ interface PoolDetailClientProps {
   isCreator: boolean
   userId: string | null
   rulesText: string | null
+  rulesHighlights: Array<{ icon: string; label: string; description: string }> | null
   hasFavoriteSchool: boolean
   uniqueMembers: Member[]
   rosterSelectionCounts?: Record<string, number>
@@ -153,6 +155,7 @@ export function PoolDetailClient({
   isCreator,
   userId,
   rulesText,
+  rulesHighlights,
   hasFavoriteSchool,
   uniqueMembers,
   rosterSelectionCounts,
@@ -376,8 +379,8 @@ export function PoolDetailClient({
 
       {/* Not a member — join button or post-join school prompt */}
       {isLoggedIn && !hasAnyEntry && pool.status === 'open' && !showSchoolPrompt && (
-        <div className="bg-tertiary border-l-4 border-brand rounded-lg p-5 mb-6 text-center">
-          <p className="text-card-text-muted text-sm mb-3">You&apos;re not in this pool yet.</p>
+        <div className="bg-surface border-2 border-brand rounded-lg p-5 mb-6 text-center">
+          <p className="text-text-secondary text-sm mb-3">You&apos;re not in this pool yet.</p>
           <button
             onClick={async () => {
               try {
@@ -409,9 +412,9 @@ export function PoolDetailClient({
       )}
 
       {showSchoolPrompt && (
-        <div className="bg-tertiary border-l-4 border-brand rounded-lg p-5 mb-6 text-center">
-          <h3 className="text-base font-semibold text-text-inverse mb-1">You&apos;re in! Rep your school?</h3>
-          <p className="text-card-text-muted text-sm mb-4">Pick your alma mater or favorite school to join the Fan Zone.</p>
+        <div className="bg-surface border-2 border-brand rounded-lg p-5 mb-6 text-center">
+          <h3 className="text-base font-semibold text-brand mb-1">You&apos;re in! Rep your school?</h3>
+          <p className="text-text-secondary text-sm mb-4">Pick your alma mater or favorite school to join the Fan Zone.</p>
           <div className="max-w-sm mx-auto text-left">
             <SchoolPicker value={selectedSchoolId} onChange={setSelectedSchoolId} label="Pick your school" />
           </div>
@@ -449,12 +452,12 @@ export function PoolDetailClient({
 
       {/* Start Your Bracket CTA — shown when member hasn't submitted picks */}
       {activeEntry && !activeEntry.submittedAt && pool.status === 'open' && activeTab !== 'picks' && (
-        <div className="bg-tertiary border-l-4 border-brand rounded-lg p-5 mb-6 text-center">
-          <h3 className="brand-h3 text-base text-text-inverse mb-1">
+        <div className="bg-surface border-2 border-brand rounded-lg p-5 mb-6 text-center">
+          <h3 className="brand-h3 text-base text-brand mb-1">
             {effectiveFormat === 'bracket' ? 'Fill out your bracket!' :
              effectiveFormat === 'roster' ? 'Build your roster!' : 'Make your picks!'}
           </h3>
-          <p className="text-card-text-muted text-sm mb-3">
+          <p className="text-text-secondary text-sm mb-3">
             {pool.deadline
               ? `${effectiveFormat === 'roster' ? 'Rosters' : 'Picks'} lock ${new Date(pool.deadline).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}`
               : `${effectiveFormat === 'roster' ? 'Rosters' : 'Picks'} lock at first tee time`
@@ -470,8 +473,14 @@ export function PoolDetailClient({
         </div>
       )}
 
-      {/* Rules (collapsible) */}
-      {rulesText && (
+      {/* Rules — structured highlights (with optional full markdown fallback) */}
+      {rulesHighlights && rulesHighlights.length > 0 ? (
+        <RulesHighlights
+          highlights={rulesHighlights}
+          rulesText={rulesText}
+          tournamentName={tournament.name}
+        />
+      ) : rulesText && (
         <div className="mb-6">
           <button
             onClick={() => setShowRules(!showRules)}

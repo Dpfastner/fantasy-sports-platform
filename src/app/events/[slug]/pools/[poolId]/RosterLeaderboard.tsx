@@ -9,6 +9,8 @@ import { EntryAvatar } from '@/components/EntryAvatar'
 interface Member {
   id: string
   userId: string | null
+  entryName?: string | null
+  userName?: string
   displayName: string
   isActive: boolean
   submittedAt: string | null
@@ -157,17 +159,36 @@ export function RosterLeaderboard({
                   </span>
                   <div className="min-w-0 flex items-center gap-2">
                     <EntryAvatar imageUrl={member.imageUrl} primaryColor={member.primaryColor} showBorder />
-                    {member.userId ? (
-                      <Link
-                        href={`/profile/${member.userId}`}
-                        onClick={(e) => e.stopPropagation()}
-                        className="text-sm text-text-primary truncate hover:underline"
-                      >
-                        {member.displayName}
-                      </Link>
-                    ) : (
-                      <span className="text-sm text-text-muted truncate italic">{member.displayName}</span>
-                    )}
+                    <div className="min-w-0 flex-1">
+                      {member.entryName ? (
+                        <>
+                          <span className="text-sm font-medium text-text-primary truncate block">
+                            {member.entryName}
+                          </span>
+                          {member.userId ? (
+                            <Link
+                              href={`/profile/${member.userId}`}
+                              onClick={(e) => e.stopPropagation()}
+                              className="text-xs text-text-muted truncate hover:underline block"
+                            >
+                              {member.userName}
+                            </Link>
+                          ) : (
+                            <span className="text-xs text-text-muted truncate italic block">{member.userName}</span>
+                          )}
+                        </>
+                      ) : member.userId ? (
+                        <Link
+                          href={`/profile/${member.userId}`}
+                          onClick={(e) => e.stopPropagation()}
+                          className="text-sm text-text-primary truncate hover:underline block"
+                        >
+                          {member.displayName}
+                        </Link>
+                      ) : (
+                        <span className="text-sm text-text-muted truncate italic block">{member.displayName}</span>
+                      )}
+                    </div>
                     {canExpand && (
                       <svg
                         className={`w-3.5 h-3.5 text-text-muted shrink-0 transition-transform ${isExpanded ? 'rotate-90' : ''}`}

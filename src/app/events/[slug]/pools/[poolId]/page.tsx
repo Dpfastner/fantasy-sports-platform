@@ -71,7 +71,7 @@ export default async function PoolDetailPage({ params }: PageProps) {
       event_tournaments(
         id, name, slug, sport, format, status,
         starts_at, ends_at, bracket_size, total_weeks,
-        config, rules_text
+        config, rules_text, rules_highlights
       )
     `)
     .eq('id', poolId)
@@ -92,6 +92,7 @@ export default async function PoolDetailPage({ params }: PageProps) {
     total_weeks: number | null
     config: Record<string, unknown> | null
     rules_text: string | null
+    rules_highlights: Array<{ icon: string; label: string; description: string }> | null
   }
 
   if (tournament.slug !== slug) notFound()
@@ -457,6 +458,7 @@ export default async function PoolDetailPage({ params }: PageProps) {
           isCreator={!!user && pool.created_by === user.id}
           userId={user?.id || null}
           rulesText={tournament.rules_text || null}
+          rulesHighlights={tournament.rules_highlights || null}
           hasFavoriteSchool={!!profile?.favorite_school_id}
           uniqueMembers={uniqueMembers}
           rosterSelectionCounts={Object.keys(rosterSelectionCounts).length > 0 ? rosterSelectionCounts : undefined}
