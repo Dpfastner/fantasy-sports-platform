@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { formatGolfScore } from '@/lib/events/shared'
 import { DEFAULT_TIERS, TIER_COLORS, getTier, type RosterTier } from '@/lib/events/tiers'
 import { EntryAvatar } from '@/components/EntryAvatar'
+import { GolfHoleGrid } from '@/components/GolfHoleGrid'
 
 interface Member {
   id: string
@@ -303,12 +304,12 @@ export function RosterLeaderboard({
                         <p className="text-xs text-text-muted uppercase tracking-wider mb-2">Hole by Hole</p>
                         <div className="space-y-2">
                           {breakdown.counting.filter(p => p.holes && p.holes.length > 0).map(p => (
-                            <HoleGrid
+                            <GolfHoleGrid
                               key={p.id}
-                              golferName={p.name}
                               holes={p.holes}
                               currentHole={p.currentHole ?? null}
                               thru={p.thru ?? null}
+                              label={p.name}
                             />
                           ))}
                         </div>
@@ -325,73 +326,3 @@ export function RosterLeaderboard({
   )
 }
 
-// ============================================================
-// HoleGrid — per-hole breakdown row for one golfer
-// ============================================================
-
-interface HoleGridProps {
-  golferName: string
-  holes: Array<{ hole: number; round: number; strokes: number; par: number; scoreType: string }>
-  currentHole: number | null
-  thru: number | null
-}
-
-function scoreTypeClass(scoreType: string, strokes: number, par: number): string {
-  const diff = strokes - par
-  // Prefer explicit classification from ESPN when present
-  const name = scoreType.toUpperCase()
-  if (name.includes('EAGLE') || diff <= -2) return 'bg-brand text-text-primary font-semibold'
-  if (name.includes('BIRDIE') || diff === -1) return 'bg-success text-text-primary font-medium'
-  if (name.includes('PAR') && diff === 0) return 'bg-surface-inset text-text-secondary'
-  if (name.includes('BOGEY') && !name.includes('DOUBLE') && diff === 1) return 'bg-warning/60 text-text-primary'
-  if (diff >= 2) return 'bg-danger/70 text-text-primary font-medium'
-  return 'bg-surface-inset text-text-muted'
-}
-
-function HoleGrid({ golferName, holes, currentHole, thru }: HoleGridProps) {
-  // Show latest round that has data
-  const latestRound = Math.max(...holes.map(h => h.round))
-  const roundHoles = holes.filter(h => h.round === latestRound)
-  const holeByNum = new Map(roundHoles.map(h => [h.hole, h]))
-
-  return (
-    <div>
-      <div className="flex items-center justify-between mb-1">
-        <span className="text-xs text-text-primary truncate">{golferName}</span>
-        <span className="text-[10px] text-text-muted">
-          R{latestRound}
-          {typeof thru === 'number' && ` · Thru ${thru}`}
-          {typeof currentHole === 'number' && ` · On #${currentHole}`}
-        </span>
-      </div>
-      <div className="flex gap-0.5 overflow-x-auto pb-1">
-        {Array.from({ length: 18 }, (_, i) => i + 1).map(holeNum => {
-          const h = holeByNum.get(holeNum)
-          const isCurrent = currentHole === holeNum
-          if (!h) {
-            return (
-              <div
-                key={holeNum}
-                className={`shrink-0 w-7 h-7 flex items-center justify-center rounded text-[10px] border ${
-                  isCurrent ? 'border-brand text-brand' : 'border-border-subtle text-text-muted'
-                }`}
-                title={`Hole ${holeNum}`}
-              >
-                {holeNum}
-              </div>
-            )
-          }
-          return (
-            <div
-              key={holeNum}
-              className={`shrink-0 w-7 h-7 flex items-center justify-center rounded text-[11px] ${scoreTypeClass(h.scoreType, h.strokes, h.par)}`}
-              title={`Hole ${holeNum} · Par ${h.par} · ${h.scoreType.toLowerCase()}`}
-            >
-              {h.strokes}
-            </div>
-          )
-        })}
-      </div>
-    </div>
-  )
-}
