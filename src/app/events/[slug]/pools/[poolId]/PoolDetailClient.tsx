@@ -680,69 +680,71 @@ export function PoolDetailClient({
 
       {activeTab === 'schedule' && (
         effectiveFormat === 'roster' ? (
-          <div className="bg-surface rounded-lg border border-border overflow-hidden">
-            <div className="grid grid-cols-[2rem_1fr_3rem_3rem_3rem_3rem_4rem] gap-1 px-3 py-2 bg-surface-inset border-b border-border text-xs text-text-muted uppercase tracking-wide">
-              <span className="text-right">#</span>
-              <span>Golfer</span>
-              <span className="text-center">R1</span>
-              <span className="text-center">R2</span>
-              <span className="text-center">R3</span>
-              <span className="text-center">R4</span>
-              <span className="text-right">Score</span>
-            </div>
-            {[...participants]
-              .filter(p => p.metadata?.score_to_par != null || p.metadata?.status === 'active')
-              .sort((a, b) => {
-                const aScore = (a.metadata?.score_to_par as number) ?? 999
-                const bScore = (b.metadata?.score_to_par as number) ?? 999
-                return aScore - bScore
-              })
-              .map((p, i) => {
-                const meta = (p.metadata || {}) as Record<string, unknown>
-                const isCut = String(meta.status || '') === 'cut'
-                const scoreToPar = meta.score_to_par as number | null
-                return (
-                  <div
-                    key={p.id}
-                    className={`grid grid-cols-[2rem_1fr_3rem_3rem_3rem_3rem_4rem] gap-1 px-3 py-2 border-b border-border-subtle last:border-0 text-sm ${isCut ? 'opacity-50' : ''}`}
-                  >
-                    <span className="text-right text-text-muted">{i + 1}</span>
-                    <div className="flex items-center gap-1.5 min-w-0">
-                      {typeof meta.country_code === 'string' && (
-                        <img
-                          src={`https://flagcdn.com/24x18/${meta.country_code}.png`}
-                          alt={String(meta.country || '')}
-                          title={String(meta.country || '')}
-                          width={18}
-                          height={14}
-                          className="inline-block shrink-0 rounded-[2px]"
-                          loading="lazy"
-                        />
-                      )}
-                      <span className="text-text-primary truncate">{p.name}</span>
-                      {isCut && <span className="text-xs text-danger-text shrink-0">CUT</span>}
-                    </div>
-                    <span className="text-center text-text-secondary">{meta.r1 != null ? String(meta.r1) : '—'}</span>
-                    <span className="text-center text-text-secondary">{meta.r2 != null ? String(meta.r2) : '—'}</span>
-                    <span className="text-center text-text-secondary">{meta.r3 != null ? String(meta.r3) : '—'}</span>
-                    <span className="text-center text-text-secondary">{meta.r4 != null ? String(meta.r4) : '—'}</span>
-                    <span className={`text-right font-medium ${
-                      scoreToPar != null && scoreToPar < 0 ? 'text-success-text' :
-                      scoreToPar != null && scoreToPar > 0 ? 'text-danger-text' :
-                      'text-text-primary'
-                    }`}>
-                      {scoreToPar != null
-                        ? scoreToPar === 0 ? 'E' : scoreToPar > 0 ? `+${scoreToPar}` : String(scoreToPar)
-                        : '—'}
-                    </span>
-                  </div>
-                )
-              })}
-            {participants.every(p => p.metadata?.score_to_par == null) && (
-              <div className="p-6 text-center text-text-muted text-sm">
-                No scores yet. Leaderboard will update when the tournament begins.
+          <div className="bg-surface rounded-lg border border-border overflow-x-auto">
+            <div className="min-w-[34rem]">
+              <div className="grid grid-cols-[2rem_minmax(12rem,1fr)_3rem_3rem_3rem_3rem_4rem] gap-1 px-3 py-2 bg-surface-inset border-b border-border text-xs text-text-muted uppercase tracking-wide">
+                <span className="text-right">#</span>
+                <span>Golfer</span>
+                <span className="text-center">R1</span>
+                <span className="text-center">R2</span>
+                <span className="text-center">R3</span>
+                <span className="text-center">R4</span>
+                <span className="text-right">Score</span>
               </div>
-            )}
+              {[...participants]
+                .filter(p => p.metadata?.score_to_par != null || p.metadata?.status === 'active')
+                .sort((a, b) => {
+                  const aScore = (a.metadata?.score_to_par as number) ?? 999
+                  const bScore = (b.metadata?.score_to_par as number) ?? 999
+                  return aScore - bScore
+                })
+                .map((p, i) => {
+                  const meta = (p.metadata || {}) as Record<string, unknown>
+                  const isCut = String(meta.status || '') === 'cut'
+                  const scoreToPar = meta.score_to_par as number | null
+                  return (
+                    <div
+                      key={p.id}
+                      className={`grid grid-cols-[2rem_minmax(12rem,1fr)_3rem_3rem_3rem_3rem_4rem] gap-1 px-3 py-2 border-b border-border-subtle last:border-0 text-sm ${isCut ? 'opacity-50' : ''}`}
+                    >
+                      <span className="text-right text-text-muted">{i + 1}</span>
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        {typeof meta.country_code === 'string' && (
+                          <img
+                            src={`https://flagcdn.com/24x18/${meta.country_code}.png`}
+                            alt={String(meta.country || '')}
+                            title={String(meta.country || '')}
+                            width={18}
+                            height={14}
+                            className="inline-block shrink-0 rounded-[2px]"
+                            loading="lazy"
+                          />
+                        )}
+                        <span className="text-text-primary truncate">{p.name}</span>
+                        {isCut && <span className="text-xs text-danger-text shrink-0">CUT</span>}
+                      </div>
+                      <span className="text-center text-text-secondary">{meta.r1 != null ? String(meta.r1) : '—'}</span>
+                      <span className="text-center text-text-secondary">{meta.r2 != null ? String(meta.r2) : '—'}</span>
+                      <span className="text-center text-text-secondary">{meta.r3 != null ? String(meta.r3) : '—'}</span>
+                      <span className="text-center text-text-secondary">{meta.r4 != null ? String(meta.r4) : '—'}</span>
+                      <span className={`text-right font-medium ${
+                        scoreToPar != null && scoreToPar < 0 ? 'text-success-text' :
+                        scoreToPar != null && scoreToPar > 0 ? 'text-danger-text' :
+                        'text-text-primary'
+                      }`}>
+                        {scoreToPar != null
+                          ? scoreToPar === 0 ? 'E' : scoreToPar > 0 ? `+${scoreToPar}` : String(scoreToPar)
+                          : '—'}
+                      </span>
+                    </div>
+                  )
+                })}
+              {participants.every(p => p.metadata?.score_to_par == null) && (
+                <div className="p-6 text-center text-text-muted text-sm">
+                  No scores yet. Leaderboard will update when the tournament begins.
+                </div>
+              )}
+            </div>
           </div>
         ) : (
           <ErrorBoundary sectionName="Schedule">
