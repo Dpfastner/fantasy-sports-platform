@@ -449,6 +449,15 @@ export async function GET(request: Request) {
           }
 
           // ── Update participant metadata with live scores (for roster pools) ──
+          // Rolling snapshot window for Biggest Movers (Feature 4): every 30 min
+          // each golfer's prev_score_to_par advances to their current value.
+          const SNAPSHOT_TTL_MS = 30 * 60 * 1000
+          const syncRunAt = now.toISOString()
+
+          // Collect updated metadata for each participant so we can do a
+          // second pass for pairing derivation before writing.
+          const pendingUpdates = new Map<string, Record<string, unknown>>()
+
           let participantsUpdated = 0
           for (const participant of participants || []) {
             if (!participant.external_id) continue
@@ -486,6 +495,15 @@ export async function GET(request: Request) {
               r4 = golfer.roundScores[3] ?? r4
             }
 
+            // Rolling snapshot: if prev_score_at is null or stale, advance it
+            const prevScoreAtStr = existingMeta.prev_score_at as string | undefined | null
+            const prevScoreAtMs = prevScoreAtStr ? new Date(prevScoreAtStr).getTime() : 0
+            const snapshotStale = !prevScoreAtStr || (now.getTime() - prevScoreAtMs) > SNAPSHOT_TTL_MS
+            const newPrevScore = snapshotStale
+              ? (existingMeta.score_to_par ?? null)
+              : (existingMeta.prev_score_to_par ?? null)
+            const newPrevAt = snapshotStale ? syncRunAt : prevScoreAtStr
+
             const updatedMeta = {
               ...existingMeta,
               r1, r2, r3, r4,
@@ -505,13 +523,43 @@ export async function GET(request: Request) {
               tee_time: live?.teeTime ?? existingMeta.tee_time ?? null,
               current_round: live?.currentRound ?? existingMeta.current_round ?? null,
               holes: live?.holes ?? existingMeta.holes ?? [],
+              // Feature 4: rolling snapshot for Biggest Movers
+              prev_score_to_par: newPrevScore,
+              prev_score_at: newPrevAt,
             }
 
+            pendingUpdates.set(participant.id, updatedMeta)
+          }
+
+          // ── Feature 6: derive pairings (pair_ids) before writing ──
+          // Golfers with the same tee_time + start_hole are in the same group.
+          const groupKeys = new Map<string, string[]>()
+          for (const [pid, meta] of pendingUpdates.entries()) {
+            const teeTime = meta.tee_time as string | null | undefined
+            const startHole = meta.start_hole as number | null | undefined
+            if (!teeTime) continue
+            const key = `${teeTime}|${startHole ?? 1}`
+            if (!groupKeys.has(key)) groupKeys.set(key, [])
+            groupKeys.get(key)!.push(pid)
+          }
+          for (const [pid, meta] of pendingUpdates.entries()) {
+            const teeTime = meta.tee_time as string | null | undefined
+            const startHole = meta.start_hole as number | null | undefined
+            if (!teeTime) {
+              meta.pair_ids = []
+              continue
+            }
+            const key = `${teeTime}|${startHole ?? 1}`
+            const groupMembers = groupKeys.get(key) ?? []
+            meta.pair_ids = groupMembers.filter(id => id !== pid)
+          }
+
+          // Write the final merged metadata for each participant
+          for (const [pid, meta] of pendingUpdates.entries()) {
             const { error } = await admin
               .from('event_participants')
-              .update({ metadata: updatedMeta })
-              .eq('id', participant.id)
-
+              .update({ metadata: meta })
+              .eq('id', pid)
             if (!error) participantsUpdated++
           }
 

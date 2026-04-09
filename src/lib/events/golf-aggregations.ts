@@ -16,6 +16,14 @@ export interface GolferLite {
   currentHole?: number | null
   thru?: number | null
   holes: GolfHole[]
+  // Rolling snapshot from the gameday sync (Feature 4: Biggest Movers)
+  prevScoreToPar?: number | null
+  prevScoreAt?: string | null
+  // Pairing: IDs of other golfers sharing the same teeTime + startHole (Feature 6)
+  pairIds?: string[]
+  teeTime?: string | null
+  startHole?: number | null
+  currentRound?: number | null
 }
 
 /**
@@ -34,6 +42,12 @@ export function extractGolfers(participants: Array<{ id: string; name: string; m
       currentHole: meta.current_hole as number | null | undefined,
       thru: meta.thru as number | null | undefined,
       holes: (meta.holes as GolfHole[] | undefined) || [],
+      prevScoreToPar: meta.prev_score_to_par as number | null | undefined,
+      prevScoreAt: meta.prev_score_at as string | null | undefined,
+      pairIds: (meta.pair_ids as string[] | undefined) || [],
+      teeTime: meta.tee_time as string | null | undefined,
+      startHole: meta.start_hole as number | null | undefined,
+      currentRound: meta.current_round as number | null | undefined,
     }
   })
 }
@@ -180,4 +194,145 @@ export function findExtremeHoles(golfers: GolferLite[], round: number): {
     if (!easiest || d.avgVsPar < easiest.avgVsPar) easiest = { hole, avgVsPar: d.avgVsPar }
   }
   return { hardest, easiest }
+}
+
+// ============================================================
+// Feature 4 — Biggest Movers (climbers / droppers)
+// ============================================================
+
+export interface GolferMove {
+  id: string
+  name: string
+  countryCode?: string | null
+  currentScoreToPar: number
+  prevScoreToPar: number
+  delta: number           // negative = climbed (score improved)
+  position: number | null
+}
+
+/**
+ * Compute biggest climbers and droppers over the rolling snapshot window.
+ * Requires participants with `prevScoreToPar` populated by the gameday sync.
+ * Returns the top 3 by |delta| on each side.
+ */
+export function computeMovers(golfers: GolferLite[]): {
+  climbers: GolferMove[]
+  droppers: GolferMove[]
+} {
+  const moves: GolferMove[] = []
+  for (const g of golfers) {
+    if (g.status === 'cut' || g.status === 'wd' || g.status === 'dq') continue
+    if (typeof g.scoreToPar !== 'number' || typeof g.prevScoreToPar !== 'number') continue
+    const delta = g.scoreToPar - g.prevScoreToPar
+    if (delta === 0) continue
+    moves.push({
+      id: g.id,
+      name: g.name,
+      countryCode: g.countryCode,
+      currentScoreToPar: g.scoreToPar,
+      prevScoreToPar: g.prevScoreToPar,
+      delta,
+      position: g.position ?? null,
+    })
+  }
+  const climbers = [...moves].filter(m => m.delta < 0).sort((a, b) => a.delta - b.delta).slice(0, 3)
+  const droppers = [...moves].filter(m => m.delta > 0).sort((a, b) => b.delta - a.delta).slice(0, 3)
+  return { climbers, droppers }
+}
+
+// ============================================================
+// Feature 6 — Tee Times & Pairings
+// ============================================================
+
+export interface TeeTimeRow {
+  id: string
+  name: string
+  countryCode?: string | null
+  teeTime: string           // ISO string
+  startHole: number
+  pairIds: string[]
+  status: 'upcoming' | 'on_course' | 'finished'
+  position: number | null
+  scoreToPar: number | null
+  thru: number | null
+}
+
+function deriveTeeStatus(g: GolferLite, now: number): 'upcoming' | 'on_course' | 'finished' {
+  // Finished if they've played 18 in the current round
+  if (typeof g.thru === 'number' && g.thru >= 18) return 'finished'
+  // On course if they have a currentHole, thru > 0, or tee time is in the past
+  if (typeof g.currentHole === 'number' && g.currentHole > 0) return 'on_course'
+  if (typeof g.thru === 'number' && g.thru > 0) return 'on_course'
+  if (g.teeTime) {
+    const t = new Date(g.teeTime).getTime()
+    if (!isNaN(t) && t <= now) return 'on_course'
+  }
+  return 'upcoming'
+}
+
+/**
+ * Today's tee times — sorted by tee time ascending.
+ * If `filterIds` is provided, only returns golfers in that set (e.g. a user's roster).
+ */
+export function getTodaysTeeTimes(golfers: GolferLite[], filterIds?: string[] | null): TeeTimeRow[] {
+  const now = Date.now()
+  const ids = filterIds ? new Set(filterIds) : null
+  const rows: TeeTimeRow[] = []
+  for (const g of golfers) {
+    if (ids && !ids.has(g.id)) continue
+    if (g.status === 'cut' || g.status === 'wd' || g.status === 'dq') continue
+    if (!g.teeTime) continue
+    rows.push({
+      id: g.id,
+      name: g.name,
+      countryCode: g.countryCode,
+      teeTime: g.teeTime,
+      startHole: g.startHole ?? 1,
+      pairIds: g.pairIds ?? [],
+      status: deriveTeeStatus(g, now),
+      position: g.position ?? null,
+      scoreToPar: g.scoreToPar ?? null,
+      thru: g.thru ?? null,
+    })
+  }
+  rows.sort((a, b) => new Date(a.teeTime).getTime() - new Date(b.teeTime).getTime())
+  return rows
+}
+
+/**
+ * Derive featured groups from the field by picking the top-N ranked golfers
+ * and returning whichever groups (by teeTime+startHole key) contain them.
+ * De-duplicated — each group is only returned once.
+ */
+export function getFeaturedGroups(
+  golfers: GolferLite[],
+  topN: number = 6
+): Array<{ teeTime: string; startHole: number; golfers: GolferLite[] }> {
+  // Pick the top N golfers by position (lower is better)
+  const topGolfers = [...golfers]
+    .filter(g => g.status !== 'cut' && g.status !== 'wd' && g.status !== 'dq')
+    .filter(g => g.position != null && g.teeTime)
+    .sort((a, b) => (a.position ?? 999) - (b.position ?? 999))
+    .slice(0, topN)
+
+  // Group by teeTime|startHole
+  const groupKey = (g: GolferLite) => `${g.teeTime}|${g.startHole ?? 1}`
+  const seen = new Set<string>()
+  const out: Array<{ teeTime: string; startHole: number; golfers: GolferLite[] }> = []
+
+  for (const top of topGolfers) {
+    const key = groupKey(top)
+    if (seen.has(key)) continue
+    seen.add(key)
+    const members = golfers.filter(g => groupKey(g) === key && g.teeTime)
+    if (members.length === 0) continue
+    out.push({
+      teeTime: top.teeTime!,
+      startHole: top.startHole ?? 1,
+      golfers: members.sort((a, b) => (a.position ?? 999) - (b.position ?? 999)),
+    })
+  }
+
+  out.sort((a, b) => new Date(a.teeTime).getTime() - new Date(b.teeTime).getTime())
+  return out
 }

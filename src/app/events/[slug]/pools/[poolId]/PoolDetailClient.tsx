@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
@@ -15,6 +15,8 @@ import { RulesHighlights } from '@/components/RulesHighlights'
 import { GolfHoleGrid, type GolfHole } from '@/components/GolfHoleGrid'
 import { CourseMapContainer } from '@/components/CourseMap/CourseMapContainer'
 import { PlayerOwnershipCard } from '@/components/PlayerOwnershipCard'
+import { BiggestMovers } from '@/components/BiggestMovers'
+import { TeeTimesCard } from '@/components/TeeTimesCard'
 import { EntryAvatar } from '@/components/EntryAvatar'
 import { ScheduleView } from './ScheduleView'
 import { ShareButton } from '@/components/ShareButton'
@@ -316,6 +318,17 @@ export function PoolDetailClient({
   // Multi-entry state
   const [activeEntryIndex, setActiveEntryIndex] = useState(0)
   const activeEntry = userEntries[activeEntryIndex] ?? null
+
+  // Combined pick IDs across all of the current user's entries (for TeeTimesCard "My Roster" view).
+  const myRosterPickIds = useMemo(() => {
+    if (!allRosterPicks) return []
+    const ids = new Set<string>()
+    for (const entry of userEntries) {
+      const picks = allRosterPicks[entry.id] || []
+      for (const pid of picks) ids.add(pid)
+    }
+    return Array.from(ids)
+  }, [userEntries, allRosterPicks])
   const activeEntryPicks = activeEntry ? (userPicksByEntry[activeEntry.id] || []) : []
   const hasAnyEntry = userEntries.length > 0
   const canAddEntry = hasAnyEntry && userEntries.length < pool.maxEntriesPerUser && pool.status === 'open'
@@ -619,6 +632,14 @@ export function PoolDetailClient({
           {/* Announcements */}
           <PoolAnnouncements poolId={pool.id} isCreator={isCreator} />
 
+          {/* Tee Times — golf roster pools only */}
+          {effectiveFormat === 'roster' && tournament.sport === 'golf' && (
+            <TeeTimesCard
+              participants={liveParticipants}
+              myRosterPicks={myRosterPickIds.length > 0 ? myRosterPickIds : null}
+            />
+          )}
+
           {/* Rivalry Board — user standings */}
           <div>
             <h3 className="text-sm font-semibold text-text-primary mb-2">Rivalry Board</h3>
@@ -642,6 +663,11 @@ export function PoolDetailClient({
             />
           )}
           </ErrorBoundary>
+
+          {/* Biggest Movers — golf roster pools only, shown when we have a rolling snapshot */}
+          {effectiveFormat === 'roster' && tournament.sport === 'golf' && (
+            <BiggestMovers participants={liveParticipants} />
+          )}
 
           {/* Player Ownership card (collapsible) — hidden until current user
               has submitted an entry (prevents spoiling other members' picks
