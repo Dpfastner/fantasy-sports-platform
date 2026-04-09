@@ -76,12 +76,12 @@ export default async function SupportTicketPage({
 
         {/* Status banners */}
         {ticket.status === 'in_progress' && (
-          <div className="bg-surface border border-brand/20 rounded-lg px-4 py-3 mb-4 text-brand-text text-sm">
+          <div className="bg-brand-subtle border border-brand/20 rounded-lg px-4 py-3 mb-4 text-brand-text text-sm">
             We&apos;re looking into this.
           </div>
         )}
         {ticket.status === 'resolved' && (
-          <div className="bg-surface border border-success/20 rounded-lg px-4 py-3 mb-4 text-success-text text-sm">
+          <div className="bg-success-subtle border border-success/20 rounded-lg px-4 py-3 mb-4 text-success-text text-sm">
             This ticket has been resolved. You can still reply to reopen it.
           </div>
         )}

@@ -266,7 +266,7 @@ export function RosterDraftRoom({
   if (draft.status === 'completed') {
     return (
       <div className="space-y-4">
-        <div className="bg-surface border border-success/20 rounded-lg p-4 text-center">
+        <div className="bg-success-subtle border border-success/20 rounded-lg p-4 text-center">
           <h3 className="brand-h3 text-lg text-success-text mb-1">Draft Complete</h3>
           <p className="text-text-muted text-sm">All rosters have been filled.</p>
         </div>

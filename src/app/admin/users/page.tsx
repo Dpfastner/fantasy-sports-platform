@@ -243,7 +243,7 @@ export default function AdminUsersPage() {
 
         {/* Selection bar */}
         {selected.size > 0 && (
-          <div className="mb-4 px-4 py-3 bg-surface border border-brand/20 rounded-lg flex items-center justify-between">
+          <div className="mb-4 px-4 py-3 bg-brand-subtle border border-brand/20 rounded-lg flex items-center justify-between">
             <span className="text-sm text-text-primary font-medium">{selected.size} selected</span>
             <button
               onClick={() => openGrantModal([...selected])}

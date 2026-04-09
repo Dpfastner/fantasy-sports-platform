@@ -40,7 +40,7 @@ export function TournamentCountdown({ startsAt, label = 'Starts in', tournamentN
   if (!timeLeft) return null
 
   return (
-    <div className="bg-surface border border-brand/20 rounded-lg p-4 mb-4">
+    <div className="bg-brand-subtle border border-brand/20 rounded-lg p-4 mb-4">
       <div className="text-center">
         <div className="text-xs text-text-muted uppercase tracking-wider mb-1">
           {label}{tournamentName && ` · ${tournamentName}`}

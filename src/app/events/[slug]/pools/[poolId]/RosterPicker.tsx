@@ -313,7 +313,7 @@ export function RosterPicker({
 
       {/* Locked warning */}
       {isLocked && (
-        <div className="bg-surface border border-warning/20 rounded-lg p-3 mb-4 text-sm text-warning-text">
+        <div className="bg-warning-subtle border border-warning/20 rounded-lg p-3 mb-4 text-sm text-warning-text">
           Rosters are locked. {isDeadlinePassed ? 'The deadline has passed.' : 'The pool is no longer accepting changes.'}
         </div>
       )}
