@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
@@ -13,8 +13,13 @@ import { PoolAnnouncements } from './PoolAnnouncements'
 import { TournamentCountdown } from '@/components/TournamentCountdown'
 import { RulesHighlights } from '@/components/RulesHighlights'
 import { GolfHoleGrid, type GolfHole } from '@/components/GolfHoleGrid'
+import { TIER_COLORS } from '@/lib/events/tiers'
 import { CourseMapContainer } from '@/components/CourseMap/CourseMapContainer'
-import { RosterOwnership } from '@/components/RosterOwnership'
+import { PlayerOwnershipCard } from '@/components/PlayerOwnershipCard'
+import { BiggestMovers } from '@/components/BiggestMovers'
+import { TeeTimesCard } from '@/components/TeeTimesCard'
+import { ProjectedCutTracker } from '@/components/ProjectedCutTracker'
+import type { CutRule } from '@/lib/events/golf-aggregations'
 import { EntryAvatar } from '@/components/EntryAvatar'
 import { ScheduleView } from './ScheduleView'
 import { ShareButton } from '@/components/ShareButton'
@@ -316,6 +321,31 @@ export function PoolDetailClient({
   // Multi-entry state
   const [activeEntryIndex, setActiveEntryIndex] = useState(0)
   const activeEntry = userEntries[activeEntryIndex] ?? null
+
+  // Combined pick IDs across all of the current user's entries (for TeeTimesCard "My Roster" view).
+  const myRosterPickIds = useMemo(() => {
+    if (!allRosterPicks) return []
+    const ids = new Set<string>()
+    for (const entry of userEntries) {
+      const picks = allRosterPicks[entry.id] || []
+      for (const pid of picks) ids.add(pid)
+    }
+    return Array.from(ids)
+  }, [userEntries, allRosterPicks])
+
+  // Tournament cut rule from config (for Projected Cut Tracker — golf only)
+  const cutRule = useMemo<CutRule>(() => {
+    const cfg = (tournament.config || {}) as Record<string, unknown>
+    const raw = cfg.cut_rule as Record<string, unknown> | undefined
+    if (!raw || typeof raw !== 'object') return null
+    if (raw.type === 'top_n_and_ties' && typeof raw.n === 'number') {
+      return { type: 'top_n_and_ties', n: raw.n }
+    }
+    if (raw.type === 'stroke_limit' && typeof raw.strokes === 'number') {
+      return { type: 'stroke_limit', strokes: raw.strokes }
+    }
+    return null
+  }, [tournament.config])
   const activeEntryPicks = activeEntry ? (userPicksByEntry[activeEntry.id] || []) : []
   const hasAnyEntry = userEntries.length > 0
   const canAddEntry = hasAnyEntry && userEntries.length < pool.maxEntriesPerUser && pool.status === 'open'
@@ -619,6 +649,14 @@ export function PoolDetailClient({
           {/* Announcements */}
           <PoolAnnouncements poolId={pool.id} isCreator={isCreator} />
 
+          {/* Tee Times — golf roster pools only */}
+          {effectiveFormat === 'roster' && tournament.sport === 'golf' && (
+            <TeeTimesCard
+              participants={liveParticipants}
+              myRosterPicks={myRosterPickIds.length > 0 ? myRosterPickIds : null}
+            />
+          )}
+
           {/* Rivalry Board — user standings */}
           <div>
             <h3 className="text-sm font-semibold text-text-primary mb-2">Rivalry Board</h3>
@@ -643,13 +681,33 @@ export function PoolDetailClient({
           )}
           </ErrorBoundary>
 
-          {/* Roster Ownership — hidden until current user has submitted an entry
-              (prevents spoiling other members' picks before you've locked yours in) */}
-          {effectiveFormat === 'roster' && rosterSelectionCounts && rosterTotalEntries !== undefined && userEntries.some(e => e.submittedAt) && (
-            <RosterOwnership
+          {/* Biggest Movers — golf roster pools only, full width */}
+          {effectiveFormat === 'roster' && tournament.sport === 'golf' && (
+            <BiggestMovers participants={liveParticipants} />
+          )}
+
+          {/* Projected Cut Tracker — golf roster pools with cut_rule config */}
+          {effectiveFormat === 'roster' && tournament.sport === 'golf' && cutRule && (
+            <ProjectedCutTracker participants={liveParticipants} cutRule={cutRule} />
+          )}
+
+          {/* Player Ownership card (collapsible) — hidden until current user
+              has submitted an entry (prevents spoiling other members' picks
+              before you've locked yours in). Offers Ownership list view and
+              Matrix heatmap view of roster picks. */}
+          {effectiveFormat === 'roster' && rosterSelectionCounts && rosterTotalEntries !== undefined && userEntries.some(e => e.submittedAt) && allRosterPicks && (
+            <PlayerOwnershipCard
               participants={liveParticipants}
               selectionCounts={rosterSelectionCounts}
               totalEntries={rosterTotalEntries}
+              entries={liveMembers.map(m => ({
+                id: m.id,
+                displayName: m.displayName,
+                entryName: m.entryName,
+                userName: m.userName,
+                score: m.score,
+              }))}
+              allRosterPicks={allRosterPicks}
             />
           )}
 
@@ -736,10 +794,12 @@ export function PoolDetailClient({
       {activeTab === 'schedule' && (
         effectiveFormat === 'roster' ? (
           <div className="bg-surface rounded-lg border border-border overflow-x-auto">
-            <div className="min-w-[34rem]">
-              <div className="grid grid-cols-[2rem_minmax(12rem,1fr)_3rem_3rem_3rem_3rem_4rem] gap-1 px-3 py-2 bg-surface-inset border-b border-border text-xs text-text-muted uppercase tracking-wide">
+            <div className="min-w-[44rem]">
+              <div className="grid grid-cols-[2rem_minmax(10rem,1fr)_2.5rem_4.5rem_2.5rem_2.5rem_2.5rem_2.5rem_3.5rem] gap-1 px-3 py-2 bg-surface-inset border-b border-border text-xs text-text-muted uppercase tracking-wide">
                 <span className="text-right">#</span>
                 <span>Golfer</span>
+                <span className="text-center">Tier</span>
+                <span className="text-center">Tee</span>
                 <span className="text-center">R1</span>
                 <span className="text-center">R2</span>
                 <span className="text-center">R3</span>
@@ -762,12 +822,26 @@ export function PoolDetailClient({
                   const currentHole = meta.current_hole as number | null | undefined
                   const thru = meta.thru as number | null | undefined
                   const isExpanded = expandedGolferId === p.id
+                  const tier = String(meta.tier || 'C')
+                  const teeTimeIso = meta.tee_time as string | null | undefined
+                  const teeLabel = (() => {
+                    if (!teeTimeIso) return '—'
+                    if (typeof thru === 'number' && thru >= 18) return 'Done'
+                    try {
+                      const d = new Date(teeTimeIso)
+                      const day = d.toLocaleDateString('en-US', { weekday: 'short' })
+                      const time = d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
+                      return `${day} ${time}`
+                    } catch {
+                      return '—'
+                    }
+                  })()
                   return (
                     <div key={p.id}>
                       <button
                         type="button"
                         onClick={() => hasHoleData && setExpandedGolferId(isExpanded ? null : p.id)}
-                        className={`w-full grid grid-cols-[2rem_minmax(12rem,1fr)_3rem_3rem_3rem_3rem_4rem] gap-1 px-3 py-2 border-b border-border-subtle last:border-0 text-sm text-left transition-colors ${isCut ? 'opacity-50' : ''} ${hasHoleData ? 'hover:bg-surface-inset/40 cursor-pointer' : 'cursor-default'} ${isExpanded ? 'bg-surface-inset/30' : ''}`}
+                        className={`w-full grid grid-cols-[2rem_minmax(10rem,1fr)_2.5rem_4.5rem_2.5rem_2.5rem_2.5rem_2.5rem_3.5rem] gap-1 px-3 py-2 border-b border-border-subtle last:border-0 text-sm text-left transition-colors ${isCut ? 'opacity-50' : ''} ${hasHoleData ? 'hover:bg-surface-inset/40 cursor-pointer' : 'cursor-default'} ${isExpanded ? 'bg-surface-inset/30' : ''}`}
                       >
                         <span className="text-right text-text-muted">{i + 1}</span>
                         <div className="flex items-center gap-1.5 min-w-0">
@@ -793,6 +867,12 @@ export function PoolDetailClient({
                             </svg>
                           )}
                         </div>
+                        <div className="text-center">
+                          <span className={`text-[10px] px-1 py-0.5 rounded ${TIER_COLORS[tier]?.bg || 'bg-surface-inset'} ${TIER_COLORS[tier]?.text || 'text-text-muted'}`}>
+                            {tier}
+                          </span>
+                        </div>
+                        <span className="text-center text-[10px] text-text-muted tabular-nums">{teeLabel}</span>
                         <span className="text-center text-text-secondary">{meta.r1 != null ? String(meta.r1) : '—'}</span>
                         <span className="text-center text-text-secondary">{meta.r2 != null ? String(meta.r2) : '—'}</span>
                         <span className="text-center text-text-secondary">{meta.r3 != null ? String(meta.r3) : '—'}</span>

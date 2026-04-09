@@ -67,6 +67,30 @@ export function RosterLeaderboard({
   const hasScores = participants.some(p => p.metadata?.score_to_par != null)
   const showScores = poolStatus === 'locked' || poolStatus === 'completed' || hasScores
 
+  // Course par (Augusta = 72; future multi-course tournaments can read from course_data)
+  const COURSE_PAR = 72
+
+  // Compute sum-of-7-picks to-par for a specific round. Returns null if
+  // no golfer on the roster has completed that round yet.
+  const computeEntryRoundToPar = (entryId: string, round: 1 | 2 | 3 | 4): number | null => {
+    const picks = allRosterPicks?.[entryId]
+    if (!picks || picks.length === 0) return null
+    const rKey = `r${round}` as 'r1' | 'r2' | 'r3' | 'r4'
+    let sum = 0
+    let count = 0
+    for (const id of picks) {
+      const p = participantMap.get(id)
+      if (!p) continue
+      const meta = (p.metadata || {}) as Record<string, unknown>
+      const rVal = meta[rKey] as number | null | undefined
+      if (typeof rVal === 'number' && rVal > 0) {
+        sum += (rVal - COURSE_PAR)
+        count++
+      }
+    }
+    return count > 0 ? sum : null
+  }
+
   // Sort members: by score ascending (golf), then by submit time
   const sorted = useMemo(() => {
     return [...members].sort((a, b) => {
@@ -131,12 +155,17 @@ export function RosterLeaderboard({
           <p className="text-text-muted">No entries yet.</p>
         </div>
       ) : (
-        <div className="bg-surface rounded-lg border border-border overflow-hidden">
+        <div className="bg-surface rounded-lg border border-border overflow-x-auto">
+          <div className="min-w-[34rem]">
           {/* Header */}
-          <div className="grid grid-cols-[2rem_1fr_4rem_5rem] sm:grid-cols-[2.5rem_1fr_5rem_6rem] gap-2 px-3 py-2 bg-surface-inset border-b border-border text-xs text-text-muted uppercase tracking-wide">
+          <div className="grid grid-cols-[2rem_10rem_2.25rem_2.25rem_2.25rem_2.25rem_3rem_4rem] gap-2 px-3 py-2 bg-surface-inset border-b border-border text-xs text-text-muted uppercase tracking-wide">
             <span className="text-right">#</span>
             <span>Player</span>
-            <span className="text-right">{showScores ? 'Score' : 'Status'}</span>
+            <span className="text-right">R1</span>
+            <span className="text-right">R2</span>
+            <span className="text-right">R3</span>
+            <span className="text-right">R4</span>
+            <span className="text-right">{showScores ? 'Total' : 'Status'}</span>
             <span className="text-right">Submitted</span>
           </div>
 
@@ -147,6 +176,10 @@ export function RosterLeaderboard({
             const isExpanded = expandedId === member.id
             const canExpand = !!allRosterPicks?.[member.id]
             const breakdown = isExpanded ? getRosterBreakdown(member.id) : null
+            const r1 = computeEntryRoundToPar(member.id, 1)
+            const r2 = computeEntryRoundToPar(member.id, 2)
+            const r3 = computeEntryRoundToPar(member.id, 3)
+            const r4 = computeEntryRoundToPar(member.id, 4)
 
             return (
               <div key={member.id}>
@@ -154,7 +187,7 @@ export function RosterLeaderboard({
                 <button
                   type="button"
                   onClick={() => canExpand && setExpandedId(isExpanded ? null : member.id)}
-                  className={`w-full grid grid-cols-[2rem_1fr_4rem_5rem] sm:grid-cols-[2.5rem_1fr_5rem_6rem] gap-2 px-3 py-2.5 border-b border-border-subtle text-left transition-colors ${
+                  className={`w-full grid grid-cols-[2rem_10rem_2.25rem_2.25rem_2.25rem_2.25rem_3rem_4rem] gap-2 px-3 py-2.5 border-b border-border-subtle text-left transition-colors ${
                     canExpand ? 'hover:bg-surface-inset/50 cursor-pointer' : 'cursor-default'
                   } ${isExpanded ? 'bg-surface-inset/30' : ''}`}
                 >
@@ -202,6 +235,18 @@ export function RosterLeaderboard({
                       </svg>
                     )}
                   </div>
+                  <span className={`text-right text-xs tabular-nums ${r1 != null && r1 < 0 ? 'text-success-text' : r1 != null && r1 > 0 ? 'text-danger-text' : 'text-text-muted'}`}>
+                    {r1 == null ? '—' : formatGolfScore(r1)}
+                  </span>
+                  <span className={`text-right text-xs tabular-nums ${r2 != null && r2 < 0 ? 'text-success-text' : r2 != null && r2 > 0 ? 'text-danger-text' : 'text-text-muted'}`}>
+                    {r2 == null ? '—' : formatGolfScore(r2)}
+                  </span>
+                  <span className={`text-right text-xs tabular-nums ${r3 != null && r3 < 0 ? 'text-success-text' : r3 != null && r3 > 0 ? 'text-danger-text' : 'text-text-muted'}`}>
+                    {r3 == null ? '—' : formatGolfScore(r3)}
+                  </span>
+                  <span className={`text-right text-xs tabular-nums ${r4 != null && r4 < 0 ? 'text-success-text' : r4 != null && r4 > 0 ? 'text-danger-text' : 'text-text-muted'}`}>
+                    {r4 == null ? '—' : formatGolfScore(r4)}
+                  </span>
                   <span className={`text-right text-sm ${showScores && member.score !== 0 ? 'text-text-primary font-medium' : 'text-text-muted'}`}>
                     {showScores
                       ? formatGolfScore(member.score)
@@ -224,102 +269,102 @@ export function RosterLeaderboard({
                       )}
                     </p>
                     <div className="overflow-x-auto">
-                      <table className="w-full text-sm">
-                        <thead>
-                          <tr className="text-xs text-text-muted uppercase tracking-wide border-b border-border">
-                            <th className="text-left py-1.5 pr-2">Golfer</th>
-                            <th className="text-center py-1.5 px-1 w-10">Tier</th>
-                            <th className="text-center py-1.5 px-1 w-10">R1</th>
-                            <th className="text-center py-1.5 px-1 w-10">R2</th>
-                            <th className="text-center py-1.5 px-1 w-10">R3</th>
-                            <th className="text-center py-1.5 px-1 w-10">R4</th>
-                            <th className="text-right py-1.5 pl-1 w-14">Total</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {breakdown.counting.map(p => (
-                            <tr key={p.id} className="border-b border-border-subtle">
-                              <td className="py-1.5 pr-2 text-text-primary">
-                                <span className="flex items-center gap-1.5">
-                                  {p.countryCode && (
-                                    <img
-                                      src={`https://flagcdn.com/24x18/${p.countryCode}.png`}
-                                      alt={p.country || ''}
-                                      width={18} height={14}
-                                      className="inline-block shrink-0 rounded-[2px]"
-                                      loading="lazy"
-                                    />
-                                  )}
-                                  {p.name}
-                                </span>
-                              </td>
-                              <td className="py-1.5 px-1 text-center">
-                                <span className={`text-xs px-1.5 py-0.5 rounded ${TIER_COLORS[p.tier]?.bg || 'bg-surface-inset'} ${TIER_COLORS[p.tier]?.text || 'text-text-muted'}`}>
-                                  {p.tier}
-                                </span>
-                              </td>
-                              <td className="py-1.5 px-1 text-center text-text-secondary">{p.r1 ?? '—'}</td>
-                              <td className="py-1.5 px-1 text-center text-text-secondary">{p.r2 ?? '—'}</td>
-                              <td className="py-1.5 px-1 text-center text-text-secondary">{p.r3 ?? '—'}</td>
-                              <td className="py-1.5 px-1 text-center text-text-secondary">{p.r4 ?? '—'}</td>
-                              <td className="py-1.5 pl-1 text-right font-medium text-text-primary">{formatGolfScore(p.scoreToPar)}</td>
-                            </tr>
-                          ))}
-                          {breakdown.dropped.map(p => (
-                            <tr key={p.id} className="border-b border-border-subtle opacity-50">
-                              <td className="py-1.5 pr-2 text-text-muted">
-                                <span className="flex items-center gap-1.5">
-                                  {p.countryCode && (
-                                    <img
-                                      src={`https://flagcdn.com/24x18/${p.countryCode}.png`}
-                                      alt={p.country || ''}
-                                      width={18} height={14}
-                                      className="inline-block shrink-0 rounded-[2px]"
-                                      loading="lazy"
-                                    />
-                                  )}
-                                  {p.name}
-                                  <span className="text-[10px] italic">dropped</span>
-                                </span>
-                              </td>
-                              <td className="py-1.5 px-1 text-center">
-                                <span className={`text-xs px-1.5 py-0.5 rounded ${TIER_COLORS[p.tier]?.bg || 'bg-surface-inset'} ${TIER_COLORS[p.tier]?.text || 'text-text-muted'}`}>
-                                  {p.tier}
-                                </span>
-                              </td>
-                              <td className="py-1.5 px-1 text-center text-text-muted">{p.r1 ?? '—'}</td>
-                              <td className="py-1.5 px-1 text-center text-text-muted">{p.r2 ?? '—'}</td>
-                              <td className="py-1.5 px-1 text-center text-text-muted">{p.r3 ?? '—'}</td>
-                              <td className="py-1.5 px-1 text-center text-text-muted">{p.r4 ?? '—'}</td>
-                              <td className="py-1.5 pl-1 text-right text-text-muted">{formatGolfScore(p.scoreToPar)}</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-
-                    {/* Per-hole breakdown — only shown when hole data is available */}
-                    {breakdown.counting.some(p => p.holes && p.holes.length > 0) && (
-                      <div className="mt-4 pt-3 border-t border-border-subtle">
-                        <p className="text-xs text-text-muted uppercase tracking-wider mb-2">Hole by Hole</p>
-                        <div className="space-y-2">
-                          {breakdown.counting.filter(p => p.holes && p.holes.length > 0).map(p => (
-                            <GolfHoleGrid
-                              key={p.id}
-                              holes={p.holes}
-                              currentHole={p.currentHole ?? null}
-                              thru={p.thru ?? null}
-                              label={p.name}
-                            />
-                          ))}
+                      <div className="min-w-[56rem]">
+                        <div className="grid grid-cols-[8rem_minmax(28rem,auto)_2.5rem_2.25rem_2.25rem_2.25rem_2.25rem_3.5rem] gap-2 px-2 py-1.5 text-xs text-text-muted uppercase tracking-wide border-b border-border">
+                          <span>Golfer</span>
+                          <span>Holes</span>
+                          <span className="text-center">Tier</span>
+                          <span className="text-center">R1</span>
+                          <span className="text-center">R2</span>
+                          <span className="text-center">R3</span>
+                          <span className="text-center">R4</span>
+                          <span className="text-right">Total</span>
                         </div>
+                        {breakdown.counting.map(p => (
+                          <div key={p.id} className="grid grid-cols-[8rem_minmax(28rem,auto)_2.5rem_2.25rem_2.25rem_2.25rem_2.25rem_3.5rem] gap-2 px-2 py-1.5 items-center border-b border-border-subtle">
+                            <div className="flex items-center gap-1.5 min-w-0 text-sm text-text-primary">
+                              {p.countryCode && (
+                                <img
+                                  src={`https://flagcdn.com/24x18/${p.countryCode}.png`}
+                                  alt={p.country || ''}
+                                  width={18} height={14}
+                                  className="inline-block shrink-0 rounded-[2px]"
+                                  loading="lazy"
+                                />
+                              )}
+                              <span className="truncate">{p.name}</span>
+                            </div>
+                            <div>
+                              {p.holes && p.holes.length > 0 ? (
+                                <GolfHoleGrid
+                                  holes={p.holes}
+                                  currentHole={p.currentHole ?? null}
+                                  thru={p.thru ?? null}
+                                  hideLabel
+                                />
+                              ) : (
+                                <span className="text-xs text-text-muted italic">No hole data yet</span>
+                              )}
+                            </div>
+                            <div className="text-center">
+                              <span className={`text-xs px-1.5 py-0.5 rounded ${TIER_COLORS[p.tier]?.bg || 'bg-surface-inset'} ${TIER_COLORS[p.tier]?.text || 'text-text-muted'}`}>
+                                {p.tier}
+                              </span>
+                            </div>
+                            <span className="text-center text-sm text-text-secondary">{p.r1 ?? '—'}</span>
+                            <span className="text-center text-sm text-text-secondary">{p.r2 ?? '—'}</span>
+                            <span className="text-center text-sm text-text-secondary">{p.r3 ?? '—'}</span>
+                            <span className="text-center text-sm text-text-secondary">{p.r4 ?? '—'}</span>
+                            <span className="text-right text-sm font-medium text-text-primary">{formatGolfScore(p.scoreToPar)}</span>
+                          </div>
+                        ))}
+                        {breakdown.dropped.map(p => (
+                          <div key={p.id} className="grid grid-cols-[8rem_minmax(28rem,auto)_2.5rem_2.25rem_2.25rem_2.25rem_2.25rem_3.5rem] gap-2 px-2 py-1.5 items-center border-b border-border-subtle opacity-50">
+                            <div className="flex items-center gap-1.5 min-w-0 text-sm text-text-muted">
+                              {p.countryCode && (
+                                <img
+                                  src={`https://flagcdn.com/24x18/${p.countryCode}.png`}
+                                  alt={p.country || ''}
+                                  width={18} height={14}
+                                  className="inline-block shrink-0 rounded-[2px]"
+                                  loading="lazy"
+                                />
+                              )}
+                              <span className="truncate">{p.name}</span>
+                              <span className="text-[10px] italic">dropped</span>
+                            </div>
+                            <div>
+                              {p.holes && p.holes.length > 0 ? (
+                                <GolfHoleGrid
+                                  holes={p.holes}
+                                  currentHole={p.currentHole ?? null}
+                                  thru={p.thru ?? null}
+                                  hideLabel
+                                />
+                              ) : (
+                                <span className="text-xs text-text-muted italic">No hole data yet</span>
+                              )}
+                            </div>
+                            <div className="text-center">
+                              <span className={`text-xs px-1.5 py-0.5 rounded ${TIER_COLORS[p.tier]?.bg || 'bg-surface-inset'} ${TIER_COLORS[p.tier]?.text || 'text-text-muted'}`}>
+                                {p.tier}
+                              </span>
+                            </div>
+                            <span className="text-center text-sm text-text-muted">{p.r1 ?? '—'}</span>
+                            <span className="text-center text-sm text-text-muted">{p.r2 ?? '—'}</span>
+                            <span className="text-center text-sm text-text-muted">{p.r3 ?? '—'}</span>
+                            <span className="text-center text-sm text-text-muted">{p.r4 ?? '—'}</span>
+                            <span className="text-right text-sm text-text-muted">{formatGolfScore(p.scoreToPar)}</span>
+                          </div>
+                        ))}
                       </div>
-                    )}
+                    </div>
                   </div>
                 )}
               </div>
             )
           })}
+          </div>
         </div>
       )}
     </div>

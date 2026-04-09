@@ -247,9 +247,15 @@ export async function GET(request: Request) {
             if (espnGame.status === 'live') live++
             if (espnGame.status === 'completed') completed++
 
+            // Match scores to participants by ESPN team ID (not by positional home/away)
+            // Our participant_1 may be home OR away — must check.
+            const p1 = participants?.find(p => p.id === ourGame!.participant_1_id)
+            const p1EspnId = p1?.external_id || (p1?.metadata as Record<string, unknown>)?.espn_team_id
+            const p1IsHome = String(p1EspnId) === String(espnGame.homeTeamId)
+
             const updateData: Record<string, unknown> = {
-              participant_1_score: espnGame.homeScore,
-              participant_2_score: espnGame.awayScore,
+              participant_1_score: p1IsHome ? espnGame.homeScore : espnGame.awayScore,
+              participant_2_score: p1IsHome ? espnGame.awayScore : espnGame.homeScore,
               status: espnGame.status === 'completed' ? 'completed' : 'live',
               period: espnGame.period,
               clock: espnGame.clock,
@@ -354,9 +360,14 @@ export async function GET(request: Request) {
             if (match.status === 'live') live++
             if (match.status === 'completed') completed++
 
+            // Match scores to participants by team code (not by positional home/away)
+            const rugbyP1 = participants?.find(p => p.id === ourGame!.participant_1_id)
+            const p1Code = (rugbyP1?.metadata as Record<string, unknown>)?.team_code || rugbyP1?.external_id
+            const rugbyP1IsHome = String(p1Code) === String(match.homeTeamCode)
+
             const updateData: Record<string, unknown> = {
-              participant_1_score: match.homeScore,
-              participant_2_score: match.awayScore,
+              participant_1_score: rugbyP1IsHome ? match.homeScore : match.awayScore,
+              participant_2_score: rugbyP1IsHome ? match.awayScore : match.homeScore,
               status: match.status === 'completed' ? 'completed' : 'live',
               period: match.period ? `${match.period}` : null,
               clock: match.displayClock || null,
@@ -449,6 +460,15 @@ export async function GET(request: Request) {
           }
 
           // ── Update participant metadata with live scores (for roster pools) ──
+          // Rolling snapshot window for Biggest Movers (Feature 4): every 30 min
+          // each golfer's prev_score_to_par advances to their current value.
+          const SNAPSHOT_TTL_MS = 30 * 60 * 1000
+          const syncRunAt = now.toISOString()
+
+          // Collect updated metadata for each participant so we can do a
+          // second pass for pairing derivation before writing.
+          const pendingUpdates = new Map<string, Record<string, unknown>>()
+
           let participantsUpdated = 0
           for (const participant of participants || []) {
             if (!participant.external_id) continue
@@ -486,6 +506,15 @@ export async function GET(request: Request) {
               r4 = golfer.roundScores[3] ?? r4
             }
 
+            // Rolling snapshot: if prev_score_at is null or stale, advance it
+            const prevScoreAtStr = existingMeta.prev_score_at as string | undefined | null
+            const prevScoreAtMs = prevScoreAtStr ? new Date(prevScoreAtStr).getTime() : 0
+            const snapshotStale = !prevScoreAtStr || (now.getTime() - prevScoreAtMs) > SNAPSHOT_TTL_MS
+            const newPrevScore = snapshotStale
+              ? (existingMeta.score_to_par ?? null)
+              : (existingMeta.prev_score_to_par ?? null)
+            const newPrevAt = snapshotStale ? syncRunAt : prevScoreAtStr
+
             const updatedMeta = {
               ...existingMeta,
               r1, r2, r3, r4,
@@ -505,13 +534,43 @@ export async function GET(request: Request) {
               tee_time: live?.teeTime ?? existingMeta.tee_time ?? null,
               current_round: live?.currentRound ?? existingMeta.current_round ?? null,
               holes: live?.holes ?? existingMeta.holes ?? [],
+              // Feature 4: rolling snapshot for Biggest Movers
+              prev_score_to_par: newPrevScore,
+              prev_score_at: newPrevAt,
             }
 
+            pendingUpdates.set(participant.id, updatedMeta)
+          }
+
+          // ── Feature 6: derive pairings (pair_ids) before writing ──
+          // Golfers with the same tee_time + start_hole are in the same group.
+          const groupKeys = new Map<string, string[]>()
+          for (const [pid, meta] of pendingUpdates.entries()) {
+            const teeTime = meta.tee_time as string | null | undefined
+            const startHole = meta.start_hole as number | null | undefined
+            if (!teeTime) continue
+            const key = `${teeTime}|${startHole ?? 1}`
+            if (!groupKeys.has(key)) groupKeys.set(key, [])
+            groupKeys.get(key)!.push(pid)
+          }
+          for (const [pid, meta] of pendingUpdates.entries()) {
+            const teeTime = meta.tee_time as string | null | undefined
+            const startHole = meta.start_hole as number | null | undefined
+            if (!teeTime) {
+              meta.pair_ids = []
+              continue
+            }
+            const key = `${teeTime}|${startHole ?? 1}`
+            const groupMembers = groupKeys.get(key) ?? []
+            meta.pair_ids = groupMembers.filter(id => id !== pid)
+          }
+
+          // Write the final merged metadata for each participant
+          for (const [pid, meta] of pendingUpdates.entries()) {
             const { error } = await admin
               .from('event_participants')
-              .update({ metadata: updatedMeta })
-              .eq('id', participant.id)
-
+              .update({ metadata: meta })
+              .eq('id', pid)
             if (!error) participantsUpdated++
           }
 
