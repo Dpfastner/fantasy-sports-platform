@@ -588,8 +588,9 @@ export function PoolDetailClient({
           )}
           </ErrorBoundary>
 
-          {/* Roster Ownership — for roster pools with picks */}
-          {effectiveFormat === 'roster' && rosterSelectionCounts && rosterTotalEntries !== undefined && (
+          {/* Roster Ownership — hidden until current user has submitted an entry
+              (prevents spoiling other members' picks before you've locked yours in) */}
+          {effectiveFormat === 'roster' && rosterSelectionCounts && rosterTotalEntries !== undefined && userEntries.some(e => e.submittedAt) && (
             <RosterOwnership
               participants={participants}
               selectionCounts={rosterSelectionCounts}

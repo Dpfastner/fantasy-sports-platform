@@ -17,10 +17,11 @@ interface RosterOwnershipProps {
   totalEntries: number
 }
 
+// Royal Gambit palette — three distinct brand-palette colors per tier.
 const TIER_COLORS: Record<string, { bar: string; dot: string }> = {
-  A: { bar: 'bg-brand', dot: 'bg-brand' },
-  B: { bar: 'bg-info', dot: 'bg-info' },
-  C: { bar: 'bg-warning', dot: 'bg-warning' },
+  A: { bar: 'bg-brand', dot: 'bg-brand' },        // amber   #F59E0B
+  B: { bar: 'bg-accent', dot: 'bg-accent' },      // rose    #E74C6F
+  C: { bar: 'bg-tertiary', dot: 'bg-tertiary' },  // cream   #FAF5EE
 }
 
 export function RosterOwnership({ participants, selectionCounts, totalEntries }: RosterOwnershipProps) {
