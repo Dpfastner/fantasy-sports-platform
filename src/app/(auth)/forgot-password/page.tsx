@@ -47,7 +47,7 @@ export default function ForgotPasswordPage() {
         <div className="bg-surface rounded-lg p-8 shadow-lg">
           {success ? (
             <div>
-              <div className="bg-success/10 border border-success text-success-text px-4 py-3 rounded-lg mb-6">
+              <div className="bg-surface border border-success text-success-text px-4 py-3 rounded-lg mb-6">
                 Check your email for a password reset link.
               </div>
               <Link
@@ -60,7 +60,7 @@ export default function ForgotPasswordPage() {
           ) : (
             <form onSubmit={handleSubmit}>
               {error && (
-                <div className="bg-danger/10 border border-danger text-danger px-4 py-3 rounded-lg mb-6">
+                <div className="bg-surface border border-danger text-danger px-4 py-3 rounded-lg mb-6">
                   {error}
                 </div>
               )}

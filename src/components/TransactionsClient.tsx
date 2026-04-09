@@ -486,7 +486,7 @@ export default function TransactionsClient({
                           setStep('select-add')
                         }
                       }}
-                      className="w-full mb-4 p-3 bg-success/10 border border-success/30 rounded-lg text-success-text hover:bg-success/20 transition-colors text-sm font-medium flex items-center justify-center gap-2"
+                      className="w-full mb-4 p-3 bg-surface border border-success/30 rounded-lg text-success-text hover:bg-success/20 transition-colors text-sm font-medium flex items-center justify-center gap-2"
                     >
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -495,7 +495,7 @@ export default function TransactionsClient({
                     </button>
                   )}
                   {prefilledAddSchool && (
-                    <div className="bg-success/10 border border-success/50 rounded-lg p-3 mb-4 flex items-center gap-3">
+                    <div className="bg-surface border border-success/50 rounded-lg p-3 mb-4 flex items-center gap-3">
                       <p className="text-success-text text-sm">Adding:</p>
                       {prefilledAddSchool.logo_url && (
                         <img src={prefilledAddSchool.logo_url} alt="" className="w-6 h-6 object-contain" />
@@ -577,7 +577,7 @@ export default function TransactionsClient({
                   </div>
 
                   {/* Selected Drop */}
-                  <div className="bg-danger/10 border border-danger/50 rounded-lg p-3 mb-4">
+                  <div className="bg-surface border border-danger/50 rounded-lg p-3 mb-4">
                     <p className="text-danger-text text-sm mb-1">Dropping:</p>
                     <p className="text-text-primary font-medium">{selectedDrop?.schools.name}</p>
                   </div>
@@ -637,7 +637,7 @@ export default function TransactionsClient({
                     <div className="mb-4 border border-warning/30 rounded-lg overflow-hidden">
                       <button
                         onClick={() => setWatchlistExpanded(!watchlistExpanded)}
-                        className="w-full flex items-center justify-between px-3 py-2 bg-warning/10 text-sm"
+                        className="w-full flex items-center justify-between px-3 py-2 bg-surface text-sm"
                       >
                         <span className="text-text-primary font-medium flex items-center gap-1.5">
                           <svg className="w-4 h-4 text-warning" fill="currentColor" viewBox="0 0 24 24">
@@ -661,7 +661,7 @@ export default function TransactionsClient({
                                 onClick={() => !isMaxed && handleSelectAdd(school)}
                                 disabled={isMaxed}
                                 className={`w-full flex items-center justify-between p-2 rounded-lg transition-colors text-left ${
-                                  isMaxed ? 'opacity-50 cursor-not-allowed' : 'hover:bg-warning/10 cursor-pointer'
+                                  isMaxed ? 'opacity-50 cursor-not-allowed' : 'hover:bg-surface cursor-pointer'
                                 }`}
                               >
                                 <div className="flex items-center gap-2">
@@ -727,7 +727,7 @@ export default function TransactionsClient({
                             onClick={() => handleSelectAdd(school)}
                             className={`w-full flex items-center justify-between p-3 rounded-lg transition-colors text-left cursor-pointer ${
                               localWatchlist.has(school.id)
-                                ? 'bg-warning/5 hover:bg-warning/10'
+                                ? 'bg-surface hover:bg-surface'
                                 : 'bg-surface-subtle hover:bg-surface-inset'
                             }`}
                           >
@@ -841,7 +841,7 @@ export default function TransactionsClient({
                   <div className={`grid ${selectedDrop ? 'md:grid-cols-2' : ''} gap-6 mb-6`}>
                     {/* Drop */}
                     {selectedDrop && (
-                      <div className="bg-danger/10 border border-danger/50 rounded-lg p-4">
+                      <div className="bg-surface border border-danger/50 rounded-lg p-4">
                         <p className="text-danger-text text-sm mb-3">Dropping</p>
                         <div className="flex items-center gap-4">
                           {selectedDrop.schools.logo_url ? (
@@ -865,7 +865,7 @@ export default function TransactionsClient({
                     )}
 
                     {/* Add */}
-                    <div className="bg-success/10 border border-success/50 rounded-lg p-4">
+                    <div className="bg-surface border border-success/50 rounded-lg p-4">
                       <p className="text-success-text text-sm mb-3">Adding</p>
                       <div className="flex items-center gap-4">
                         {selectedAdd.logo_url ? (
@@ -904,7 +904,7 @@ export default function TransactionsClient({
                     <p className="text-text-muted text-sm">
                       The new school will earn points starting from Week {currentWeek}.
                     </p>
-                    <div className="flex items-start gap-2 bg-warning/10 border border-warning/30 rounded p-2 mt-2">
+                    <div className="flex items-start gap-2 bg-surface border border-warning/30 rounded p-2 mt-2">
                       <svg className="w-4 h-4 text-warning shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
                       </svg>

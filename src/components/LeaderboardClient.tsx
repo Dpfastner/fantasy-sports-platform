@@ -334,7 +334,7 @@ export default function LeaderboardClient({
 
         {/* All-zeros encouragement */}
         {teams.every(t => t.total_points === 0) && currentWeek <= 1 && (
-          <div className="bg-brand/10 border border-brand/30 rounded-lg p-4 mb-4">
+          <div className="bg-surface border border-brand/30 rounded-lg p-4 mb-4">
             <p className="text-brand-text text-sm">
               Scores will update when games begin. Check back once the season kicks off!
             </p>

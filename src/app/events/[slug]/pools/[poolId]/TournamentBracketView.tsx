@@ -66,7 +66,7 @@ function ResultCard({ game, p1, p2, compact = false }: {
     return (
       <div className={`flex items-center gap-1.5 w-full px-2 ${compact ? 'py-1' : 'py-1.5'} ${
         slot === 1 ? 'border-b border-border/50' : ''
-      } ${isWinner ? 'bg-success/10' : ''}`}>
+      } ${isWinner ? 'bg-surface' : ''}`}>
         {participant?.seed ? (
           <span className="text-[10px] text-text-muted w-4 text-center shrink-0">{participant.seed}</span>
         ) : null}
@@ -96,7 +96,7 @@ function ResultCard({ game, p1, p2, compact = false }: {
       isLive ? 'border-danger/40' : 'border-border'
     } ${compact ? 'w-[170px]' : 'w-[220px]'}`}>
       {isLive && (
-        <div className="flex items-center justify-between px-2 py-0.5 bg-danger/10 border-b border-danger/20">
+        <div className="flex items-center justify-between px-2 py-0.5 bg-surface border-b border-danger/20">
           <span className="text-[10px] font-semibold text-danger-text uppercase flex items-center gap-1">
             <span className="w-1.5 h-1.5 rounded-full bg-danger-text animate-pulse" />
             Live
@@ -138,7 +138,7 @@ function MiniGameCard({ game, participants }: { game: Game; participants: Record
       isLive ? 'border-danger/40' : 'border-border'
     }`}>
       {isLive && (
-        <div className="flex items-center justify-center px-1 py-0.5 bg-danger/10 border-b border-danger/20">
+        <div className="flex items-center justify-center px-1 py-0.5 bg-surface border-b border-danger/20">
           <span className="text-[9px] font-semibold text-danger-text uppercase flex items-center gap-0.5">
             <span className="w-1 h-1 rounded-full bg-danger-text animate-pulse" />
             Live
@@ -160,7 +160,7 @@ function MiniGameCard({ game, participants }: { game: Game; participants: Record
         </div>
       )}
       <div className={`flex items-center justify-between px-1.5 py-1 ${
-        isComplete && game.winnerId === game.participant1Id ? 'bg-success/10' : ''
+        isComplete && game.winnerId === game.participant1Id ? 'bg-surface' : ''
       }`}>
         <div className="flex items-center gap-1 min-w-0">
           {p1?.seed ? <span className="text-text-muted text-[9px]">{p1.seed}</span> : null}
@@ -173,7 +173,7 @@ function MiniGameCard({ game, participants }: { game: Game; participants: Record
       </div>
       <div className="border-t border-border/50" />
       <div className={`flex items-center justify-between px-1.5 py-1 ${
-        isComplete && game.winnerId === game.participant2Id ? 'bg-success/10' : ''
+        isComplete && game.winnerId === game.participant2Id ? 'bg-surface' : ''
       }`}>
         <div className="flex items-center gap-1 min-w-0">
           {p2?.seed ? <span className="text-text-muted text-[9px]">{p2.seed}</span> : null}
@@ -304,7 +304,7 @@ export function TournamentBracketView({ tournamentId, games: initialGames, parti
           {champion && (
             <div className="flex flex-col items-center justify-center shrink-0 ml-4" style={{ marginTop: totalHeight / 2 - 20 }}>
               <div className="text-[10px] text-text-muted uppercase tracking-wider mb-1">Champion</div>
-              <div className="border border-brand/30 bg-brand/10 rounded-lg px-4 py-2 text-center">
+              <div className="border border-brand/30 bg-surface rounded-lg px-4 py-2 text-center">
                 {champion.logoUrl && <img src={champion.logoUrl} alt="" className="w-8 h-8 mx-auto mb-1 object-contain" />}
                 <div className="text-sm font-semibold text-brand">{champion.name}</div>
               </div>
@@ -336,7 +336,7 @@ export function TournamentBracketView({ tournamentId, games: initialGames, parti
           {champion && (
             <div className="flex flex-col items-center justify-center" style={{ width: 100 }}>
               <p className="text-[9px] text-text-muted uppercase tracking-wider mb-1 whitespace-nowrap">Champion</p>
-              <div className="border border-brand/30 bg-brand/10 rounded-lg px-2 py-1.5 text-center">
+              <div className="border border-brand/30 bg-surface rounded-lg px-2 py-1.5 text-center">
                 {champion.logoUrl && <img src={champion.logoUrl} alt="" className="w-6 h-6 mx-auto mb-0.5 object-contain" />}
                 <div className="text-[10px] font-semibold text-brand leading-tight">{champion.shortName || champion.name}</div>
               </div>

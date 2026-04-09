@@ -445,7 +445,7 @@ export default function SettingsPage() {
                             setTzSearch('')
                           }}
                           className={`w-full text-left px-3 py-2 text-sm hover:bg-surface-subtle transition-colors ${
-                            tz === timezone ? 'text-brand-text font-medium bg-brand/10' : 'text-text-primary'
+                            tz === timezone ? 'text-brand-text font-medium bg-surface' : 'text-text-primary'
                           }`}
                         >
                           {tz.replace(/_/g, ' ')}

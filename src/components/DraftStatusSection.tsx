@@ -49,7 +49,7 @@ function DraftCountdown({ targetDate }: { targetDate: string }) {
   if (!timeLeft) return null
 
   return (
-    <div className="inline-flex items-center gap-2 bg-brand/10 border border-brand/30 rounded-lg px-3 py-1.5">
+    <div className="inline-flex items-center gap-2 bg-surface border border-brand/30 rounded-lg px-3 py-1.5">
       <span className="text-brand-text text-sm font-medium">Starts in</span>
       <span className="text-text-primary font-mono font-bold text-sm">{timeLeft}</span>
     </div>

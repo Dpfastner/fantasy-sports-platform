@@ -63,7 +63,7 @@ function LoginForm() {
 
         <form onSubmit={handleLogin} className="bg-surface rounded-lg p-8 shadow-lg">
           {error && (
-            <div className="bg-danger/10 border border-danger text-danger px-4 py-3 rounded-lg mb-6">
+            <div className="bg-surface border border-danger text-danger px-4 py-3 rounded-lg mb-6">
               {error}
             </div>
           )}

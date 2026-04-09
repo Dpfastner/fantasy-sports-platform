@@ -662,7 +662,7 @@ export default function CommissionerToolsPage() {
           {isCommissioner ? (
             <p className="text-text-secondary mb-6">Manage your league settings, draft, and members</p>
           ) : (
-            <div className="bg-info/10 border border-info/30 text-info-text px-4 py-3 rounded-lg mb-6 text-sm">
+            <div className="bg-surface border border-info/30 text-info-text px-4 py-3 rounded-lg mb-6 text-sm">
               You are viewing league settings in read-only mode. Only commissioners can edit these settings.
             </div>
           )}
@@ -675,13 +675,13 @@ export default function CommissionerToolsPage() {
           )}
 
           {error && (
-            <div className="bg-danger/10 border border-danger text-danger px-4 py-3 rounded-lg mb-6">
+            <div className="bg-surface border border-danger text-danger px-4 py-3 rounded-lg mb-6">
               {error}
             </div>
           )}
 
           {success && (
-            <div className="bg-success/10 border border-success text-success-text px-4 py-3 rounded-lg mb-6">
+            <div className="bg-surface border border-success text-success-text px-4 py-3 rounded-lg mb-6">
               {success}
             </div>
           )}

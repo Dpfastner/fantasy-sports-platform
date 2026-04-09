@@ -71,7 +71,7 @@ export default async function PoolDetailPage({ params }: PageProps) {
       event_tournaments(
         id, name, slug, sport, format, status,
         starts_at, ends_at, bracket_size, total_weeks,
-        config, rules_text
+        config, rules_text, rules_highlights
       )
     `)
     .eq('id', poolId)
@@ -92,6 +92,7 @@ export default async function PoolDetailPage({ params }: PageProps) {
     total_weeks: number | null
     config: Record<string, unknown> | null
     rules_text: string | null
+    rules_highlights: Array<{ icon: string; label: string; description: string }> | null
   }
 
   if (tournament.slug !== slug) notFound()
@@ -226,20 +227,28 @@ export default async function PoolDetailPage({ params }: PageProps) {
     }
   }
 
-  // For limited-mode roster pools, compute selection counts per participant
+  // Compute roster ownership counts per participant (for all roster pools, not just limited mode)
+  // Used both for limited-mode capping AND for ownership % display
   let rosterSelectionCounts: Record<string, number> = {}
+  let rosterTotalEntries = 0
   const poolScoringRules = (pool.scoring_rules || {}) as Record<string, unknown>
-  if (poolScoringRules.draft_mode === 'limited' && poolScoringRules.selection_cap) {
-    const { data: limitedPicks } = await admin
-      .from('event_picks')
-      .select('participant_id, entry_id')
-      .in('entry_id', (entries || []).map(e => e.id))
-      .is('game_id', null)
-      .is('week_number', null)
+  const effectivePoolFormat = pool.game_type || tournament.format
+  if (effectivePoolFormat === 'roster' && entries?.length) {
+    const submittedEntryIds = entries.filter(e => e.submitted_at).map(e => e.id)
+    rosterTotalEntries = submittedEntryIds.length
 
-    if (limitedPicks) {
-      for (const pick of limitedPicks) {
-        rosterSelectionCounts[pick.participant_id] = (rosterSelectionCounts[pick.participant_id] || 0) + 1
+    if (submittedEntryIds.length > 0) {
+      const { data: rosterOwnershipPicks } = await admin
+        .from('event_picks')
+        .select('participant_id')
+        .in('entry_id', submittedEntryIds)
+        .is('game_id', null)
+        .is('week_number', null)
+
+      if (rosterOwnershipPicks) {
+        for (const pick of rosterOwnershipPicks) {
+          rosterSelectionCounts[pick.participant_id] = (rosterSelectionCounts[pick.participant_id] || 0) + 1
+        }
       }
     }
   }
@@ -449,9 +458,11 @@ export default async function PoolDetailPage({ params }: PageProps) {
           isCreator={!!user && pool.created_by === user.id}
           userId={user?.id || null}
           rulesText={tournament.rules_text || null}
+          rulesHighlights={tournament.rules_highlights || null}
           hasFavoriteSchool={!!profile?.favorite_school_id}
           uniqueMembers={uniqueMembers}
           rosterSelectionCounts={Object.keys(rosterSelectionCounts).length > 0 ? rosterSelectionCounts : undefined}
+          rosterTotalEntries={rosterTotalEntries}
           allRosterPicks={Object.keys(allRosterPicks).length > 0 ? allRosterPicks : undefined}
         />
       </main>

@@ -204,8 +204,8 @@ export default function AdminScoresPage() {
           <div
             className={`rounded-lg p-4 mb-6 text-sm ${
               message.type === 'success'
-                ? 'bg-success/10 text-success border border-success/20'
-                : 'bg-danger/10 text-danger border border-danger/20'
+                ? 'bg-surface text-success border border-success/20'
+                : 'bg-surface text-danger border border-danger/20'
             }`}
           >
             {message.text}
@@ -244,7 +244,7 @@ export default function AdminScoresPage() {
                   <div
                     key={game.id}
                     className={`grid grid-cols-[1fr_80px_auto_80px_1fr_120px_auto] gap-2 px-4 py-3 items-center ${
-                      isEdited ? 'bg-warning/5' : ''
+                      isEdited ? 'bg-surface' : ''
                     }`}
                   >
                     {/* Away team */}

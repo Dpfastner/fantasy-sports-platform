@@ -483,7 +483,7 @@ export default async function TeamViewPage({ params }: PageProps) {
 
         {/* Deleted team banner */}
         {team.is_deleted && (
-          <div className="bg-warning/10 border border-warning/30 rounded-lg px-4 py-3 mb-4">
+          <div className="bg-surface border border-warning/30 rounded-lg px-4 py-3 mb-4">
             <p className="text-warning-text text-sm font-medium">
               This team&apos;s owner has left the league. Their roster is frozen.
             </p>

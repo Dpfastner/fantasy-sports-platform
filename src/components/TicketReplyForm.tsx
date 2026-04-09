@@ -52,7 +52,7 @@ export default function TicketReplyForm({
   return (
     <form onSubmit={handleSubmit} className="border-t border-border p-4">
       {error && (
-        <div className="mb-3 px-3 py-2 bg-danger/10 border border-danger/20 rounded-lg text-danger-text text-sm">
+        <div className="mb-3 px-3 py-2 bg-danger-subtle border border-danger/20 rounded-lg text-danger-text text-sm">
           {error}
         </div>
       )}

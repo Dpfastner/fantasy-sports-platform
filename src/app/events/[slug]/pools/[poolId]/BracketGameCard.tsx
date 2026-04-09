@@ -82,8 +82,8 @@ export function BracketGameCard({
           ${slot === 1 ? 'rounded-t-md border-b border-border/50' : 'rounded-b-md'}
           ${eliminated ? 'opacity-45' : ''}
           ${isPicked && !isFinal && !eliminated ? 'bg-brand/15 text-brand' : ''}
-          ${isWinner ? 'bg-success/10' : ''}
-          ${isFinal && pid === pickedId && !isWinner ? 'bg-danger/10' : ''}
+          ${isWinner ? 'bg-surface' : ''}
+          ${isFinal && pid === pickedId && !isWinner ? 'bg-surface' : ''}
           ${isClickable ? 'hover:bg-surface-subtle cursor-pointer' : 'cursor-default'}
           disabled:cursor-default
         `}
@@ -152,7 +152,7 @@ export function BracketGameCard({
     >
       {/* Live badge */}
       {isLive && (
-        <div className="flex items-center justify-between px-2 py-0.5 bg-danger/10 border-b border-danger/20">
+        <div className="flex items-center justify-between px-2 py-0.5 bg-surface border-b border-danger/20">
           <span className="text-[10px] font-semibold text-danger-text uppercase flex items-center gap-1">
             <span className="w-1.5 h-1.5 rounded-full bg-danger-text animate-pulse" />
             Live
@@ -183,7 +183,7 @@ export function BracketGameCard({
       {/* Points badge for completed games */}
       {isFinal && pickedId && (
         <div className={`text-center text-[10px] py-0.5 border-t ${
-          isCorrect ? 'bg-success/10 text-success-text border-success/20' : 'bg-danger/10 text-danger-text border-danger/20'
+          isCorrect ? 'bg-surface text-success-text border-success/20' : 'bg-surface text-danger-text border-danger/20'
         }`}>
           {isCorrect ? `+${roundPoints} pts` : '+0 pts'}
         </div>

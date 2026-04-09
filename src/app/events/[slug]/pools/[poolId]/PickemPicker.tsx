@@ -222,7 +222,7 @@ export function PickemPicker({
       </div>
 
       {isLocked && (
-        <div className="bg-warning/10 border border-warning/20 rounded-lg p-3 mb-4 text-sm text-warning-text">
+        <div className="bg-warning-subtle border border-warning/20 rounded-lg p-3 mb-4 text-sm text-warning-text">
           This pool is locked. Picks can no longer be changed.
         </div>
       )}
@@ -277,9 +277,9 @@ export function PickemPicker({
                           picked === p1?.id
                             ? winnerId
                               ? winnerId === p1?.id
-                                ? 'bg-success/10'
-                                : 'bg-danger/10'
-                              : 'bg-brand/10'
+                                ? 'bg-surface'
+                                : 'bg-surface'
+                              : 'bg-surface'
                             : 'hover:bg-surface-subtle'
                         }`}
                       >
@@ -311,9 +311,9 @@ export function PickemPicker({
                           picked === p2?.id
                             ? winnerId
                               ? winnerId === p2?.id
-                                ? 'bg-success/10'
-                                : 'bg-danger/10'
-                              : 'bg-brand/10'
+                                ? 'bg-surface'
+                                : 'bg-surface'
+                              : 'bg-surface'
                             : 'hover:bg-surface-subtle'
                         }`}
                       >

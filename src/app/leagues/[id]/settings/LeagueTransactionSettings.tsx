@@ -151,7 +151,7 @@ export function LeagueTransactionSettings({
                   .map(i => i.schools?.name || 'Unknown')
 
                 return (
-                  <div key={trade.id} className={`p-4 rounded-lg border ${isVetoed ? 'bg-danger/5 border-danger/20' : 'bg-surface-inset border-border'}`}>
+                  <div key={trade.id} className={`p-4 rounded-lg border ${isVetoed ? 'bg-surface border-danger/20' : 'bg-surface-inset border-border'}`}>
                     <div className="flex items-center justify-between gap-4 flex-wrap">
                       <div className="text-sm">
                         <span className="font-medium text-text-primary">{proposer}</span>

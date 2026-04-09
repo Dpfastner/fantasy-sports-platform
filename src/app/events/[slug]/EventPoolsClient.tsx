@@ -250,7 +250,7 @@ export function EventPoolsClient({
                       }}
                       className={`flex-1 text-sm py-1.5 rounded-md border transition-colors ${
                         gameType === gt
-                          ? 'border-brand bg-brand/10 text-brand'
+                          ? 'border-brand bg-surface text-brand'
                           : 'border-border text-text-muted hover:text-text-secondary'
                       }`}
                     >
@@ -278,7 +278,7 @@ export function EventPoolsClient({
                       onClick={() => setDraftMode(opt.value)}
                       className={`text-left text-xs py-2 px-3 rounded-md border transition-colors ${
                         draftMode === opt.value
-                          ? 'border-brand bg-brand/10 text-brand'
+                          ? 'border-brand bg-surface text-brand'
                           : 'border-border text-text-muted hover:text-text-secondary'
                       }`}
                     >
@@ -316,7 +316,7 @@ export function EventPoolsClient({
                     onClick={() => setVisibility('private')}
                     className={`flex-1 text-sm py-1.5 rounded-md border transition-colors ${
                       visibility === 'private'
-                        ? 'border-brand bg-brand/10 text-brand'
+                        ? 'border-brand bg-surface text-brand'
                         : 'border-border text-text-muted hover:text-text-secondary'
                     }`}
                   >
@@ -327,7 +327,7 @@ export function EventPoolsClient({
                     onClick={() => setVisibility('public')}
                     className={`flex-1 text-sm py-1.5 rounded-md border transition-colors ${
                       visibility === 'public'
-                        ? 'border-brand bg-brand/10 text-brand'
+                        ? 'border-brand bg-surface text-brand'
                         : 'border-border text-text-muted hover:text-text-secondary'
                     }`}
                   >
@@ -437,7 +437,7 @@ export function EventPoolsClient({
                       </span>
                     )}
                     {pool.game_type && isMultiFormat && (
-                      <span className="shrink-0 text-xs font-medium px-1.5 py-0.5 rounded-full bg-brand/10 text-brand">
+                      <span className="shrink-0 text-xs font-medium px-1.5 py-0.5 rounded-full bg-surface text-brand">
                         {formatLabel[pool.game_type] || pool.game_type}
                       </span>
                     )}

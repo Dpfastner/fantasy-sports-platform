@@ -352,7 +352,7 @@ export function PlayoffBracket({ seasonId, rosterSchoolIds = [], leagueId }: Pro
       <div
         className={`flex items-center gap-2 p-2 ${
           team.isWinner ? 'bg-success/20 border-success' :
-          team.isOnRoster ? 'bg-info/10 border-info' :
+          team.isOnRoster ? 'bg-surface border-info' :
           'bg-surface-inset border-border'
         } border-l-2`}
       >
@@ -490,7 +490,7 @@ export function PlayoffBracket({ seasonId, rosterSchoolIds = [], leagueId }: Pro
 
       {/* Roster Schools in Playoffs Summary */}
       {rosterSchoolsInfo.length > 0 && (
-        <div className="mb-6 p-4 bg-info/10 border border-info/30 rounded-lg">
+        <div className="mb-6 p-4 bg-surface border border-info/30 rounded-lg">
           <div className="flex items-center gap-2 mb-3">
             <span className="text-info-text font-medium">Your Schools in the Playoffs</span>
             <span className="bg-info text-text-primary text-xs font-bold px-2 py-0.5 rounded-full">

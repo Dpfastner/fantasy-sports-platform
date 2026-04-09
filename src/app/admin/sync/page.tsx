@@ -290,7 +290,7 @@ export default function SyncPage() {
 
         {/* Error Display */}
         {error && (
-          <div className="bg-danger/10 border border-danger text-danger-text px-4 py-3 rounded-lg mb-6">
+          <div className="bg-surface border border-danger text-danger-text px-4 py-3 rounded-lg mb-6">
             {error}
           </div>
         )}
@@ -302,7 +302,7 @@ export default function SyncPage() {
 
             {/* Skipped notice */}
             {result.skipped && (
-              <div className="bg-warning/10 border border-warning text-warning-text px-4 py-3 rounded-lg mb-4">
+              <div className="bg-surface border border-warning text-warning-text px-4 py-3 rounded-lg mb-4">
                 Sync skipped: {result.reason}
               </div>
             )}

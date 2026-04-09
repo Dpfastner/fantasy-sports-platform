@@ -113,8 +113,8 @@ export function BadgeAdminTable({ commissioners, badgeDefinitions }: BadgeAdminT
       {message && (
         <div className={`mb-4 px-4 py-3 rounded-lg ${
           message.type === 'success'
-            ? 'bg-success/10 border border-success text-success-text'
-            : 'bg-danger/10 border border-danger text-danger-text'
+            ? 'bg-surface border border-success text-success-text'
+            : 'bg-surface border border-danger text-danger-text'
         }`}>
           {message.text}
         </div>
@@ -275,7 +275,7 @@ export function BadgeAdminTable({ commissioners, badgeDefinitions }: BadgeAdminT
                             <button
                               onClick={() => handleRevoke(c.userId, b.id)}
                               disabled={isLoading}
-                              className="px-1 py-0.5 text-[10px] rounded bg-danger/10 hover:bg-danger/20 text-danger-text transition-colors disabled:opacity-50"
+                              className="px-1 py-0.5 text-[10px] rounded bg-surface hover:bg-danger/20 text-danger-text transition-colors disabled:opacity-50"
                               title={`Revoke ${b.badge_definitions.label}`}
                             >
                               x

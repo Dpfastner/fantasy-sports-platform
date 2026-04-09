@@ -459,7 +459,7 @@ export default async function DashboardPage() {
       {/* Error Banner */}
       {queryFailed && (
         <div className="container mx-auto px-4 pt-4">
-          <div className="bg-danger/10 border border-danger text-danger-text px-4 py-3 rounded-lg">
+          <div className="bg-surface border border-danger text-danger-text px-4 py-3 rounded-lg">
             Something went wrong loading your data. Try refreshing the page. If the problem persists, check your internet connection.
           </div>
         </div>

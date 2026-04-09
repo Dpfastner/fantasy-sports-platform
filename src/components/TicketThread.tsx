@@ -43,7 +43,7 @@ export default function TicketThread({ responses, currentUserId }: TicketThreadP
             <div
               className={`max-w-[80%] rounded-lg px-4 py-3 ${
                 r.is_admin
-                  ? 'bg-brand/10 border border-brand/20'
+                  ? 'bg-brand-subtle border border-brand/20'
                   : 'bg-surface border border-border'
               }`}
             >

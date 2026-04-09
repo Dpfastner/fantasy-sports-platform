@@ -324,7 +324,7 @@ export function NotificationBell({ userId }: NotificationBellProps) {
                     onClick={() => handleClickNotification(notification)}
                     className={`w-full text-left px-4 py-3 border-b border-border last:border-b-0 transition-colors ${
                       href ? 'hover:bg-surface-subtle cursor-pointer' : 'cursor-default'
-                    } ${isUnread ? 'bg-brand/5' : ''}`}
+                    } ${isUnread ? 'bg-surface' : ''}`}
                   >
                     <div className="flex gap-3">
                       <span className="text-base shrink-0 mt-0.5">

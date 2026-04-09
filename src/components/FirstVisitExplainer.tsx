@@ -36,7 +36,7 @@ export function FirstVisitExplainer({ leagueId }: FirstVisitExplainerProps) {
   if (!visible) return null
 
   return (
-    <div className="bg-brand/10 border border-brand/30 rounded-lg px-4 py-3 mb-4 flex items-start gap-3">
+    <div className="bg-surface border border-brand/30 rounded-lg px-4 py-3 mb-4 flex items-start gap-3">
       <p className="text-text-secondary text-sm flex-1">
         <span className="text-text-primary font-medium">How it works:</span>{' '}
         You drafted college programs. They score points from real games every Saturday. Highest total score wins the season. That&apos;s it.

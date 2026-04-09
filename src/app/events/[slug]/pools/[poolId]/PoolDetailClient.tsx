@@ -10,6 +10,9 @@ import { Leaderboard } from './Leaderboard'
 import { RosterLeaderboard } from './RosterLeaderboard'
 import { PoolActivityFeed } from './PoolActivityFeed'
 import { PoolAnnouncements } from './PoolAnnouncements'
+import { TournamentCountdown } from '@/components/TournamentCountdown'
+import { RulesHighlights } from '@/components/RulesHighlights'
+import { RosterOwnership } from '@/components/RosterOwnership'
 import { EntryAvatar } from '@/components/EntryAvatar'
 import { ScheduleView } from './ScheduleView'
 import { ShareButton } from '@/components/ShareButton'
@@ -128,9 +131,11 @@ interface PoolDetailClientProps {
   isCreator: boolean
   userId: string | null
   rulesText: string | null
+  rulesHighlights: Array<{ icon: string; label: string; description: string }> | null
   hasFavoriteSchool: boolean
   uniqueMembers: Member[]
   rosterSelectionCounts?: Record<string, number>
+  rosterTotalEntries?: number
   /** All submitted entries' roster picks: entryId → participantIds */
   allRosterPicks?: Record<string, string[]>
 }
@@ -150,9 +155,11 @@ export function PoolDetailClient({
   isCreator,
   userId,
   rulesText,
+  rulesHighlights,
   hasFavoriteSchool,
   uniqueMembers,
   rosterSelectionCounts,
+  rosterTotalEntries,
   allRosterPicks,
 }: PoolDetailClientProps) {
   const searchParams = useSearchParams()
@@ -372,7 +379,7 @@ export function PoolDetailClient({
 
       {/* Not a member — join button or post-join school prompt */}
       {isLoggedIn && !hasAnyEntry && pool.status === 'open' && !showSchoolPrompt && (
-        <div className="bg-brand/5 border border-brand/20 rounded-lg p-5 mb-6 text-center">
+        <div className="bg-surface border-2 border-brand rounded-lg p-5 mb-6 text-center">
           <p className="text-text-secondary text-sm mb-3">You&apos;re not in this pool yet.</p>
           <button
             onClick={async () => {
@@ -405,8 +412,8 @@ export function PoolDetailClient({
       )}
 
       {showSchoolPrompt && (
-        <div className="bg-brand/5 border border-brand/20 rounded-lg p-5 mb-6 text-center">
-          <h3 className="text-base font-semibold text-text-primary mb-1">You&apos;re in! Rep your school?</h3>
+        <div className="bg-surface border-2 border-brand rounded-lg p-5 mb-6 text-center">
+          <h3 className="text-base font-semibold text-brand mb-1">You&apos;re in! Rep your school?</h3>
           <p className="text-text-secondary text-sm mb-4">Pick your alma mater or favorite school to join the Fan Zone.</p>
           <div className="max-w-sm mx-auto text-left">
             <SchoolPicker value={selectedSchoolId} onChange={setSelectedSchoolId} label="Pick your school" />
@@ -445,12 +452,12 @@ export function PoolDetailClient({
 
       {/* Start Your Bracket CTA — shown when member hasn't submitted picks */}
       {activeEntry && !activeEntry.submittedAt && pool.status === 'open' && activeTab !== 'picks' && (
-        <div className="bg-brand/5 border border-brand/20 rounded-lg p-5 mb-6 text-center">
-          <h3 className="brand-h3 text-base text-text-primary mb-1">
+        <div className="bg-surface border-2 border-brand rounded-lg p-5 mb-6 text-center">
+          <h3 className="brand-h3 text-base text-brand mb-1">
             {effectiveFormat === 'bracket' ? 'Fill out your bracket!' :
              effectiveFormat === 'roster' ? 'Build your roster!' : 'Make your picks!'}
           </h3>
-          <p className="text-text-muted text-sm mb-3">
+          <p className="text-text-secondary text-sm mb-3">
             {pool.deadline
               ? `${effectiveFormat === 'roster' ? 'Rosters' : 'Picks'} lock ${new Date(pool.deadline).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}`
               : `${effectiveFormat === 'roster' ? 'Rosters' : 'Picks'} lock at first tee time`
@@ -466,8 +473,14 @@ export function PoolDetailClient({
         </div>
       )}
 
-      {/* Rules (collapsible) */}
-      {rulesText && (
+      {/* Rules — structured highlights (with optional full markdown fallback) */}
+      {rulesHighlights && rulesHighlights.length > 0 ? (
+        <RulesHighlights
+          highlights={rulesHighlights}
+          rulesText={rulesText}
+          tournamentName={tournament.name}
+        />
+      ) : rulesText && (
         <div className="mb-6">
           <button
             onClick={() => setShowRules(!showRules)}
@@ -539,6 +552,15 @@ export function PoolDetailClient({
       {/* Tab Content */}
       {activeTab === 'overview' && (
         <div className="space-y-6">
+          {/* Countdown to tournament start */}
+          {tournament.startsAt && new Date(tournament.startsAt).getTime() > Date.now() && (
+            <TournamentCountdown
+              startsAt={tournament.startsAt}
+              label="Tournament starts in"
+              tournamentName={tournament.name}
+            />
+          )}
+
           {/* Announcements */}
           <PoolAnnouncements poolId={pool.id} isCreator={isCreator} />
 
@@ -566,6 +588,14 @@ export function PoolDetailClient({
           )}
           </ErrorBoundary>
 
+          {/* Roster Ownership — for roster pools with picks */}
+          {effectiveFormat === 'roster' && rosterSelectionCounts && rosterTotalEntries !== undefined && (
+            <RosterOwnership
+              participants={participants}
+              selectionCounts={rosterSelectionCounts}
+              totalEntries={rosterTotalEntries}
+            />
+          )}
 
           {/* Activity Feed */}
           <ErrorBoundary sectionName="Activity Feed">
@@ -598,7 +628,7 @@ export function PoolDetailClient({
                   onClick={() => setActiveEntryIndex(i)}
                   className={`flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-md border whitespace-nowrap transition-colors ${
                     i === activeEntryIndex
-                      ? 'border-brand bg-brand/10 text-brand'
+                      ? 'border-brand bg-surface text-brand'
                       : 'border-border text-text-muted hover:text-text-secondary'
                   }`}
                 >
@@ -642,6 +672,7 @@ export function PoolDetailClient({
             members={members}
             isCreator={isCreator}
             rosterSelectionCounts={rosterSelectionCounts}
+            rosterTotalEntries={rosterTotalEntries}
           />
         </div>
       )}

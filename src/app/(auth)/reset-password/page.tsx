@@ -106,7 +106,7 @@ export default function ResetPasswordPage() {
         <div className="bg-surface rounded-lg p-8 shadow-lg">
           {!hasSession && !checking ? (
             <div>
-              <div className="bg-danger/10 border border-danger text-danger px-4 py-3 rounded-lg mb-6">
+              <div className="bg-surface border border-danger text-danger px-4 py-3 rounded-lg mb-6">
                 Invalid or expired reset link. Please request a new one.
               </div>
               <Link
@@ -119,7 +119,7 @@ export default function ResetPasswordPage() {
           ) : (
             <form onSubmit={handleSubmit}>
               {error && (
-                <div className="bg-danger/10 border border-danger text-danger px-4 py-3 rounded-lg mb-6">
+                <div className="bg-surface border border-danger text-danger px-4 py-3 rounded-lg mb-6">
                   {error}
                 </div>
               )}

@@ -217,7 +217,7 @@ export function DraftChat({ draftId, leagueId, currentUserId, onNewMessage }: Dr
 
       {/* Error display */}
       {error && (
-        <div className="mx-2 mb-1 p-1.5 bg-danger/10 border border-danger rounded text-danger text-[10px]">
+        <div className="mx-2 mb-1 p-1.5 bg-surface border border-danger rounded text-danger text-[10px]">
           {error}
         </div>
       )}

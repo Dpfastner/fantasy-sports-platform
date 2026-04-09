@@ -277,7 +277,7 @@ export function ChatInput({ channelType, channelEntityId, currentUserId, current
       )}
 
       {error && (
-        <div className="mx-3 mt-2 p-2 bg-danger/10 border border-danger rounded text-danger text-xs">
+        <div className="mx-3 mt-2 p-2 bg-surface border border-danger rounded text-danger text-xs">
           {error}
         </div>
       )}
