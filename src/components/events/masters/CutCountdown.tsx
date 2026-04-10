@@ -12,8 +12,10 @@ interface CutCountdownProps {
   participants: Participant[]
   allRosterPicks?: Record<string, string[]>
   myRosterPickIds?: string[]
-  /** ISO timestamp of expected cut time. Defaults to Masters 2026 Friday 6pm ET. */
+  /** ISO timestamp of the cut (end of Round 2). */
   cutTime?: string
+  /** ISO timestamp of the champion (end of Round 4). */
+  championTime?: string
 }
 
 interface TimeLeft {
@@ -34,35 +36,49 @@ function calculateTimeLeft(target: number): TimeLeft | null {
   }
 }
 
-// Masters 2026: cut is made after Round 2, Friday ~6pm ET
-const MASTERS_2026_CUT_TIME = '2026-04-11T22:00:00Z'
+// Masters 2026 defaults
+const MASTERS_2026_CUT_TIME = '2026-04-11T22:00:00Z'       // Friday ~6pm ET
+const MASTERS_2026_CHAMPION_TIME = '2026-04-13T23:00:00Z'   // Sunday ~7pm ET
 
 /**
- * Pre-cut: countdown timer to the cut.
- * Post-cut: banner showing which rostered golfers survived.
+ * Multi-mode countdown for Masters tournaments:
+ *
+ * 1. Pre-cut (Round 1-2): Countdown to the cut.
+ * 2. Post-cut banner: "X of Y survived."
+ * 3. Post-cut + pre-champion: Countdown to the champion.
+ *
+ * Both countdowns persist for future events — just pass different times.
  */
 export function CutCountdown({
   participants,
   allRosterPicks,
   myRosterPickIds,
   cutTime = MASTERS_2026_CUT_TIME,
+  championTime = MASTERS_2026_CHAMPION_TIME,
 }: CutCountdownProps) {
-  const target = new Date(cutTime).getTime()
-  const [timeLeft, setTimeLeft] = useState<TimeLeft | null>(() => calculateTimeLeft(target))
+  const cutTarget = new Date(cutTime).getTime()
+  const champTarget = new Date(championTime).getTime()
+
+  const [cutTimeLeft, setCutTimeLeft] = useState<TimeLeft | null>(() => calculateTimeLeft(cutTarget))
+  const [champTimeLeft, setChampTimeLeft] = useState<TimeLeft | null>(() => calculateTimeLeft(champTarget))
 
   useEffect(() => {
-    const tick = () => setTimeLeft(calculateTimeLeft(target))
+    const tick = () => {
+      setCutTimeLeft(calculateTimeLeft(cutTarget))
+      setChampTimeLeft(calculateTimeLeft(champTarget))
+    }
     tick()
     const interval = setInterval(tick, 1000)
     return () => clearInterval(interval)
-  }, [target])
+  }, [cutTarget, champTarget])
 
-  // Detect if cut has been made (any participant has status === 'cut')
+  // Detect if cut has been made
   const hasCut = participants.some(
     p => String((p.metadata as Record<string, unknown>)?.status || '') === 'cut'
   )
+  const cutCountdownExpired = !cutTimeLeft
 
-  // Get all unique rostered participant IDs across all entries
+  // Get all unique rostered participant IDs
   const rosteredIds = useMemo(() => {
     if (myRosterPickIds && myRosterPickIds.length > 0) return new Set(myRosterPickIds)
     if (!allRosterPicks) return new Set<string>()
@@ -90,78 +106,125 @@ export function CutCountdown({
     return { survived, cut, total: survived.length + cut.length }
   }, [hasCut, participants, rosteredIds])
 
-  // Post-cut mode
-  if (hasCut && cutResults) {
-    return (
-      <div className="bg-tertiary border-l-4 border-brand rounded-lg p-4 mb-4">
-        <div className="text-xs text-card-text-muted uppercase tracking-wider mb-2">
-          The Cut Has Been Made
-        </div>
-        <div className="text-lg font-bold text-text-inverse mb-2">
-          {cutResults.survived.length} of {cutResults.total} rostered picks survived
-        </div>
-        <div className="flex flex-wrap gap-2">
-          {cutResults.survived.map(g => (
-            <span key={g.id} className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-full bg-success/20 text-success-text">
-              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
-              </svg>
-              {g.name}
-            </span>
-          ))}
-          {cutResults.cut.map(g => (
-            <span key={g.id} className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-full bg-danger/20 text-danger-text">
-              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-              </svg>
-              {g.name}
-            </span>
-          ))}
-        </div>
-      </div>
-    )
-  }
+  // Determine current round label
+  const currentRound = useMemo(() => {
+    let maxRound = 0
+    for (const p of participants) {
+      const meta = (p.metadata || {}) as Record<string, unknown>
+      const cr = meta.current_round as number | undefined
+      if (cr && cr > maxRound) maxRound = cr
+    }
+    return maxRound || null
+  }, [participants])
 
-  // Pre-cut mode: countdown timer
-  if (!timeLeft) {
-    // Countdown expired but cut hasn't been detected yet — waiting for data
-    return (
-      <div className="bg-tertiary border-l-4 border-warning rounded-lg p-4 mb-4">
-        <div className="text-center">
-          <div className="text-xs text-card-text-muted uppercase tracking-wider mb-1">
-            Awaiting the cut...
-          </div>
-          <div className="text-sm text-text-inverse">
-            Round 2 is wrapping up. The cut line will appear once scores are final.
-          </div>
-        </div>
-      </div>
-    )
-  }
+  const roundLabel = currentRound
+    ? currentRound === 1 ? 'Round 1' : currentRound === 2 ? 'Round 2' : currentRound === 3 ? 'Moving Day' : 'Championship Sunday'
+    : null
+
+  // Decide which countdown to show
+  const showCutCountdown = !hasCut && !cutCountdownExpired
+  const showCutWaiting = !hasCut && cutCountdownExpired
+  const showChampionCountdown = (hasCut || cutCountdownExpired) && champTimeLeft
 
   return (
-    <div className="bg-tertiary border-l-4 border-brand rounded-lg p-4 mb-4">
-      <div className="text-center">
-        <div className="text-xs text-card-text-muted uppercase tracking-wider mb-1 flex items-center justify-center gap-1.5">
-          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M7.848 8.25l1.536.887M7.848 8.25a3 3 0 11-5.196-3 3 3 0 015.196 3zm1.536.887a2.165 2.165 0 011.083 1.839c.005.351.054.695.14 1.024M9.384 9.137l2.077 1.199M7.848 15.75l1.536-.887m-1.536.887a3 3 0 11-5.196 3 3 3 0 015.196-3zm1.536-.887a2.165 2.165 0 001.083-1.838c.005-.352.054-.696.14-1.025m-1.223 2.863l2.077-1.199m0-3.328a4.323 4.323 0 012.068-1.379l5.325-1.628a4.5 4.5 0 012.48-.044l.803.215-7.794 4.5m-2.882-1.664A4.331 4.331 0 0010.607 12m3.736 0l7.794 4.5-.802.215a4.5 4.5 0 01-2.48-.043l-5.326-1.629a4.324 4.324 0 01-2.068-1.379M14.343 12l-2.882 1.664" />
-          </svg>
-          Time until the cut
-        </div>
-        <div className="flex items-center justify-center gap-3 sm:gap-4">
-          {timeLeft.days > 0 && (
-            <>
-              <TimeUnit value={timeLeft.days} label="days" />
+    <div className="space-y-3">
+      {/* Cut Countdown (pre-cut, before Friday) */}
+      {showCutCountdown && cutTimeLeft && (
+        <div className="bg-[#FAF6EE] border border-[#E8C96A]/40 rounded-lg p-4">
+          <div className="text-center">
+            <div className="text-[10px] uppercase tracking-[.2em] text-[#8B7355] mb-1.5 flex items-center justify-center gap-1.5">
+              <svg className="w-3.5 h-3.5 text-[#C9A84C]" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M7.848 8.25l1.536.887M7.848 8.25a3 3 0 11-5.196-3 3 3 0 015.196 3zm1.536.887a2.165 2.165 0 011.083 1.839c.005.351.054.695.14 1.024M9.384 9.137l2.077 1.199M7.848 15.75l1.536-.887m-1.536.887a3 3 0 11-5.196 3 3 3 0 015.196-3zm1.536-.887a2.165 2.165 0 001.083-1.838c.005-.352.054-.696.14-1.025m-1.223 2.863l2.077-1.199m0-3.328a4.323 4.323 0 012.068-1.379l5.325-1.628a4.5 4.5 0 012.48-.044l.803.215-7.794 4.5m-2.882-1.664A4.331 4.331 0 0010.607 12m3.736 0l7.794 4.5-.802.215a4.5 4.5 0 01-2.48-.043l-5.326-1.629a4.324 4.324 0 01-2.068-1.379M14.343 12l-2.882 1.664" />
+              </svg>
+              Time until the cut
+            </div>
+            <div className="flex items-center justify-center gap-3 sm:gap-4">
+              {cutTimeLeft.days > 0 && (
+                <>
+                  <TimeUnit value={cutTimeLeft.days} label="days" />
+                  <TimeDivider />
+                </>
+              )}
+              <TimeUnit value={cutTimeLeft.hours} label="hours" />
               <TimeDivider />
-            </>
-          )}
-          <TimeUnit value={timeLeft.hours} label="hours" />
-          <TimeDivider />
-          <TimeUnit value={timeLeft.minutes} label="min" />
-          <TimeDivider />
-          <TimeUnit value={timeLeft.seconds} label="sec" />
+              <TimeUnit value={cutTimeLeft.minutes} label="min" />
+              <TimeDivider />
+              <TimeUnit value={cutTimeLeft.seconds} label="sec" />
+            </div>
+          </div>
         </div>
-      </div>
+      )}
+
+      {/* Waiting for cut data */}
+      {showCutWaiting && (
+        <div className="bg-[#FAF6EE] border border-[#E8C96A]/40 rounded-lg p-4">
+          <div className="text-center">
+            <div className="text-[10px] uppercase tracking-[.2em] text-[#8B7355] mb-1">
+              Awaiting the cut...
+            </div>
+            <div className="text-sm text-[#1a1a1a]">
+              Round 2 is wrapping up. The cut line will appear once scores are final.
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Post-cut survival banner */}
+      {hasCut && cutResults && (
+        <div className="bg-[#FAF6EE] border border-[#E8C96A]/40 rounded-lg p-4">
+          <div className="text-[10px] uppercase tracking-[.2em] text-[#8B7355] mb-2">
+            The Cut Has Been Made
+          </div>
+          <div className="text-base font-bold text-[#1a1a1a] mb-2">
+            {cutResults.survived.length} of {cutResults.total} rostered picks survived
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {cutResults.survived.map(g => (
+              <span key={g.id} className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-full bg-success/20 text-success-text">
+                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                </svg>
+                {g.name}
+              </span>
+            ))}
+            {cutResults.cut.map(g => (
+              <span key={g.id} className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-full bg-danger/20 text-danger-text">
+                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+                {g.name}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Champion Countdown (post-cut or when cut countdown expired) */}
+      {showChampionCountdown && champTimeLeft && (
+        <div className="bg-[#FAF6EE] border border-[#E8C96A]/40 rounded-lg p-4">
+          <div className="text-center">
+            <div className="text-[10px] uppercase tracking-[.2em] text-[#8B7355] mb-1.5 flex items-center justify-center gap-1.5">
+              <svg className="w-3.5 h-3.5 text-[#C9A84C]" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M5 3h14l-1.5 5H6.5L5 3zm1.5 7h11l-.75 2.5H7.25L6.5 10zm1.5 4.5h8l-.5 1.5H8.5L8 14.5zM10 18h4v3h-4v-3z" />
+              </svg>
+              {roundLabel ? `${roundLabel} · ` : ''}Countdown to the Champion
+            </div>
+            <div className="flex items-center justify-center gap-3 sm:gap-4">
+              {champTimeLeft.days > 0 && (
+                <>
+                  <TimeUnit value={champTimeLeft.days} label="days" />
+                  <TimeDivider />
+                </>
+              )}
+              <TimeUnit value={champTimeLeft.hours} label="hours" />
+              <TimeDivider />
+              <TimeUnit value={champTimeLeft.minutes} label="min" />
+              <TimeDivider />
+              <TimeUnit value={champTimeLeft.seconds} label="sec" />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
@@ -169,10 +232,10 @@ export function CutCountdown({
 function TimeUnit({ value, label }: { value: number; label: string }) {
   return (
     <div className="flex flex-col items-center">
-      <span className="text-xl sm:text-2xl font-bold text-text-inverse tabular-nums leading-none">
+      <span className="text-xl sm:text-2xl font-bold text-[#1a1a1a] tabular-nums leading-none">
         {String(value).padStart(2, '0')}
       </span>
-      <span className="text-[9px] sm:text-[10px] text-card-text-muted uppercase tracking-wider mt-0.5">
+      <span className="text-[9px] sm:text-[10px] text-[#8B7355] uppercase tracking-wider mt-0.5">
         {label}
       </span>
     </div>
@@ -180,5 +243,5 @@ function TimeUnit({ value, label }: { value: number; label: string }) {
 }
 
 function TimeDivider() {
-  return <span className="text-xl sm:text-2xl font-bold text-brand/40">:</span>
+  return <span className="text-xl sm:text-2xl font-bold text-[#C9A84C]/50">:</span>
 }
