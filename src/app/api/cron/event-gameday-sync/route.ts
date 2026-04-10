@@ -517,20 +517,12 @@ export async function GET(request: Request) {
               if (roundsByNum[2]?.length === 18) r2 = roundsByNum[2].reduce((a, b) => a + b, 0)
               if (roundsByNum[3]?.length === 18) r3 = roundsByNum[3].reduce((a, b) => a + b, 0)
               if (roundsByNum[4]?.length === 18) r4 = roundsByNum[4].reduce((a, b) => a + b, 0)
-            } else if (golfer?.roundScores) {
-              // Legacy fallback: trust ESPN scoreboard but clamp to a sane range
-              if (isValidRoundScore(golfer.roundScores[0])) r1 = golfer.roundScores[0]
-              if (isValidRoundScore(golfer.roundScores[1])) r2 = golfer.roundScores[1]
-              if (isValidRoundScore(golfer.roundScores[2])) r3 = golfer.roundScores[2]
-              if (isValidRoundScore(golfer.roundScores[3])) r4 = golfer.roundScores[3]
             }
-
-            // Defensive scrub: drop any out-of-range values that may have leaked
-            // in from existingMeta (e.g. mid-round partial totals from earlier syncs)
-            if (!isValidRoundScore(r1)) r1 = null
-            if (!isValidRoundScore(r2)) r2 = null
-            if (!isValidRoundScore(r3)) r3 = null
-            if (!isValidRoundScore(r4)) r4 = null
+            // Legacy Site API fallback intentionally does NOT write r1-r4.
+            // Only the Core API 18-hole-complete path above sets round scores.
+            // The Site API reports partial mid-round running totals (28, 60, 68)
+            // that are indistinguishable from final round scores and have caused
+            // cascading display bugs every time we tried to use them.
 
             // Compute score_to_par from raw round strokes — ESPN's
             // golfer.score displayValue is unreliable (it sometimes reports
