@@ -504,7 +504,7 @@ export async function GET(request: Request) {
 
             // Sanity range for a real golf round at a tour-level course
             const isValidRoundScore = (s: unknown): s is number =>
-              typeof s === 'number' && s >= 60 && s <= 100
+              typeof s === 'number' && s >= 64 && s <= 100
 
             if (live?.holes && live.holes.length > 0) {
               // Group hole strokes by round number; only set rX if 18 holes present

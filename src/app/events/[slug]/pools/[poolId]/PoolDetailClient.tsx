@@ -19,7 +19,7 @@ import { PlayerOwnershipCard } from '@/components/PlayerOwnershipCard'
 import { BiggestMovers } from '@/components/BiggestMovers'
 import { TeeTimesCard } from '@/components/TeeTimesCard'
 import { ProjectedCutTracker } from '@/components/ProjectedCutTracker'
-import type { CutRule } from '@/lib/events/golf-aggregations'
+import { golferRoundToPar, type CutRule } from '@/lib/events/golf-aggregations'
 import { EntryAvatar } from '@/components/EntryAvatar'
 import { ScheduleView } from './ScheduleView'
 import { ShareButton } from '@/components/ShareButton'
@@ -873,10 +873,14 @@ export function PoolDetailClient({
                           </span>
                         </div>
                         <span className="text-center text-[10px] text-text-muted tabular-nums">{teeLabel}</span>
-                        <span className="text-center text-text-secondary">{meta.r1 != null ? String(meta.r1) : '—'}</span>
-                        <span className="text-center text-text-secondary">{meta.r2 != null ? String(meta.r2) : '—'}</span>
-                        <span className="text-center text-text-secondary">{meta.r3 != null ? String(meta.r3) : '—'}</span>
-                        <span className="text-center text-text-secondary">{meta.r4 != null ? String(meta.r4) : '—'}</span>
+                        {[1, 2, 3, 4].map(rd => {
+                          const rtp = golferRoundToPar(meta, rd)
+                          return (
+                            <span key={rd} className={`text-center ${rtp != null && rtp < 0 ? 'text-success-text' : rtp != null && rtp > 0 ? 'text-danger-text' : 'text-text-secondary'}`}>
+                              {rtp != null ? (rtp === 0 ? 'E' : rtp > 0 ? `+${rtp}` : String(rtp)) : '—'}
+                            </span>
+                          )
+                        })}
                         <span className={`text-right font-medium ${
                           scoreToPar != null && scoreToPar < 0 ? 'text-success-text' :
                           scoreToPar != null && scoreToPar > 0 ? 'text-danger-text' :

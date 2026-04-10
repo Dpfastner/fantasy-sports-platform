@@ -6,6 +6,36 @@
 
 import type { GolfHole } from '@/components/GolfHoleGrid'
 
+/**
+ * Compute a golfer's to-par for a specific round from their metadata.
+ * Completed rounds: rX - coursePar (only if rX is in the 64-100 sane range).
+ * In-progress rounds: derived from live total minus completed rounds.
+ * E.g. R2 running = score_to_par - (r1 - 72). Updates every minute.
+ */
+export function golferRoundToPar(
+  meta: Record<string, unknown>,
+  round: number,
+  coursePar: number = 72
+): number | null {
+  const isValid = (s: unknown): s is number =>
+    typeof s === 'number' && s >= 64 && s <= 100
+  const total = typeof meta.score_to_par === 'number' ? meta.score_to_par as number : null
+  const r1 = isValid(meta.r1) ? (meta.r1 as number) - coursePar : null
+  const r2 = isValid(meta.r2) ? (meta.r2 as number) - coursePar : null
+  const r3 = isValid(meta.r3) ? (meta.r3 as number) - coursePar : null
+  const r4 = isValid(meta.r4) ? (meta.r4 as number) - coursePar : null
+
+  const completed = round === 1 ? r1 : round === 2 ? r2 : round === 3 ? r3 : r4
+  if (completed != null) return completed
+
+  if (total == null) return null
+  if (round === 1) return total
+  if (round === 2 && r1 != null) return total - r1
+  if (round === 3 && r1 != null && r2 != null) return total - r1 - r2
+  if (round === 4 && r1 != null && r2 != null && r3 != null) return total - r1 - r2 - r3
+  return null
+}
+
 export interface GolferLite {
   id: string
   name: string
