@@ -36,9 +36,9 @@ function calculateTimeLeft(target: number): TimeLeft | null {
   }
 }
 
-// Masters 2026 defaults
-const MASTERS_2026_CUT_TIME = '2026-04-11T22:00:00Z'       // Friday ~6pm ET
-const MASTERS_2026_CHAMPION_TIME = '2026-04-13T23:00:00Z'   // Sunday ~7pm ET
+// Masters 2026 defaults — R1: Apr 9, R2: Apr 10, R3: Apr 11, R4: Apr 12
+const MASTERS_2026_CUT_TIME = '2026-04-10T22:00:00Z'       // Thursday ~6pm ET (end of R2)
+const MASTERS_2026_CHAMPION_TIME = '2026-04-12T23:00:00Z'   // Saturday ~7pm ET (end of R4)
 
 /**
  * Multi-mode countdown for Masters tournaments:

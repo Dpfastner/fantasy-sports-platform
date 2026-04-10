@@ -693,13 +693,15 @@ export function PoolDetailClient({
             />
           )}
 
-          {/* Masters: Top 10 Tournament Leaderboard preview */}
+          {/* Masters: Physical Augusta scoreboard on overview */}
           {isMasters && effectiveFormat === 'roster' && (
-            <Top10Leaderboard
+            <MastersLeaderboard
               participants={liveParticipants}
               allRosterPicks={allRosterPicks}
               members={liveMembers}
-              onSwitchTab={() => setActiveTab('schedule')}
+              cutPosition={cutRule?.type === 'top_n_and_ties' ? cutRule.n : null}
+              expanded={leaderboardExpanded}
+              onToggleExpand={() => setLeaderboardExpanded(!leaderboardExpanded)}
             />
           )}
 
@@ -839,17 +841,6 @@ export function PoolDetailClient({
       {activeTab === 'schedule' && (
         effectiveFormat === 'roster' ? (
           <div className="space-y-6">
-          {/* Masters: physical scoreboard replica */}
-          {isMasters ? (
-            <MastersLeaderboard
-              participants={liveParticipants}
-              allRosterPicks={allRosterPicks}
-              members={liveMembers}
-              cutPosition={cutRule?.type === 'top_n_and_ties' ? cutRule.n : null}
-              expanded={leaderboardExpanded}
-              onToggleExpand={() => setLeaderboardExpanded(!leaderboardExpanded)}
-            />
-          ) : (
           <div className="bg-surface rounded-lg border border-border overflow-x-auto">
             <div className="min-w-[44rem]">
               <div className="grid grid-cols-[2rem_minmax(10rem,1fr)_2.5rem_4.5rem_2.5rem_2.5rem_2.5rem_2.5rem_3.5rem] gap-1 px-3 py-2 bg-surface-inset border-b border-border text-xs text-text-muted uppercase tracking-wide">
@@ -1004,7 +995,6 @@ export function PoolDetailClient({
               )}
             </div>
           </div>
-          )}
 
           {/* Masters: Biggest Movers + Player Ownership (moved from overview) */}
           {isMasters && (
