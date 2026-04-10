@@ -33,12 +33,10 @@ interface GolfHole {
 }
 
 const AUGUSTA_PARS = [4, 5, 4, 3, 4, 3, 4, 5, 4, 4, 4, 3, 5, 4, 5, 3, 4, 4]
+const MAX_ROWS = 10
 
 // Grid: PRIOR | NAME | holes 1-9 | gap | holes 10-18
-// Wider columns to fill the section
-const GRID = '2.4rem 9rem repeat(9, minmax(1.8rem, 1fr)) 0.5rem repeat(9, minmax(1.8rem, 1fr))'
-
-const MAX_ROWS = 10
+const GRID = '2.6rem 1fr repeat(9, minmax(1.6rem, 2.2rem)) 0.4rem repeat(9, minmax(1.6rem, 2.2rem))'
 
 export function MastersLeaderboard({
   participants,
@@ -130,30 +128,7 @@ export function MastersLeaderboard({
   function fmtName(name: string): string {
     const parts = name.split(' ')
     if (parts.length <= 1) return name.toUpperCase()
-    const last = parts[parts.length - 1].toUpperCase()
-    const firstInit = parts[0][0].toUpperCase()
-    return `${last} ${firstInit}.`
-  }
-
-  const row: React.CSSProperties = { display: 'grid', gridTemplateColumns: GRID }
-
-  // Cell with right border — black lines like the real board
-  const cell = (opts?: { first?: boolean; thick?: boolean; noBorder?: boolean }): React.CSSProperties => ({
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRight: opts?.noBorder ? 'none' : opts?.thick ? '2px solid #222' : '1px solid #333',
-    borderBottom: '1px solid #333',
-    padding: '2px 0',
-    minHeight: 28,
-    background: '#fff',
-  })
-
-  const scoreFont: React.CSSProperties = {
-    fontSize: 14,
-    fontWeight: 700,
-    fontFamily: 'ui-monospace, SFMono-Regular, monospace',
-    color: '#1a1a1a',
+    return `${parts[parts.length - 1].toUpperCase()} ${parts[0][0].toUpperCase()}.`
   }
 
   const totalGolfers = participants.filter(p => {
@@ -161,27 +136,73 @@ export function MastersLeaderboard({
     return m.score_to_par != null || m.status === 'active'
   }).length
 
+  const rowGrid: React.CSSProperties = { display: 'grid', gridTemplateColumns: GRID }
+
+  // Shared cell style
+  const C = (opts?: { thick?: boolean; noBorder?: boolean; noBtm?: boolean }): React.CSSProperties => ({
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRight: opts?.noBorder ? 'none' : opts?.thick ? '2px solid #222' : '1px solid #333',
+    borderBottom: opts?.noBtm ? 'none' : '1px solid #333',
+    padding: '3px 0',
+    minHeight: 30,
+    background: '#fff',
+  })
+
+  const mono: React.CSSProperties = {
+    fontSize: 15,
+    fontWeight: 700,
+    fontFamily: '"Georgia", "Times New Roman", serif',
+    color: '#1a1a1a',
+  }
+
   return (
-    <div style={{ overflowX: 'auto', overflowY: 'visible', position: 'relative' }}>
-      <div style={{ minWidth: '42rem' }}>
-        {/* ── White arch across full width — tall dome like the real sign ── */}
+    <div style={{ position: 'relative' }}>
+      {/* ── Left pole with white ball ── */}
+      <div style={{
+        position: 'absolute', left: -8, top: 20, bottom: 0, width: 8,
+        background: '#4a4a4a', borderRadius: '2px',
+        zIndex: 5,
+      }}>
+        <div style={{
+          position: 'absolute', top: -10, left: '50%', transform: 'translateX(-50%)',
+          width: 14, height: 14, borderRadius: '50%', background: '#fff',
+          border: '1px solid #ccc', boxShadow: '0 1px 3px rgba(0,0,0,.3)',
+        }} />
+      </div>
+      {/* ── Right pole with white ball ── */}
+      <div style={{
+        position: 'absolute', right: -8, top: 20, bottom: 0, width: 8,
+        background: '#4a4a4a', borderRadius: '2px',
+        zIndex: 5,
+      }}>
+        <div style={{
+          position: 'absolute', top: -10, left: '50%', transform: 'translateX(-50%)',
+          width: 14, height: 14, borderRadius: '50%', background: '#fff',
+          border: '1px solid #ccc', boxShadow: '0 1px 3px rgba(0,0,0,.3)',
+        }} />
+      </div>
+
+      <div style={{ margin: '0 6px', position: 'relative', zIndex: 1 }}>
+        {/* ── White arch header ── */}
         <div
           style={{
             background: '#fff',
             borderRadius: '50% 50% 0 0 / 100% 100% 0 0',
             border: '2px solid #333',
             borderBottom: 'none',
-            padding: '20px 0 8px',
+            padding: '22px 0 10px',
             textAlign: 'center',
           }}
         >
           <span
             style={{
-              fontSize: 24,
+              fontSize: 32,
               fontWeight: 700,
-              letterSpacing: '.22em',
+              letterSpacing: '.25em',
               color: '#1a1a1a',
-              fontFamily: 'Georgia, "Times New Roman", serif',
+              fontFamily: '"Georgia", "Times New Roman", serif',
             }}
           >
             LEADERS
@@ -190,76 +211,85 @@ export function MastersLeaderboard({
 
         {/* ── Main board ── */}
         <div style={{ border: '2px solid #333', borderTop: 'none', background: '#fff' }}>
+          {/* Black separator line between LEADERS arch and HOLE row */}
+          <div style={{ borderTop: '2px solid #333' }} />
 
-          {/* HOLE row: PRIOR(vertical) | HOLE | 1 2 3 ... 9 | gap | 10 11 ... 18 */}
-          <div style={row}>
-            {/* PRIOR vertical label spanning HOLE + PAR rows */}
+          {/* ── HOLE row ── */}
+          <div style={rowGrid}>
+            {/* PRIOR — stacked vertically P R I O R */}
             <div style={{
-              ...cell(),
-              borderBottom: 'none',
-              writingMode: 'vertical-rl',
-              transform: 'rotate(180deg)',
-              fontSize: 9,
-              fontWeight: 700,
-              letterSpacing: '.1em',
-              color: '#1a1a1a',
+              ...C({ noBtm: true }),
+              flexDirection: 'column',
+              gap: 0,
+              padding: '4px 0',
               gridRow: '1 / 3',
+              borderRight: '2px solid #222',
             }}>
-              PRIOR
+              {'PRIOR'.split('').map((letter, i) => (
+                <span key={i} style={{ fontSize: 9, fontWeight: 700, color: '#1a1a1a', lineHeight: 1.1, fontFamily: '"Georgia", serif' }}>
+                  {letter}
+                </span>
+              ))}
             </div>
-            <div style={{ ...cell({ thick: true }), justifyContent: 'flex-start', paddingLeft: 8 }}>
-              <span style={{ fontSize: 14, fontWeight: 700, color: '#1a1a1a', fontFamily: 'Georgia, "Times New Roman", serif' }}>
+            {/* HOLE label */}
+            <div style={{ ...C({ thick: true }), justifyContent: 'center' }}>
+              <span style={{ fontSize: 16, fontWeight: 700, color: '#1a1a1a', fontFamily: '"Georgia", "Times New Roman", serif', letterSpacing: '.15em' }}>
                 HOLE
               </span>
             </div>
+            {/* Holes 1-9 */}
             {[1,2,3,4,5,6,7,8].map(h => (
-              <div key={h} style={cell()}>
-                <span style={scoreFont}>{h}</span>
+              <div key={h} style={C()}>
+                <span style={mono}>{h}</span>
               </div>
             ))}
-            <div key={9} style={cell({ thick: true })}>
-              <span style={scoreFont}>9</span>
+            <div style={C({ thick: true })}>
+              <span style={mono}>9</span>
             </div>
-            {/* Gap between front 9 and back 9 */}
+            {/* Gap */}
             <div style={{ background: '#e8e4da', borderBottom: '1px solid #333' }} />
+            {/* Holes 10-18 */}
             {[10,11,12,13,14,15,16,17].map(h => (
-              <div key={h} style={cell()}>
-                <span style={scoreFont}>{h}</span>
+              <div key={h} style={C()}>
+                <span style={mono}>{h}</span>
               </div>
             ))}
-            <div key={18} style={cell({ noBorder: true })}>
-              <span style={scoreFont}>18</span>
+            <div style={C({ noBorder: true })}>
+              <span style={mono}>18</span>
             </div>
           </div>
 
-          {/* PAR row */}
-          <div style={row}>
-            {/* PRIOR column (empty, label spans from above visually) */}
-            <div style={cell()} />
-            <div style={{ ...cell({ thick: true }), justifyContent: 'flex-start', paddingLeft: 8 }}>
-              <span style={{ fontSize: 14, fontWeight: 700, color: '#1a1a1a', fontFamily: 'Georgia, "Times New Roman", serif' }}>
+          {/* ── PAR row ── */}
+          <div style={rowGrid}>
+            {/* PRIOR col (empty — label spans from above) */}
+            <div style={{ ...C(), borderRight: '2px solid #222' }} />
+            {/* PAR label */}
+            <div style={{ ...C({ thick: true }), justifyContent: 'center' }}>
+              <span style={{ fontSize: 16, fontWeight: 700, color: '#1a1a1a', fontFamily: '"Georgia", "Times New Roman", serif', letterSpacing: '.15em' }}>
                 PAR
               </span>
             </div>
             {AUGUSTA_PARS.slice(0, 8).map((par, i) => (
-              <div key={i} style={cell()}>
-                <span style={scoreFont}>{par}</span>
+              <div key={i} style={C()}>
+                <span style={mono}>{par}</span>
               </div>
             ))}
-            <div style={cell({ thick: true })}>
-              <span style={scoreFont}>{AUGUSTA_PARS[8]}</span>
+            <div style={C({ thick: true })}>
+              <span style={mono}>{AUGUSTA_PARS[8]}</span>
             </div>
-            {/* Gap */}
             <div style={{ background: '#e8e4da', borderBottom: '1px solid #333' }} />
             {AUGUSTA_PARS.slice(9, 17).map((par, i) => (
-              <div key={i} style={cell()}>
-                <span style={scoreFont}>{par}</span>
+              <div key={i} style={C()}>
+                <span style={mono}>{par}</span>
               </div>
             ))}
-            <div style={cell({ noBorder: true })}>
-              <span style={scoreFont}>{AUGUSTA_PARS[17]}</span>
+            <div style={C({ noBorder: true })}>
+              <span style={mono}>{AUGUSTA_PARS[17]}</span>
             </div>
           </div>
+
+          {/* Thick separator between header and player rows */}
+          <div style={{ borderTop: '2px solid #222' }} />
 
           {/* ── Player rows ── */}
           {sortedGolfers.map((p) => {
@@ -271,94 +301,79 @@ export function MastersLeaderboard({
             const isRai = p.name.toLowerCase().includes('aaron rai')
 
             return (
-              <div key={p.id} style={{ ...row, opacity: isCut ? 0.35 : 1 }}>
-                {/* PRIOR score */}
-                <div style={cell()}>
-                  <span style={{ ...scoreFont, fontSize: 15, color: prior != null && prior < 0 ? '#CC0000' : '#1a1a1a' }}>
+              <div key={p.id} style={{ ...rowGrid, opacity: isCut ? 0.35 : 1 }}>
+                {/* PRIOR */}
+                <div style={{ ...C(), borderRight: '2px solid #222' }}>
+                  <span style={{ ...mono, fontSize: 16, color: prior != null && prior < 0 ? '#CC0000' : '#1a1a1a' }}>
                     {fmtPar(prior)}
                   </span>
                 </div>
                 {/* NAME */}
                 <div style={{
-                  ...cell({ thick: true }),
+                  ...C({ thick: true }),
                   justifyContent: 'flex-start',
-                  paddingLeft: 6,
-                  gap: 3,
+                  paddingLeft: 8,
+                  gap: 4,
                   overflow: 'hidden',
+                  position: 'relative',
                 }}>
                   {colors.length > 0 && colors.slice(0, 2).map((c, ci) => (
-                    <div key={ci} style={{ width: 5, height: 5, borderRadius: '50%', background: c, flexShrink: 0 }} />
+                    <div key={ci} style={{ width: 6, height: 6, borderRadius: '50%', background: c, flexShrink: 0 }} />
                   ))}
                   <span style={{
-                    fontSize: 13,
+                    fontSize: 14,
                     fontWeight: 700,
                     color: '#1a1a1a',
                     textTransform: 'uppercase' as const,
-                    letterSpacing: '.03em',
+                    letterSpacing: '.04em',
                     whiteSpace: 'nowrap' as const,
                     overflow: 'hidden',
                     textOverflow: 'ellipsis',
-                    fontFamily: 'Georgia, "Times New Roman", serif',
+                    fontFamily: '"Georgia", "Times New Roman", serif',
                   }}>
                     {fmtName(p.name)}
                   </span>
                   {isRai && <Par3CurseBadge className="shrink-0" />}
                 </div>
-                {/* Holes 1-9 */}
+                {/* Holes 1-8 */}
                 {holes.slice(0, 8).map((score, hi) => {
-                  const par = AUGUSTA_PARS[hi]
-                  const under = score != null && score < par
+                  const under = score != null && score < AUGUSTA_PARS[hi]
                   return (
-                    <div key={hi} style={cell()}>
-                      <span style={{ ...scoreFont, color: under ? '#CC0000' : '#1a1a1a' }}>
+                    <div key={hi} style={C()}>
+                      <span style={{ ...mono, color: under ? '#CC0000' : '#1a1a1a' }}>
                         {score ?? ''}
                       </span>
                     </div>
                   )
                 })}
-                {/* Hole 9 with thick right border */}
+                {/* Hole 9 */}
                 {(() => {
-                  const score = holes[8]
-                  const under = score != null && score < AUGUSTA_PARS[8]
-                  return (
-                    <div style={cell({ thick: true })}>
-                      <span style={{ ...scoreFont, color: under ? '#CC0000' : '#1a1a1a' }}>
-                        {score ?? ''}
-                      </span>
-                    </div>
-                  )
+                  const s = holes[8]; const u = s != null && s < AUGUSTA_PARS[8]
+                  return <div style={C({ thick: true })}><span style={{ ...mono, color: u ? '#CC0000' : '#1a1a1a' }}>{s ?? ''}</span></div>
                 })()}
                 {/* Gap */}
                 <div style={{ background: '#e8e4da', borderBottom: '1px solid #333' }} />
-                {/* Holes 10-18 */}
+                {/* Holes 10-17 */}
                 {holes.slice(9, 17).map((score, hi) => {
-                  const par = AUGUSTA_PARS[hi + 9]
-                  const under = score != null && score < par
+                  const under = score != null && score < AUGUSTA_PARS[hi + 9]
                   return (
-                    <div key={hi} style={cell()}>
-                      <span style={{ ...scoreFont, color: under ? '#CC0000' : '#1a1a1a' }}>
+                    <div key={hi} style={C()}>
+                      <span style={{ ...mono, color: under ? '#CC0000' : '#1a1a1a' }}>
                         {score ?? ''}
                       </span>
                     </div>
                   )
                 })}
-                {/* Hole 18 no right border */}
+                {/* Hole 18 */}
                 {(() => {
-                  const score = holes[17]
-                  const under = score != null && score < AUGUSTA_PARS[17]
-                  return (
-                    <div style={cell({ noBorder: true })}>
-                      <span style={{ ...scoreFont, color: under ? '#CC0000' : '#1a1a1a' }}>
-                        {score ?? ''}
-                      </span>
-                    </div>
-                  )
+                  const s = holes[17]; const u = s != null && s < AUGUSTA_PARS[17]
+                  return <div style={C({ noBorder: true })}><span style={{ ...mono, color: u ? '#CC0000' : '#1a1a1a' }}>{s ?? ''}</span></div>
                 })()}
               </div>
             )
           })}
 
-          {/* Show all → navigate to Leaderboard tab */}
+          {/* Show all → green bar */}
           {totalGolfers > MAX_ROWS && (
             <button
               type="button"
@@ -367,14 +382,14 @@ export function MastersLeaderboard({
                 width: '100%',
                 padding: '10px 0',
                 textAlign: 'center',
-                fontSize: 12,
+                fontSize: 13,
                 fontWeight: 700,
                 color: '#fff',
                 background: '#1a5c38',
                 border: 'none',
                 borderTop: '2px solid #333',
                 cursor: 'pointer',
-                fontFamily: 'Georgia, "Times New Roman", serif',
+                fontFamily: '"Georgia", "Times New Roman", serif',
                 letterSpacing: '.06em',
               }}
             >
