@@ -35,8 +35,8 @@ interface GolfHole {
 const AUGUSTA_PARS = [4, 5, 4, 3, 4, 3, 4, 5, 4, 4, 4, 3, 5, 4, 5, 3, 4, 4]
 
 // Grid: PRIOR | NAME | holes 1-9 | gap | holes 10-18
-// 22 content columns + 1 gap
-const GRID = '2rem 7.5rem repeat(9, 1.6rem) 0.4rem repeat(9, 1.6rem)'
+// Wider columns to fill the section
+const GRID = '2.4rem 9rem repeat(9, minmax(1.8rem, 1fr)) 0.5rem repeat(9, minmax(1.8rem, 1fr))'
 
 const MAX_ROWS = 10
 
@@ -137,20 +137,20 @@ export function MastersLeaderboard({
 
   const row: React.CSSProperties = { display: 'grid', gridTemplateColumns: GRID }
 
-  // Cell with right border (each score cell is a box)
+  // Cell with right border — black lines like the real board
   const cell = (opts?: { first?: boolean; thick?: boolean; noBorder?: boolean }): React.CSSProperties => ({
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    borderRight: opts?.noBorder ? 'none' : opts?.thick ? '2px solid #555' : '1px solid #999',
-    borderBottom: '1px solid #999',
-    padding: '1px 0',
-    minHeight: 22,
+    borderRight: opts?.noBorder ? 'none' : opts?.thick ? '2px solid #222' : '1px solid #333',
+    borderBottom: '1px solid #333',
+    padding: '2px 0',
+    minHeight: 28,
     background: '#fff',
   })
 
   const scoreFont: React.CSSProperties = {
-    fontSize: 12,
+    fontSize: 14,
     fontWeight: 700,
     fontFamily: 'ui-monospace, SFMono-Regular, monospace',
     color: '#1a1a1a',
@@ -164,22 +164,22 @@ export function MastersLeaderboard({
   return (
     <div className="overflow-x-auto">
       <div style={{ minWidth: '42rem' }}>
-        {/* ── White arch across full width ── */}
+        {/* ── White arch across full width — tall dome like the real sign ── */}
         <div
           style={{
             background: '#fff',
-            borderRadius: '12px 12px 0 0',
-            border: '2px solid #555',
+            borderRadius: '50% 50% 0 0 / 100% 100% 0 0',
+            border: '2px solid #333',
             borderBottom: 'none',
-            padding: '10px 0 6px',
+            padding: '20px 0 8px',
             textAlign: 'center',
           }}
         >
           <span
             style={{
-              fontSize: 22,
+              fontSize: 24,
               fontWeight: 700,
-              letterSpacing: '.2em',
+              letterSpacing: '.22em',
               color: '#1a1a1a',
               fontFamily: 'Georgia, "Times New Roman", serif',
             }}
@@ -189,7 +189,7 @@ export function MastersLeaderboard({
         </div>
 
         {/* ── Main board ── */}
-        <div style={{ border: '2px solid #555', borderTop: 'none', background: '#fff' }}>
+        <div style={{ border: '2px solid #333', borderTop: 'none', background: '#fff' }}>
 
           {/* HOLE row: PRIOR(vertical) | HOLE | 1 2 3 ... 9 | gap | 10 11 ... 18 */}
           <div style={row}>
@@ -199,16 +199,16 @@ export function MastersLeaderboard({
               borderBottom: 'none',
               writingMode: 'vertical-rl',
               transform: 'rotate(180deg)',
-              fontSize: 8,
+              fontSize: 9,
               fontWeight: 700,
-              letterSpacing: '.08em',
+              letterSpacing: '.1em',
               color: '#1a1a1a',
               gridRow: '1 / 3',
             }}>
               PRIOR
             </div>
             <div style={{ ...cell({ thick: true }), justifyContent: 'flex-start', paddingLeft: 8 }}>
-              <span style={{ fontSize: 13, fontWeight: 700, color: '#1a1a1a', fontFamily: 'Georgia, "Times New Roman", serif' }}>
+              <span style={{ fontSize: 14, fontWeight: 700, color: '#1a1a1a', fontFamily: 'Georgia, "Times New Roman", serif' }}>
                 HOLE
               </span>
             </div>
@@ -221,7 +221,7 @@ export function MastersLeaderboard({
               <span style={scoreFont}>9</span>
             </div>
             {/* Gap between front 9 and back 9 */}
-            <div style={{ background: '#e8e4da', borderBottom: '1px solid #999' }} />
+            <div style={{ background: '#e8e4da', borderBottom: '1px solid #333' }} />
             {[10,11,12,13,14,15,16,17].map(h => (
               <div key={h} style={cell()}>
                 <span style={scoreFont}>{h}</span>
@@ -237,7 +237,7 @@ export function MastersLeaderboard({
             {/* PRIOR column (empty, label spans from above visually) */}
             <div style={cell()} />
             <div style={{ ...cell({ thick: true }), justifyContent: 'flex-start', paddingLeft: 8 }}>
-              <span style={{ fontSize: 13, fontWeight: 700, color: '#1a1a1a', fontFamily: 'Georgia, "Times New Roman", serif' }}>
+              <span style={{ fontSize: 14, fontWeight: 700, color: '#1a1a1a', fontFamily: 'Georgia, "Times New Roman", serif' }}>
                 PAR
               </span>
             </div>
@@ -250,7 +250,7 @@ export function MastersLeaderboard({
               <span style={scoreFont}>{AUGUSTA_PARS[8]}</span>
             </div>
             {/* Gap */}
-            <div style={{ background: '#e8e4da', borderBottom: '1px solid #999' }} />
+            <div style={{ background: '#e8e4da', borderBottom: '1px solid #333' }} />
             {AUGUSTA_PARS.slice(9, 17).map((par, i) => (
               <div key={i} style={cell()}>
                 <span style={scoreFont}>{par}</span>
@@ -274,7 +274,7 @@ export function MastersLeaderboard({
               <div key={p.id} style={{ ...row, opacity: isCut ? 0.35 : 1 }}>
                 {/* PRIOR score */}
                 <div style={cell()}>
-                  <span style={{ ...scoreFont, fontSize: 13, color: prior != null && prior < 0 ? '#CC0000' : '#1a1a1a' }}>
+                  <span style={{ ...scoreFont, fontSize: 15, color: prior != null && prior < 0 ? '#CC0000' : '#1a1a1a' }}>
                     {fmtPar(prior)}
                   </span>
                 </div>
@@ -290,11 +290,11 @@ export function MastersLeaderboard({
                     <div key={ci} style={{ width: 5, height: 5, borderRadius: '50%', background: c, flexShrink: 0 }} />
                   ))}
                   <span style={{
-                    fontSize: 11,
+                    fontSize: 13,
                     fontWeight: 700,
                     color: '#1a1a1a',
                     textTransform: 'uppercase' as const,
-                    letterSpacing: '.02em',
+                    letterSpacing: '.03em',
                     whiteSpace: 'nowrap' as const,
                     overflow: 'hidden',
                     textOverflow: 'ellipsis',
@@ -329,7 +329,7 @@ export function MastersLeaderboard({
                   )
                 })()}
                 {/* Gap */}
-                <div style={{ background: '#e8e4da', borderBottom: '1px solid #999' }} />
+                <div style={{ background: '#e8e4da', borderBottom: '1px solid #333' }} />
                 {/* Holes 10-18 */}
                 {holes.slice(9, 17).map((score, hi) => {
                   const par = AUGUSTA_PARS[hi + 9]
@@ -372,7 +372,7 @@ export function MastersLeaderboard({
                 color: '#fff',
                 background: '#1a5c38',
                 border: 'none',
-                borderTop: '2px solid #555',
+                borderTop: '2px solid #333',
                 cursor: 'pointer',
                 fontFamily: 'Georgia, "Times New Roman", serif',
                 letterSpacing: '.06em',
