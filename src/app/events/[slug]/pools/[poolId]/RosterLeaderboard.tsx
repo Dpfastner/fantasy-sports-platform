@@ -178,7 +178,7 @@ export function RosterLeaderboard({
         </div>
       ) : (
         <div className="bg-surface rounded-lg border border-border overflow-x-auto">
-          <div className="min-w-[42rem]">
+          <div className="min-w-[42rem] w-full">
           {/* Header */}
           <div className="grid grid-cols-[2rem_minmax(12rem,18rem)_1fr_2.25rem_2.25rem_2.25rem_2.25rem_3rem_4rem] gap-2 px-3 py-2 bg-surface-inset border-b border-border text-xs text-text-muted uppercase tracking-wide">
             <span className="text-right">#</span>
