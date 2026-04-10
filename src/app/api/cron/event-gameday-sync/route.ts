@@ -551,9 +551,14 @@ export async function GET(request: Request) {
               score_display: golfer?.score || existingMeta.score_display || null,
               country: golfer?.country || existingMeta.country || null,
               country_code: golfer?.countryCode || existingMeta.country_code || null,
-              // Core API hole-level fields
-              current_hole: live?.currentHole ?? existingMeta.current_hole ?? null,
-              thru: live?.thru ?? existingMeta.thru ?? null,
+              // Core API hole-level fields. When `live` is fresh, we trust
+              // it verbatim — including null values. This lets current_hole
+              // and thru clear out between rounds (when ESPN no longer
+              // reports the golfer as active) instead of staying pinned to
+              // the last hole forever, which would make the course map
+              // show every R1 finisher stuck on hole 18 overnight.
+              current_hole: live ? (live.currentHole ?? null) : (existingMeta.current_hole ?? null),
+              thru: live ? (live.thru ?? null) : (existingMeta.thru ?? null),
               start_hole: live?.startHole ?? existingMeta.start_hole ?? null,
               tee_time: live?.teeTime ?? existingMeta.tee_time ?? null,
               current_round: live?.currentRound ?? existingMeta.current_round ?? null,

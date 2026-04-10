@@ -107,12 +107,16 @@ export function computeHoleDifficulty(
 
 /**
  * Group golfers by the hole they are currently playing.
- * Excludes cut/WD/DQ golfers and golfers with no currentHole data.
+ * Excludes cut/WD/DQ golfers, golfers with no currentHole data, AND
+ * golfers who have completed their round (thru >= 18). Without the
+ * thru filter, finished golfers stay pinned to hole 18 between rounds
+ * because the sync may preserve their last known current_hole value.
  */
 export function groupGolfersByCurrentHole(golfers: GolferLite[]): Map<number, GolferLite[]> {
   const map = new Map<number, GolferLite[]>()
   for (const g of golfers) {
     if (g.status === 'cut' || g.status === 'wd' || g.status === 'dq') continue
+    if (typeof g.thru === 'number' && g.thru >= 18) continue
     if (typeof g.currentHole !== 'number' || g.currentHole < 1 || g.currentHole > 18) continue
     if (!map.has(g.currentHole)) map.set(g.currentHole, [])
     map.get(g.currentHole)!.push(g)

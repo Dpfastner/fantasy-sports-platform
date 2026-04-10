@@ -36,7 +36,13 @@ export function HoleInfoPanel({ hole, round, golfers }: HoleInfoPanelProps) {
   const difficulty = computeHoleDifficulty(golfers, hole.number, round)
   const leaderboard = computeHoleLeaderboard(golfers, hole.number, round).slice(0, 5)
   const playingNow = golfers
-    .filter(g => g.currentHole === hole.number && g.status !== 'cut' && g.status !== 'wd' && g.status !== 'dq')
+    .filter(g =>
+      g.currentHole === hole.number &&
+      g.status !== 'cut' && g.status !== 'wd' && g.status !== 'dq' &&
+      // Exclude golfers who finished their round — they're not on the
+      // hole anymore, just stuck there in stale metadata
+      !(typeof g.thru === 'number' && g.thru >= 18)
+    )
     .sort((a, b) => (a.position ?? 999) - (b.position ?? 999))
   const distribution = computeHoleScoringDistribution(golfers, hole.number, round)
 
