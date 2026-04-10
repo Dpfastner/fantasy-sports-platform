@@ -487,27 +487,45 @@ export async function GET(request: Request) {
             const newStatus = live?.status ?? golfer?.status ?? existingMeta.status ?? 'active'
             const newPosition = live?.position ?? golfer?.position ?? existingMeta.position ?? null
 
-            // Round scores: compute from core holes if present, else fallback to scoreboard
+            // Round scores: compute from core holes if present, else fallback to scoreboard.
+            // CRITICAL: only treat a round as complete if all 18 holes are present in
+            // the per-hole data. ESPN sometimes returns partial in-progress rounds
+            // (e.g. 7 holes summing to 28) which would be wildly wrong if stored as
+            // a round total.
             let r1 = existingMeta.r1 ?? null
             let r2 = existingMeta.r2 ?? null
             let r3 = existingMeta.r3 ?? null
             let r4 = existingMeta.r4 ?? null
+
+            // Sanity range for a real golf round at a tour-level course
+            const isValidRoundScore = (s: unknown): s is number =>
+              typeof s === 'number' && s >= 60 && s <= 100
+
             if (live?.holes && live.holes.length > 0) {
-              // Sum strokes per round from per-hole data
-              const roundTotals: Record<number, number> = {}
+              // Group hole strokes by round number; only set rX if 18 holes present
+              const roundsByNum: Record<number, number[]> = {}
               for (const h of live.holes) {
-                roundTotals[h.round] = (roundTotals[h.round] || 0) + h.strokes
+                if (!roundsByNum[h.round]) roundsByNum[h.round] = []
+                roundsByNum[h.round].push(h.strokes)
               }
-              r1 = roundTotals[1] ?? r1
-              r2 = roundTotals[2] ?? r2
-              r3 = roundTotals[3] ?? r3
-              r4 = roundTotals[4] ?? r4
+              if (roundsByNum[1]?.length === 18) r1 = roundsByNum[1].reduce((a, b) => a + b, 0)
+              if (roundsByNum[2]?.length === 18) r2 = roundsByNum[2].reduce((a, b) => a + b, 0)
+              if (roundsByNum[3]?.length === 18) r3 = roundsByNum[3].reduce((a, b) => a + b, 0)
+              if (roundsByNum[4]?.length === 18) r4 = roundsByNum[4].reduce((a, b) => a + b, 0)
             } else if (golfer?.roundScores) {
-              r1 = golfer.roundScores[0] ?? r1
-              r2 = golfer.roundScores[1] ?? r2
-              r3 = golfer.roundScores[2] ?? r3
-              r4 = golfer.roundScores[3] ?? r4
+              // Legacy fallback: trust ESPN scoreboard but clamp to a sane range
+              if (isValidRoundScore(golfer.roundScores[0])) r1 = golfer.roundScores[0]
+              if (isValidRoundScore(golfer.roundScores[1])) r2 = golfer.roundScores[1]
+              if (isValidRoundScore(golfer.roundScores[2])) r3 = golfer.roundScores[2]
+              if (isValidRoundScore(golfer.roundScores[3])) r4 = golfer.roundScores[3]
             }
+
+            // Defensive scrub: drop any out-of-range values that may have leaked
+            // in from existingMeta (e.g. mid-round partial totals from earlier syncs)
+            if (!isValidRoundScore(r1)) r1 = null
+            if (!isValidRoundScore(r2)) r2 = null
+            if (!isValidRoundScore(r3)) r3 = null
+            if (!isValidRoundScore(r4)) r4 = null
 
             // Compute score_to_par from raw round strokes — ESPN's
             // golfer.score displayValue is unreliable (it sometimes reports
