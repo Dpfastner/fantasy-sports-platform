@@ -693,15 +693,13 @@ export function PoolDetailClient({
             />
           )}
 
-          {/* Masters: Physical Augusta scoreboard on overview */}
+          {/* Masters: Physical Augusta scoreboard on overview (top 10) */}
           {isMasters && effectiveFormat === 'roster' && (
             <MastersLeaderboard
               participants={liveParticipants}
               allRosterPicks={allRosterPicks}
               members={liveMembers}
-              cutPosition={cutRule?.type === 'top_n_and_ties' ? cutRule.n : null}
-              expanded={leaderboardExpanded}
-              onToggleExpand={() => setLeaderboardExpanded(!leaderboardExpanded)}
+              onShowAll={() => setActiveTab('schedule')}
             />
           )}
 

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useMemo } from 'react'
 import { Par3CurseBadge } from './Par3CurseBadge'
 
 interface Participant {
@@ -21,9 +21,7 @@ interface MastersLeaderboardProps {
   allRosterPicks?: Record<string, string[]>
   members: Member[]
   cutPosition?: number | null
-  expanded: boolean
-  onToggleExpand: () => void
-  collapseLimit?: number
+  onShowAll: () => void
 }
 
 interface GolfHole {
@@ -36,20 +34,18 @@ interface GolfHole {
 
 const AUGUSTA_PARS = [4, 5, 4, 3, 4, 3, 4, 5, 4, 4, 4, 3, 5, 4, 5, 3, 4, 4]
 
-// CSS Grid: PRIOR(2.2rem) | NAME(8rem) | 18 holes(1.4rem each) | THRU(2.8rem)
-const GRID_COLS = '2.2rem 8rem repeat(18, 1.4rem) 2.8rem'
+// Grid: PRIOR | NAME | holes 1-9 | gap | holes 10-18
+// 22 content columns + 1 gap
+const GRID = '2rem 7.5rem repeat(9, 1.6rem) 0.4rem repeat(9, 1.6rem)'
+
+const MAX_ROWS = 10
 
 export function MastersLeaderboard({
   participants,
   allRosterPicks,
   members,
-  cutPosition,
-  expanded,
-  onToggleExpand,
-  collapseLimit = 15,
+  onShowAll,
 }: MastersLeaderboardProps) {
-  const [hoveredRow, setHoveredRow] = useState<string | null>(null)
-
   const ownershipMap = useMemo(() => {
     if (!allRosterPicks) return new Map<string, string[]>()
     const map = new Map<string, string[]>()
@@ -97,27 +93,8 @@ export function MastersLeaderboard({
         if (aCut !== bCut) return aCut ? 1 : -1
         return ((aMeta.score_to_par as number) ?? 999) - ((bMeta.score_to_par as number) ?? 999)
       })
+      .slice(0, MAX_ROWS)
   }, [participants])
-
-  const cutLineIndex = useMemo(() => {
-    if (!cutPosition) return null
-    const activeGolfers = sortedGolfers.filter(p => {
-      const meta = (p.metadata || {}) as Record<string, unknown>
-      return meta.status !== 'cut' && meta.status !== 'wd' && meta.status !== 'dq'
-    })
-    if (activeGolfers.length <= cutPosition) return null
-    const cutScore = ((activeGolfers[cutPosition - 1]?.metadata as Record<string, unknown>)?.score_to_par as number) ?? null
-    if (cutScore == null) return null
-    let lastIndex = 0
-    for (let i = 0; i < sortedGolfers.length; i++) {
-      const meta = (sortedGolfers[i].metadata || {}) as Record<string, unknown>
-      const score = meta.score_to_par as number | null
-      if (score != null && score <= cutScore && meta.status !== 'cut') {
-        lastIndex = i + 1
-      }
-    }
-    return lastIndex
-  }, [cutPosition, sortedGolfers])
 
   function getHoleScores(meta: Record<string, unknown>, round: number): (number | null)[] {
     const holes = (meta.holes as GolfHole[] | undefined) || []
@@ -153,186 +130,255 @@ export function MastersLeaderboard({
   function fmtName(name: string): string {
     const parts = name.split(' ')
     if (parts.length <= 1) return name.toUpperCase()
-    return `${parts[parts.length - 1].toUpperCase()} ${parts[0][0].toUpperCase()}.`
+    const last = parts[parts.length - 1].toUpperCase()
+    const firstInit = parts[0][0].toUpperCase()
+    return `${last} ${firstInit}.`
   }
 
-  const rowStyle = { display: 'grid', gridTemplateColumns: GRID_COLS } as const
+  const row: React.CSSProperties = { display: 'grid', gridTemplateColumns: GRID }
+
+  // Cell with right border (each score cell is a box)
+  const cell = (opts?: { first?: boolean; thick?: boolean; noBorder?: boolean }): React.CSSProperties => ({
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRight: opts?.noBorder ? 'none' : opts?.thick ? '2px solid #555' : '1px solid #999',
+    borderBottom: '1px solid #999',
+    padding: '1px 0',
+    minHeight: 22,
+    background: '#fff',
+  })
+
+  const scoreFont: React.CSSProperties = {
+    fontSize: 12,
+    fontWeight: 700,
+    fontFamily: 'ui-monospace, SFMono-Regular, monospace',
+    color: '#1a1a1a',
+  }
+
+  const totalGolfers = participants.filter(p => {
+    const m = (p.metadata || {}) as Record<string, unknown>
+    return m.score_to_par != null || m.status === 'active'
+  }).length
 
   return (
     <div className="overflow-x-auto">
-      <div style={{ minWidth: '40rem' }}>
-        {/* ── Arch header (green dome like the physical sign) ── */}
-        <div className="flex justify-center">
-          <div
+      <div style={{ minWidth: '42rem' }}>
+        {/* ── White arch across full width ── */}
+        <div
+          style={{
+            background: '#fff',
+            borderRadius: '12px 12px 0 0',
+            border: '2px solid #555',
+            borderBottom: 'none',
+            padding: '10px 0 6px',
+            textAlign: 'center',
+          }}
+        >
+          <span
             style={{
-              width: '70%',
-              height: 44,
-              background: '#1a5c38',
-              borderRadius: '50% 50% 0 0',
-              border: '2px solid #333',
-              borderBottom: 'none',
-              display: 'flex',
-              alignItems: 'flex-end',
-              justifyContent: 'center',
-              paddingBottom: 4,
+              fontSize: 22,
+              fontWeight: 700,
+              letterSpacing: '.2em',
+              color: '#1a1a1a',
+              fontFamily: 'Georgia, "Times New Roman", serif',
             }}
           >
-            <span
-              style={{
-                color: '#fff',
-                fontSize: 20,
-                fontWeight: 700,
-                letterSpacing: '.18em',
-                fontFamily: 'Georgia, "Times New Roman", serif',
-                textTransform: 'uppercase',
-              }}
-            >
-              LEADERS
-            </span>
-          </div>
+            LEADERS
+          </span>
         </div>
 
         {/* ── Main board ── */}
-        <div style={{ background: '#fff', border: '2px solid #333', overflow: 'hidden' }}>
+        <div style={{ border: '2px solid #555', borderTop: 'none', background: '#fff' }}>
 
-          {/* HOLE label row */}
-          <div style={{ ...rowStyle, borderBottom: '1px solid #333' }}>
-            <div style={cellStyle(true)}><span style={hdrText}>PRIOR</span></div>
-            <div style={cellStyle()} />
-            {Array.from({ length: 18 }, (_, i) => (
-              <div key={i} style={cellStyle()}>
-                {(i === 4 || i === 13) && <span style={hdrText}>HOLE</span>}
+          {/* HOLE row: PRIOR(vertical) | HOLE | 1 2 3 ... 9 | gap | 10 11 ... 18 */}
+          <div style={row}>
+            {/* PRIOR vertical label spanning HOLE + PAR rows */}
+            <div style={{
+              ...cell(),
+              borderBottom: 'none',
+              writingMode: 'vertical-rl',
+              transform: 'rotate(180deg)',
+              fontSize: 8,
+              fontWeight: 700,
+              letterSpacing: '.08em',
+              color: '#1a1a1a',
+              gridRow: '1 / 3',
+            }}>
+              PRIOR
+            </div>
+            <div style={{ ...cell({ thick: true }), justifyContent: 'flex-start', paddingLeft: 8 }}>
+              <span style={{ fontSize: 13, fontWeight: 700, color: '#1a1a1a', fontFamily: 'Georgia, "Times New Roman", serif' }}>
+                HOLE
+              </span>
+            </div>
+            {[1,2,3,4,5,6,7,8].map(h => (
+              <div key={h} style={cell()}>
+                <span style={scoreFont}>{h}</span>
               </div>
             ))}
-            <div style={cellStyle()} />
-          </div>
-
-          {/* Hole numbers */}
-          <div style={{ ...rowStyle, borderBottom: '1px solid #333' }}>
-            <div style={cellStyle(true)} />
-            <div style={cellStyle()} />
-            {Array.from({ length: 18 }, (_, i) => (
-              <div key={i} style={cellStyle()}>
-                <span style={numText}>{i + 1}</span>
+            <div key={9} style={cell({ thick: true })}>
+              <span style={scoreFont}>9</span>
+            </div>
+            {/* Gap between front 9 and back 9 */}
+            <div style={{ background: '#e8e4da', borderBottom: '1px solid #999' }} />
+            {[10,11,12,13,14,15,16,17].map(h => (
+              <div key={h} style={cell()}>
+                <span style={scoreFont}>{h}</span>
               </div>
             ))}
-            <div style={cellStyle()}>
-              <span style={hdrText}>THRU</span>
+            <div key={18} style={cell({ noBorder: true })}>
+              <span style={scoreFont}>18</span>
             </div>
           </div>
 
           {/* PAR row */}
-          <div style={{ ...rowStyle, borderBottom: '2px solid #333' }}>
-            <div style={cellStyle(true)} />
-            <div style={{ ...cellStyle(), justifyContent: 'flex-start', paddingLeft: 6 }}>
-              <span style={{ ...numText, fontWeight: 700 }}>PAR</span>
+          <div style={row}>
+            {/* PRIOR column (empty, label spans from above visually) */}
+            <div style={cell()} />
+            <div style={{ ...cell({ thick: true }), justifyContent: 'flex-start', paddingLeft: 8 }}>
+              <span style={{ fontSize: 13, fontWeight: 700, color: '#1a1a1a', fontFamily: 'Georgia, "Times New Roman", serif' }}>
+                PAR
+              </span>
             </div>
-            {AUGUSTA_PARS.map((par, i) => (
-              <div key={i} style={cellStyle()}>
-                <span style={numText}>{par}</span>
+            {AUGUSTA_PARS.slice(0, 8).map((par, i) => (
+              <div key={i} style={cell()}>
+                <span style={scoreFont}>{par}</span>
               </div>
             ))}
-            <div style={cellStyle()} />
+            <div style={cell({ thick: true })}>
+              <span style={scoreFont}>{AUGUSTA_PARS[8]}</span>
+            </div>
+            {/* Gap */}
+            <div style={{ background: '#e8e4da', borderBottom: '1px solid #999' }} />
+            {AUGUSTA_PARS.slice(9, 17).map((par, i) => (
+              <div key={i} style={cell()}>
+                <span style={scoreFont}>{par}</span>
+              </div>
+            ))}
+            <div style={cell({ noBorder: true })}>
+              <span style={scoreFont}>{AUGUSTA_PARS[17]}</span>
+            </div>
           </div>
 
           {/* ── Player rows ── */}
-          {sortedGolfers.map((p, idx) => {
+          {sortedGolfers.map((p) => {
             const meta = (p.metadata || {}) as Record<string, unknown>
             const isCut = String(meta.status || '') === 'cut'
             const prior = getPriorScore(meta)
             const holes = getHoleScores(meta, currentRound)
-            const thru = meta.thru as number | null | undefined
-            const thruLabel = typeof thru === 'number' ? (thru >= 18 ? 'F' : String(thru)) : ''
             const colors = ownershipMap.get(p.id) || []
-            const isHidden = !expanded && idx >= collapseLimit
             const isRai = p.name.toLowerCase().includes('aaron rai')
 
             return (
-              <div key={p.id} className={isHidden ? 'hidden' : ''}>
-                {cutLineIndex != null && idx === cutLineIndex && (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '2px 8px', background: '#fff' }}>
-                    <div style={{ flex: 1, borderTop: '2px dashed rgba(200,0,0,.5)' }} />
-                    <span style={{ fontSize: 9, fontWeight: 700, color: '#b91c1c', textTransform: 'uppercase', letterSpacing: '.08em' }}>
-                      Projected Cut
-                    </span>
-                    <div style={{ flex: 1, borderTop: '2px dashed rgba(200,0,0,.5)' }} />
-                  </div>
-                )}
-                <div
-                  style={{
-                    ...rowStyle,
-                    borderBottom: '1px solid #bbb',
-                    opacity: isCut ? 0.35 : 1,
-                    background: hoveredRow === p.id ? '#f5f5e8' : '#fff',
-                  }}
-                  onMouseEnter={() => setHoveredRow(p.id)}
-                  onMouseLeave={() => setHoveredRow(null)}
-                >
-                  {/* PRIOR */}
-                  <div style={cellStyle(true)}>
-                    <span style={{ ...numText, color: prior != null && prior < 0 ? '#CC0000' : '#1a1a1a' }}>
-                      {fmtPar(prior)}
-                    </span>
-                  </div>
-                  {/* NAME */}
-                  <div style={{ ...cellStyle(), justifyContent: 'flex-start', paddingLeft: 4, gap: 3, overflow: 'hidden' }}>
-                    {colors.length > 0 && colors.slice(0, 2).map((c, ci) => (
-                      <div key={ci} style={{ width: 5, height: 5, borderRadius: '50%', background: c, flexShrink: 0 }} />
-                    ))}
-                    <span style={{
-                      fontSize: 10,
-                      fontWeight: 700,
-                      color: '#1a1a1a',
-                      textTransform: 'uppercase',
-                      letterSpacing: '.04em',
-                      whiteSpace: 'nowrap',
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                    }}>
-                      {fmtName(p.name)}
-                    </span>
-                    {isCut && <span style={{ fontSize: 7, color: '#b91c1c', fontWeight: 700, flexShrink: 0 }}>CUT</span>}
-                    {isRai && <Par3CurseBadge className="shrink-0" />}
-                  </div>
-                  {/* Holes 1-18 */}
-                  {holes.map((score, hi) => {
-                    const par = AUGUSTA_PARS[hi]
-                    const under = score != null && score < par
-                    return (
-                      <div key={hi} style={cellStyle()}>
-                        <span style={{ ...numText, color: under ? '#CC0000' : '#1a1a1a' }}>
-                          {score ?? ''}
-                        </span>
-                      </div>
-                    )
-                  })}
-                  {/* THRU */}
-                  <div style={cellStyle()}>
-                    <span style={numText}>{thruLabel}</span>
-                  </div>
+              <div key={p.id} style={{ ...row, opacity: isCut ? 0.35 : 1 }}>
+                {/* PRIOR score */}
+                <div style={cell()}>
+                  <span style={{ ...scoreFont, fontSize: 13, color: prior != null && prior < 0 ? '#CC0000' : '#1a1a1a' }}>
+                    {fmtPar(prior)}
+                  </span>
                 </div>
+                {/* NAME */}
+                <div style={{
+                  ...cell({ thick: true }),
+                  justifyContent: 'flex-start',
+                  paddingLeft: 6,
+                  gap: 3,
+                  overflow: 'hidden',
+                }}>
+                  {colors.length > 0 && colors.slice(0, 2).map((c, ci) => (
+                    <div key={ci} style={{ width: 5, height: 5, borderRadius: '50%', background: c, flexShrink: 0 }} />
+                  ))}
+                  <span style={{
+                    fontSize: 11,
+                    fontWeight: 700,
+                    color: '#1a1a1a',
+                    textTransform: 'uppercase' as const,
+                    letterSpacing: '.02em',
+                    whiteSpace: 'nowrap' as const,
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    fontFamily: 'Georgia, "Times New Roman", serif',
+                  }}>
+                    {fmtName(p.name)}
+                  </span>
+                  {isRai && <Par3CurseBadge className="shrink-0" />}
+                </div>
+                {/* Holes 1-9 */}
+                {holes.slice(0, 8).map((score, hi) => {
+                  const par = AUGUSTA_PARS[hi]
+                  const under = score != null && score < par
+                  return (
+                    <div key={hi} style={cell()}>
+                      <span style={{ ...scoreFont, color: under ? '#CC0000' : '#1a1a1a' }}>
+                        {score ?? ''}
+                      </span>
+                    </div>
+                  )
+                })}
+                {/* Hole 9 with thick right border */}
+                {(() => {
+                  const score = holes[8]
+                  const under = score != null && score < AUGUSTA_PARS[8]
+                  return (
+                    <div style={cell({ thick: true })}>
+                      <span style={{ ...scoreFont, color: under ? '#CC0000' : '#1a1a1a' }}>
+                        {score ?? ''}
+                      </span>
+                    </div>
+                  )
+                })()}
+                {/* Gap */}
+                <div style={{ background: '#e8e4da', borderBottom: '1px solid #999' }} />
+                {/* Holes 10-18 */}
+                {holes.slice(9, 17).map((score, hi) => {
+                  const par = AUGUSTA_PARS[hi + 9]
+                  const under = score != null && score < par
+                  return (
+                    <div key={hi} style={cell()}>
+                      <span style={{ ...scoreFont, color: under ? '#CC0000' : '#1a1a1a' }}>
+                        {score ?? ''}
+                      </span>
+                    </div>
+                  )
+                })}
+                {/* Hole 18 no right border */}
+                {(() => {
+                  const score = holes[17]
+                  const under = score != null && score < AUGUSTA_PARS[17]
+                  return (
+                    <div style={cell({ noBorder: true })}>
+                      <span style={{ ...scoreFont, color: under ? '#CC0000' : '#1a1a1a' }}>
+                        {score ?? ''}
+                      </span>
+                    </div>
+                  )
+                })()}
               </div>
             )
           })}
 
-          {sortedGolfers.length > collapseLimit && (
+          {/* Show all → navigate to Leaderboard tab */}
+          {totalGolfers > MAX_ROWS && (
             <button
               type="button"
-              onClick={onToggleExpand}
+              onClick={onShowAll}
               style={{
                 width: '100%',
-                padding: '8px 0',
+                padding: '10px 0',
                 textAlign: 'center',
                 fontSize: 12,
                 fontWeight: 700,
-                color: '#1a5c38',
-                background: 'transparent',
+                color: '#fff',
+                background: '#1a5c38',
                 border: 'none',
-                borderTop: '1px solid #999',
+                borderTop: '2px solid #555',
                 cursor: 'pointer',
+                fontFamily: 'Georgia, "Times New Roman", serif',
+                letterSpacing: '.06em',
               }}
             >
-              {expanded ? 'Show top 15' : `Show all ${sortedGolfers.length} golfers`}
+              Show all {totalGolfers} golfers →
             </button>
           )}
 
@@ -345,32 +391,4 @@ export function MastersLeaderboard({
       </div>
     </div>
   )
-}
-
-// ── Shared inline style helpers ──
-
-function cellStyle(first?: boolean): React.CSSProperties {
-  return {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderLeft: first ? 'none' : '1px solid #333',
-    padding: '2px 0',
-    minHeight: 20,
-  }
-}
-
-const hdrText: React.CSSProperties = {
-  fontSize: 8,
-  fontWeight: 700,
-  color: '#1a1a1a',
-  textTransform: 'uppercase',
-  letterSpacing: '.04em',
-}
-
-const numText: React.CSSProperties = {
-  fontSize: 11,
-  fontWeight: 700,
-  color: '#1a1a1a',
-  fontFamily: 'ui-monospace, SFMono-Regular, monospace',
 }
