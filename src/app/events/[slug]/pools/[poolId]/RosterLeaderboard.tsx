@@ -175,6 +175,10 @@ export function RosterLeaderboard({
           r1: meta.r1 as number | null,
           r2: meta.r2 as number | null,
           r3: meta.r3 as number | null,
+          r1ToPar: golferRoundToPar(meta, 1),
+          r2ToPar: golferRoundToPar(meta, 2),
+          r3ToPar: golferRoundToPar(meta, 3),
+          r4ToPar: golferRoundToPar(meta, 4),
           r4: meta.r4 as number | null,
           status: (meta.status as string) || 'active',
           currentHole: meta.current_hole as number | null | undefined,
@@ -369,10 +373,10 @@ export function RosterLeaderboard({
                                 {p.tier}
                               </span>
                             </div>
-                            <span className="text-right text-sm text-text-secondary">{p.r1 ?? '—'}</span>
-                            <span className="text-right text-sm text-text-secondary">{p.r2 ?? '—'}</span>
-                            <span className="text-right text-sm text-text-secondary">{p.r3 ?? '—'}</span>
-                            <span className="text-right text-sm text-text-secondary">{p.r4 ?? '—'}</span>
+                            <span className={`text-right text-sm ${p.r1ToPar != null && p.r1ToPar < 0 ? 'text-success-text' : p.r1ToPar != null && p.r1ToPar > 0 ? 'text-danger-text' : 'text-text-secondary'}`}>{p.r1ToPar != null ? formatGolfScore(p.r1ToPar) : '—'}</span>
+                            <span className={`text-right text-sm ${p.r2ToPar != null && p.r2ToPar < 0 ? 'text-success-text' : p.r2ToPar != null && p.r2ToPar > 0 ? 'text-danger-text' : 'text-text-secondary'}`}>{p.r2ToPar != null ? formatGolfScore(p.r2ToPar) : '—'}</span>
+                            <span className={`text-right text-sm ${p.r3ToPar != null && p.r3ToPar < 0 ? 'text-success-text' : p.r3ToPar != null && p.r3ToPar > 0 ? 'text-danger-text' : 'text-text-secondary'}`}>{p.r3ToPar != null ? formatGolfScore(p.r3ToPar) : '—'}</span>
+                            <span className={`text-right text-sm ${p.r4ToPar != null && p.r4ToPar < 0 ? 'text-success-text' : p.r4ToPar != null && p.r4ToPar > 0 ? 'text-danger-text' : 'text-text-secondary'}`}>{p.r4ToPar != null ? formatGolfScore(p.r4ToPar) : '—'}</span>
                             <span className="text-right text-sm font-medium text-text-primary">{formatGolfScore(p.scoreToPar)}</span>
                           </div>
                         ))}
