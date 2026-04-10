@@ -863,8 +863,28 @@ export function PoolDetailClient({
                     return aScore - bScore
                   })
 
-                // Determine CUT line position from cutRule
-                const cutPosition = cutRule?.type === 'top_n_and_ties' ? cutRule.n : null
+                // Determine CUT line position from cutRule — accounting for ties
+                const cutN = cutRule?.type === 'top_n_and_ties' ? cutRule.n : null
+                let cutLineAt: number | null = null
+                if (cutN != null) {
+                  const activeOnly = sortedGolfers.filter(g => {
+                    const m = (g.metadata || {}) as Record<string, unknown>
+                    return m.status !== 'cut' && m.status !== 'wd' && m.status !== 'dq'
+                  })
+                  if (activeOnly.length > cutN) {
+                    const cutScore = ((activeOnly[cutN - 1]?.metadata as Record<string, unknown>)?.score_to_par as number) ?? null
+                    if (cutScore != null) {
+                      // Find the last golfer at or below the cut score (ties make it)
+                      for (let j = 0; j < sortedGolfers.length; j++) {
+                        const m = (sortedGolfers[j].metadata || {}) as Record<string, unknown>
+                        const s = m.score_to_par as number | null
+                        if (s != null && s <= cutScore && m.status !== 'cut') {
+                          cutLineAt = j + 1
+                        }
+                      }
+                    }
+                  }
+                }
                 const COLLAPSE_LIMIT = isMasters ? 15 : sortedGolfers.length
 
                 return sortedGolfers.map((p, i) => {
@@ -895,8 +915,8 @@ export function PoolDetailClient({
 
                   return (
                     <div key={p.id} className={isHidden ? 'hidden' : ''}>
-                      {/* Projected CUT line */}
-                      {cutPosition != null && i === cutPosition && (
+                      {/* Projected CUT line (with ties) */}
+                      {cutLineAt != null && i === cutLineAt && (
                         <div className="flex items-center gap-2 px-3 py-1">
                           <div className="flex-1 border-t border-dashed border-danger/50" />
                           <span className="text-[10px] font-semibold text-danger-text uppercase tracking-wider">Projected Cut</span>

@@ -123,7 +123,6 @@ export function CutCountdown({
 
   // Decide which countdown to show
   const showCutCountdown = !hasCut && !cutCountdownExpired
-  const showCutWaiting = !hasCut && cutCountdownExpired
   const showChampionCountdown = (hasCut || cutCountdownExpired) && champTimeLeft
 
   return (
@@ -150,20 +149,6 @@ export function CutCountdown({
               <TimeUnit value={cutTimeLeft.minutes} label="min" />
               <TimeDivider />
               <TimeUnit value={cutTimeLeft.seconds} label="sec" />
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Waiting for cut data */}
-      {showCutWaiting && (
-        <div className="bg-[#FAF6EE] border border-[#E8C96A]/40 rounded-lg p-4">
-          <div className="text-center">
-            <div className="text-[10px] uppercase tracking-[.2em] text-[#8B7355] mb-1">
-              Awaiting the cut...
-            </div>
-            <div className="text-sm text-[#1a1a1a]">
-              Round 2 is wrapping up. The cut line will appear once scores are final.
             </div>
           </div>
         </div>

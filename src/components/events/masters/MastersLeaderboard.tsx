@@ -36,36 +36,8 @@ interface GolfHole {
 
 const AUGUSTA_PARS = [4, 5, 4, 3, 4, 3, 4, 5, 4, 4, 4, 3, 5, 4, 5, 3, 4, 4]
 
-// Column widths for the fixed grid (px)
-const COL = {
-  prior: 'w-[2.2rem]',
-  name: 'w-[8rem]',
-  hole: 'w-[1.5rem]',
-  thru: 'w-[2.5rem]',
-}
-
-/** Single cell in the grid — always has left border for vertical lane lines. */
-function Cell({
-  children,
-  className = '',
-  header,
-  first,
-}: {
-  children?: React.ReactNode
-  className?: string
-  header?: boolean
-  first?: boolean
-}) {
-  return (
-    <div
-      className={`${first ? '' : 'border-l border-[#333]'} flex items-center justify-center ${
-        header ? 'font-bold' : ''
-      } ${className}`}
-    >
-      {children}
-    </div>
-  )
-}
+// CSS Grid: PRIOR(2.2rem) | NAME(8rem) | 18 holes(1.4rem each) | THRU(2.8rem)
+const GRID_COLS = '2.2rem 8rem repeat(18, 1.4rem) 2.8rem'
 
 export function MastersLeaderboard({
   participants,
@@ -172,178 +144,200 @@ export function MastersLeaderboard({
     return hasAny ? total : null
   }
 
-  function formatToPar(n: number | null): string {
+  function fmtPar(n: number | null): string {
     if (n == null) return ''
     if (n === 0) return 'E'
-    if (n > 0) return `+${n}`
-    return String(n)
+    return n > 0 ? `+${n}` : String(n)
   }
 
-  function formatName(name: string): string {
+  function fmtName(name: string): string {
     const parts = name.split(' ')
     if (parts.length <= 1) return name.toUpperCase()
-    const last = parts[parts.length - 1].toUpperCase()
-    const firstInitial = parts[0][0].toUpperCase()
-    return `${last} ${firstInitial}.`
+    return `${parts[parts.length - 1].toUpperCase()} ${parts[0][0].toUpperCase()}.`
   }
 
-  // 22 columns: PRIOR | NAME | 1-9 (9) | 10-18 (9) | THRU
-  const gridCols = `${COL.prior} ${COL.name} repeat(18, ${COL.hole}) ${COL.thru}`
+  const rowStyle = { display: 'grid', gridTemplateColumns: GRID_COLS } as const
 
   return (
     <div className="overflow-x-auto">
-      <div className="min-w-[44rem]">
-        {/* Arch header — the iconic scoreboard shape */}
-        <div className="relative">
-          {/* Green arch dome */}
+      <div style={{ minWidth: '40rem' }}>
+        {/* ── Arch header (green dome like the physical sign) ── */}
+        <div className="flex justify-center">
           <div
-            className="mx-auto rounded-t-[50%] bg-[#1a5c38] border-2 border-[#333] border-b-0 flex items-end justify-center pb-1"
-            style={{ width: '60%', height: 48 }}
+            style={{
+              width: '70%',
+              height: 44,
+              background: '#1a5c38',
+              borderRadius: '50% 50% 0 0',
+              border: '2px solid #333',
+              borderBottom: 'none',
+              display: 'flex',
+              alignItems: 'flex-end',
+              justifyContent: 'center',
+              paddingBottom: 4,
+            }}
           >
-            <h2
-              className="text-lg sm:text-xl font-bold tracking-[.2em] text-white uppercase"
-              style={{ fontFamily: 'Georgia, "Times New Roman", serif' }}
+            <span
+              style={{
+                color: '#fff',
+                fontSize: 20,
+                fontWeight: 700,
+                letterSpacing: '.18em',
+                fontFamily: 'Georgia, "Times New Roman", serif',
+                textTransform: 'uppercase',
+              }}
             >
               LEADERS
-            </h2>
+            </span>
           </div>
         </div>
 
-        {/* Main board */}
-        <div className="bg-white border-2 border-[#333] overflow-hidden">
-          {/* HOLE row */}
-          <div className="grid border-b border-[#333]" style={{ gridTemplateColumns: gridCols }}>
-            <Cell first className={`${COL.prior} text-[7px] text-[#1a1a1a] py-0.5`}>
-              <span className="leading-tight text-center text-[7px] font-bold">PRIOR</span>
-            </Cell>
-            <Cell className={`${COL.name} py-0.5`} />
-            {Array.from({ length: 9 }, (_, i) => (
-              <Cell key={i} className={`${COL.hole} text-[9px] font-bold text-[#1a1a1a] py-0.5`}>
-                {i === 4 ? 'HOLE' : ''}
-              </Cell>
+        {/* ── Main board ── */}
+        <div style={{ background: '#fff', border: '2px solid #333', overflow: 'hidden' }}>
+
+          {/* HOLE label row */}
+          <div style={{ ...rowStyle, borderBottom: '1px solid #333' }}>
+            <div style={cellStyle(true)}><span style={hdrText}>PRIOR</span></div>
+            <div style={cellStyle()} />
+            {Array.from({ length: 18 }, (_, i) => (
+              <div key={i} style={cellStyle()}>
+                {(i === 4 || i === 13) && <span style={hdrText}>HOLE</span>}
+              </div>
             ))}
-            {Array.from({ length: 9 }, (_, i) => (
-              <Cell key={i + 9} className={`${COL.hole} text-[9px] font-bold text-[#1a1a1a] py-0.5`}>
-                {i === 4 ? 'HOLE' : ''}
-              </Cell>
-            ))}
-            <Cell className={`${COL.thru} py-0.5`} />
+            <div style={cellStyle()} />
           </div>
 
-          {/* Hole numbers row */}
-          <div className="grid border-b border-[#333]" style={{ gridTemplateColumns: gridCols }}>
-            <Cell first className={`${COL.prior} py-0.5`} />
-            <Cell className={`${COL.name} py-0.5`} />
+          {/* Hole numbers */}
+          <div style={{ ...rowStyle, borderBottom: '1px solid #333' }}>
+            <div style={cellStyle(true)} />
+            <div style={cellStyle()} />
             {Array.from({ length: 18 }, (_, i) => (
-              <Cell key={i} className={`${COL.hole} text-[10px] font-bold text-[#1a1a1a] py-0.5`}>
-                {i + 1}
-              </Cell>
+              <div key={i} style={cellStyle()}>
+                <span style={numText}>{i + 1}</span>
+              </div>
             ))}
-            <Cell className={`${COL.thru} py-0.5`} />
+            <div style={cellStyle()}>
+              <span style={hdrText}>THRU</span>
+            </div>
           </div>
 
           {/* PAR row */}
-          <div className="grid border-b-2 border-[#333]" style={{ gridTemplateColumns: gridCols }}>
-            <Cell first className={`${COL.prior} py-0.5`} />
-            <Cell className={`${COL.name} text-[10px] font-bold text-[#1a1a1a] py-0.5 !justify-start pl-2`}>
-              PAR
-            </Cell>
+          <div style={{ ...rowStyle, borderBottom: '2px solid #333' }}>
+            <div style={cellStyle(true)} />
+            <div style={{ ...cellStyle(), justifyContent: 'flex-start', paddingLeft: 6 }}>
+              <span style={{ ...numText, fontWeight: 700 }}>PAR</span>
+            </div>
             {AUGUSTA_PARS.map((par, i) => (
-              <Cell key={i} className={`${COL.hole} text-[10px] font-bold text-[#1a1a1a] font-mono py-0.5`}>
-                {par}
-              </Cell>
+              <div key={i} style={cellStyle()}>
+                <span style={numText}>{par}</span>
+              </div>
             ))}
-            <Cell className={`${COL.thru} py-0.5`} />
+            <div style={cellStyle()} />
           </div>
 
-          {/* Player rows */}
-          {sortedGolfers.map((p, i) => {
+          {/* ── Player rows ── */}
+          {sortedGolfers.map((p, idx) => {
             const meta = (p.metadata || {}) as Record<string, unknown>
             const isCut = String(meta.status || '') === 'cut'
-            const priorScore = getPriorScore(meta)
-            const holeScores = getHoleScores(meta, currentRound)
+            const prior = getPriorScore(meta)
+            const holes = getHoleScores(meta, currentRound)
             const thru = meta.thru as number | null | undefined
             const thruLabel = typeof thru === 'number' ? (thru >= 18 ? 'F' : String(thru)) : ''
             const colors = ownershipMap.get(p.id) || []
-            const isHidden = !expanded && i >= collapseLimit
+            const isHidden = !expanded && idx >= collapseLimit
             const isRai = p.name.toLowerCase().includes('aaron rai')
 
             return (
               <div key={p.id} className={isHidden ? 'hidden' : ''}>
-                {/* CUT line */}
-                {cutLineIndex != null && i === cutLineIndex && (
-                  <div className="flex items-center gap-2 px-2 py-0.5 bg-white">
-                    <div className="flex-1 border-t-2 border-dashed border-red-600/60" />
-                    <span className="text-[9px] font-bold text-red-700 uppercase tracking-wider">Projected Cut</span>
-                    <div className="flex-1 border-t-2 border-dashed border-red-600/60" />
+                {cutLineIndex != null && idx === cutLineIndex && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '2px 8px', background: '#fff' }}>
+                    <div style={{ flex: 1, borderTop: '2px dashed rgba(200,0,0,.5)' }} />
+                    <span style={{ fontSize: 9, fontWeight: 700, color: '#b91c1c', textTransform: 'uppercase', letterSpacing: '.08em' }}>
+                      Projected Cut
+                    </span>
+                    <div style={{ flex: 1, borderTop: '2px dashed rgba(200,0,0,.5)' }} />
                   </div>
                 )}
                 <div
-                  className={`grid border-b border-[#999] ${isCut ? 'opacity-40' : ''} ${
-                    hoveredRow === p.id ? 'bg-[#f5f5e8]' : 'bg-white'
-                  }`}
-                  style={{ gridTemplateColumns: gridCols }}
+                  style={{
+                    ...rowStyle,
+                    borderBottom: '1px solid #bbb',
+                    opacity: isCut ? 0.35 : 1,
+                    background: hoveredRow === p.id ? '#f5f5e8' : '#fff',
+                  }}
                   onMouseEnter={() => setHoveredRow(p.id)}
                   onMouseLeave={() => setHoveredRow(null)}
                 >
                   {/* PRIOR */}
-                  <Cell first className={`${COL.prior} py-1 font-mono text-[11px] font-bold`}>
-                    <span className={priorScore != null && priorScore < 0 ? 'text-[#CC0000]' : 'text-[#1a1a1a]'}>
-                      {formatToPar(priorScore)}
+                  <div style={cellStyle(true)}>
+                    <span style={{ ...numText, color: prior != null && prior < 0 ? '#CC0000' : '#1a1a1a' }}>
+                      {fmtPar(prior)}
                     </span>
-                  </Cell>
+                  </div>
                   {/* NAME */}
-                  <Cell className={`${COL.name} py-1 !justify-start pl-1 gap-1`}>
-                    {colors.length > 0 && (
-                      <div className="flex gap-0.5 shrink-0">
-                        {colors.slice(0, 2).map((c, ci) => (
-                          <div key={ci} className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: c }} />
-                        ))}
-                      </div>
-                    )}
-                    <span className="text-[10px] font-bold text-[#1a1a1a] uppercase tracking-wide truncate leading-tight">
-                      {formatName(p.name)}
+                  <div style={{ ...cellStyle(), justifyContent: 'flex-start', paddingLeft: 4, gap: 3, overflow: 'hidden' }}>
+                    {colors.length > 0 && colors.slice(0, 2).map((c, ci) => (
+                      <div key={ci} style={{ width: 5, height: 5, borderRadius: '50%', background: c, flexShrink: 0 }} />
+                    ))}
+                    <span style={{
+                      fontSize: 10,
+                      fontWeight: 700,
+                      color: '#1a1a1a',
+                      textTransform: 'uppercase',
+                      letterSpacing: '.04em',
+                      whiteSpace: 'nowrap',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                    }}>
+                      {fmtName(p.name)}
                     </span>
-                    {isCut && <span className="text-[7px] text-red-700 font-bold shrink-0">CUT</span>}
+                    {isCut && <span style={{ fontSize: 7, color: '#b91c1c', fontWeight: 700, flexShrink: 0 }}>CUT</span>}
                     {isRai && <Par3CurseBadge className="shrink-0" />}
-                  </Cell>
+                  </div>
                   {/* Holes 1-18 */}
-                  {holeScores.map((score, hi) => {
+                  {holes.map((score, hi) => {
                     const par = AUGUSTA_PARS[hi]
-                    const isUnder = score != null && score < par
+                    const under = score != null && score < par
                     return (
-                      <Cell
-                        key={hi}
-                        className={`${COL.hole} py-1 font-mono text-[11px] font-bold ${
-                          isUnder ? 'text-[#CC0000]' : 'text-[#1a1a1a]'
-                        }`}
-                      >
-                        {score ?? ''}
-                      </Cell>
+                      <div key={hi} style={cellStyle()}>
+                        <span style={{ ...numText, color: under ? '#CC0000' : '#1a1a1a' }}>
+                          {score ?? ''}
+                        </span>
+                      </div>
                     )
                   })}
                   {/* THRU */}
-                  <Cell className={`${COL.thru} py-1 font-mono text-[10px] font-bold text-[#1a1a1a]`}>
-                    {thruLabel}
-                  </Cell>
+                  <div style={cellStyle()}>
+                    <span style={numText}>{thruLabel}</span>
+                  </div>
                 </div>
               </div>
             )
           })}
 
-          {/* Expand/collapse */}
           {sortedGolfers.length > collapseLimit && (
             <button
               type="button"
               onClick={onToggleExpand}
-              className="w-full py-2 text-center text-xs font-bold text-[#1a5c38] hover:bg-[#f5f5e8] border-t border-[#999] transition-colors"
+              style={{
+                width: '100%',
+                padding: '8px 0',
+                textAlign: 'center',
+                fontSize: 12,
+                fontWeight: 700,
+                color: '#1a5c38',
+                background: 'transparent',
+                border: 'none',
+                borderTop: '1px solid #999',
+                cursor: 'pointer',
+              }}
             >
               {expanded ? 'Show top 15' : `Show all ${sortedGolfers.length} golfers`}
             </button>
           )}
 
           {sortedGolfers.length === 0 && (
-            <div className="p-6 text-center text-[#666] text-sm">
+            <div style={{ padding: 24, textAlign: 'center', color: '#666', fontSize: 14 }}>
               No scores yet. The leaderboard will update when the tournament begins.
             </div>
           )}
@@ -351,4 +345,32 @@ export function MastersLeaderboard({
       </div>
     </div>
   )
+}
+
+// ── Shared inline style helpers ──
+
+function cellStyle(first?: boolean): React.CSSProperties {
+  return {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderLeft: first ? 'none' : '1px solid #333',
+    padding: '2px 0',
+    minHeight: 20,
+  }
+}
+
+const hdrText: React.CSSProperties = {
+  fontSize: 8,
+  fontWeight: 700,
+  color: '#1a1a1a',
+  textTransform: 'uppercase',
+  letterSpacing: '.04em',
+}
+
+const numText: React.CSSProperties = {
+  fontSize: 11,
+  fontWeight: 700,
+  color: '#1a1a1a',
+  fontFamily: 'ui-monospace, SFMono-Regular, monospace',
 }
