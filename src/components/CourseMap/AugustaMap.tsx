@@ -58,7 +58,7 @@ export function AugustaMap({
       ref={containerRef}
       onMouseMove={handleMouseMove}
       onMouseLeave={handleMouseLeave}
-      className="relative w-full aspect-[5/4] bg-surface"
+      className="relative w-full aspect-[5/4] bg-tertiary"
     >
       {/* Course map image */}
       <Image

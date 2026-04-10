@@ -85,15 +85,17 @@ export function CourseMapContainer({ participants }: CourseMapContainerProps) {
 
       {/* Two-panel layout */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {/* Map panel — surface background, palette-aware */}
-        <div className="bg-surface rounded-lg border border-border overflow-hidden">
-          <AugustaMap
-            selectedHole={selectedHole}
-            onHoleClick={setSelectedHole}
-            golferCounts={golferCounts}
-            hardestHole={extremes.hardest?.hole ?? null}
-            easiestHole={extremes.easiest?.hole ?? null}
-          />
+        {/* Map panel — cream/beige background matches the info panel */}
+        <div className="bg-tertiary rounded-lg border border-border overflow-hidden flex items-center justify-center">
+          <div className="w-full max-w-full">
+            <AugustaMap
+              selectedHole={selectedHole}
+              onHoleClick={setSelectedHole}
+              golferCounts={golferCounts}
+              hardestHole={extremes.hardest?.hole ?? null}
+              easiestHole={extremes.easiest?.hole ?? null}
+            />
+          </div>
         </div>
 
         {/* Info panel — dark surface for contrast with cream blocks */}
