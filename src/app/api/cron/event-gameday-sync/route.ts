@@ -88,13 +88,17 @@ export async function GET(request: Request) {
     ]
 
     // ── Step 1b: Find roster/multi tournaments active today (no games needed) ──
+    // Trust `status` as authoritative — tournaments that have fully concluded
+    // are moved to status='completed' by the event-sync daily cron. Don't use
+    // ends_at as a secondary filter because it's a hint and can drift: an
+    // 'active' tournament should always be synced even if ends_at has already
+    // passed (e.g. a Sunday round running into overtime or a rain delay).
     const { data: rosterTournaments } = await admin
       .from('event_tournaments')
       .select('id, sport, format, status, config')
       .in('format', ['roster', 'multi'])
       .in('status', ['active', 'upcoming'])
       .lte('starts_at', now.toISOString())
-      .gte('ends_at', now.toISOString())
 
     const hasGames = allRelevantGames.length > 0
     const hasRosterTournaments = (rosterTournaments?.length || 0) > 0

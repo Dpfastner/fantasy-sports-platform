@@ -93,12 +93,15 @@ export async function GET(request: Request) {
               // Find the game matching these two participants
               const { data: game } = await admin
                 .from('event_games')
-                .select('id')
+                .select('id, participant_1_id')
                 .eq('tournament_id', tournamentId)
                 .or(`and(participant_1_id.eq.${homeP.id},participant_2_id.eq.${awayP.id}),and(participant_1_id.eq.${awayP.id},participant_2_id.eq.${homeP.id})`)
                 .single()
 
               if (!game) continue
+
+              // Determine if our p1 is home or away to assign scores correctly
+              const p1IsHome = game.participant_1_id === homeP.id
 
               const winnerId = match.winnerTeamCode === match.homeTeamCode
                 ? homeP.id
@@ -109,8 +112,8 @@ export async function GET(request: Request) {
               await admin
                 .from('event_games')
                 .update({
-                  participant_1_score: match.homeScore,
-                  participant_2_score: match.awayScore,
+                  participant_1_score: p1IsHome ? match.homeScore : match.awayScore,
+                  participant_2_score: p1IsHome ? match.awayScore : match.homeScore,
                   status: 'final',
                   winner_id: winnerId,
                   is_draw: match.isDraw,

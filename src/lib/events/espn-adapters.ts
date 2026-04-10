@@ -1374,11 +1374,32 @@ export async function syncGameResults(
       winnerId = winner?.id || null
     }
 
+    // Determine if our p1 is home (matches winnerId path or fetch p1's external_id)
+    const { data: p1 } = await admin
+      .from('event_participants')
+      .select('external_id, metadata')
+      .eq('id', game.participant_1_id)
+      .single()
+    const p1EspnId = p1?.external_id || (p1?.metadata as Record<string, unknown> | null)?.espn_team_id
+    // Note: result.homeScore/awayScore come from ESPN — winnerId tells us which side won.
+    // If winnerId matches p1, p1 had the higher score. We can't reliably determine home/away
+    // without more info, so we use the winnerId vs scores to deduce.
+    let p1Score = result.homeScore
+    let p2Score = result.awayScore
+    if (result.homeScore != null && result.awayScore != null && winnerId) {
+      const p1IsWinner = winnerId === game.participant_1_id
+      const homeWins = result.homeScore > result.awayScore
+      const p1IsHome = p1IsWinner === homeWins
+      p1Score = p1IsHome ? result.homeScore : result.awayScore
+      p2Score = p1IsHome ? result.awayScore : result.homeScore
+    }
+    void p1EspnId
+
     await admin
       .from('event_games')
       .update({
-        participant_1_score: result.homeScore,
-        participant_2_score: result.awayScore,
+        participant_1_score: p1Score,
+        participant_2_score: p2Score,
         status: result.status,
         winner_id: winnerId,
         is_draw: result.isDraw,

@@ -1,14 +1,15 @@
 'use client'
 
 /**
- * Right-panel hole detail view with two view modes:
- * - Info (default): hole name, par, yardage, description, top scores, on-the-tee list
- * - Stats: scoring distribution bars + aggregate field stats for the selected round
+ * Right-panel hole detail view.
+ * Header shows hole number, name, par, yardage, and the rich description.
+ * Body shows all live tournament data for this hole (field avg, scoring
+ * distribution, top 5 on the hole, and currently playing golfers).
  *
- * The user toggles between views via a segmented control at the top of the panel.
+ * Panel uses bg-tertiary (cream on Royal Gambit, warm beige on Heritage
+ * Field) for visual contrast with the dark map and the rest of the dark UI.
  */
 
-import { useState } from 'react'
 import { type AugustaHole } from '@/lib/events/augusta-holes'
 import {
   computeHoleLeaderboard,
@@ -17,8 +18,6 @@ import {
   type GolferLite,
 } from '@/lib/events/golf-aggregations'
 
-type ViewMode = 'info' | 'stats'
-
 interface HoleInfoPanelProps {
   hole: AugustaHole | null
   round: number
@@ -26,12 +25,10 @@ interface HoleInfoPanelProps {
 }
 
 export function HoleInfoPanel({ hole, round, golfers }: HoleInfoPanelProps) {
-  const [viewMode, setViewMode] = useState<ViewMode>('info')
-
   if (!hole) {
     return (
-      <div className="bg-surface rounded-lg border border-border p-6 text-center">
-        <p className="text-sm text-text-muted">Select a hole on the map to see details.</p>
+      <div className="bg-tertiary rounded-lg border border-border p-6 text-center">
+        <p className="text-sm text-card-text-muted">Select a hole on the map to see details.</p>
       </div>
     )
   }
@@ -53,70 +50,43 @@ export function HoleInfoPanel({ hole, round, golfers }: HoleInfoPanelProps) {
     ? 'text-text-muted'
     : vsPar > 0.2 ? 'text-danger-text'
     : vsPar < -0.2 ? 'text-success-text'
-    : 'text-text-secondary'
+    : 'text-text-primary'
 
   return (
-    <div className="bg-surface rounded-lg border border-border overflow-hidden">
-      {/* Header */}
-      <div className="px-5 py-4 bg-surface-inset border-b border-border">
+    <div className="bg-tertiary rounded-lg border border-border overflow-hidden">
+      {/* Header — hole number, name, par, yards, description */}
+      <div className="px-5 py-4 border-b border-border">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
-            <div className="text-[10px] text-text-muted uppercase tracking-wider mb-1">
+            <div className="text-[10px] text-card-text-muted uppercase tracking-wider mb-1">
               Hole {hole.number}
             </div>
-            <h3 className="brand-h3 text-lg text-text-primary leading-tight">{hole.name}</h3>
+            <h3 className="brand-h3 text-lg text-text-inverse leading-tight">{hole.name}</h3>
           </div>
           <div className="text-right shrink-0">
             <div className="text-2xl font-bold text-brand leading-none">Par {hole.par}</div>
-            <div className="text-xs text-text-muted mt-1">{hole.yards} yds</div>
+            <div className="text-xs text-card-text-muted mt-1">{hole.yards} yds</div>
           </div>
         </div>
-      </div>
-
-      {/* View mode toggle */}
-      <div className="flex gap-1 px-5 pt-4">
-        <button
-          onClick={() => setViewMode('info')}
-          className={`flex-1 text-xs font-semibold uppercase tracking-wider py-1.5 rounded transition-colors ${
-            viewMode === 'info' ? 'bg-brand text-text-primary' : 'bg-surface-inset text-text-muted hover:text-text-primary'
-          }`}
-        >
-          Info
-        </button>
-        <button
-          onClick={() => setViewMode('stats')}
-          className={`flex-1 text-xs font-semibold uppercase tracking-wider py-1.5 rounded transition-colors ${
-            viewMode === 'stats' ? 'bg-brand text-text-primary' : 'bg-surface-inset text-text-muted hover:text-text-primary'
-          }`}
-        >
-          Stats
-        </button>
-      </div>
-
-      {/* Body */}
-      <div className="p-5 space-y-4">
-        {viewMode === 'info' ? (
-          /* INFO VIEW: pure hole facts, never changes mid-round */
-          <div>
-            {hole.description ? (
-              <p className="text-sm text-text-secondary italic leading-relaxed">{hole.description}</p>
-            ) : (
-              <p className="text-sm text-text-muted italic text-center py-4">No hole info available.</p>
-            )}
-          </div>
-        ) : (
-          /* STATS VIEW: all live tournament data for this hole */
-          <HoleStatsView
-            distribution={distribution}
-            round={round}
-            holeNumber={hole.number}
-            difficultyLabel={difficultyLabel}
-            difficultyColor={difficultyColor}
-            playersFinished={difficulty.playersFinished}
-            leaderboard={leaderboard}
-            playingNow={playingNow}
-          />
+        {hole.description && (
+          <p className="mt-3 text-sm italic text-card-text-muted leading-relaxed">
+            {hole.description}
+          </p>
         )}
+      </div>
+
+      {/* Body — all live stats */}
+      <div className="p-5 space-y-4">
+        <HoleStatsView
+          distribution={distribution}
+          round={round}
+          holeNumber={hole.number}
+          difficultyLabel={difficultyLabel}
+          difficultyColor={difficultyColor}
+          playersFinished={difficulty.playersFinished}
+          leaderboard={leaderboard}
+          playingNow={playingNow}
+        />
       </div>
     </div>
   )
@@ -177,7 +147,7 @@ function HoleStatsView({
 
   if (hasNoLiveData) {
     return (
-      <p className="text-sm text-text-muted italic text-center py-8">
+      <p className="text-sm text-card-text-muted italic text-center py-8">
         No live data for Hole {holeNumber} yet.
       </p>
     )
@@ -187,16 +157,16 @@ function HoleStatsView({
     <>
       {/* Aggregate strip — Field Avg / Birdie+ / Bogey+ */}
       <div className="grid grid-cols-3 gap-2">
-        <div className="bg-surface-inset rounded-lg p-2.5 text-center">
+        <div className="bg-surface rounded-lg p-2.5 text-center">
           <div className="text-[9px] text-text-muted uppercase tracking-wider mb-0.5">Field Avg</div>
           <div className={`text-base font-bold ${difficultyColor}`}>{difficultyLabel}</div>
           <div className="text-[9px] text-text-muted mt-0.5">{playersFinished} finished</div>
         </div>
-        <div className="bg-surface-inset rounded-lg p-2.5 text-center">
+        <div className="bg-surface rounded-lg p-2.5 text-center">
           <div className="text-[9px] text-text-muted uppercase tracking-wider mb-0.5">Birdie+</div>
           <div className="text-base font-bold text-success-text">{birdieOrBetterPct}%</div>
         </div>
-        <div className="bg-surface-inset rounded-lg p-2.5 text-center">
+        <div className="bg-surface rounded-lg p-2.5 text-center">
           <div className="text-[9px] text-text-muted uppercase tracking-wider mb-0.5">Bogey+</div>
           <div className="text-base font-bold text-danger-text">{bogeyOrWorsePct}%</div>
         </div>
@@ -205,14 +175,14 @@ function HoleStatsView({
       {/* Distribution bars — with grid lines */}
       {total > 0 && (
         <div>
-          <div className="text-[10px] text-text-muted uppercase tracking-wider mb-2">
+          <div className="text-[10px] text-card-text-muted uppercase tracking-wider mb-2">
             Scoring Distribution · R{round} · {total} finished
           </div>
-          <div className="border border-border-subtle rounded overflow-hidden divide-y divide-border-subtle">
+          <div className="bg-surface border border-border rounded overflow-hidden divide-y divide-border-subtle">
             {rows.map(row => {
               const pct = total > 0 ? (row.count / total) * 100 : 0
               return (
-                <div key={row.label} className="grid grid-cols-[3.5rem_1fr_3.5rem] items-center gap-2 px-2 py-1.5 bg-surface-inset/20">
+                <div key={row.label} className="grid grid-cols-[3.5rem_1fr_3.5rem] items-center gap-2 px-2 py-1.5">
                   <span className={`text-xs font-medium ${row.textClass}`}>{row.label}</span>
                   <div className="relative h-2.5 bg-surface-inset rounded-full overflow-hidden">
                     {/* Quarter tick marks as grid lines */}
@@ -241,12 +211,12 @@ function HoleStatsView({
       {/* Top 5 best scores on hole */}
       {leaderboard.length > 0 && (
         <div>
-          <div className="text-[10px] text-text-muted uppercase tracking-wider mb-2">
+          <div className="text-[10px] text-card-text-muted uppercase tracking-wider mb-2">
             Best on Hole {holeNumber} · R{round}
           </div>
-          <div className="divide-y divide-border-subtle border border-border-subtle rounded overflow-hidden">
+          <div className="bg-surface divide-y divide-border-subtle border border-border rounded overflow-hidden">
             {leaderboard.map((g, i) => (
-              <div key={g.id} className="flex items-center justify-between text-sm gap-2 px-2 py-1.5 bg-surface-inset/20">
+              <div key={g.id} className="flex items-center justify-between text-sm gap-2 px-2 py-1.5">
                 <div className="flex items-center gap-1.5 min-w-0 flex-1">
                   <span className="text-xs text-text-muted w-4 text-right">{i + 1}</span>
                   {g.countryCode && (
@@ -273,7 +243,7 @@ function HoleStatsView({
       {/* Currently playing list */}
       {playingNow.length > 0 && (
         <div>
-          <div className="text-[10px] text-text-muted uppercase tracking-wider mb-2">On The Tee Now</div>
+          <div className="text-[10px] text-card-text-muted uppercase tracking-wider mb-2">On The Tee Now</div>
           <div className="flex flex-wrap gap-1.5">
             {playingNow.map(g => (
               <span

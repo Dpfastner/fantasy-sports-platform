@@ -97,16 +97,19 @@ export function RosterMatrix({ entries, participants, allRosterPicks }: RosterMa
   const pickSets = new Map(sortedEntries.map(e => [e.id, new Set(allRosterPicks[e.id] || [])]))
 
   // Row/col dimensions
+  // Entry columns use minmax so they stretch to fill available width when
+  // there are few entries, and fall back to 4.5rem + horizontal scroll when
+  // the container is narrower than the full grid.
   const goldierCol = '12rem'                  // left header column for golfer info
-  const entryColWidth = '4.5rem'              // each entry column width
 
   return (
     <div className="overflow-x-auto -mx-1">
       <div
-        className="min-w-max px-1 text-xs"
+        className="w-full px-1 text-xs"
         style={{
           display: 'grid',
-          gridTemplateColumns: `${goldierCol} repeat(${sortedEntries.length}, ${entryColWidth})`,
+          gridTemplateColumns: `${goldierCol} repeat(${sortedEntries.length}, minmax(4.5rem, 1fr))`,
+          minWidth: `calc(12rem + ${sortedEntries.length} * 4.5rem)`,
         }}
       >
         {/* ── Top-left corner cell ── */}
