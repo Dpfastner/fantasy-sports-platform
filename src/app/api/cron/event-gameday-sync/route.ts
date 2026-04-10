@@ -294,6 +294,11 @@ export async function GET(request: Request) {
               // Track newly completed games
               if (espnGame.status === 'completed' && prevStatuses.get(ourGame.id) !== 'completed') {
                 newlyCompleted.push({ tournamentId, format: tournament.format, config: tournament.config })
+
+                // Advance winner to next round game
+                if (updateData.winner_id && tournament.format === 'bracket') {
+                  await advanceBracketWinner(admin, tournamentId, ourGame!.id, updateData.winner_id as string)
+                }
               }
             }
           }
@@ -818,6 +823,56 @@ export async function GET(request: Request) {
       { status: 500 }
     )
   }
+}
+
+// ── Bracket advancement ──
+// When a bracket game completes, advance the winner to the next round's game.
+// Bracket structure: games are ordered by game_number. Two consecutive games feed into one next-round game.
+// Games 1+2 → next, 3+4 → next, etc.
+async function advanceBracketWinner(
+  admin: ReturnType<typeof createAdminClient>,
+  tournamentId: string,
+  completedGameId: string,
+  winnerId: string,
+) {
+  // Get all games ordered by game_number
+  const { data: allGames } = await admin
+    .from('event_games')
+    .select('id, game_number, round, participant_1_id, participant_2_id')
+    .eq('tournament_id', tournamentId)
+    .order('game_number')
+
+  if (!allGames?.length) return
+
+  const completedGame = allGames.find(g => g.id === completedGameId)
+  if (!completedGame) return
+
+  // Group games by round to find which rounds feed into which
+  const rounds = [...new Set(allGames.map(g => g.round))]
+  const roundIdx = rounds.indexOf(completedGame.round)
+  if (roundIdx < 0 || roundIdx >= rounds.length - 1) return // Already the final round
+
+  const nextRound = rounds[roundIdx + 1]
+  const currentRoundGames = allGames.filter(g => g.round === completedGame.round)
+  const nextRoundGames = allGames.filter(g => g.round === nextRound)
+
+  // Find position of completed game within its round
+  const posInRound = currentRoundGames.findIndex(g => g.id === completedGameId)
+  if (posInRound < 0) return
+
+  // Two games feed into one next-round game: games at positions 0,1 → next[0], 2,3 → next[1], etc.
+  const nextGameIdx = Math.floor(posInRound / 2)
+  const nextGame = nextRoundGames[nextGameIdx]
+  if (!nextGame) return
+
+  // Slot: even position → participant_1, odd → participant_2
+  const slot = posInRound % 2 === 0 ? 'participant_1_id' : 'participant_2_id'
+
+  // Only update if the slot is empty (don't overwrite if already set)
+  if (nextGame[slot]) return
+
+  await admin.from('event_games').update({ [slot]: winnerId }).eq('id', nextGame.id)
+  console.log(`[bracket-advance] G${completedGame.game_number} winner → G${nextGame.game_number} ${slot}`)
 }
 
 // ── Scoring functions (duplicated from event-sync for independent operation) ──
