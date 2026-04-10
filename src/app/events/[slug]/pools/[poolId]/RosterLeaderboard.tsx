@@ -7,9 +7,6 @@ import { golferRoundToPar } from '@/lib/events/golf-aggregations'
 import { DEFAULT_TIERS, TIER_COLORS, getTier, type RosterTier } from '@/lib/events/tiers'
 import { EntryAvatar } from '@/components/EntryAvatar'
 import { GolfHoleGrid } from '@/components/GolfHoleGrid'
-import { Par3CurseBadge } from '@/components/events/masters/Par3CurseBadge'
-import { PimentoCheeseBadge } from '@/components/events/masters/PimentoCheeseBadge'
-import { CrowsNestBadge } from '@/components/events/masters/CrowsNestBadge'
 
 interface Member {
   id: string
@@ -292,23 +289,6 @@ export function RosterLeaderboard({
                         <span className="text-sm text-text-muted truncate italic block">{member.displayName}</span>
                       )}
                     </div>
-                    {/* Masters inline badges */}
-                    {isMasters && (
-                      <div className="flex items-center gap-1 shrink-0">
-                        {entryHasRai(member.id) && <Par3CurseBadge />}
-                        {mastersAwards?.pimentoWinners.has(member.id) && (
-                          mastersAwards.pimentoWinners.get(member.id)!.map(round => (
-                            <PimentoCheeseBadge key={`pc-${round}`} round={round} entryName={member.entryName || member.displayName} />
-                          ))
-                        )}
-                        {mastersAwards?.crowsNestHolder?.entryId === member.id && (
-                          <CrowsNestBadge
-                            rounds={mastersAwards.crowsNestHolder.rounds}
-                            entryName={member.entryName || member.displayName}
-                          />
-                        )}
-                      </div>
-                    )}
                     {canExpand && (
                       <svg
                         className={`w-3.5 h-3.5 text-text-muted shrink-0 transition-transform ${isExpanded ? 'rotate-90' : ''}`}
