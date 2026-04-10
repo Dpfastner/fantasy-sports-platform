@@ -893,6 +893,7 @@ export function PoolDetailClient({
                             holes={holes}
                             currentHole={currentHole ?? null}
                             thru={thru ?? null}
+                            currentRound={(meta.current_round as number | null) ?? null}
                             label={p.name}
                           />
                         </div>

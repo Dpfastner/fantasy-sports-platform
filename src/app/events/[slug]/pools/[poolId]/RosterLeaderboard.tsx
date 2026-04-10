@@ -151,6 +151,7 @@ export function RosterLeaderboard({
           r4: meta.r4 as number | null,
           status: (meta.status as string) || 'active',
           currentHole: meta.current_hole as number | null | undefined,
+          currentRound: meta.current_round as number | null | undefined,
           thru: meta.thru as number | null | undefined,
           holes: (meta.holes as Array<{ hole: number; round: number; strokes: number; par: number; scoreType: string }> | undefined) || [],
           rank: owgr,
@@ -328,6 +329,7 @@ export function RosterLeaderboard({
                                   holes={p.holes}
                                   currentHole={p.currentHole ?? null}
                                   thru={p.thru ?? null}
+                                  currentRound={p.currentRound ?? null}
                                   hideLabel
                                 />
                               ) : (
@@ -367,6 +369,7 @@ export function RosterLeaderboard({
                                   holes={p.holes}
                                   currentHole={p.currentHole ?? null}
                                   thru={p.thru ?? null}
+                                  currentRound={p.currentRound ?? null}
                                   hideLabel
                                 />
                               ) : (
