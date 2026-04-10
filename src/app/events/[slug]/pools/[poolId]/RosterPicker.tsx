@@ -8,6 +8,8 @@ import { saveEntryName } from '@/app/actions/entry'
 import { track } from '@vercel/analytics'
 import { formatGolfScore } from '@/lib/events/shared'
 import { DEFAULT_TIERS, TIER_COLORS, CountryFlag, type RosterTier } from '@/lib/events/tiers'
+import { GolfHoleGrid } from '@/components/GolfHoleGrid'
+import { TeeTimesCard } from '@/components/TeeTimesCard'
 
 interface Participant {
   id: string
@@ -248,6 +250,10 @@ export function RosterPicker({
           r4: meta.r4 as number | null,
           status: (meta.status as string) || 'active',
           rank: owgr,
+          holes: (meta.holes as Array<{ hole: number; round: number; strokes: number; par: number; scoreType: string }>) || [],
+          currentHole: meta.current_hole as number | null | undefined,
+          thru: meta.thru as number | null | undefined,
+          currentRound: meta.current_round as number | null | undefined,
         }
       })
 
@@ -318,6 +324,16 @@ export function RosterPicker({
         </div>
       )}
 
+      {/* Tee Times — shown on My Roster when locked (moved from overview for Masters) */}
+      {isLocked && (
+        <div className="mb-6">
+          <TeeTimesCard
+            participants={participants}
+            myRosterPicks={Array.from(selectedIds)}
+          />
+        </div>
+      )}
+
       {/* My Roster — always visible after submission */}
       {myRoster && submittedAt && (
         <div className="bg-surface rounded-lg border border-border p-5 mb-6">
@@ -356,18 +372,30 @@ export function RosterPicker({
                       <span className="flex items-center gap-1.5">
                         <CountryFlag country={p.country} countryCode={p.countryCode} />
                         {p.name}
+                        {p.status === 'cut' && <span className="text-[10px] text-danger-text">CUT</span>}
                       </span>
+                      {p.holes && p.holes.length > 0 && isLocked && (
+                        <div className="mt-1">
+                          <GolfHoleGrid
+                            holes={p.holes}
+                            currentHole={p.currentHole ?? null}
+                            thru={p.thru ?? null}
+                            currentRound={p.currentRound ?? null}
+                            hideLabel
+                          />
+                        </div>
+                      )}
                     </td>
-                    <td className="py-2 px-1 text-center">
+                    <td className="py-2 px-1 text-center align-top">
                       <span className={`text-xs px-1.5 py-0.5 rounded ${TIER_COLORS[p.tier]?.bg || 'bg-surface-inset'} ${TIER_COLORS[p.tier]?.text || 'text-text-muted'}`}>
                         {p.tier}
                       </span>
                     </td>
-                    <td className="py-2 px-1 text-center text-text-secondary">{p.r1 ?? '—'}</td>
-                    <td className="py-2 px-1 text-center text-text-secondary">{p.r2 ?? '—'}</td>
-                    <td className="py-2 px-1 text-center text-text-secondary">{p.r3 ?? '—'}</td>
-                    <td className="py-2 px-1 text-center text-text-secondary">{p.r4 ?? '—'}</td>
-                    <td className="py-2 pl-1 text-right font-medium text-text-primary">{formatGolfScore(p.scoreToPar)}</td>
+                    <td className="py-2 px-1 text-center text-text-secondary align-top">{p.r1 ?? '—'}</td>
+                    <td className="py-2 px-1 text-center text-text-secondary align-top">{p.r2 ?? '—'}</td>
+                    <td className="py-2 px-1 text-center text-text-secondary align-top">{p.r3 ?? '—'}</td>
+                    <td className="py-2 px-1 text-center text-text-secondary align-top">{p.r4 ?? '—'}</td>
+                    <td className="py-2 pl-1 text-right font-medium text-text-primary align-top">{formatGolfScore(p.scoreToPar)}</td>
                   </tr>
                 ))}
                 {myRoster.dropped.map(p => (
@@ -397,8 +425,8 @@ export function RosterPicker({
         </div>
       )}
 
-      {/* Tier sections */}
-      <div className="space-y-6">
+      {/* Tier sections — hidden when rosters are locked */}
+      <div className={`space-y-6 ${isLocked ? 'hidden' : ''}`}>
         {Object.entries(tiers).map(([tierKey, tierDef]) => {
           const tierParticipants = tierGroups[tierKey] || []
           const count = tierCounts[tierKey] || 0

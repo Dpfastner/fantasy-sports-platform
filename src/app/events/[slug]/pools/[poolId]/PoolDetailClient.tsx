@@ -28,6 +28,10 @@ import { SchoolPicker } from '@/components/SchoolPicker'
 import { ViewBracketModal } from './ViewBracketModal'
 import { MembersTab } from './MembersTab'
 import { SettingsTab } from './SettingsTab'
+import { CutCountdown } from '@/components/events/masters/CutCountdown'
+import { computeAllMastersAwards } from '@/lib/events/masters-awards'
+import { GreenJacketCeremony } from '@/components/events/masters/GreenJacketCeremony'
+import { Top10Leaderboard } from '@/components/events/masters/Top10Leaderboard'
 
 interface Participant {
   id: string
@@ -174,6 +178,7 @@ export function PoolDetailClient({
   const [activeTab, setActiveTabState] = useState<Tab>(initialTab)
   const [showRules, setShowRules] = useState(false)
   const [expandedGolferId, setExpandedGolferId] = useState<string | null>(null)
+  const [leaderboardExpanded, setLeaderboardExpanded] = useState(false)
   const [codeCopied, setCodeCopied] = useState(false)
   const [showSchoolPrompt, setShowSchoolPrompt] = useState(false)
   const [selectedSchoolId, setSelectedSchoolId] = useState<string | null>(null)
@@ -346,6 +351,30 @@ export function PoolDetailClient({
     }
     return null
   }, [tournament.config])
+
+  // Masters awards: pimento cheese (best round) + crow's nest (worst round)
+  const isMasters = tournament.sport === 'golf' && (tournament.slug?.startsWith('masters') ?? false)
+  const mastersAwards = useMemo(() => {
+    if (!isMasters || !allRosterPicks || effectiveFormat !== 'roster') return undefined
+    const countBest = (pool.scoringRules?.count_best as number) || 5
+    const entryInfos = liveMembers.map(m => ({
+      id: m.id,
+      displayName: m.displayName,
+      entryName: m.entryName,
+      score: m.score,
+    }))
+    return computeAllMastersAwards(entryInfos, allRosterPicks, liveParticipants, countBest)
+  }, [isMasters, allRosterPicks, effectiveFormat, pool.scoringRules, liveMembers, liveParticipants])
+
+  // Masters: detect pool winner for Green Jacket ceremony
+  const mastersWinner = useMemo(() => {
+    if (!isMasters || tournament.status !== 'completed' || liveMembers.length === 0) return null
+    const sorted = [...liveMembers].sort((a, b) => a.score - b.score)
+    // Only award if clear winner (no tie in top 2)
+    if (sorted.length >= 2 && sorted[0].score === sorted[1].score) return null
+    return sorted[0]
+  }, [isMasters, tournament.status, liveMembers])
+
   const activeEntryPicks = activeEntry ? (userPicksByEntry[activeEntry.id] || []) : []
   const hasAnyEntry = userEntries.length > 0
   const canAddEntry = hasAnyEntry && userEntries.length < pool.maxEntriesPerUser && pool.status === 'open'
@@ -637,23 +666,39 @@ export function PoolDetailClient({
       {/* Tab Content */}
       {activeTab === 'overview' && (
         <div className="space-y-6">
-          {/* Countdown to tournament start */}
-          {tournament.startsAt && new Date(tournament.startsAt).getTime() > Date.now() && (
+          {/* Countdown — pre-tournament or cut countdown for Masters golf */}
+          {tournament.startsAt && new Date(tournament.startsAt).getTime() > Date.now() ? (
             <TournamentCountdown
               startsAt={tournament.startsAt}
               label="Tournament starts in"
               tournamentName={tournament.name}
+            />
+          ) : tournament.sport === 'golf' && tournament.slug?.startsWith('masters') && effectiveFormat === 'roster' && (
+            <CutCountdown
+              participants={liveParticipants}
+              allRosterPicks={allRosterPicks}
+              myRosterPickIds={myRosterPickIds}
             />
           )}
 
           {/* Announcements */}
           <PoolAnnouncements poolId={pool.id} isCreator={isCreator} />
 
-          {/* Tee Times — golf roster pools only */}
-          {effectiveFormat === 'roster' && tournament.sport === 'golf' && (
+          {/* Tee Times — golf roster pools only (moves to My Roster for Masters) */}
+          {effectiveFormat === 'roster' && tournament.sport === 'golf' && !isMasters && (
             <TeeTimesCard
               participants={liveParticipants}
               myRosterPicks={myRosterPickIds.length > 0 ? myRosterPickIds : null}
+            />
+          )}
+
+          {/* Masters: Top 10 Tournament Leaderboard preview */}
+          {isMasters && effectiveFormat === 'roster' && (
+            <Top10Leaderboard
+              participants={liveParticipants}
+              allRosterPicks={allRosterPicks}
+              members={liveMembers}
+              onSwitchTab={() => setActiveTab('schedule')}
             />
           )}
 
@@ -669,6 +714,8 @@ export function PoolDetailClient({
               poolStatus={pool.status}
               scoringRules={pool.scoringRules}
               allRosterPicks={allRosterPicks}
+              tournamentSlug={tournament.slug}
+              mastersAwards={mastersAwards}
             />
           ) : (
             <Leaderboard
@@ -681,21 +728,18 @@ export function PoolDetailClient({
           )}
           </ErrorBoundary>
 
-          {/* Biggest Movers — golf roster pools only, full width */}
-          {effectiveFormat === 'roster' && tournament.sport === 'golf' && (
+          {/* Biggest Movers — golf roster pools (moves to Leaderboard tab for Masters) */}
+          {effectiveFormat === 'roster' && tournament.sport === 'golf' && !isMasters && (
             <BiggestMovers participants={liveParticipants} />
           )}
 
-          {/* Projected Cut Tracker — golf roster pools with cut_rule config */}
+          {/* Projected Cut Tracker — stays on overview for all golf pools */}
           {effectiveFormat === 'roster' && tournament.sport === 'golf' && cutRule && (
             <ProjectedCutTracker participants={liveParticipants} cutRule={cutRule} />
           )}
 
-          {/* Player Ownership card (collapsible) — hidden until current user
-              has submitted an entry (prevents spoiling other members' picks
-              before you've locked yours in). Offers Ownership list view and
-              Matrix heatmap view of roster picks. */}
-          {effectiveFormat === 'roster' && rosterSelectionCounts && rosterTotalEntries !== undefined && userEntries.some(e => e.submittedAt) && allRosterPicks && (
+          {/* Player Ownership — golf roster pools (moves to Leaderboard tab for Masters) */}
+          {effectiveFormat === 'roster' && !isMasters && rosterSelectionCounts && rosterTotalEntries !== undefined && userEntries.some(e => e.submittedAt) && allRosterPicks && (
             <PlayerOwnershipCard
               participants={liveParticipants}
               selectionCounts={rosterSelectionCounts}
@@ -793,6 +837,7 @@ export function PoolDetailClient({
 
       {activeTab === 'schedule' && (
         effectiveFormat === 'roster' ? (
+          <div className="space-y-6">
           <div className="bg-surface rounded-lg border border-border overflow-x-auto">
             <div className="min-w-[44rem]">
               <div className="grid grid-cols-[2rem_minmax(10rem,1fr)_2.5rem_4.5rem_2.5rem_2.5rem_2.5rem_2.5rem_3.5rem] gap-1 px-3 py-2 bg-surface-inset border-b border-border text-xs text-text-muted uppercase tracking-wide">
@@ -806,16 +851,22 @@ export function PoolDetailClient({
                 <span className="text-center">R4</span>
                 <span className="text-right">Score</span>
               </div>
-              {[...liveParticipants]
-                .filter(p => p.metadata?.score_to_par != null || p.metadata?.status === 'active')
-                .sort((a, b) => {
-                  const aScore = (a.metadata?.score_to_par as number) ?? 999
-                  const bScore = (b.metadata?.score_to_par as number) ?? 999
-                  return aScore - bScore
-                })
-                .map((p, i) => {
+              {(() => {
+                const sortedGolfers = [...liveParticipants]
+                  .filter(p => p.metadata?.score_to_par != null || p.metadata?.status === 'active')
+                  .sort((a, b) => {
+                    const aScore = (a.metadata?.score_to_par as number) ?? 999
+                    const bScore = (b.metadata?.score_to_par as number) ?? 999
+                    return aScore - bScore
+                  })
+
+                // Determine CUT line position from cutRule
+                const cutPosition = cutRule?.type === 'top_n_and_ties' ? cutRule.n : null
+                const COLLAPSE_LIMIT = isMasters ? 15 : sortedGolfers.length
+
+                return sortedGolfers.map((p, i) => {
                   const meta = (p.metadata || {}) as Record<string, unknown>
-                  const isCut = String(meta.status || '') === 'cut'
+                  const isCutGolfer = String(meta.status || '') === 'cut'
                   const scoreToPar = meta.score_to_par as number | null
                   const holes = (meta.holes as GolfHole[] | undefined) || []
                   const hasHoleData = holes.length > 0
@@ -836,12 +887,23 @@ export function PoolDetailClient({
                       return '—'
                     }
                   })()
+                  const isHidden = !leaderboardExpanded && i >= COLLAPSE_LIMIT
+                  const isAaronRai = isMasters && p.name.toLowerCase().includes('aaron rai')
+
                   return (
-                    <div key={p.id}>
+                    <div key={p.id} className={isHidden ? 'hidden' : ''}>
+                      {/* Projected CUT line */}
+                      {cutPosition != null && i === cutPosition && (
+                        <div className="flex items-center gap-2 px-3 py-1">
+                          <div className="flex-1 border-t border-dashed border-danger/50" />
+                          <span className="text-[10px] font-semibold text-danger-text uppercase tracking-wider">Projected Cut</span>
+                          <div className="flex-1 border-t border-dashed border-danger/50" />
+                        </div>
+                      )}
                       <button
                         type="button"
                         onClick={() => hasHoleData && setExpandedGolferId(isExpanded ? null : p.id)}
-                        className={`w-full grid grid-cols-[2rem_minmax(10rem,1fr)_2.5rem_4.5rem_2.5rem_2.5rem_2.5rem_2.5rem_3.5rem] gap-1 px-3 py-2 border-b border-border-subtle last:border-0 text-sm text-left transition-colors ${isCut ? 'opacity-50' : ''} ${hasHoleData ? 'hover:bg-surface-inset/40 cursor-pointer' : 'cursor-default'} ${isExpanded ? 'bg-surface-inset/30' : ''}`}
+                        className={`w-full grid grid-cols-[2rem_minmax(10rem,1fr)_2.5rem_4.5rem_2.5rem_2.5rem_2.5rem_2.5rem_3.5rem] gap-1 px-3 py-2 border-b border-border-subtle last:border-0 text-sm text-left transition-colors ${isCutGolfer ? 'opacity-50' : ''} ${hasHoleData ? 'hover:bg-surface-inset/40 cursor-pointer' : 'cursor-default'} ${isExpanded ? 'bg-surface-inset/30' : ''}`}
                       >
                         <span className="text-right text-text-muted">{i + 1}</span>
                         <div className="flex items-center gap-1.5 min-w-0">
@@ -857,7 +919,10 @@ export function PoolDetailClient({
                             />
                           )}
                           <span className="text-text-primary truncate">{p.name}</span>
-                          {isCut && <span className="text-xs text-danger-text shrink-0">CUT</span>}
+                          {isCutGolfer && <span className="text-xs text-danger-text shrink-0">CUT</span>}
+                          {isAaronRai && (
+                            <span className="inline-flex items-center gap-0.5 px-1 py-0.5 rounded text-[9px] font-bold uppercase bg-amber-500/20 text-amber-400 border border-amber-500/30">JINXED</span>
+                          )}
                           {hasHoleData && (
                             <svg
                               className={`w-3 h-3 text-text-muted shrink-0 transition-transform ${isExpanded ? 'rotate-90' : ''}`}
@@ -904,13 +969,49 @@ export function PoolDetailClient({
                       )}
                     </div>
                   )
-                })}
+                })
+              })()}
+              {/* Expand/collapse button for Masters */}
+              {isMasters && (() => {
+                const total = liveParticipants.filter(p => p.metadata?.score_to_par != null || p.metadata?.status === 'active').length
+                if (total <= 15) return null
+                return (
+                  <button
+                    type="button"
+                    onClick={() => setLeaderboardExpanded(!leaderboardExpanded)}
+                    className="w-full py-2 text-center text-xs text-brand hover:underline border-t border-border"
+                  >
+                    {leaderboardExpanded ? 'Show top 15' : `Show all ${total} golfers`}
+                  </button>
+                )
+              })()}
               {liveParticipants.every(p => p.metadata?.score_to_par == null) && (
                 <div className="p-6 text-center text-text-muted text-sm">
                   No scores yet. Leaderboard will update when the tournament begins.
                 </div>
               )}
             </div>
+          </div>
+
+          {/* Masters: Biggest Movers + Player Ownership (moved from overview) */}
+          {isMasters && (
+            <BiggestMovers participants={liveParticipants} />
+          )}
+          {isMasters && rosterSelectionCounts && rosterTotalEntries !== undefined && userEntries.some(e => e.submittedAt) && allRosterPicks && (
+            <PlayerOwnershipCard
+              participants={liveParticipants}
+              selectionCounts={rosterSelectionCounts}
+              totalEntries={rosterTotalEntries}
+              entries={liveMembers.map(m => ({
+                id: m.id,
+                displayName: m.displayName,
+                entryName: m.entryName,
+                userName: m.userName,
+                score: m.score,
+              }))}
+              allRosterPicks={allRosterPicks}
+            />
+          )}
           </div>
         ) : (
           <ErrorBoundary sectionName="Schedule">
@@ -975,6 +1076,11 @@ export function PoolDetailClient({
           score={viewingMember.score}
           onClose={() => setViewingEntryId(null)}
         />
+      )}
+
+      {/* Masters: Green Jacket Ceremony for pool winner */}
+      {mastersWinner && (
+        <GreenJacketCeremony winnerName={mastersWinner.entryName || mastersWinner.displayName} />
       )}
     </div>
   )
