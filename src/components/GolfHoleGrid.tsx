@@ -65,7 +65,7 @@ export function GolfHoleGrid({ holes, currentHole, thru, label, hideLabel }: Gol
       return (
         <div
           key={holeNum}
-          className={`shrink-0 w-7 h-7 flex items-center justify-center rounded text-[10px] ${
+          className={`shrink-0 w-8 h-8 flex items-center justify-center rounded text-[10px] ${
             isCurrent ? 'border border-brand text-brand' : 'text-text-muted/40'
           }`}
           title={`Hole ${holeNum}`}
@@ -77,7 +77,7 @@ export function GolfHoleGrid({ holes, currentHole, thru, label, hideLabel }: Gol
     return (
       <div
         key={holeNum}
-        className={`shrink-0 w-7 h-7 flex items-center justify-center rounded text-[11px] ${scoreTypeClass(h.scoreType, h.strokes, h.par)}`}
+        className={`shrink-0 w-8 h-8 flex items-center justify-center rounded text-[11px] ${scoreTypeClass(h.scoreType, h.strokes, h.par)}`}
         title={`Hole ${holeNum} · Par ${h.par} · ${h.scoreType.toLowerCase()}`}
       >
         {h.strokes}
@@ -88,7 +88,7 @@ export function GolfHoleGrid({ holes, currentHole, thru, label, hideLabel }: Gol
   const renderHoleLabel = (holeNum: number) => (
     <div
       key={`label-${holeNum}`}
-      className="shrink-0 w-7 text-center text-[9px] text-text-muted font-mono"
+      className="shrink-0 w-8 text-center text-[10px] text-text-muted font-mono"
     >
       {holeNum}
     </div>
