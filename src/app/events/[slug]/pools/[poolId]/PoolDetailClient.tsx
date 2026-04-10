@@ -33,6 +33,7 @@ import { computeAllMastersAwards } from '@/lib/events/masters-awards'
 import { GreenJacketCeremony } from '@/components/events/masters/GreenJacketCeremony'
 import { Top10Leaderboard } from '@/components/events/masters/Top10Leaderboard'
 import { MastersLeaderboard } from '@/components/events/masters/MastersLeaderboard'
+import { Par3CurseBadge } from '@/components/events/masters/Par3CurseBadge'
 
 interface Participant {
   id: string
@@ -921,8 +922,9 @@ export function PoolDetailClient({
                           <div className="flex-1 border-t border-dashed border-danger/50" />
                         </div>
                       )}
-                      <button
-                        type="button"
+                      <div
+                        role="button"
+                        tabIndex={0}
                         onClick={() => hasHoleData && setExpandedGolferId(isExpanded ? null : p.id)}
                         className={`w-full grid grid-cols-[2rem_minmax(10rem,1fr)_2.5rem_4.5rem_2.5rem_2.5rem_2.5rem_2.5rem_3.5rem] gap-1 px-3 py-2 border-b border-border-subtle last:border-0 text-sm text-left transition-colors ${isCutGolfer ? 'opacity-50' : ''} ${hasHoleData ? 'hover:bg-surface-inset/40 cursor-pointer' : 'cursor-default'} ${isExpanded ? 'bg-surface-inset/30' : ''}`}
                       >
@@ -941,9 +943,7 @@ export function PoolDetailClient({
                           )}
                           <span className="text-text-primary truncate">{p.name}</span>
                           {isCutGolfer && <span className="text-xs text-danger-text shrink-0">CUT</span>}
-                          {isAaronRai && (
-                            <span className="inline-flex items-center gap-0.5 px-1 py-0.5 rounded text-[9px] font-bold uppercase bg-amber-500/20 text-amber-400 border border-amber-500/30">JINXED</span>
-                          )}
+                          {isAaronRai && <Par3CurseBadge />}
                           {hasHoleData && (
                             <svg
                               className={`w-3 h-3 text-text-muted shrink-0 transition-transform ${isExpanded ? 'rotate-90' : ''}`}
@@ -976,7 +976,7 @@ export function PoolDetailClient({
                             ? scoreToPar === 0 ? 'E' : scoreToPar > 0 ? `+${scoreToPar}` : String(scoreToPar)
                             : '—'}
                         </span>
-                      </button>
+                      </div>
                       {isExpanded && hasHoleData && (
                         <div className="px-4 py-3 bg-surface-inset/20 border-b border-border-subtle">
                           <GolfHoleGrid

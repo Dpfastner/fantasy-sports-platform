@@ -138,8 +138,39 @@ export interface MastersAwardsResult {
 }
 
 /**
- * Compute all awards across rounds 1-4.
- * Call this once with all data to get the full awards state.
+ * Check if a round is fully complete — at least 70% of active participants
+ * have their rN field explicitly set (not derived from live score_to_par).
+ */
+function isRoundComplete(participants: Participant[], roundNumber: number): boolean {
+  const key = `r${roundNumber}`
+  let withScore = 0
+  let active = 0
+  for (const p of participants) {
+    const meta = (p.metadata || {}) as Record<string, unknown>
+    if (meta.status === 'cut' || meta.status === 'wd' || meta.status === 'dq') continue
+    active++
+    const val = meta[key]
+    if (typeof val === 'number' && val >= 60 && val <= 100) withScore++
+  }
+  if (active === 0) return false
+  // Require 90%+ to have explicit round score — prevents awarding in-progress rounds
+  return withScore / active >= 0.9
+}
+
+/** Detect the highest round currently in progress from participant metadata. */
+function detectCurrentRound(participants: Participant[]): number {
+  let maxRound = 0
+  for (const p of participants) {
+    const meta = (p.metadata || {}) as Record<string, unknown>
+    const cr = meta.current_round as number | undefined
+    if (cr && cr > maxRound) maxRound = cr
+  }
+  return maxRound || 1
+}
+
+/**
+ * Compute all awards across completed rounds only.
+ * In-progress rounds are skipped to avoid premature awards.
  */
 export function computeAllMastersAwards(
   entries: EntryInfo[],
@@ -150,7 +181,15 @@ export function computeAllMastersAwards(
   const pimentoWinners = new Map<string, number[]>()
   let crowsNestHolder: { entryId: string; rounds: number[] } | null = null
 
+  const currentRound = detectCurrentRound(participants)
+
   for (const round of [1, 2, 3, 4] as const) {
+    // Only award rounds that are BEFORE the current round (fully completed)
+    // or the current round IF it passes the completion threshold
+    if (round > currentRound) continue
+    if (round === currentRound && !isRoundComplete(participants, round)) continue
+    if (round < currentRound && !isRoundComplete(participants, round)) continue
+
     const scores = computeEntryRoundScores(entries, allRosterPicks, participants, countBest, round)
     const awards = determineRoundAwards(scores, countBest)
 
