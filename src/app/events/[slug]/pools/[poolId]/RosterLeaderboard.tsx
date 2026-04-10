@@ -67,53 +67,80 @@ export function RosterLeaderboard({
   const hasScores = participants.some(p => p.metadata?.score_to_par != null)
   const showScores = poolStatus === 'locked' || poolStatus === 'completed' || hasScores
 
-  // Course par (Augusta = 72; future multi-course tournaments can read from course_data)
+  // Course par (Augusta = 72)
   const COURSE_PAR = 72
+  const isValidRound = (s: unknown): s is number =>
+    typeof s === 'number' && s >= 60 && s <= 100
 
-  // Compute the per-round to-par for an entry, applying the same "best 5 of 7"
-  // counting rule as the Total column. The 5 counting golfers are determined
-  // by their CURRENT total score_to_par (matching the scoring engine), then
-  // we sum the round-X to-par for those 5 golfers only. Dropped golfers don't
-  // contribute, even if they actually played the round.
+  // Per-round to-par for a single golfer.
+  // Completed rounds: rX - 72 (clamped to 60-100 to reject partials).
+  // In-progress rounds: total - sum(completed rounds). E.g. during R2:
+  //   R2 running = score_to_par - (r1 - 72)
+  // Updates every minute as Apps Script writes new score_to_par.
+  const golferRoundToPar = (meta: Record<string, unknown>, round: number): number | null => {
+    const total = typeof meta.score_to_par === 'number' ? meta.score_to_par as number : null
+    const r1 = isValidRound(meta.r1) ? (meta.r1 as number) - COURSE_PAR : null
+    const r2 = isValidRound(meta.r2) ? (meta.r2 as number) - COURSE_PAR : null
+    const r3 = isValidRound(meta.r3) ? (meta.r3 as number) - COURSE_PAR : null
+    const r4 = isValidRound(meta.r4) ? (meta.r4 as number) - COURSE_PAR : null
+
+    const completed = round === 1 ? r1 : round === 2 ? r2 : round === 3 ? r3 : r4
+    if (completed != null) return completed
+
+    if (total == null) return null
+    if (round === 1) return total
+    if (round === 2 && r1 != null) return total - r1
+    if (round === 3 && r1 != null && r2 != null) return total - r1 - r2
+    if (round === 4 && r1 != null && r2 != null && r3 != null) return total - r1 - r2 - r3
+    return null
+  }
+
+  // Entry-level per-round column. Best 5 counting golfers (by total),
+  // sum their round to-par (completed or live-derived).
   const computeEntryRoundToPar = (entryId: string, round: 1 | 2 | 3 | 4): number | null => {
     const picks = allRosterPicks?.[entryId]
     if (!picks || picks.length === 0) return null
-    const rKey = `r${round}` as 'r1' | 'r2' | 'r3' | 'r4'
 
-    // Build pick details with per-round strokes + total to-par for ranking
     const pickDetails = picks
       .map(id => {
         const p = participantMap.get(id)
         if (!p) return null
         const meta = (p.metadata || {}) as Record<string, unknown>
-        const rVal = meta[rKey] as number | null | undefined
-        const totalToPar = meta.score_to_par as number | null | undefined
         return {
-          // Only count valid complete-round stroke totals (60-100 range).
-      // Rejects partial mid-round sums like 28 that the Apps Script may
-      // have written before the 60-100 clamp was added.
-      rStrokes: typeof rVal === 'number' && rVal >= 60 && rVal <= 100 ? rVal : null,
-          totalToPar: typeof totalToPar === 'number' ? totalToPar : 999,
+          roundToPar: golferRoundToPar(meta, round),
+          totalToPar: typeof meta.score_to_par === 'number' ? meta.score_to_par as number : 999,
         }
       })
       .filter((x): x is NonNullable<typeof x> => x !== null)
 
     if (pickDetails.length === 0) return null
-
-    // Sort by total to-par ascending — best 5 are the counting golfers
     pickDetails.sort((a, b) => a.totalToPar - b.totalToPar)
     const counting = pickDetails.slice(0, countBest)
 
-    // Sum the round to-par of counting golfers who actually completed this round
-    let sum = 0
-    let played = 0
+    let sum = 0, count = 0
     for (const c of counting) {
-      if (c.rStrokes != null) {
-        sum += (c.rStrokes - COURSE_PAR)
-        played++
-      }
+      if (c.roundToPar != null) { sum += c.roundToPar; count++ }
     }
-    return played > 0 ? sum : null
+    return count > 0 ? sum : null
+  }
+
+  // Live entry total — sum of counting 5 golfers' live score_to_par.
+  // Updates every minute from Apps Script, doesn't wait for GHA to
+  // re-roll event_entries.total_points.
+  const computeEntryLiveTotal = (entryId: string): number | null => {
+    const picks = allRosterPicks?.[entryId]
+    if (!picks || picks.length === 0) return null
+    const scores = picks
+      .map(id => {
+        const p = participantMap.get(id)
+        if (!p) return null
+        const meta = (p.metadata || {}) as Record<string, unknown>
+        return typeof meta.score_to_par === 'number' ? meta.score_to_par as number : null
+      })
+      .filter((s): s is number => s !== null)
+    if (scores.length === 0) return null
+    scores.sort((a, b) => a - b)
+    return scores.slice(0, countBest).reduce((a, b) => a + b, 0)
   }
 
   // Sort members: by score ascending (golf), then by submit time
@@ -207,6 +234,7 @@ export function RosterLeaderboard({
             const r2 = computeEntryRoundToPar(member.id, 2)
             const r3 = computeEntryRoundToPar(member.id, 3)
             const r4 = computeEntryRoundToPar(member.id, 4)
+            const liveTotal = computeEntryLiveTotal(member.id)
 
             return (
               <div key={member.id}>
@@ -275,9 +303,9 @@ export function RosterLeaderboard({
                   <span className={`text-right text-xs tabular-nums ${r4 != null && r4 < 0 ? 'text-success-text' : r4 != null && r4 > 0 ? 'text-danger-text' : 'text-text-muted'}`}>
                     {r4 == null ? '—' : formatGolfScore(r4)}
                   </span>
-                  <span className={`text-right text-sm ${showScores && member.score !== 0 ? 'text-text-primary font-medium' : 'text-text-muted'}`}>
+                  <span className={`text-right text-sm ${showScores ? 'text-text-primary font-medium' : 'text-text-muted'}`}>
                     {showScores
-                      ? formatGolfScore(member.score)
+                      ? formatGolfScore(liveTotal ?? member.score)
                       : member.submittedAt ? 'Ready' : '—'}
                   </span>
                   <span className="text-right text-xs text-text-muted">
