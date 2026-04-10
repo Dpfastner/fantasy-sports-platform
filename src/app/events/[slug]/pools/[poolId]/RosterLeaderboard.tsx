@@ -7,6 +7,9 @@ import { golferRoundToPar } from '@/lib/events/golf-aggregations'
 import { DEFAULT_TIERS, TIER_COLORS, getTier, type RosterTier } from '@/lib/events/tiers'
 import { EntryAvatar } from '@/components/EntryAvatar'
 import { GolfHoleGrid } from '@/components/GolfHoleGrid'
+import { Par3CurseBadge } from '@/components/events/masters/Par3CurseBadge'
+import { PimentoCheeseBadge } from '@/components/events/masters/PimentoCheeseBadge'
+import { CrowsNestBadge } from '@/components/events/masters/CrowsNestBadge'
 
 interface Member {
   id: string
@@ -33,12 +36,21 @@ interface Participant {
   metadata?: Record<string, unknown>
 }
 
+interface MastersAwards {
+  /** Map of entryId → array of round numbers they won pimento cheese for */
+  pimentoWinners: Map<string, number[]>
+  /** Current crow's nest holder (rotates each round) */
+  crowsNestHolder: { entryId: string; rounds: number[] } | null
+}
+
 interface RosterLeaderboardProps {
   members: Member[]
   participants: Participant[]
   poolStatus: string
   scoringRules: Record<string, unknown>
   allRosterPicks?: Record<string, string[]>
+  tournamentSlug?: string
+  mastersAwards?: MastersAwards
 }
 
 
@@ -47,6 +59,8 @@ export function RosterLeaderboard({
   participants,
   poolStatus,
   scoringRules,
+  tournamentSlug,
+  mastersAwards,
   allRosterPicks,
 }: RosterLeaderboardProps) {
   const [expandedId, setExpandedId] = useState<string | null>(null)
@@ -67,6 +81,19 @@ export function RosterLeaderboard({
 
   const hasScores = participants.some(p => p.metadata?.score_to_par != null)
   const showScores = poolStatus === 'locked' || poolStatus === 'completed' || hasScores
+
+  // Masters: detect Aaron Rai (2026 Par 3 Contest winner) for JINXED badge
+  const isMasters = tournamentSlug?.startsWith('masters') ?? false
+  const aaronRaiId = useMemo(() => {
+    if (!isMasters) return null
+    return participants.find(p => p.name.toLowerCase().includes('aaron rai'))?.id ?? null
+  }, [isMasters, participants])
+
+  // Check if an entry has Aaron Rai on their roster
+  const entryHasRai = (entryId: string): boolean => {
+    if (!aaronRaiId || !allRosterPicks?.[entryId]) return false
+    return allRosterPicks[entryId].includes(aaronRaiId)
+  }
 
   // Course par (Augusta = 72)
   const COURSE_PAR = 72
@@ -118,16 +145,19 @@ export function RosterLeaderboard({
     return scores.slice(0, countBest).reduce((a, b) => a + b, 0)
   }
 
-  // Sort members: by score ascending (golf), then by submit time
+  // Sort members by LIVE computed total (not stale event_entries.total_points).
+  // Falls back to member.score when live total isn't available.
   const sorted = useMemo(() => {
-    return [...members].sort((a, b) => {
-      if (a.score !== b.score) return a.score - b.score
-      if (a.submittedAt && b.submittedAt) {
-        return new Date(a.submittedAt).getTime() - new Date(b.submittedAt).getTime()
-      }
-      return a.submittedAt ? -1 : 1
-    })
-  }, [members])
+    return [...members]
+      .map(m => ({ ...m, liveScore: computeEntryLiveTotal(m.id) ?? m.score }))
+      .sort((a, b) => {
+        if (a.liveScore !== b.liveScore) return a.liveScore - b.liveScore
+        if (a.submittedAt && b.submittedAt) {
+          return new Date(a.submittedAt).getTime() - new Date(b.submittedAt).getTime()
+        }
+        return a.submittedAt ? -1 : 1
+      })
+  }, [members, participants]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Build roster breakdown for a member
   const getRosterBreakdown = (entryId: string) => {
@@ -223,7 +253,9 @@ export function RosterLeaderboard({
                   onClick={() => canExpand && setExpandedId(isExpanded ? null : member.id)}
                   className={`w-full grid grid-cols-[2rem_minmax(12rem,18rem)_1fr_2.25rem_2.25rem_2.25rem_2.25rem_3rem_4rem] gap-2 px-3 py-2.5 border-b border-border-subtle text-left transition-colors ${
                     canExpand ? 'hover:bg-surface-inset/50 cursor-pointer' : 'cursor-default'
-                  } ${isExpanded ? 'bg-surface-inset/30' : ''}`}
+                  } ${isExpanded ? 'bg-surface-inset/30' : ''} ${
+                    isMasters && mastersAwards?.crowsNestHolder?.entryId === member.id ? 'bg-[#8B7355]/10' : ''
+                  }`}
                 >
                   <span className={`text-right text-sm ${isTop3 ? 'font-bold text-brand' : 'text-text-muted'}`}>
                     {rank}
@@ -260,6 +292,23 @@ export function RosterLeaderboard({
                         <span className="text-sm text-text-muted truncate italic block">{member.displayName}</span>
                       )}
                     </div>
+                    {/* Masters inline badges */}
+                    {isMasters && (
+                      <div className="flex items-center gap-1 shrink-0">
+                        {entryHasRai(member.id) && <Par3CurseBadge />}
+                        {mastersAwards?.pimentoWinners.has(member.id) && (
+                          mastersAwards.pimentoWinners.get(member.id)!.map(round => (
+                            <PimentoCheeseBadge key={`pc-${round}`} round={round} entryName={member.entryName || member.displayName} />
+                          ))
+                        )}
+                        {mastersAwards?.crowsNestHolder?.entryId === member.id && (
+                          <CrowsNestBadge
+                            rounds={mastersAwards.crowsNestHolder.rounds}
+                            entryName={member.entryName || member.displayName}
+                          />
+                        )}
+                      </div>
+                    )}
                     {canExpand && (
                       <svg
                         className={`w-3.5 h-3.5 text-text-muted shrink-0 transition-transform ${isExpanded ? 'rotate-90' : ''}`}
