@@ -286,26 +286,27 @@ export function RosterLeaderboard({
                 {/* Expanded roster breakdown */}
                 {isExpanded && breakdown && (
                   <div className="px-4 py-3 bg-surface-inset/20 border-b border-border-subtle">
-                    <p className="text-xs text-text-muted mb-2">
-                      Best {countBest} of {rosterSize} count
-                      {hasScores && (
-                        <> &middot; {breakdown.counting.length} counting &middot; {breakdown.dropped.length} dropped</>
-                      )}
-                    </p>
                     <div className="overflow-x-auto">
                       <div className="min-w-[62rem]">
-                        <div className="grid grid-cols-[12rem_minmax(28rem,1fr)_2.5rem_2.25rem_2.25rem_2.25rem_2.25rem_3.5rem] gap-x-4 px-2 py-1.5 text-xs text-text-muted uppercase tracking-wide border-b border-border">
-                          <span>Golfer</span>
-                          <span>Holes</span>
-                          <span className="text-center">Tier</span>
-                          <span className="text-center">R1</span>
-                          <span className="text-center">R2</span>
-                          <span className="text-center">R3</span>
-                          <span className="text-center">R4</span>
+                        <div className="grid grid-cols-[14rem_minmax(28rem,1fr)_2.5rem_2.25rem_2.25rem_2.25rem_2.25rem_3.5rem] gap-x-4 px-2 py-1.5 text-xs text-text-muted uppercase tracking-wide border-b border-border">
+                          <span>
+                            Golfer
+                            {hasScores && (
+                              <span className="ml-2 normal-case text-[10px] text-text-muted/70">
+                                Best {countBest} of {rosterSize} · {breakdown.counting.length} counting · {breakdown.dropped.length} dropped
+                              </span>
+                            )}
+                          </span>
+                          <span className="text-center">Holes</span>
+                          <span className="text-right">Tier</span>
+                          <span className="text-right">R1</span>
+                          <span className="text-right">R2</span>
+                          <span className="text-right">R3</span>
+                          <span className="text-right">R4</span>
                           <span className="text-right">Total</span>
                         </div>
                         {breakdown.counting.map(p => (
-                          <div key={p.id} className="grid grid-cols-[12rem_minmax(28rem,1fr)_2.5rem_2.25rem_2.25rem_2.25rem_2.25rem_3.5rem] gap-x-4 px-2 py-1.5 items-center border-b border-border-subtle">
+                          <div key={p.id} className="grid grid-cols-[14rem_minmax(28rem,1fr)_2.5rem_2.25rem_2.25rem_2.25rem_2.25rem_3.5rem] gap-x-4 px-2 py-1.5 items-center border-b border-border-subtle">
                             <div className="flex items-center gap-1.5 min-w-0 text-sm text-text-primary">
                               {p.countryCode && (
                                 <img
@@ -330,20 +331,20 @@ export function RosterLeaderboard({
                                 <span className="text-xs text-text-muted italic">No hole data yet</span>
                               )}
                             </div>
-                            <div className="text-center">
+                            <div className="text-right">
                               <span className={`text-xs px-1.5 py-0.5 rounded ${TIER_COLORS[p.tier]?.bg || 'bg-surface-inset'} ${TIER_COLORS[p.tier]?.text || 'text-text-muted'}`}>
                                 {p.tier}
                               </span>
                             </div>
-                            <span className="text-center text-sm text-text-secondary">{p.r1 ?? '—'}</span>
-                            <span className="text-center text-sm text-text-secondary">{p.r2 ?? '—'}</span>
-                            <span className="text-center text-sm text-text-secondary">{p.r3 ?? '—'}</span>
-                            <span className="text-center text-sm text-text-secondary">{p.r4 ?? '—'}</span>
+                            <span className="text-right text-sm text-text-secondary">{p.r1 ?? '—'}</span>
+                            <span className="text-right text-sm text-text-secondary">{p.r2 ?? '—'}</span>
+                            <span className="text-right text-sm text-text-secondary">{p.r3 ?? '—'}</span>
+                            <span className="text-right text-sm text-text-secondary">{p.r4 ?? '—'}</span>
                             <span className="text-right text-sm font-medium text-text-primary">{formatGolfScore(p.scoreToPar)}</span>
                           </div>
                         ))}
                         {breakdown.dropped.map(p => (
-                          <div key={p.id} className="grid grid-cols-[12rem_minmax(28rem,1fr)_2.5rem_2.25rem_2.25rem_2.25rem_2.25rem_3.5rem] gap-x-4 px-2 py-1.5 items-center border-b border-border-subtle opacity-50">
+                          <div key={p.id} className="grid grid-cols-[14rem_minmax(28rem,1fr)_2.5rem_2.25rem_2.25rem_2.25rem_2.25rem_3.5rem] gap-x-4 px-2 py-1.5 items-center border-b border-border-subtle opacity-50">
                             <div className="flex items-center gap-1.5 min-w-0 text-sm text-text-muted">
                               {p.countryCode && (
                                 <img
@@ -369,15 +370,15 @@ export function RosterLeaderboard({
                                 <span className="text-xs text-text-muted italic">No hole data yet</span>
                               )}
                             </div>
-                            <div className="text-center">
+                            <div className="text-right">
                               <span className={`text-xs px-1.5 py-0.5 rounded ${TIER_COLORS[p.tier]?.bg || 'bg-surface-inset'} ${TIER_COLORS[p.tier]?.text || 'text-text-muted'}`}>
                                 {p.tier}
                               </span>
                             </div>
-                            <span className="text-center text-sm text-text-muted">{p.r1 ?? '—'}</span>
-                            <span className="text-center text-sm text-text-muted">{p.r2 ?? '—'}</span>
-                            <span className="text-center text-sm text-text-muted">{p.r3 ?? '—'}</span>
-                            <span className="text-center text-sm text-text-muted">{p.r4 ?? '—'}</span>
+                            <span className="text-right text-sm text-text-muted">{p.r1 ?? '—'}</span>
+                            <span className="text-right text-sm text-text-muted">{p.r2 ?? '—'}</span>
+                            <span className="text-right text-sm text-text-muted">{p.r3 ?? '—'}</span>
+                            <span className="text-right text-sm text-text-muted">{p.r4 ?? '—'}</span>
                             <span className="text-right text-sm text-text-muted">{formatGolfScore(p.scoreToPar)}</span>
                           </div>
                         ))}
