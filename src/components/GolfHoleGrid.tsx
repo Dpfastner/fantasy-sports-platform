@@ -27,6 +27,10 @@ interface GolfHoleGridProps {
   holes: GolfHole[]
   currentHole?: number | null
   thru?: number | null
+  /** The golfer's current round number (from metadata.current_round).
+   *  When set, forces the grid to show this round — if no holes exist
+   *  for it yet, shows an empty "Round X" state instead of stale old data. */
+  currentRound?: number | null
   /** Optional label override (e.g. golfer name). If omitted, just shows R#/Thru/On# meta. */
   label?: string
   /** If true, hides the label row entirely (useful when parent already shows name). */
@@ -44,8 +48,19 @@ function scoreTypeClass(scoreType: string, strokes: number, par: number): string
   return 'bg-surface-inset text-text-muted'
 }
 
-export function GolfHoleGrid({ holes, currentHole, thru, label, hideLabel }: GolfHoleGridProps) {
-  if (!holes || holes.length === 0) {
+export function GolfHoleGrid({ holes, currentHole, thru, currentRound, label, hideLabel }: GolfHoleGridProps) {
+  // Determine which round to display:
+  // 1. If currentRound is set (from metadata), prefer that round
+  // 2. Otherwise fall back to the latest round that has hole data
+  const latestDataRound = holes && holes.length > 0
+    ? Math.max(...holes.map(h => h.round))
+    : 0
+  const displayRound = (typeof currentRound === 'number' && currentRound > 0)
+    ? currentRound
+    : latestDataRound
+
+  // If no data at all and no current round hint, show empty state
+  if (displayRound === 0) {
     return (
       <div className="text-xs text-text-muted italic py-2">
         No hole data yet {typeof currentHole === 'number' && `· On #${currentHole}`}
@@ -53,9 +68,7 @@ export function GolfHoleGrid({ holes, currentHole, thru, label, hideLabel }: Gol
     )
   }
 
-  // Show latest round that has data
-  const latestRound = Math.max(...holes.map(h => h.round))
-  const roundHoles = holes.filter(h => h.round === latestRound)
+  const roundHoles = (holes || []).filter(h => h.round === displayRound)
   const holeByNum = new Map(roundHoles.map(h => [h.hole, h]))
 
   const renderCell = (holeNum: number) => {
@@ -100,7 +113,7 @@ export function GolfHoleGrid({ holes, currentHole, thru, label, hideLabel }: Gol
         <div className="flex items-center justify-between mb-1.5">
           <span className="text-xs text-text-primary font-medium truncate">{label || ''}</span>
           <span className="text-[10px] text-text-muted uppercase tracking-wider">
-            Round {latestRound}
+            Round {displayRound}
             {typeof thru === 'number' && ` · Thru ${thru}`}
             {typeof currentHole === 'number' && currentHole > 0 && ` · On #${currentHole}`}
           </span>
