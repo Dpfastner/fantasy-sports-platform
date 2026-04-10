@@ -107,14 +107,15 @@ export interface RoundAwards {
 
 /**
  * Determine the pimento cheese winner and crow's nest holder for a round.
- * Requires all counting golfers to have completed the round (golferCount >= countBest).
+ * Requires at least (countBest - 1) counting golfers to have data, so a single
+ * missing golfer doesn't block the entire award from showing.
  */
 export function determineRoundAwards(
   scores: EntryRoundScore[],
   countBest: number,
 ): RoundAwards {
-  // Only consider entries where all counting golfers have round data
-  const complete = scores.filter(s => s.golferCount >= countBest)
+  const minRequired = Math.max(1, countBest - 1)
+  const complete = scores.filter(s => s.golferCount >= minRequired)
   if (complete.length === 0) return { pimentoWinner: null, crowsNestHolder: null }
 
   // Sort ascending by roundToPar, then by totalScore for tiebreak

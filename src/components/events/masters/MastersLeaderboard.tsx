@@ -162,7 +162,7 @@ export function MastersLeaderboard({
   }).length
 
   return (
-    <div className="overflow-x-auto">
+    <div style={{ overflowX: 'auto', overflowY: 'visible', position: 'relative' }}>
       <div style={{ minWidth: '42rem' }}>
         {/* ── White arch across full width — tall dome like the real sign ── */}
         <div
