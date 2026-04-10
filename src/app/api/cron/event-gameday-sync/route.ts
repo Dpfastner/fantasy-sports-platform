@@ -95,7 +95,7 @@ export async function GET(request: Request) {
     // passed (e.g. a Sunday round running into overtime or a rain delay).
     const { data: rosterTournaments } = await admin
       .from('event_tournaments')
-      .select('id, sport, format, status, config')
+      .select('id, sport, format, status, config, course_data')
       .in('format', ['roster', 'multi'])
       .in('status', ['active', 'upcoming'])
       .lte('starts_at', now.toISOString())
@@ -154,12 +154,12 @@ export async function GET(request: Request) {
 
     // ── Step 3: Get tournaments to sync ──
     const gameTournamentIds = [...new Set(allRelevantGames.map(g => g.tournament_id))]
-    let tournaments: { id: string; sport: string; format: string; status: string; config: unknown }[] = []
+    let tournaments: { id: string; sport: string; format: string; status: string; config: unknown; course_data?: unknown }[] = []
 
     if (gameTournamentIds.length > 0) {
       const { data: gameTournaments } = await admin
         .from('event_tournaments')
-        .select('id, sport, format, status, config')
+        .select('id, sport, format, status, config, course_data')
         .in('id', gameTournamentIds)
         .in('status', ['active', 'upcoming'])
       if (gameTournaments?.length) tournaments.push(...gameTournaments)
@@ -509,6 +509,24 @@ export async function GET(request: Request) {
               r4 = golfer.roundScores[3] ?? r4
             }
 
+            // Compute score_to_par from raw round strokes — ESPN's
+            // golfer.score displayValue is unreliable (it sometimes reports
+            // "E" for transitional states or shows "today's relative score"
+            // instead of tournament total). Recomputing from strokes is the
+            // source of truth.
+            // Course par lives in tournament.course_data.totalPar; default
+            // to 72 (Augusta) since this is the only golf event right now.
+            const tCourseData = (tournament as Record<string, unknown>).course_data as
+              { totalPar?: number } | null | undefined
+            const COURSE_PAR = (tCourseData?.totalPar as number) || 72
+            const completedRoundStrokes = [r1, r2, r3, r4].filter(
+              (s): s is number => typeof s === 'number' && s > 0
+            )
+            const computedScoreToPar = completedRoundStrokes.length > 0
+              ? completedRoundStrokes.reduce((a, b) => a + b, 0) -
+                (COURSE_PAR * completedRoundStrokes.length)
+              : null
+
             // Rolling snapshot: if prev_score_at is null or stale, advance it
             const prevScoreAtStr = existingMeta.prev_score_at as string | undefined | null
             const prevScoreAtMs = prevScoreAtStr ? new Date(prevScoreAtStr).getTime() : 0
@@ -524,7 +542,10 @@ export async function GET(request: Request) {
               total_strokes: [r1, r2, r3, r4]
                 .filter((s): s is number => typeof s === 'number')
                 .reduce((a, b) => a + b, 0) || existingMeta.total_strokes || null,
-              score_to_par: golfer?.scoreToPar ?? existingMeta.score_to_par ?? null,
+              // Use computed score from raw strokes (truth) instead of ESPN's
+              // unreliable display value. Falls back to legacy/existing if no
+              // round strokes are available yet.
+              score_to_par: computedScoreToPar ?? golfer?.scoreToPar ?? existingMeta.score_to_par ?? null,
               status: newStatus,
               position: newPosition,
               score_display: golfer?.score || existingMeta.score_display || null,
