@@ -560,10 +560,13 @@ export async function GET(request: Request) {
               total_strokes: [r1, r2, r3, r4]
                 .filter((s): s is number => typeof s === 'number')
                 .reduce((a, b) => a + b, 0) || existingMeta.total_strokes || null,
-              // Use computed score from raw strokes (truth) instead of ESPN's
-              // unreliable display value. Falls back to legacy/existing if no
-              // round strokes are available yet.
-              score_to_par: computedScoreToPar ?? golfer?.scoreToPar ?? existingMeta.score_to_par ?? null,
+              // ESPN's golfer.score is the LIVE running tournament total — what
+              // users see on the actual Masters leaderboard. Use it as primary
+              // source so the Total column updates every sync cycle during live
+              // play. computedScoreToPar (from completed round strokes) is a
+              // fallback for when ESPN's display value is null (pre-tournament,
+              // transitional states, etc.).
+              score_to_par: golfer?.scoreToPar ?? computedScoreToPar ?? existingMeta.score_to_par ?? null,
               status: newStatus,
               position: newPosition,
               score_display: golfer?.score || existingMeta.score_display || null,
