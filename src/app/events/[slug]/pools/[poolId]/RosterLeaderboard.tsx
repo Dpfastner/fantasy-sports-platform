@@ -180,9 +180,10 @@ export function RosterLeaderboard({
         <div className="bg-surface rounded-lg border border-border overflow-x-auto">
           <div className="min-w-[42rem]">
           {/* Header */}
-          <div className="grid grid-cols-[2rem_minmax(12rem,18rem)_2.25rem_2.25rem_2.25rem_2.25rem_3rem_4rem] gap-2 px-3 py-2 bg-surface-inset border-b border-border text-xs text-text-muted uppercase tracking-wide">
+          <div className="grid grid-cols-[2rem_minmax(12rem,18rem)_1fr_2.25rem_2.25rem_2.25rem_2.25rem_3rem_4rem] gap-2 px-3 py-2 bg-surface-inset border-b border-border text-xs text-text-muted uppercase tracking-wide">
             <span className="text-right">#</span>
             <span>Player</span>
+            <span aria-hidden />
             <span className="text-right">R1</span>
             <span className="text-right">R2</span>
             <span className="text-right">R3</span>
@@ -209,7 +210,7 @@ export function RosterLeaderboard({
                 <button
                   type="button"
                   onClick={() => canExpand && setExpandedId(isExpanded ? null : member.id)}
-                  className={`w-full grid grid-cols-[2rem_minmax(12rem,18rem)_2.25rem_2.25rem_2.25rem_2.25rem_3rem_4rem] gap-2 px-3 py-2.5 border-b border-border-subtle text-left transition-colors ${
+                  className={`w-full grid grid-cols-[2rem_minmax(12rem,18rem)_1fr_2.25rem_2.25rem_2.25rem_2.25rem_3rem_4rem] gap-2 px-3 py-2.5 border-b border-border-subtle text-left transition-colors ${
                     canExpand ? 'hover:bg-surface-inset/50 cursor-pointer' : 'cursor-default'
                   } ${isExpanded ? 'bg-surface-inset/30' : ''}`}
                 >
@@ -257,6 +258,7 @@ export function RosterLeaderboard({
                       </svg>
                     )}
                   </div>
+                  <span aria-hidden />
                   <span className={`text-right text-xs tabular-nums ${r1 != null && r1 < 0 ? 'text-success-text' : r1 != null && r1 > 0 ? 'text-danger-text' : 'text-text-muted'}`}>
                     {r1 == null ? '—' : formatGolfScore(r1)}
                   </span>
