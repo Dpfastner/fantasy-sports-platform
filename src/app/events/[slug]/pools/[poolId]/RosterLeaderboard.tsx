@@ -3,6 +3,7 @@
 import { useState, useMemo } from 'react'
 import Link from 'next/link'
 import { formatGolfScore } from '@/lib/events/shared'
+import { golferRoundToPar } from '@/lib/events/golf-aggregations'
 import { DEFAULT_TIERS, TIER_COLORS, getTier, type RosterTier } from '@/lib/events/tiers'
 import { EntryAvatar } from '@/components/EntryAvatar'
 import { GolfHoleGrid } from '@/components/GolfHoleGrid'
@@ -69,32 +70,6 @@ export function RosterLeaderboard({
 
   // Course par (Augusta = 72)
   const COURSE_PAR = 72
-  const isValidRound = (s: unknown): s is number =>
-    typeof s === 'number' && s >= 60 && s <= 100
-
-  // Per-round to-par for a single golfer.
-  // Completed rounds: rX - 72 (clamped to 60-100 to reject partials).
-  // In-progress rounds: total - sum(completed rounds). E.g. during R2:
-  //   R2 running = score_to_par - (r1 - 72)
-  // Updates every minute as Apps Script writes new score_to_par.
-  const golferRoundToPar = (meta: Record<string, unknown>, round: number): number | null => {
-    const total = typeof meta.score_to_par === 'number' ? meta.score_to_par as number : null
-    const r1 = isValidRound(meta.r1) ? (meta.r1 as number) - COURSE_PAR : null
-    const r2 = isValidRound(meta.r2) ? (meta.r2 as number) - COURSE_PAR : null
-    const r3 = isValidRound(meta.r3) ? (meta.r3 as number) - COURSE_PAR : null
-    const r4 = isValidRound(meta.r4) ? (meta.r4 as number) - COURSE_PAR : null
-
-    const completed = round === 1 ? r1 : round === 2 ? r2 : round === 3 ? r3 : r4
-    if (completed != null) return completed
-
-    if (total == null) return null
-    if (round === 1) return total
-    if (round === 2 && r1 != null) return total - r1
-    if (round === 3 && r1 != null && r2 != null) return total - r1 - r2
-    if (round === 4 && r1 != null && r2 != null && r3 != null) return total - r1 - r2 - r3
-    return null
-  }
-
   // Entry-level per-round column. Best 5 counting golfers (by total),
   // sum their round to-par (completed or live-derived).
   const computeEntryRoundToPar = (entryId: string, round: 1 | 2 | 3 | 4): number | null => {
