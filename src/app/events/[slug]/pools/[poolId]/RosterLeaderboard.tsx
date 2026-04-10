@@ -89,7 +89,10 @@ export function RosterLeaderboard({
         const rVal = meta[rKey] as number | null | undefined
         const totalToPar = meta.score_to_par as number | null | undefined
         return {
-          rStrokes: typeof rVal === 'number' && rVal > 0 ? rVal : null,
+          // Only count valid complete-round stroke totals (60-100 range).
+      // Rejects partial mid-round sums like 28 that the Apps Script may
+      // have written before the 60-100 clamp was added.
+      rStrokes: typeof rVal === 'number' && rVal >= 60 && rVal <= 100 ? rVal : null,
           totalToPar: typeof totalToPar === 'number' ? totalToPar : 999,
         }
       })
