@@ -70,25 +70,47 @@ export function RosterLeaderboard({
   // Course par (Augusta = 72; future multi-course tournaments can read from course_data)
   const COURSE_PAR = 72
 
-  // Compute sum-of-7-picks to-par for a specific round. Returns null if
-  // no golfer on the roster has completed that round yet.
+  // Compute the per-round to-par for an entry, applying the same "best 5 of 7"
+  // counting rule as the Total column. The 5 counting golfers are determined
+  // by their CURRENT total score_to_par (matching the scoring engine), then
+  // we sum the round-X to-par for those 5 golfers only. Dropped golfers don't
+  // contribute, even if they actually played the round.
   const computeEntryRoundToPar = (entryId: string, round: 1 | 2 | 3 | 4): number | null => {
     const picks = allRosterPicks?.[entryId]
     if (!picks || picks.length === 0) return null
     const rKey = `r${round}` as 'r1' | 'r2' | 'r3' | 'r4'
+
+    // Build pick details with per-round strokes + total to-par for ranking
+    const pickDetails = picks
+      .map(id => {
+        const p = participantMap.get(id)
+        if (!p) return null
+        const meta = (p.metadata || {}) as Record<string, unknown>
+        const rVal = meta[rKey] as number | null | undefined
+        const totalToPar = meta.score_to_par as number | null | undefined
+        return {
+          rStrokes: typeof rVal === 'number' && rVal > 0 ? rVal : null,
+          totalToPar: typeof totalToPar === 'number' ? totalToPar : 999,
+        }
+      })
+      .filter((x): x is NonNullable<typeof x> => x !== null)
+
+    if (pickDetails.length === 0) return null
+
+    // Sort by total to-par ascending — best 5 are the counting golfers
+    pickDetails.sort((a, b) => a.totalToPar - b.totalToPar)
+    const counting = pickDetails.slice(0, countBest)
+
+    // Sum the round to-par of counting golfers who actually completed this round
     let sum = 0
-    let count = 0
-    for (const id of picks) {
-      const p = participantMap.get(id)
-      if (!p) continue
-      const meta = (p.metadata || {}) as Record<string, unknown>
-      const rVal = meta[rKey] as number | null | undefined
-      if (typeof rVal === 'number' && rVal > 0) {
-        sum += (rVal - COURSE_PAR)
-        count++
+    let played = 0
+    for (const c of counting) {
+      if (c.rStrokes != null) {
+        sum += (c.rStrokes - COURSE_PAR)
+        played++
       }
     }
-    return count > 0 ? sum : null
+    return played > 0 ? sum : null
   }
 
   // Sort members: by score ascending (golf), then by submit time
