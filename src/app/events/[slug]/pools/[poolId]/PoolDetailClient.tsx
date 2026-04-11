@@ -436,8 +436,8 @@ export function PoolDetailClient({
       <div className="bg-surface rounded-lg border border-border p-5 mb-6 relative">
         {/* Masters: decorative trophy watermark */}
         {isMasters && (
-          <div className="absolute right-4 top-1/2 -translate-y-1/2 opacity-[0.07] pointer-events-none hidden sm:block">
-            <MastersTrophy className="w-16 h-24" />
+          <div className="absolute right-4 top-1/2 -translate-y-1/2 opacity-[0.25] pointer-events-none hidden sm:block">
+            <MastersTrophy className="w-20 h-28" />
           </div>
         )}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">

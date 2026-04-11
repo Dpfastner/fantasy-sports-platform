@@ -203,10 +203,10 @@ export function GnomeEasterEgg() {
         onClick={(e) => { e.stopPropagation(); setShowPopover(!showPopover) }}
         style={{
           position: 'absolute',
-          bottom: -14,
-          right: 24,
-          width: 32,
-          height: 52,
+          bottom: 16,
+          right: -14,
+          width: 30,
+          height: 50,
           cursor: 'pointer',
           zIndex: 20,
           transition: 'transform 0.2s',
