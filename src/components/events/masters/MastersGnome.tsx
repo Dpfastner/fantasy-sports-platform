@@ -203,15 +203,15 @@ export function GnomeEasterEgg() {
         onClick={(e) => { e.stopPropagation(); setShowPopover(!showPopover) }}
         style={{
           position: 'absolute',
-          bottom: 16,
-          right: -14,
-          width: 30,
-          height: 50,
+          bottom: -20,
+          right: 20,
+          width: 32,
+          height: 54,
           cursor: 'pointer',
-          zIndex: 20,
+          zIndex: 0,
           transition: 'transform 0.2s',
         }}
-        className="hover:scale-110"
+        className="hover:scale-105"
         title="What's this?"
       >
         <MastersGnome style={{ width: '100%', height: '100%' }} />

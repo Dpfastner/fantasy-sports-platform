@@ -434,15 +434,11 @@ export function PoolDetailClient({
     <div>
       {/* Pool Header */}
       <div className="bg-surface rounded-lg border border-border p-5 mb-6 relative">
-        {/* Masters: decorative trophy watermark */}
-        {isMasters && (
-          <div className="absolute right-4 top-1/2 -translate-y-1/2 opacity-[0.25] pointer-events-none hidden sm:block">
-            <MastersTrophy className="w-20 h-28" />
-          </div>
-        )}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div>
             <div className="flex items-center gap-2 mb-1">
+              {/* Masters: trophy next to pool name */}
+              {isMasters && <MastersTrophy className="w-8 h-12 shrink-0" />}
               <h1 className="brand-h2 text-xl sm:text-2xl text-text-primary">{pool.name}</h1>
               <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${
                 pool.status === 'open' ? 'bg-success/20 text-success-text' :
