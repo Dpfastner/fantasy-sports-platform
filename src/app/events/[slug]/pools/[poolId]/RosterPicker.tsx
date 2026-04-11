@@ -7,6 +7,7 @@ import { trackEventActivity } from '@/app/actions/activity'
 import { saveEntryName } from '@/app/actions/entry'
 import { track } from '@vercel/analytics'
 import { formatGolfScore } from '@/lib/events/shared'
+import { golferRoundToPar, golferAdjustedTotal } from '@/lib/events/golf-aggregations'
 import { DEFAULT_TIERS, TIER_COLORS, CountryFlag, type RosterTier } from '@/lib/events/tiers'
 import { GolfHoleGrid } from '@/components/GolfHoleGrid'
 import { TeeTimesCard } from '@/components/TeeTimesCard'
@@ -244,6 +245,11 @@ export function RosterPicker({
           country: meta.country as string | undefined,
           countryCode: meta.country_code as string | undefined,
           scoreToPar: meta.score_to_par as number | null,
+          adjustedTotal: golferAdjustedTotal(meta),
+          r1ToPar: golferRoundToPar(meta, 1),
+          r2ToPar: golferRoundToPar(meta, 2),
+          r3ToPar: golferRoundToPar(meta, 3),
+          r4ToPar: golferRoundToPar(meta, 4),
           r1: meta.r1 as number | null,
           r2: meta.r2 as number | null,
           r3: meta.r3 as number | null,
@@ -257,10 +263,10 @@ export function RosterPicker({
         }
       })
 
-    // When live scores exist, sort by score (best first) for counting/dropped
+    // When live scores exist, sort by ADJUSTED total (includes cut penalty)
     // When no scores, sort by tier then rank
     if (hasScores) {
-      pickedParticipants.sort((a, b) => (a.scoreToPar ?? 999) - (b.scoreToPar ?? 999))
+      pickedParticipants.sort((a, b) => (a.adjustedTotal ?? 999) - (b.adjustedTotal ?? 999))
     } else {
       pickedParticipants.sort((a, b) => {
         const tierDiff = (tierOrder[a.tier] ?? 9) - (tierOrder[b.tier] ?? 9)
@@ -271,7 +277,7 @@ export function RosterPicker({
     const counting = pickedParticipants.slice(0, countBest)
     const dropped = pickedParticipants.slice(countBest)
     const total = hasScores
-      ? counting.reduce((sum, p) => sum + (p.scoreToPar ?? 0), 0)
+      ? counting.reduce((sum, p) => sum + (p.adjustedTotal ?? 0), 0)
       : null
 
     return { counting, dropped, total, hasScores }
@@ -391,11 +397,11 @@ export function RosterPicker({
                         {p.tier}
                       </span>
                     </td>
-                    <td className="py-2 px-1 text-center text-text-secondary align-top">{p.r1 ?? '—'}</td>
-                    <td className="py-2 px-1 text-center text-text-secondary align-top">{p.r2 ?? '—'}</td>
-                    <td className={`py-2 px-1 text-center align-top ${p.status === 'cut' ? 'text-danger-text text-[10px] font-semibold' : 'text-text-secondary'}`}>{p.status === 'cut' ? 'CUT' : p.r3 ?? '—'}</td>
-                    <td className={`py-2 px-1 text-center align-top ${p.status === 'cut' ? 'text-danger-text text-[10px] font-semibold' : 'text-text-secondary'}`}>{p.status === 'cut' ? 'CUT' : p.r4 ?? '—'}</td>
-                    <td className="py-2 pl-1 text-right font-medium text-text-primary align-top">{formatGolfScore(p.scoreToPar)}</td>
+                    <td className={`py-2 px-1 text-center align-top ${p.r1ToPar != null && p.r1ToPar < 0 ? 'text-success-text' : p.r1ToPar != null && p.r1ToPar > 0 ? 'text-danger-text' : 'text-text-secondary'}`}>{p.r1ToPar != null ? formatGolfScore(p.r1ToPar) : '—'}</td>
+                    <td className={`py-2 px-1 text-center align-top ${p.r2ToPar != null && p.r2ToPar < 0 ? 'text-success-text' : p.r2ToPar != null && p.r2ToPar > 0 ? 'text-danger-text' : 'text-text-secondary'}`}>{p.r2ToPar != null ? formatGolfScore(p.r2ToPar) : '—'}</td>
+                    <td className={`py-2 px-1 text-center align-top ${p.r3ToPar != null && p.r3ToPar < 0 ? 'text-success-text' : p.r3ToPar != null && p.r3ToPar > 0 ? 'text-danger-text' : 'text-text-secondary'}`}>{p.r3ToPar != null ? formatGolfScore(p.r3ToPar) : '—'}</td>
+                    <td className={`py-2 px-1 text-center align-top ${p.r4ToPar != null && p.r4ToPar < 0 ? 'text-success-text' : p.r4ToPar != null && p.r4ToPar > 0 ? 'text-danger-text' : 'text-text-secondary'}`}>{p.r4ToPar != null ? formatGolfScore(p.r4ToPar) : '—'}</td>
+                    <td className="py-2 pl-1 text-right font-medium text-text-primary align-top">{formatGolfScore(p.adjustedTotal)}</td>
                   </tr>
                 ))}
                 {myRoster.dropped.map(p => (
@@ -412,11 +418,11 @@ export function RosterPicker({
                         {p.tier}
                       </span>
                     </td>
-                    <td className="py-2 px-1 text-center text-text-muted">{p.r1 ?? '—'}</td>
-                    <td className="py-2 px-1 text-center text-text-muted">{p.r2 ?? '—'}</td>
-                    <td className={`py-2 px-1 text-center ${p.status === 'cut' ? 'text-danger-text text-[10px] font-semibold' : 'text-text-muted'}`}>{p.status === 'cut' ? 'CUT' : p.r3 ?? '—'}</td>
-                    <td className={`py-2 px-1 text-center ${p.status === 'cut' ? 'text-danger-text text-[10px] font-semibold' : 'text-text-muted'}`}>{p.status === 'cut' ? 'CUT' : p.r4 ?? '—'}</td>
-                    <td className="py-2 pl-1 text-right text-text-muted">{formatGolfScore(p.scoreToPar)}</td>
+                    <td className={`py-2 px-1 text-center ${p.r1ToPar != null && p.r1ToPar < 0 ? 'text-success-text' : p.r1ToPar != null && p.r1ToPar > 0 ? 'text-danger-text' : 'text-text-muted'}`}>{p.r1ToPar != null ? formatGolfScore(p.r1ToPar) : '—'}</td>
+                    <td className={`py-2 px-1 text-center ${p.r2ToPar != null && p.r2ToPar < 0 ? 'text-success-text' : p.r2ToPar != null && p.r2ToPar > 0 ? 'text-danger-text' : 'text-text-muted'}`}>{p.r2ToPar != null ? formatGolfScore(p.r2ToPar) : '—'}</td>
+                    <td className={`py-2 px-1 text-center ${p.r3ToPar != null && p.r3ToPar < 0 ? 'text-success-text' : p.r3ToPar != null && p.r3ToPar > 0 ? 'text-danger-text' : 'text-text-muted'}`}>{p.r3ToPar != null ? formatGolfScore(p.r3ToPar) : '—'}</td>
+                    <td className={`py-2 px-1 text-center ${p.r4ToPar != null && p.r4ToPar < 0 ? 'text-success-text' : p.r4ToPar != null && p.r4ToPar > 0 ? 'text-danger-text' : 'text-text-muted'}`}>{p.r4ToPar != null ? formatGolfScore(p.r4ToPar) : '—'}</td>
+                    <td className="py-2 pl-1 text-right text-text-muted">{formatGolfScore(p.adjustedTotal)}</td>
                   </tr>
                 ))}
               </tbody>
