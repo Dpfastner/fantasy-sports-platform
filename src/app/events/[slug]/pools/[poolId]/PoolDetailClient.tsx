@@ -735,10 +735,7 @@ export function PoolDetailClient({
             <BiggestMovers participants={liveParticipants} />
           )}
 
-          {/* Projected Cut Tracker — golf roster pools with cut_rule config */}
-          {effectiveFormat === 'roster' && tournament.sport === 'golf' && cutRule && (
-            <ProjectedCutTracker participants={liveParticipants} cutRule={cutRule} />
-          )}
+          {/* Projected Cut Tracker — rendered via top-level guard below */}
 
           {/* Player Ownership — golf roster pools (moves to Leaderboard tab for Masters) */}
           {effectiveFormat === 'roster' && !isMasters && rosterSelectionCounts && rosterTotalEntries !== undefined && userEntries.some(e => e.submittedAt) && allRosterPicks && (
@@ -1097,6 +1094,11 @@ export function PoolDetailClient({
           score={viewingMember.score}
           onClose={() => setViewingEntryId(null)}
         />
+      )}
+
+      {/* Projected Cut Tracker — overview only, own guard */}
+      {activeTab === 'overview' && effectiveFormat === 'roster' && tournament.sport === 'golf' && cutRule && (
+        <ProjectedCutTracker participants={liveParticipants} cutRule={cutRule} />
       )}
 
       {/* Masters: Green Jacket Ceremony for pool winner */}
