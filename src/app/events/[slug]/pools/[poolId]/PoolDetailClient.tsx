@@ -33,6 +33,7 @@ import { computeAllMastersAwards } from '@/lib/events/masters-awards'
 import { GreenJacketCeremony } from '@/components/events/masters/GreenJacketCeremony'
 import { Top10Leaderboard } from '@/components/events/masters/Top10Leaderboard'
 import { MastersLeaderboard } from '@/components/events/masters/MastersLeaderboard'
+import { GnomeEasterEgg } from '@/components/events/masters/MastersGnome'
 import { Par3CurseBadge } from '@/components/events/masters/Par3CurseBadge'
 import { CutStatus } from '@/components/events/masters/CutStatus'
 
@@ -700,12 +701,15 @@ export function PoolDetailClient({
 
           {/* Masters: Physical Augusta scoreboard on overview (top 10) */}
           {isMasters && effectiveFormat === 'roster' && (
-            <MastersLeaderboard
-              participants={liveParticipants}
-              allRosterPicks={allRosterPicks}
-              members={liveMembers}
-              onShowAll={() => setActiveTab('schedule')}
-            />
+            <div style={{ position: 'relative' }}>
+              <MastersLeaderboard
+                participants={liveParticipants}
+                allRosterPicks={allRosterPicks}
+                members={liveMembers}
+                onShowAll={() => setActiveTab('schedule')}
+              />
+              <GnomeEasterEgg />
+            </div>
           )}
 
           {/* Rivalry Board — user standings */}
