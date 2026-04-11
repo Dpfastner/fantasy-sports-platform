@@ -60,16 +60,31 @@ export function computeEntryRoundScores(
         const p = participantMap.get(id)
         if (!p) return null
         const meta = (p.metadata || {}) as Record<string, unknown>
+        // Use cumulative score through THIS round (not live total which changes during later rounds).
+        // For R1 awards: use r1 only. For R2: r1+r2. This prevents R3 score changes from
+        // shifting which golfers "count" for historical round awards.
+        let cumulativeToPar = 0
+        const coursePar = 72
+        for (let r = 1; r <= roundNumber; r++) {
+          const rVal = meta[`r${r}`]
+          if (typeof rVal === 'number' && rVal >= 60 && rVal <= 100) {
+            cumulativeToPar += (rVal as number) - coursePar
+          } else {
+            // If a round score is missing, fall back to live total
+            cumulativeToPar = typeof meta.score_to_par === 'number' ? (meta.score_to_par as number) : 999
+            break
+          }
+        }
         return {
           roundToPar: golferRoundToPar(meta, roundNumber),
-          totalToPar: typeof meta.score_to_par === 'number' ? (meta.score_to_par as number) : 999,
+          totalToPar: cumulativeToPar,
         }
       })
       .filter((x): x is NonNullable<typeof x> => x !== null)
 
     if (pickDetails.length === 0) continue
 
-    // Sort by total score (best golfers first) then take counting golfers
+    // Sort by cumulative score through this round (best first) then take counting golfers
     pickDetails.sort((a, b) => a.totalToPar - b.totalToPar)
     const counting = pickDetails.slice(0, countBest)
 
