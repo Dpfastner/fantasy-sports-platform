@@ -554,11 +554,11 @@ export async function GET(request: Request) {
               : (existingMeta.prev_score_to_par ?? null)
             const newPrevAt = snapshotStale ? syncRunAt : prevScoreAtStr
 
-            // Skip full update for cut golfers — they don't play R3/R4.
-            // Only preserve their existing metadata (status, r1, r2, score_to_par).
-            if (existingMeta.status === 'cut') {
-              continue
-            }
+            // Cut golfers still need their score_to_par and position updated
+            // (ESPN continues reporting their 2-round total and position).
+            // Only skip Core API per-hole enrichment (holes[], current_hole, thru)
+            // since they're not playing R3/R4.
+            const isCutGolfer = existingMeta.status === 'cut' || existingMeta.status === 'wd' || existingMeta.status === 'dq'
 
             const updatedMeta = {
               ...existingMeta,
@@ -578,18 +578,15 @@ export async function GET(request: Request) {
               score_display: golfer?.score || existingMeta.score_display || null,
               country: golfer?.country || existingMeta.country || null,
               country_code: golfer?.countryCode || existingMeta.country_code || null,
-              // Core API hole-level fields. When `live` is fresh, we trust
-              // it verbatim — including null values. This lets current_hole
-              // and thru clear out between rounds (when ESPN no longer
-              // reports the golfer as active) instead of staying pinned to
-              // the last hole forever, which would make the course map
-              // show every R1 finisher stuck on hole 18 overnight.
-              current_hole: live ? (live.currentHole ?? null) : (existingMeta.current_hole ?? null),
-              thru: live ? (live.thru ?? null) : (existingMeta.thru ?? null),
-              start_hole: live?.startHole ?? existingMeta.start_hole ?? null,
-              tee_time: live?.teeTime ?? existingMeta.tee_time ?? null,
-              current_round: live?.currentRound ?? existingMeta.current_round ?? null,
-              holes: live?.holes ?? existingMeta.holes ?? [],
+              // Core API hole-level fields — skip for cut golfers (not playing).
+              // For active golfers: trust live verbatim including nulls (clears
+              // between rounds). For cut: preserve existing values.
+              current_hole: isCutGolfer ? (existingMeta.current_hole ?? null) : live ? (live.currentHole ?? null) : (existingMeta.current_hole ?? null),
+              thru: isCutGolfer ? (existingMeta.thru ?? null) : live ? (live.thru ?? null) : (existingMeta.thru ?? null),
+              start_hole: isCutGolfer ? (existingMeta.start_hole ?? null) : (live?.startHole ?? existingMeta.start_hole ?? null),
+              tee_time: isCutGolfer ? (existingMeta.tee_time ?? null) : (live?.teeTime ?? existingMeta.tee_time ?? null),
+              current_round: isCutGolfer ? (existingMeta.current_round ?? null) : (live?.currentRound ?? existingMeta.current_round ?? null),
+              holes: isCutGolfer ? (existingMeta.holes ?? []) : (live?.holes ?? existingMeta.holes ?? []),
               // Feature 4: rolling snapshot for Biggest Movers
               prev_score_to_par: newPrevScore,
               prev_score_at: newPrevAt,
