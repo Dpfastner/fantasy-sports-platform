@@ -3,7 +3,7 @@
 import { useState, useMemo } from 'react'
 import Link from 'next/link'
 import { formatGolfScore } from '@/lib/events/shared'
-import { golferRoundToPar } from '@/lib/events/golf-aggregations'
+import { golferRoundToPar, golferAdjustedTotal } from '@/lib/events/golf-aggregations'
 import { DEFAULT_TIERS, TIER_COLORS, getTier, type RosterTier } from '@/lib/events/tiers'
 import { EntryAvatar } from '@/components/EntryAvatar'
 import { GolfHoleGrid } from '@/components/GolfHoleGrid'
@@ -97,8 +97,8 @@ export function RosterLeaderboard({
 
   // Course par (Augusta = 72)
   const COURSE_PAR = 72
-  // Entry-level per-round column. Best 5 counting golfers (by total),
-  // sum their round to-par (completed or live-derived).
+  // Entry-level per-round column. Best 5 counting golfers (sorted by
+  // ADJUSTED total including cut penalty), sum their round to-par.
   const computeEntryRoundToPar = (entryId: string, round: 1 | 2 | 3 | 4): number | null => {
     const picks = allRosterPicks?.[entryId]
     if (!picks || picks.length === 0) return null
@@ -110,13 +110,13 @@ export function RosterLeaderboard({
         const meta = (p.metadata || {}) as Record<string, unknown>
         return {
           roundToPar: golferRoundToPar(meta, round),
-          totalToPar: typeof meta.score_to_par === 'number' ? meta.score_to_par as number : 999,
+          adjustedTotal: golferAdjustedTotal(meta) ?? 999,
         }
       })
       .filter((x): x is NonNullable<typeof x> => x !== null)
 
     if (pickDetails.length === 0) return null
-    pickDetails.sort((a, b) => a.totalToPar - b.totalToPar)
+    pickDetails.sort((a, b) => a.adjustedTotal - b.adjustedTotal)
     const counting = pickDetails.slice(0, countBest)
 
     let sum = 0, count = 0
@@ -126,9 +126,9 @@ export function RosterLeaderboard({
     return count > 0 ? sum : null
   }
 
-  // Live entry total — sum of counting 5 golfers' live score_to_par.
-  // Updates every minute from Apps Script, doesn't wait for GHA to
-  // re-roll event_entries.total_points.
+  // Live entry total — sum of counting 5 golfers' ADJUSTED score_to_par.
+  // Adjusted = raw score + flat cut penalty (+8 per missed round).
+  // This matches the server-side scoring engine so rankings agree.
   const computeEntryLiveTotal = (entryId: string): number | null => {
     const picks = allRosterPicks?.[entryId]
     if (!picks || picks.length === 0) return null
@@ -137,7 +137,7 @@ export function RosterLeaderboard({
         const p = participantMap.get(id)
         if (!p) return null
         const meta = (p.metadata || {}) as Record<string, unknown>
-        return typeof meta.score_to_par === 'number' ? meta.score_to_par as number : null
+        return golferAdjustedTotal(meta)
       })
       .filter((s): s is number => s !== null)
     if (scores.length === 0) return null

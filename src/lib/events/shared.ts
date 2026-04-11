@@ -699,18 +699,12 @@ function computeGolferScore(
     }
   }
 
-  // 'highest_plus_one': add (highest active score + 1) per missed round
-  // This means the penalty per missed round = highest_active_round_score + 1
-  // Approximation: use (highestActiveScore / 4 rounds) as per-round, then +1
-  // But the Google Sheet rule says "assigned the highest score from the field +1"
-  // for EACH missed round's score. So penalty = (highest_score_from_field + 1) per missed round.
-  // "highest score from the field" typically means the highest individual round score among those who made the cut.
-  // However, since we track score_to_par not individual round scores for the penalty,
-  // we interpret it as: each missed round scores as if they shot (highestActiveScore + 1) relative to that round.
-  // Simpler approach: per missed round, add the penalty value.
-  const penaltyPerRound = highestActiveScore + 1
+  // Flat +8 per missed round. Simple, predictable, industry standard.
+  // Each missed round (R3, R4) adds +8 to the golfer's to-par.
+  // Example: cut golfer at +4 after R2 → +4 + 8 + 8 = +20.
+  const FLAT_PENALTY = 8
   return {
-    adjustedScore: scoreToPar + penaltyPerRound * missedRounds,
+    adjustedScore: scoreToPar + FLAT_PENALTY * missedRounds,
     cutPenaltyApplied: true,
   }
 }
