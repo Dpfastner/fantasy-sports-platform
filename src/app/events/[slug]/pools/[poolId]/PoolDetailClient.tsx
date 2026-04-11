@@ -860,24 +860,53 @@ export function PoolDetailClient({
                 <span className="text-right">Score</span>
               </div>
               {(() => {
-                // Sort: active golfers first (by score), then cut golfers (by score)
                 const allGolfers = [...liveParticipants]
                   .filter(p => p.metadata?.score_to_par != null || p.metadata?.status === 'active')
-                const activeGolfers = allGolfers
-                  .filter(p => (p.metadata as Record<string, unknown>)?.status !== 'cut')
+
+                // Derive cut from R1+R2 scores (client-side fallback when DB status is wrong).
+                // If field is in R3+, a golfer is cut if their R1+R2 total exceeds the top-50 cut line.
+                const maxFieldRound = Math.max(...allGolfers.map(p => ((p.metadata as Record<string, unknown>)?.current_round as number) || 0), 0)
+                const cutN = cutRule?.type === 'top_n_and_ties' ? cutRule.n : 50
+                let derivedCutScore: number | null = null
+                if (maxFieldRound >= 3) {
+                  const r2Totals = allGolfers
+                    .map(p => {
+                      const m = (p.metadata || {}) as Record<string, unknown>
+                      const r1 = m.r1 as number | undefined
+                      const r2 = m.r2 as number | undefined
+                      return (typeof r1 === 'number' && typeof r2 === 'number') ? (r1 - 72) + (r2 - 72) : null
+                    })
+                    .filter((s): s is number => s !== null)
+                    .sort((a, b) => a - b)
+                  if (r2Totals.length > cutN) {
+                    derivedCutScore = r2Totals[cutN - 1]
+                  }
+                }
+
+                // A golfer is cut if: DB says 'cut' OR derived from R1+R2 scores
+                function isGolferCut(p: typeof allGolfers[0]): boolean {
+                  const m = (p.metadata || {}) as Record<string, unknown>
+                  if (m.status === 'cut') return true
+                  if (derivedCutScore == null || maxFieldRound < 3) return false
+                  const r1 = m.r1 as number | undefined
+                  const r2 = m.r2 as number | undefined
+                  if (typeof r1 !== 'number' || typeof r2 !== 'number') return false
+                  return (r1 - 72) + (r2 - 72) > derivedCutScore
+                }
+
+                // Sort: active first, then cut below
+                const activeGolfers = allGolfers.filter(p => !isGolferCut(p))
                   .sort((a, b) => ((a.metadata?.score_to_par as number) ?? 999) - ((b.metadata?.score_to_par as number) ?? 999))
-                const cutGolfers = allGolfers
-                  .filter(p => (p.metadata as Record<string, unknown>)?.status === 'cut')
+                const cutGolfers = allGolfers.filter(p => isGolferCut(p))
                   .sort((a, b) => ((a.metadata?.score_to_par as number) ?? 999) - ((b.metadata?.score_to_par as number) ?? 999))
                 const hasCutGolfers = cutGolfers.length > 0
-                // Active first, then cut — the divider renders between them
                 const sortedGolfers = [...activeGolfers, ...cutGolfers]
                 const cutLineAt = hasCutGolfers ? activeGolfers.length : null
                 const COLLAPSE_LIMIT = isMasters ? 15 : sortedGolfers.length
 
                 return sortedGolfers.map((p, i) => {
                   const meta = (p.metadata || {}) as Record<string, unknown>
-                  const isCutGolfer = String(meta.status || '') === 'cut'
+                  const isCutGolfer = isGolferCut(p)
                   const scoreToPar = meta.score_to_par as number | null
                   const holes = (meta.holes as GolfHole[] | undefined) || []
                   const hasHoleData = holes.length > 0

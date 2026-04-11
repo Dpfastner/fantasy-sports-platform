@@ -262,6 +262,17 @@ export async function syncGolfScores(
     if (!golfer) continue
 
     const existingMeta = (participant.metadata || {}) as Record<string, unknown>
+
+    // Cut golfers are done — don't update their metadata with stale ESPN data.
+    // ESPN often returns 'active' for cut golfers, which would undo the cut.
+    if (existingMeta.status === 'cut') continue
+
+    // Respect ESPN's cut status when it reports it; never downgrade cut → active
+    const espnStatus = golfer.status || 'active'
+    const newStatus = espnStatus === 'cut' ? 'cut'
+      : existingMeta.status === 'cut' ? 'cut'
+      : espnStatus
+
     const updatedMeta = {
       ...existingMeta,
       r1: golfer.roundScores?.[0] ?? existingMeta.r1 ?? null,
@@ -272,7 +283,7 @@ export async function syncGolfScores(
         ? golfer.roundScores.filter((s): s is number => s !== null).reduce((a, b) => a + b, 0) || null
         : existingMeta.total_strokes,
       score_to_par: golfer.scoreToPar ?? existingMeta.score_to_par ?? null,
-      status: golfer.status || existingMeta.status || 'active',
+      status: newStatus,
       position: golfer.position || existingMeta.position || null,
       score_display: golfer.score || existingMeta.score_display || null,
       country: golfer.country || existingMeta.country || null,
