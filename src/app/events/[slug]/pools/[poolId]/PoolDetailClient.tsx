@@ -34,6 +34,7 @@ import { GreenJacketCeremony } from '@/components/events/masters/GreenJacketCere
 import { Top10Leaderboard } from '@/components/events/masters/Top10Leaderboard'
 import { MastersLeaderboard } from '@/components/events/masters/MastersLeaderboard'
 import { GnomeEasterEgg } from '@/components/events/masters/MastersGnome'
+import { MastersTrophy } from '@/components/events/masters/MastersTrophy'
 import { Par3CurseBadge } from '@/components/events/masters/Par3CurseBadge'
 import { CutStatus } from '@/components/events/masters/CutStatus'
 
@@ -432,7 +433,13 @@ export function PoolDetailClient({
   return (
     <div>
       {/* Pool Header */}
-      <div className="bg-surface rounded-lg border border-border p-5 mb-6">
+      <div className="bg-surface rounded-lg border border-border p-5 mb-6 relative">
+        {/* Masters: decorative trophy watermark */}
+        {isMasters && (
+          <div className="absolute right-4 top-1/2 -translate-y-1/2 opacity-[0.07] pointer-events-none hidden sm:block">
+            <MastersTrophy className="w-16 h-24" />
+          </div>
+        )}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div>
             <div className="flex items-center gap-2 mb-1">
