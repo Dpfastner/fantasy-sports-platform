@@ -7,9 +7,6 @@ import { golferRoundToPar, golferAdjustedTotal } from '@/lib/events/golf-aggrega
 import { DEFAULT_TIERS, TIER_COLORS, getTier, type RosterTier } from '@/lib/events/tiers'
 import { EntryAvatar } from '@/components/EntryAvatar'
 import { GolfHoleGrid } from '@/components/GolfHoleGrid'
-import { Par3CurseBadge } from '@/components/events/masters/Par3CurseBadge'
-import { PimentoCheeseBadge } from '@/components/events/masters/PimentoCheeseBadge'
-import { CrowsNestBadge } from '@/components/events/masters/CrowsNestBadge'
 
 interface Member {
   id: string
@@ -217,19 +214,19 @@ export function RosterLeaderboard({
           <p className="text-text-muted">No entries yet.</p>
         </div>
       ) : (
-        <div className="bg-surface rounded-lg border border-border overflow-x-auto">
-          <div className="min-w-[42rem] w-full">
-          {/* Header */}
-          <div className="grid grid-cols-[2rem_minmax(12rem,18rem)_1fr_2.25rem_2.25rem_2.25rem_2.25rem_3rem_4rem] gap-2 px-3 py-2 bg-surface-inset border-b border-border text-xs text-text-muted uppercase tracking-wide">
+        <div className="bg-surface rounded-lg border border-border sm:overflow-x-auto">
+          <div className="sm:min-w-[42rem] w-full">
+          {/* Header — mobile: rank + player + total only; desktop: full row */}
+          <div className="grid grid-cols-[2rem_1fr_3.5rem] sm:grid-cols-[2rem_minmax(12rem,18rem)_1fr_2.25rem_2.25rem_2.25rem_2.25rem_3rem_4rem] gap-2 px-3 py-2 bg-surface-inset border-b border-border text-xs text-text-muted uppercase tracking-wide">
             <span className="text-right">#</span>
             <span>Player</span>
-            <span aria-hidden />
-            <span className="text-right">R1</span>
-            <span className="text-right">R2</span>
-            <span className="text-right">R3</span>
-            <span className="text-right">R4</span>
+            <span className="hidden sm:block" aria-hidden />
+            <span className="hidden sm:block text-right">R1</span>
+            <span className="hidden sm:block text-right">R2</span>
+            <span className="hidden sm:block text-right">R3</span>
+            <span className="hidden sm:block text-right">R4</span>
             <span className="text-right">{showScores ? 'Total' : 'Status'}</span>
-            <span className="text-right">Submitted</span>
+            <span className="hidden sm:block text-right">Submitted</span>
           </div>
 
           {/* Rows */}
@@ -251,11 +248,9 @@ export function RosterLeaderboard({
                 <button
                   type="button"
                   onClick={() => canExpand && setExpandedId(isExpanded ? null : member.id)}
-                  className={`w-full grid grid-cols-[2rem_minmax(12rem,18rem)_1fr_2.25rem_2.25rem_2.25rem_2.25rem_3rem_4rem] gap-2 px-3 py-2.5 border-b border-border-subtle text-left transition-colors ${
+                  className={`w-full grid grid-cols-[2rem_1fr_3.5rem] sm:grid-cols-[2rem_minmax(12rem,18rem)_1fr_2.25rem_2.25rem_2.25rem_2.25rem_3rem_4rem] gap-2 px-3 py-2.5 border-b border-border-subtle text-left transition-colors ${
                     canExpand ? 'hover:bg-surface-inset/50 cursor-pointer' : 'cursor-default'
-                  } ${isExpanded ? 'bg-surface-inset/30' : ''} ${
-                    isMasters && mastersAwards?.crowsNestHolder?.entryId === member.id ? 'bg-[#8B7355]/10' : ''
-                  }`}
+                  } ${isExpanded ? 'bg-surface-inset/30' : ''}`}
                 >
                   <span className={`text-right text-sm ${isTop3 ? 'font-bold text-brand' : 'text-text-muted'}`}>
                     {rank}
@@ -292,23 +287,6 @@ export function RosterLeaderboard({
                         <span className="text-sm text-text-muted truncate italic block">{member.displayName}</span>
                       )}
                     </div>
-                    {/* Masters inline badges: pimento cheese + crow's nest */}
-                    {isMasters && (
-                      <div className="flex items-center gap-1 shrink-0">
-                        {entryHasRai(member.id) && <Par3CurseBadge />}
-                        {mastersAwards?.pimentoWinners.has(member.id) && (
-                          mastersAwards.pimentoWinners.get(member.id)!.map(round => (
-                            <PimentoCheeseBadge key={`pc-${round}`} round={round} entryName={member.entryName || member.displayName} />
-                          ))
-                        )}
-                        {mastersAwards?.crowsNestHolder?.entryId === member.id && (
-                          <CrowsNestBadge
-                            rounds={mastersAwards.crowsNestHolder.rounds}
-                            entryName={member.entryName || member.displayName}
-                          />
-                        )}
-                      </div>
-                    )}
                     {canExpand && (
                       <svg
                         className={`w-3.5 h-3.5 text-text-muted shrink-0 transition-transform ${isExpanded ? 'rotate-90' : ''}`}
@@ -318,17 +296,18 @@ export function RosterLeaderboard({
                       </svg>
                     )}
                   </div>
-                  <span aria-hidden />
-                  <span className={`text-right text-xs tabular-nums ${r1 != null && r1 < 0 ? 'text-success-text' : r1 != null && r1 > 0 ? 'text-danger-text' : 'text-text-muted'}`}>
+                  {/* Spacer + R1-R4 + Submitted hidden on mobile */}
+                  <span className="hidden sm:block" aria-hidden />
+                  <span className={`hidden sm:block text-right text-xs tabular-nums ${r1 != null && r1 < 0 ? 'text-success-text' : r1 != null && r1 > 0 ? 'text-danger-text' : 'text-text-muted'}`}>
                     {r1 == null ? '—' : formatGolfScore(r1)}
                   </span>
-                  <span className={`text-right text-xs tabular-nums ${r2 != null && r2 < 0 ? 'text-success-text' : r2 != null && r2 > 0 ? 'text-danger-text' : 'text-text-muted'}`}>
+                  <span className={`hidden sm:block text-right text-xs tabular-nums ${r2 != null && r2 < 0 ? 'text-success-text' : r2 != null && r2 > 0 ? 'text-danger-text' : 'text-text-muted'}`}>
                     {r2 == null ? '—' : formatGolfScore(r2)}
                   </span>
-                  <span className={`text-right text-xs tabular-nums ${r3 != null && r3 < 0 ? 'text-success-text' : r3 != null && r3 > 0 ? 'text-danger-text' : 'text-text-muted'}`}>
+                  <span className={`hidden sm:block text-right text-xs tabular-nums ${r3 != null && r3 < 0 ? 'text-success-text' : r3 != null && r3 > 0 ? 'text-danger-text' : 'text-text-muted'}`}>
                     {r3 == null ? '—' : formatGolfScore(r3)}
                   </span>
-                  <span className={`text-right text-xs tabular-nums ${r4 != null && r4 < 0 ? 'text-success-text' : r4 != null && r4 > 0 ? 'text-danger-text' : 'text-text-muted'}`}>
+                  <span className={`hidden sm:block text-right text-xs tabular-nums ${r4 != null && r4 < 0 ? 'text-success-text' : r4 != null && r4 > 0 ? 'text-danger-text' : 'text-text-muted'}`}>
                     {r4 == null ? '—' : formatGolfScore(r4)}
                   </span>
                   <span className={`text-right text-sm ${showScores ? 'text-text-primary font-medium' : 'text-text-muted'}`}>
@@ -336,7 +315,7 @@ export function RosterLeaderboard({
                       ? formatGolfScore(liveTotal ?? member.score)
                       : member.submittedAt ? 'Ready' : '—'}
                   </span>
-                  <span className="text-right text-xs text-text-muted">
+                  <span className="hidden sm:block text-right text-xs text-text-muted">
                     {member.submittedAt
                       ? new Date(member.submittedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
                       : '—'}
