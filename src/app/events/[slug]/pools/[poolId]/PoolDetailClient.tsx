@@ -433,7 +433,13 @@ export function PoolDetailClient({
   return (
     <div>
       {/* Pool Header */}
-      <div className="bg-surface rounded-lg border border-border p-5 mb-6 relative">
+      <div className="bg-surface rounded-lg border border-border p-5 mb-6 relative overflow-hidden">
+        {/* Masters: trophy spanning full header height, right side */}
+        {isMasters && (
+          <div className="absolute right-16 top-0 bottom-0 flex items-center pointer-events-none hidden sm:flex">
+            <MastersTrophy className="h-full max-h-20 w-auto" />
+          </div>
+        )}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div>
             <div className="flex items-center gap-2 mb-1">
@@ -448,8 +454,6 @@ export function PoolDetailClient({
               {isCreator && (
                 <span className="text-xs px-1.5 py-0.5 rounded bg-warning/20 text-warning-text">Creator</span>
               )}
-              {/* Masters: trophy in the open space after badges */}
-              {isMasters && <MastersTrophy className="w-16 h-24 shrink-0 ml-2 hidden sm:block" />}
             </div>
             <p className="text-text-muted text-sm">
               {tournament.name} &middot; {uniqueMembers.length} member{uniqueMembers.length !== 1 ? 's' : ''}
