@@ -208,9 +208,9 @@ export function GnomeEasterEgg() {
           width: 36,
           height: 60,
           cursor: 'pointer',
-          zIndex: 20,
+          zIndex: -1,
           transition: 'transform 0.2s',
-          transform: 'rotate(-45deg)',
+          transform: 'rotate(45deg)',
         }}
         className="hover:scale-105"
         title="What's this?"

@@ -434,9 +434,9 @@ export function PoolDetailClient({
     <div>
       {/* Pool Header */}
       <div className="bg-surface rounded-lg border border-border p-5 mb-6 relative overflow-hidden">
-        {/* Masters: trophy spanning full header height, right side */}
+        {/* Masters: trophy in the open space between pool info and Code/Share buttons */}
         {isMasters && (
-          <div className="absolute right-16 top-0 bottom-0 flex items-center pointer-events-none hidden sm:flex">
+          <div className="absolute left-1/2 top-0 bottom-0 flex items-center pointer-events-none hidden sm:flex">
             <MastersTrophy className="h-full max-h-20 w-auto" />
           </div>
         )}
