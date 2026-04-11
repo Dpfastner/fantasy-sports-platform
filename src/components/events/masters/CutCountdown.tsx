@@ -165,7 +165,7 @@ export function CutCountdown({
           </div>
           <div className="flex flex-wrap gap-2">
             {cutResults.survived.map(g => (
-              <span key={g.id} className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-full bg-success/20 text-success-text">
+              <span key={g.id} className="inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-full" style={{ background: 'rgba(22,101,52,0.12)', color: '#166534' }}>
                 <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
                 </svg>
@@ -173,7 +173,7 @@ export function CutCountdown({
               </span>
             ))}
             {cutResults.cut.map(g => (
-              <span key={g.id} className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-full bg-danger/20 text-danger-text">
+              <span key={g.id} className="inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-full" style={{ background: 'rgba(185,28,28,0.1)', color: '#991B1B' }}>
                 <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
                 </svg>
