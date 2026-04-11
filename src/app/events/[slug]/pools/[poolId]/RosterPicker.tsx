@@ -393,8 +393,8 @@ export function RosterPicker({
                     </td>
                     <td className="py-2 px-1 text-center text-text-secondary align-top">{p.r1 ?? '—'}</td>
                     <td className="py-2 px-1 text-center text-text-secondary align-top">{p.r2 ?? '—'}</td>
-                    <td className="py-2 px-1 text-center text-text-secondary align-top">{p.r3 ?? '—'}</td>
-                    <td className="py-2 px-1 text-center text-text-secondary align-top">{p.r4 ?? '—'}</td>
+                    <td className={`py-2 px-1 text-center align-top ${p.status === 'cut' ? 'text-danger-text text-[10px] font-semibold' : 'text-text-secondary'}`}>{p.status === 'cut' ? 'CUT' : p.r3 ?? '—'}</td>
+                    <td className={`py-2 px-1 text-center align-top ${p.status === 'cut' ? 'text-danger-text text-[10px] font-semibold' : 'text-text-secondary'}`}>{p.status === 'cut' ? 'CUT' : p.r4 ?? '—'}</td>
                     <td className="py-2 pl-1 text-right font-medium text-text-primary align-top">{formatGolfScore(p.scoreToPar)}</td>
                   </tr>
                 ))}
@@ -414,8 +414,8 @@ export function RosterPicker({
                     </td>
                     <td className="py-2 px-1 text-center text-text-muted">{p.r1 ?? '—'}</td>
                     <td className="py-2 px-1 text-center text-text-muted">{p.r2 ?? '—'}</td>
-                    <td className="py-2 px-1 text-center text-text-muted">{p.r3 ?? '—'}</td>
-                    <td className="py-2 px-1 text-center text-text-muted">{p.r4 ?? '—'}</td>
+                    <td className={`py-2 px-1 text-center ${p.status === 'cut' ? 'text-danger-text text-[10px] font-semibold' : 'text-text-muted'}`}>{p.status === 'cut' ? 'CUT' : p.r3 ?? '—'}</td>
+                    <td className={`py-2 px-1 text-center ${p.status === 'cut' ? 'text-danger-text text-[10px] font-semibold' : 'text-text-muted'}`}>{p.status === 'cut' ? 'CUT' : p.r4 ?? '—'}</td>
                     <td className="py-2 pl-1 text-right text-text-muted">{formatGolfScore(p.scoreToPar)}</td>
                   </tr>
                 ))}

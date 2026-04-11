@@ -72,18 +72,15 @@ export function MastersLeaderboard({
     return maxRoundWithHoles || maxRoundOverall || 1
   }, [participants])
 
+  // Only active golfers on the iconic scoreboard — cut golfers don't play R3/R4
   const sorted = useMemo(() => {
     return [...participants]
       .filter(p => {
         const meta = (p.metadata || {}) as Record<string, unknown>
-        return meta.score_to_par != null || meta.status === 'active'
+        return meta.status !== 'cut' && meta.status !== 'wd' && meta.status !== 'dq' &&
+          (meta.score_to_par != null || meta.status === 'active')
       })
-      .sort((a, b) => {
-        const am = (a.metadata || {}) as Record<string, unknown>
-        const bm = (b.metadata || {}) as Record<string, unknown>
-        if ((am.status === 'cut') !== (bm.status === 'cut')) return am.status === 'cut' ? 1 : -1
-        return ((am.score_to_par as number) ?? 999) - ((bm.score_to_par as number) ?? 999)
-      })
+      .sort((a, b) => ((a.metadata?.score_to_par as number) ?? 999) - ((b.metadata?.score_to_par as number) ?? 999))
       .slice(0, MAX_ROWS)
   }, [participants])
 

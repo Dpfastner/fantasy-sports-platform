@@ -860,36 +860,19 @@ export function PoolDetailClient({
                 <span className="text-right">Score</span>
               </div>
               {(() => {
-                const sortedGolfers = [...liveParticipants]
+                // Sort: active golfers first (by score), then cut golfers (by score)
+                const allGolfers = [...liveParticipants]
                   .filter(p => p.metadata?.score_to_par != null || p.metadata?.status === 'active')
-                  .sort((a, b) => {
-                    const aScore = (a.metadata?.score_to_par as number) ?? 999
-                    const bScore = (b.metadata?.score_to_par as number) ?? 999
-                    return aScore - bScore
-                  })
-
-                // Determine CUT line position from cutRule — accounting for ties
-                const cutN = cutRule?.type === 'top_n_and_ties' ? cutRule.n : null
-                let cutLineAt: number | null = null
-                if (cutN != null) {
-                  const activeOnly = sortedGolfers.filter(g => {
-                    const m = (g.metadata || {}) as Record<string, unknown>
-                    return m.status !== 'cut' && m.status !== 'wd' && m.status !== 'dq'
-                  })
-                  if (activeOnly.length > cutN) {
-                    const cutScore = ((activeOnly[cutN - 1]?.metadata as Record<string, unknown>)?.score_to_par as number) ?? null
-                    if (cutScore != null) {
-                      // Find the last golfer at or below the cut score (ties make it)
-                      for (let j = 0; j < sortedGolfers.length; j++) {
-                        const m = (sortedGolfers[j].metadata || {}) as Record<string, unknown>
-                        const s = m.score_to_par as number | null
-                        if (s != null && s <= cutScore && m.status !== 'cut') {
-                          cutLineAt = j + 1
-                        }
-                      }
-                    }
-                  }
-                }
+                const activeGolfers = allGolfers
+                  .filter(p => (p.metadata as Record<string, unknown>)?.status !== 'cut')
+                  .sort((a, b) => ((a.metadata?.score_to_par as number) ?? 999) - ((b.metadata?.score_to_par as number) ?? 999))
+                const cutGolfers = allGolfers
+                  .filter(p => (p.metadata as Record<string, unknown>)?.status === 'cut')
+                  .sort((a, b) => ((a.metadata?.score_to_par as number) ?? 999) - ((b.metadata?.score_to_par as number) ?? 999))
+                const hasCutGolfers = cutGolfers.length > 0
+                // Active first, then cut — the divider renders between them
+                const sortedGolfers = [...activeGolfers, ...cutGolfers]
+                const cutLineAt = hasCutGolfers ? activeGolfers.length : null
                 const COLLAPSE_LIMIT = isMasters ? 15 : sortedGolfers.length
 
                 return sortedGolfers.map((p, i) => {
@@ -920,17 +903,14 @@ export function PoolDetailClient({
 
                   return (
                     <div key={p.id} className={isHidden ? 'hidden' : ''}>
-                      {/* Projected CUT line (with ties) */}
+                      {/* Cut line divider — separates active from cut golfers */}
                       {cutLineAt != null && i === cutLineAt && (
-                        <div className="flex items-center gap-2 px-3 py-1">
-                          <div className="flex-1 border-t border-dashed border-danger/50" />
-                          <span className="text-[10px] font-semibold text-danger-text uppercase tracking-wider">
-                            {liveParticipants.some(p => {
-                              const m = (p.metadata || {}) as Record<string, unknown>
-                              return (m.current_round as number) >= 3
-                            }) ? 'The Cut' : 'Projected Cut'}
+                        <div className="flex items-center gap-2 px-3 py-1.5">
+                          <div className="flex-1 border-t-2 border-dashed border-danger/50" />
+                          <span className="text-[10px] font-bold text-danger-text uppercase tracking-wider">
+                            {hasCutGolfers ? 'The Cut' : 'Projected Cut'} · {cutGolfers.length} missed
                           </span>
-                          <div className="flex-1 border-t border-dashed border-danger/50" />
+                          <div className="flex-1 border-t-2 border-dashed border-danger/50" />
                         </div>
                       )}
                       <div
