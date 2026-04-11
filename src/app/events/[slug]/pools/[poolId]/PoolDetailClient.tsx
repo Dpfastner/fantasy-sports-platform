@@ -178,7 +178,10 @@ export function PoolDetailClient({
 }: PoolDetailClientProps) {
   const searchParams = useSearchParams()
   const initialTab = (searchParams.get('tab') as Tab) || 'overview'
-  const [activeTab, setActiveTabState] = useState<Tab>(initialTab)
+  // Start as null to prevent server-side rendering of tab content.
+  // Server HTML has no tab content → client renders it fresh → no hydration duplicates.
+  const [activeTab, setActiveTabState] = useState<Tab | null>(null)
+  useEffect(() => { setActiveTabState(initialTab) }, []) // eslint-disable-line react-hooks/exhaustive-deps
   const [showRules, setShowRules] = useState(false)
   const [expandedGolferId, setExpandedGolferId] = useState<string | null>(null)
   const [leaderboardExpanded, setLeaderboardExpanded] = useState(false)
@@ -426,7 +429,7 @@ export function PoolDetailClient({
   ]
 
   return (
-    <div className="overflow-hidden">
+    <div>
       {/* Pool Header */}
       <div className="bg-surface rounded-lg border border-border p-5 mb-6">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
