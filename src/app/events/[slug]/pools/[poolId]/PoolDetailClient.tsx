@@ -34,6 +34,7 @@ import { GreenJacketCeremony } from '@/components/events/masters/GreenJacketCere
 import { Top10Leaderboard } from '@/components/events/masters/Top10Leaderboard'
 import { MastersLeaderboard } from '@/components/events/masters/MastersLeaderboard'
 import { Par3CurseBadge } from '@/components/events/masters/Par3CurseBadge'
+import { CutStatus } from '@/components/events/masters/CutStatus'
 
 interface Participant {
   id: string
@@ -425,7 +426,7 @@ export function PoolDetailClient({
   ]
 
   return (
-    <div>
+    <div className="overflow-hidden">
       {/* Pool Header */}
       <div className="bg-surface rounded-lg border border-border p-5 mb-6">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
@@ -735,7 +736,12 @@ export function PoolDetailClient({
             <BiggestMovers participants={liveParticipants} />
           )}
 
-          {/* Projected Cut Tracker — temporarily disabled, debugging footer issue */}
+          {/* Cut Status: projected (R1-R2) or actual (R3+) */}
+          {effectiveFormat === 'roster' && tournament.sport === 'golf' && cutRule && (
+            isMasters
+              ? <CutStatus participants={liveParticipants} cutRule={cutRule} />
+              : <ProjectedCutTracker participants={liveParticipants} cutRule={cutRule} />
+          )}
 
           {/* Player Ownership — golf roster pools (moves to Leaderboard tab for Masters) */}
           {effectiveFormat === 'roster' && !isMasters && rosterSelectionCounts && rosterTotalEntries !== undefined && userEntries.some(e => e.submittedAt) && allRosterPicks && (
@@ -915,7 +921,9 @@ export function PoolDetailClient({
                       {cutLineAt != null && i === cutLineAt && (
                         <div className="flex items-center gap-2 px-3 py-1">
                           <div className="flex-1 border-t border-dashed border-danger/50" />
-                          <span className="text-[10px] font-semibold text-danger-text uppercase tracking-wider">Projected Cut</span>
+                          <span className="text-[10px] font-semibold text-danger-text uppercase tracking-wider">
+                            {liveParticipants.some(p => (p.metadata as Record<string, unknown>)?.status === 'cut') ? 'The Cut' : 'Projected Cut'}
+                          </span>
                           <div className="flex-1 border-t border-dashed border-danger/50" />
                         </div>
                       )}
