@@ -417,13 +417,43 @@ export async function GET(request: Request) {
           const config = (tournament.config || {}) as Record<string, unknown>
           const espnTournamentId = config.espn_tournament_id as string | undefined
           const useCoreApi = config.use_core_api === true
-          const golfers = await fetchGolfLeaderboard(espnTournamentId, admin)
 
           // Get participants with external IDs
           const { data: participants } = await admin
             .from('event_participants')
             .select('id, external_id, metadata')
             .eq('tournament_id', tournamentId)
+
+          // ── Apps Script freshness check ──
+          // If Apps Script updated any participant within the last 10 min,
+          // it's healthy and GHA should skip the golf sync (backup only).
+          // Check via prev_score_at which Apps Script writes every cycle.
+          const APPS_SCRIPT_HEALTHY_MS = 10 * 60 * 1000
+          const recentSync = (participants || []).find(p => {
+            const meta = (p.metadata || {}) as Record<string, unknown>
+            const prevAt = meta.prev_score_at as string | undefined
+            if (!prevAt) return false
+            return (now.getTime() - new Date(prevAt).getTime()) < APPS_SCRIPT_HEALTHY_MS
+          })
+          if (recentSync) {
+            results[`golf_${tournamentId}`] = {
+              skipped: true,
+              reason: 'Apps Script is healthy (last sync within 10 min)',
+            }
+            // Still run roster scoring in case Apps Script wrote new score_to_par
+            // that needs to be rolled into entry totals
+            const { data: rosterPools } = await admin
+              .from('event_pools')
+              .select('id, scoring_rules')
+              .eq('tournament_id', tournamentId)
+              .eq('game_type', 'roster')
+            for (const pool of rosterPools || []) {
+              try { await scoreRosterPoolLive(admin, pool, tournamentId) } catch {}
+            }
+            continue
+          }
+
+          const golfers = await fetchGolfLeaderboard(espnTournamentId, admin)
 
           const golferById = new Map(golfers.map(g => [g.espnPlayerId, g]))
 
