@@ -735,10 +735,7 @@ export function PoolDetailClient({
             <BiggestMovers participants={liveParticipants} />
           )}
 
-          {/* Projected Cut Tracker */}
-          {effectiveFormat === 'roster' && tournament.sport === 'golf' && cutRule && (
-            <ProjectedCutTracker participants={liveParticipants} cutRule={cutRule} />
-          )}
+          {/* Projected Cut Tracker — temporarily disabled, debugging footer issue */}
 
           {/* Player Ownership — golf roster pools (moves to Leaderboard tab for Masters) */}
           {effectiveFormat === 'roster' && !isMasters && rosterSelectionCounts && rosterTotalEntries !== undefined && userEntries.some(e => e.submittedAt) && allRosterPicks && (
