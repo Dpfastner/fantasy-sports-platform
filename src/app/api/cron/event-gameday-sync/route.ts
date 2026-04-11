@@ -488,8 +488,11 @@ export async function GET(request: Request) {
 
             const existingMeta = (participant.metadata || {}) as Record<string, unknown>
 
-            // Core API status is authoritative when available; else fall back to scoreboard
-            const newStatus = live?.status ?? golfer?.status ?? existingMeta.status ?? 'active'
+            // Core API status is authoritative when available; else fall back to scoreboard.
+            // GUARD: never overwrite 'cut' status — once a golfer is cut, they stay cut.
+            // ESPN sometimes returns 'active' for cut golfers, which would undo the cut.
+            const rawStatus = live?.status ?? golfer?.status ?? existingMeta.status ?? 'active'
+            const newStatus = existingMeta.status === 'cut' ? 'cut' : rawStatus
             const newPosition = live?.position ?? golfer?.position ?? existingMeta.position ?? null
 
             // Round scores: compute from core holes if present, else fallback to scoreboard.
@@ -550,6 +553,12 @@ export async function GET(request: Request) {
               ? (existingMeta.score_to_par ?? null)
               : (existingMeta.prev_score_to_par ?? null)
             const newPrevAt = snapshotStale ? syncRunAt : prevScoreAtStr
+
+            // Skip full update for cut golfers — they don't play R3/R4.
+            // Only preserve their existing metadata (status, r1, r2, score_to_par).
+            if (existingMeta.status === 'cut') {
+              continue
+            }
 
             const updatedMeta = {
               ...existingMeta,
