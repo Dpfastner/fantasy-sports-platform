@@ -34,6 +34,7 @@ import { GreenJacketCeremony } from '@/components/events/masters/GreenJacketCere
 import { Top10Leaderboard } from '@/components/events/masters/Top10Leaderboard'
 import { MastersLeaderboard } from '@/components/events/masters/MastersLeaderboard'
 import { Par3CurseBadge } from '@/components/events/masters/Par3CurseBadge'
+import { CutStatus } from '@/components/events/masters/CutStatus'
 
 interface Participant {
   id: string
@@ -177,7 +178,10 @@ export function PoolDetailClient({
 }: PoolDetailClientProps) {
   const searchParams = useSearchParams()
   const initialTab = (searchParams.get('tab') as Tab) || 'overview'
-  const [activeTab, setActiveTabState] = useState<Tab>(initialTab)
+  // Start as null to prevent server-side rendering of tab content.
+  // Server HTML has no tab content → client renders it fresh → no hydration duplicates.
+  const [activeTab, setActiveTabState] = useState<Tab | null>(null)
+  useEffect(() => { setActiveTabState(initialTab) }, []) // eslint-disable-line react-hooks/exhaustive-deps
   const [showRules, setShowRules] = useState(false)
   const [expandedGolferId, setExpandedGolferId] = useState<string | null>(null)
   const [leaderboardExpanded, setLeaderboardExpanded] = useState(false)
@@ -735,7 +739,12 @@ export function PoolDetailClient({
             <BiggestMovers participants={liveParticipants} />
           )}
 
-          {/* Projected Cut Tracker — temporarily disabled, debugging footer issue */}
+          {/* Cut Status: projected (R1-R2) or actual (R3+) */}
+          {effectiveFormat === 'roster' && tournament.sport === 'golf' && cutRule && (
+            isMasters
+              ? <CutStatus participants={liveParticipants} cutRule={cutRule} />
+              : <ProjectedCutTracker participants={liveParticipants} cutRule={cutRule} />
+          )}
 
           {/* Player Ownership — golf roster pools (moves to Leaderboard tab for Masters) */}
           {effectiveFormat === 'roster' && !isMasters && rosterSelectionCounts && rosterTotalEntries !== undefined && userEntries.some(e => e.submittedAt) && allRosterPicks && (
@@ -851,36 +860,19 @@ export function PoolDetailClient({
                 <span className="text-right">Score</span>
               </div>
               {(() => {
-                const sortedGolfers = [...liveParticipants]
+                // Sort: active golfers first (by score), then cut golfers (by score)
+                const allGolfers = [...liveParticipants]
                   .filter(p => p.metadata?.score_to_par != null || p.metadata?.status === 'active')
-                  .sort((a, b) => {
-                    const aScore = (a.metadata?.score_to_par as number) ?? 999
-                    const bScore = (b.metadata?.score_to_par as number) ?? 999
-                    return aScore - bScore
-                  })
-
-                // Determine CUT line position from cutRule — accounting for ties
-                const cutN = cutRule?.type === 'top_n_and_ties' ? cutRule.n : null
-                let cutLineAt: number | null = null
-                if (cutN != null) {
-                  const activeOnly = sortedGolfers.filter(g => {
-                    const m = (g.metadata || {}) as Record<string, unknown>
-                    return m.status !== 'cut' && m.status !== 'wd' && m.status !== 'dq'
-                  })
-                  if (activeOnly.length > cutN) {
-                    const cutScore = ((activeOnly[cutN - 1]?.metadata as Record<string, unknown>)?.score_to_par as number) ?? null
-                    if (cutScore != null) {
-                      // Find the last golfer at or below the cut score (ties make it)
-                      for (let j = 0; j < sortedGolfers.length; j++) {
-                        const m = (sortedGolfers[j].metadata || {}) as Record<string, unknown>
-                        const s = m.score_to_par as number | null
-                        if (s != null && s <= cutScore && m.status !== 'cut') {
-                          cutLineAt = j + 1
-                        }
-                      }
-                    }
-                  }
-                }
+                const activeGolfers = allGolfers
+                  .filter(p => (p.metadata as Record<string, unknown>)?.status !== 'cut')
+                  .sort((a, b) => ((a.metadata?.score_to_par as number) ?? 999) - ((b.metadata?.score_to_par as number) ?? 999))
+                const cutGolfers = allGolfers
+                  .filter(p => (p.metadata as Record<string, unknown>)?.status === 'cut')
+                  .sort((a, b) => ((a.metadata?.score_to_par as number) ?? 999) - ((b.metadata?.score_to_par as number) ?? 999))
+                const hasCutGolfers = cutGolfers.length > 0
+                // Active first, then cut — the divider renders between them
+                const sortedGolfers = [...activeGolfers, ...cutGolfers]
+                const cutLineAt = hasCutGolfers ? activeGolfers.length : null
                 const COLLAPSE_LIMIT = isMasters ? 15 : sortedGolfers.length
 
                 return sortedGolfers.map((p, i) => {
@@ -911,12 +903,14 @@ export function PoolDetailClient({
 
                   return (
                     <div key={p.id} className={isHidden ? 'hidden' : ''}>
-                      {/* Projected CUT line (with ties) */}
+                      {/* Cut line divider — separates active from cut golfers */}
                       {cutLineAt != null && i === cutLineAt && (
-                        <div className="flex items-center gap-2 px-3 py-1">
-                          <div className="flex-1 border-t border-dashed border-danger/50" />
-                          <span className="text-[10px] font-semibold text-danger-text uppercase tracking-wider">Projected Cut</span>
-                          <div className="flex-1 border-t border-dashed border-danger/50" />
+                        <div className="flex items-center gap-2 px-3 py-1.5">
+                          <div className="flex-1 border-t-2 border-dashed border-danger/50" />
+                          <span className="text-[10px] font-bold text-danger-text uppercase tracking-wider">
+                            {hasCutGolfers ? 'The Cut' : 'Projected Cut'} · {cutGolfers.length} missed
+                          </span>
+                          <div className="flex-1 border-t-2 border-dashed border-danger/50" />
                         </div>
                       )}
                       <div
@@ -958,9 +952,10 @@ export function PoolDetailClient({
                         <span className="text-center text-[10px] text-text-muted tabular-nums">{teeLabel}</span>
                         {[1, 2, 3, 4].map(rd => {
                           const rtp = golferRoundToPar(meta, rd)
+                          const isCutRound = isCutGolfer && rd > 2
                           return (
-                            <span key={rd} className={`text-center ${rtp != null && rtp < 0 ? 'text-success-text' : rtp != null && rtp > 0 ? 'text-danger-text' : 'text-text-secondary'}`}>
-                              {rtp != null ? (rtp === 0 ? 'E' : rtp > 0 ? `+${rtp}` : String(rtp)) : '—'}
+                            <span key={rd} className={`text-center ${isCutRound ? 'text-danger-text text-[10px]' : rtp != null && rtp < 0 ? 'text-success-text' : rtp != null && rtp > 0 ? 'text-danger-text' : 'text-text-secondary'}`}>
+                              {isCutRound ? 'CUT' : rtp != null ? (rtp === 0 ? 'E' : rtp > 0 ? `+${rtp}` : String(rtp)) : '—'}
                             </span>
                           )
                         })}

@@ -54,35 +54,33 @@ export function MastersLeaderboard({
     return map
   }, [allRosterPicks, members])
 
+  // Find the latest round that has actual hole-by-hole data to display.
+  // If current round has no holes yet (between rounds), show last completed round.
   const currentRound = useMemo(() => {
-    let maxRound = 0
+    let maxRoundWithHoles = 0
+    let maxRoundOverall = 0
     for (const p of participants) {
       const meta = (p.metadata || {}) as Record<string, unknown>
       const cr = meta.current_round as number | undefined
-      if (cr && cr > maxRound) maxRound = cr
-      for (const rk of ['r1', 'r2', 'r3', 'r4']) {
-        const rv = meta[rk]
-        if (typeof rv === 'number' && rv >= 60) {
-          const rn = parseInt(rk.slice(1))
-          if (rn > maxRound) maxRound = rn
-        }
+      if (cr && cr > maxRoundOverall) maxRoundOverall = cr
+      const holeData = (meta.holes as GolfHole[] | undefined) || []
+      for (const h of holeData) {
+        if (h.round > maxRoundWithHoles) maxRoundWithHoles = h.round
       }
     }
-    return maxRound || 1
+    // Prefer the latest round with actual holes; fall back to overall
+    return maxRoundWithHoles || maxRoundOverall || 1
   }, [participants])
 
+  // Only active golfers on the iconic scoreboard — cut golfers don't play R3/R4
   const sorted = useMemo(() => {
     return [...participants]
       .filter(p => {
         const meta = (p.metadata || {}) as Record<string, unknown>
-        return meta.score_to_par != null || meta.status === 'active'
+        return meta.status !== 'cut' && meta.status !== 'wd' && meta.status !== 'dq' &&
+          (meta.score_to_par != null || meta.status === 'active')
       })
-      .sort((a, b) => {
-        const am = (a.metadata || {}) as Record<string, unknown>
-        const bm = (b.metadata || {}) as Record<string, unknown>
-        if ((am.status === 'cut') !== (bm.status === 'cut')) return am.status === 'cut' ? 1 : -1
-        return ((am.score_to_par as number) ?? 999) - ((bm.score_to_par as number) ?? 999)
-      })
+      .sort((a, b) => ((a.metadata?.score_to_par as number) ?? 999) - ((b.metadata?.score_to_par as number) ?? 999))
       .slice(0, MAX_ROWS)
   }, [participants])
 
