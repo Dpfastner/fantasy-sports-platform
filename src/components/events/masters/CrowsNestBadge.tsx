@@ -55,7 +55,7 @@ export function CrowsNestBadge({ rounds, entryName, className }: CrowsNestBadgeP
           onClick={(e) => { e.stopPropagation(); e.preventDefault(); setShowPopover(!showPopover) }}
           className="inline-flex items-center justify-center cursor-pointer hover:scale-110 transition-transform rounded-full"
           title="The Crow's Nest"
-          style={{ width: 24, height: 24, background: 'rgba(139,115,85,.12)', padding: 2 }}
+          style={{ width: 24, height: 24, background: '#FAF6EE', padding: 2 }}
         >
           <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ width: 18, height: 18 }}>
             <rect x="3" y="50" width="58" height="5.5" rx="1.2" fill="#2C3E2D" />

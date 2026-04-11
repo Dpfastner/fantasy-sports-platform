@@ -123,7 +123,7 @@ export function RosterMatrix({ entries, participants, allRosterPicks }: RosterMa
           return (
             <div
               key={`h-${entry.id}`}
-              className="border-b border-r border-border-subtle p-2 bg-surface-inset/50 text-center flex flex-col items-center justify-end"
+              className="border-b border-r border-border-subtle p-2 bg-surface-inset text-center flex flex-col items-center justify-end"
               title={label}
             >
               <div className="text-[10px] text-text-primary font-medium truncate w-full">{label}</div>

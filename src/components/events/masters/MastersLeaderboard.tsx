@@ -126,29 +126,34 @@ export function MastersLeaderboard({
   // Build a single table — no CSS Grid issues
   return (
     <div style={{ position: 'relative', padding: '0 5px' }}>
-      {/* Poles — white, touching edges */}
-      <div style={{ position: 'absolute', left: 0, top: 12, bottom: 0, width: 6, background: '#f0ece4', border: '1px solid #ccc', borderRadius: 2, zIndex: 5 }}>
-        <div style={{ position: 'absolute', top: -7, left: '50%', transform: 'translateX(-50%)', width: 12, height: 12, borderRadius: '50%', background: '#fff', border: '1px solid #ccc' }} />
+      {/* Poles — white, attached to board (no border between pole and box) */}
+      <div style={{ position: 'absolute', left: -3, top: 14, bottom: 0, width: 7, background: '#fff', borderRadius: '3px 0 0 3px', zIndex: 5 }}>
+        <div style={{ position: 'absolute', top: -8, left: '50%', transform: 'translateX(-50%)', width: 14, height: 14, borderRadius: '50%', background: '#fff', boxShadow: '0 0 0 1px #bbb' }} />
       </div>
-      <div style={{ position: 'absolute', right: 0, top: 12, bottom: 0, width: 6, background: '#f0ece4', border: '1px solid #ccc', borderRadius: 2, zIndex: 5 }}>
-        <div style={{ position: 'absolute', top: -7, left: '50%', transform: 'translateX(-50%)', width: 12, height: 12, borderRadius: '50%', background: '#fff', border: '1px solid #ccc' }} />
+      <div style={{ position: 'absolute', right: -3, top: 14, bottom: 0, width: 7, background: '#fff', borderRadius: '0 3px 3px 0', zIndex: 5 }}>
+        <div style={{ position: 'absolute', top: -8, left: '50%', transform: 'translateX(-50%)', width: 14, height: 14, borderRadius: '50%', background: '#fff', boxShadow: '0 0 0 1px #bbb' }} />
       </div>
 
-      <div style={{ margin: '0 4px', position: 'relative', zIndex: 1 }}>
+      <div style={{ position: 'relative', zIndex: 1 }}>
         {/* Arch */}
         <div style={{
           background: '#fff', borderRadius: '50% 50% 0 0 / 100% 100% 0 0',
           border: '2px solid #444', borderBottom: 'none',
-          padding: '24px 0 10px', textAlign: 'center',
+          padding: '28px 0 12px', textAlign: 'center',
         }}>
-          <span style={{ fontSize: 36, fontWeight: 700, letterSpacing: '.3em', color: '#1a1a1a', fontFamily: F }}>
+          <span style={{ fontSize: 42, fontWeight: 700, letterSpacing: '.35em', color: '#1a1a1a', fontFamily: F }}>
             LEADERS
           </span>
         </div>
 
         {/* Board */}
         <div style={{ border: '2px solid #444', borderTop: bdr2, background: '#fff', overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 620, fontFamily: F }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 640, fontFamily: F }}>
+            <colgroup>
+              <col style={{ width: 36 }} />
+              <col style={{ width: 120 }} />
+              {Array.from({ length: 18 }, (_, i) => <col key={i} />)}
+            </colgroup>
             <thead>
               {/* HOLE row + PRIOR spanning */}
               <tr>
@@ -157,7 +162,7 @@ export function MastersLeaderboard({
                     <div key={i} style={{ fontSize: 10, fontWeight: 700, color: '#1a1a1a', lineHeight: 1.2 }}>{ch}</div>
                   ))}
                 </th>
-                <th style={{ width: 90, borderRight: bdr2, borderBottom: bdr, textAlign: 'center', verticalAlign: 'middle', padding: '6px 4px' }}>
+                <th style={{ width: 120, borderRight: bdr2, borderBottom: bdr, textAlign: 'center', verticalAlign: 'middle', padding: '6px 4px' }}>
                   <span style={{ fontSize: 15, fontWeight: 700, color: '#1a1a1a', letterSpacing: '.12em' }}>HOLE</span>
                 </th>
                 {PARS.map((_, i) => (
@@ -252,7 +257,7 @@ export function MastersLeaderboard({
               type="button"
               onClick={onShowAll}
               style={{
-                width: '100%', padding: '10px 0', textAlign: 'center',
+                width: '100%', minWidth: 640, padding: '10px 0', textAlign: 'center',
                 fontSize: 13, fontWeight: 700, color: '#fff', background: '#1a5c38',
                 border: 'none', borderTop: bdr2, cursor: 'pointer',
                 fontFamily: F, letterSpacing: '.06em',
