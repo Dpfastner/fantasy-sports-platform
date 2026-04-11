@@ -7,6 +7,9 @@ import { golferRoundToPar } from '@/lib/events/golf-aggregations'
 import { DEFAULT_TIERS, TIER_COLORS, getTier, type RosterTier } from '@/lib/events/tiers'
 import { EntryAvatar } from '@/components/EntryAvatar'
 import { GolfHoleGrid } from '@/components/GolfHoleGrid'
+import { Par3CurseBadge } from '@/components/events/masters/Par3CurseBadge'
+import { PimentoCheeseBadge } from '@/components/events/masters/PimentoCheeseBadge'
+import { CrowsNestBadge } from '@/components/events/masters/CrowsNestBadge'
 
 interface Member {
   id: string
@@ -289,6 +292,23 @@ export function RosterLeaderboard({
                         <span className="text-sm text-text-muted truncate italic block">{member.displayName}</span>
                       )}
                     </div>
+                    {/* Masters inline badges: pimento cheese + crow's nest */}
+                    {isMasters && (
+                      <div className="flex items-center gap-1 shrink-0">
+                        {entryHasRai(member.id) && <Par3CurseBadge />}
+                        {mastersAwards?.pimentoWinners.has(member.id) && (
+                          mastersAwards.pimentoWinners.get(member.id)!.map(round => (
+                            <PimentoCheeseBadge key={`pc-${round}`} round={round} entryName={member.entryName || member.displayName} />
+                          ))
+                        )}
+                        {mastersAwards?.crowsNestHolder?.entryId === member.id && (
+                          <CrowsNestBadge
+                            rounds={mastersAwards.crowsNestHolder.rounds}
+                            entryName={member.entryName || member.displayName}
+                          />
+                        )}
+                      </div>
+                    )}
                     {canExpand && (
                       <svg
                         className={`w-3.5 h-3.5 text-text-muted shrink-0 transition-transform ${isExpanded ? 'rotate-90' : ''}`}
@@ -327,8 +347,8 @@ export function RosterLeaderboard({
                 {isExpanded && breakdown && (
                   <div className="px-4 py-3 bg-surface-inset/20 border-b border-border-subtle">
                     <div className="overflow-x-auto">
-                      <div className="min-w-[62rem]">
-                        <div className="grid grid-cols-[14rem_minmax(28rem,1fr)_2.5rem_2.25rem_2.25rem_2.25rem_2.25rem_3.5rem] gap-x-4 px-2 py-1.5 text-xs text-text-muted uppercase tracking-wide border-b border-border">
+                      <div className="min-w-[70rem]">
+                        <div className="grid grid-cols-[14rem_37rem_2.5rem_2.25rem_2.25rem_2.25rem_2.25rem_3.5rem] gap-x-2 px-2 py-1.5 text-xs text-text-muted uppercase tracking-wide border-b border-border">
                           <span>
                             Golfer
                             {hasScores && (
@@ -346,7 +366,7 @@ export function RosterLeaderboard({
                           <span className="text-right">Total</span>
                         </div>
                         {breakdown.counting.map(p => (
-                          <div key={p.id} className="grid grid-cols-[14rem_minmax(28rem,1fr)_2.5rem_2.25rem_2.25rem_2.25rem_2.25rem_3.5rem] gap-x-4 px-2 py-1.5 items-center border-b border-border-subtle">
+                          <div key={p.id} className="grid grid-cols-[14rem_37rem_2.5rem_2.25rem_2.25rem_2.25rem_2.25rem_3.5rem] gap-x-2 px-2 py-1.5 items-center border-b border-border-subtle">
                             <div className="flex items-center gap-1.5 min-w-0 text-sm text-text-primary">
                               {p.countryCode && (
                                 <img
@@ -385,7 +405,7 @@ export function RosterLeaderboard({
                           </div>
                         ))}
                         {breakdown.dropped.map(p => (
-                          <div key={p.id} className="grid grid-cols-[14rem_minmax(28rem,1fr)_2.5rem_2.25rem_2.25rem_2.25rem_2.25rem_3.5rem] gap-x-4 px-2 py-1.5 items-center border-b border-border-subtle opacity-50">
+                          <div key={p.id} className="grid grid-cols-[14rem_37rem_2.5rem_2.25rem_2.25rem_2.25rem_2.25rem_3.5rem] gap-x-2 px-2 py-1.5 items-center border-b border-border-subtle opacity-50">
                             <div className="flex items-center gap-1.5 min-w-0 text-sm text-text-muted">
                               {p.countryCode && (
                                 <img
@@ -399,19 +419,7 @@ export function RosterLeaderboard({
                               <span className="truncate">{p.name}</span>
                               <span className="text-[10px] italic">dropped</span>
                             </div>
-                            <div className="flex justify-center">
-                              {p.holes && p.holes.length > 0 ? (
-                                <GolfHoleGrid
-                                  holes={p.holes}
-                                  currentHole={p.currentHole ?? null}
-                                  thru={p.thru ?? null}
-                                  currentRound={p.currentRound ?? null}
-                                  hideLabel
-                                />
-                              ) : (
-                                <span className="text-xs text-text-muted italic">No hole data yet</span>
-                              )}
-                            </div>
+                            <div />
                             <div className="text-right">
                               <span className={`text-xs px-1.5 py-0.5 rounded ${TIER_COLORS[p.tier]?.bg || 'bg-surface-inset'} ${TIER_COLORS[p.tier]?.text || 'text-text-muted'}`}>
                                 {p.tier}

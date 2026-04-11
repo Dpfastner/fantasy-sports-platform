@@ -175,6 +175,15 @@ export async function autoGrantChampionBadges(tournamentId: string) {
       })
     }
 
+    // Masters Champion — Green Jacket
+    if (tournament.sport === 'golf' && tournament.slug?.startsWith('masters')) {
+      await grantBadgeIfNotExists(admin, winnerId, 'masters_champion', {
+        year: new Date().getFullYear().toString(),
+        competition_name: pool.name,
+        tournament: tournament.name,
+      })
+    }
+
     // Grant First Rivyls Champion (2026 only)
     const currentYear = new Date().getFullYear()
     if (currentYear === 2026) {
@@ -237,4 +246,15 @@ async function grantBadgeIfNotExists(
       data: { badgeId: newBadge.id },
     })
   }
+}
+
+/**
+ * Grant Augusta Patron badge when a user joins a Masters pool.
+ * The waiting list for real Augusta badges closed in 1978.
+ */
+export async function autoGrantMastersPatron(userId: string) {
+  const admin = createAdminClient()
+  await grantBadgeIfNotExists(admin, userId, 'masters_patron', {
+    year: new Date().getFullYear().toString(),
+  })
 }

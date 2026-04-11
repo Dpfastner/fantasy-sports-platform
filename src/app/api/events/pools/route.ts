@@ -6,6 +6,7 @@ import { eventPoolCreateSchema, eventPoolJoinSchema } from '@/lib/api/schemas'
 import { notifyPoolMembers } from '@/lib/notifications'
 import { createRateLimiter, getClientIp } from '@/lib/api/rate-limit'
 import { logActivity } from '@/lib/activity'
+import { autoGrantMastersPatron } from '@/lib/badges-auto'
 
 const createLimiter = createRateLimiter({ windowMs: 60_000, max: 5 })
 const joinLimiter = createRateLimiter({ windowMs: 60_000, max: 10 })
@@ -235,6 +236,11 @@ export async function POST(request: Request) {
         body: `A new member has joined your pool.`,
         data: { poolId: pool.id, tournamentSlug: tournament?.slug },
       })
+
+      // Masters: grant Augusta Patron badge (fire-and-forget)
+      if (tournament?.slug?.startsWith('masters')) {
+        autoGrantMastersPatron(user.id).catch(() => {})
+      }
 
       return NextResponse.json({
         success: true,
