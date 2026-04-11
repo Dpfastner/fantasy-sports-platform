@@ -969,9 +969,10 @@ export function PoolDetailClient({
                         <span className="text-center text-[10px] text-text-muted tabular-nums">{teeLabel}</span>
                         {[1, 2, 3, 4].map(rd => {
                           const rtp = golferRoundToPar(meta, rd)
+                          const isCutRound = isCutGolfer && rd > 2
                           return (
-                            <span key={rd} className={`text-center ${rtp != null && rtp < 0 ? 'text-success-text' : rtp != null && rtp > 0 ? 'text-danger-text' : 'text-text-secondary'}`}>
-                              {rtp != null ? (rtp === 0 ? 'E' : rtp > 0 ? `+${rtp}` : String(rtp)) : '—'}
+                            <span key={rd} className={`text-center ${isCutRound ? 'text-danger-text text-[10px]' : rtp != null && rtp < 0 ? 'text-success-text' : rtp != null && rtp > 0 ? 'text-danger-text' : 'text-text-secondary'}`}>
+                              {isCutRound ? 'CUT' : rtp != null ? (rtp === 0 ? 'E' : rtp > 0 ? `+${rtp}` : String(rtp)) : '—'}
                             </span>
                           )
                         })}

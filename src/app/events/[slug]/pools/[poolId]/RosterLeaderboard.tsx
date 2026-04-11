@@ -391,8 +391,8 @@ export function RosterLeaderboard({
                           {/* R1-R4 (aligned with parent R1-R4 columns) */}
                           <span className={`text-right text-xs tabular-nums ${p.r1ToPar != null && p.r1ToPar < 0 ? 'text-success-text' : p.r1ToPar != null && p.r1ToPar > 0 ? 'text-danger-text' : 'text-text-muted'}`}>{p.r1ToPar != null ? formatGolfScore(p.r1ToPar) : '—'}</span>
                           <span className={`text-right text-xs tabular-nums ${p.r2ToPar != null && p.r2ToPar < 0 ? 'text-success-text' : p.r2ToPar != null && p.r2ToPar > 0 ? 'text-danger-text' : 'text-text-muted'}`}>{p.r2ToPar != null ? formatGolfScore(p.r2ToPar) : '—'}</span>
-                          <span className={`text-right text-xs tabular-nums ${p.r3ToPar != null && p.r3ToPar < 0 ? 'text-success-text' : p.r3ToPar != null && p.r3ToPar > 0 ? 'text-danger-text' : 'text-text-muted'}`}>{p.r3ToPar != null ? formatGolfScore(p.r3ToPar) : '—'}</span>
-                          <span className={`text-right text-xs tabular-nums ${p.r4ToPar != null && p.r4ToPar < 0 ? 'text-success-text' : p.r4ToPar != null && p.r4ToPar > 0 ? 'text-danger-text' : 'text-text-muted'}`}>{p.r4ToPar != null ? formatGolfScore(p.r4ToPar) : '—'}</span>
+                          <span className={`text-right text-xs tabular-nums ${p.status === 'cut' ? 'text-danger-text' : p.r3ToPar != null && p.r3ToPar < 0 ? 'text-success-text' : p.r3ToPar != null && p.r3ToPar > 0 ? 'text-danger-text' : 'text-text-muted'}`}>{p.status === 'cut' ? 'CUT' : p.r3ToPar != null ? formatGolfScore(p.r3ToPar) : '—'}</span>
+                          <span className={`text-right text-xs tabular-nums ${p.status === 'cut' ? 'text-danger-text' : p.r4ToPar != null && p.r4ToPar < 0 ? 'text-success-text' : p.r4ToPar != null && p.r4ToPar > 0 ? 'text-danger-text' : 'text-text-muted'}`}>{p.status === 'cut' ? 'CUT' : p.r4ToPar != null ? formatGolfScore(p.r4ToPar) : '—'}</span>
                           {/* Total (aligned with parent Total column) */}
                           <span className="text-right text-sm font-medium text-text-primary">{formatGolfScore(p.scoreToPar)}</span>
                           {/* Empty (aligned with Submitted column) */}
@@ -417,8 +417,8 @@ export function RosterLeaderboard({
                         <span />
                         <span className="text-right text-xs text-text-muted tabular-nums">{p.r1ToPar != null ? formatGolfScore(p.r1ToPar) : '—'}</span>
                         <span className="text-right text-xs text-text-muted tabular-nums">{p.r2ToPar != null ? formatGolfScore(p.r2ToPar) : '—'}</span>
-                        <span className="text-right text-xs text-text-muted tabular-nums">{p.r3ToPar != null ? formatGolfScore(p.r3ToPar) : '—'}</span>
-                        <span className="text-right text-xs text-text-muted tabular-nums">{p.r4ToPar != null ? formatGolfScore(p.r4ToPar) : '—'}</span>
+                        <span className="text-right text-xs text-text-muted tabular-nums">{p.status === 'cut' ? 'CUT' : p.r3ToPar != null ? formatGolfScore(p.r3ToPar) : '—'}</span>
+                        <span className="text-right text-xs text-text-muted tabular-nums">{p.status === 'cut' ? 'CUT' : p.r4ToPar != null ? formatGolfScore(p.r4ToPar) : '—'}</span>
                         <span className="text-right text-xs text-text-muted">{formatGolfScore(p.scoreToPar)}</span>
                         <span />
                       </div>
