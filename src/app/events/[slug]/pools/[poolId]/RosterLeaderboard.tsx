@@ -220,7 +220,7 @@ export function RosterLeaderboard({
         <div className="bg-surface rounded-lg border border-border sm:overflow-x-auto">
           <div className="sm:min-w-[42rem] w-full">
           {/* Header — mobile: rank + player + total only; desktop: full row */}
-          <div className="grid grid-cols-[2rem_1fr_3.5rem] sm:grid-cols-[2rem_minmax(12rem,18rem)_1fr_2.25rem_2.25rem_2.25rem_2.25rem_3rem_4rem] gap-2 px-3 py-2 bg-surface-inset border-b border-border text-xs text-text-muted uppercase tracking-wide">
+          <div className="grid grid-cols-[2rem_1fr_3.5rem] sm:grid-cols-[2rem_minmax(8rem,12rem)_1fr_2.25rem_2.25rem_2.25rem_2.25rem_3rem_4rem] gap-2 px-3 py-2 bg-surface-inset border-b border-border text-xs text-text-muted uppercase tracking-wide">
             <span className="text-right">#</span>
             <span>Player</span>
             <span className="hidden sm:block" aria-hidden />
@@ -251,7 +251,7 @@ export function RosterLeaderboard({
                 <button
                   type="button"
                   onClick={() => canExpand && setExpandedId(isExpanded ? null : member.id)}
-                  className={`w-full grid grid-cols-[2rem_1fr_3.5rem] sm:grid-cols-[2rem_minmax(12rem,18rem)_1fr_2.25rem_2.25rem_2.25rem_2.25rem_3rem_4rem] gap-2 px-3 py-2.5 border-b border-border-subtle text-left transition-colors ${
+                  className={`w-full grid grid-cols-[2rem_1fr_3.5rem] sm:grid-cols-[2rem_minmax(8rem,12rem)_1fr_2.25rem_2.25rem_2.25rem_2.25rem_3rem_4rem] gap-2 px-3 py-2.5 border-b border-border-subtle text-left transition-colors ${
                     canExpand ? 'hover:bg-surface-inset/50 cursor-pointer' : 'cursor-default'
                   } ${isExpanded ? 'bg-surface-inset/30' : ''}`}
                 >
@@ -352,7 +352,7 @@ export function RosterLeaderboard({
                     )}
                     {breakdown.counting.map(p => (
                       <div key={p.id}>
-                        <div className="grid grid-cols-[2rem_minmax(12rem,18rem)_1fr_2.25rem_2.25rem_2.25rem_2.25rem_3rem_4rem] gap-2 px-3 py-1.5 items-center border-b border-border-subtle">
+                        <div className="grid grid-cols-[2rem_minmax(8rem,12rem)_1fr_2.25rem_2.25rem_2.25rem_2.25rem_3rem_4rem] gap-2 px-3 py-1.5 items-center border-b border-border-subtle">
                           {/* Tier (aligned with # column) */}
                           <div className="text-center">
                             <span className={`text-[10px] px-1 py-0.5 rounded ${TIER_COLORS[p.tier]?.bg || 'bg-surface-inset'} ${TIER_COLORS[p.tier]?.text || 'text-text-muted'}`}>
@@ -400,7 +400,7 @@ export function RosterLeaderboard({
                       </div>
                     ))}
                     {breakdown.dropped.map(p => (
-                      <div key={p.id} className="grid grid-cols-[2rem_minmax(12rem,18rem)_1fr_2.25rem_2.25rem_2.25rem_2.25rem_3rem_4rem] gap-2 px-3 py-1 items-center border-b border-border-subtle opacity-50">
+                      <div key={p.id} className="grid grid-cols-[2rem_minmax(8rem,12rem)_1fr_2.25rem_2.25rem_2.25rem_2.25rem_3rem_4rem] gap-2 px-3 py-1 items-center border-b border-border-subtle opacity-50">
                         <div className="text-center">
                           <span className={`text-[10px] px-1 py-0.5 rounded ${TIER_COLORS[p.tier]?.bg || 'bg-surface-inset'} ${TIER_COLORS[p.tier]?.text || 'text-text-muted'}`}>
                             {p.tier}
