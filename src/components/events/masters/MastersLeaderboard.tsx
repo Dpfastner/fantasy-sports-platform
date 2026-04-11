@@ -126,11 +126,11 @@ export function MastersLeaderboard({
   // Build a single table — no CSS Grid issues
   return (
     <div style={{ position: 'relative', padding: '0 5px' }}>
-      {/* Poles — white, directly attached (share border with board) */}
-      <div style={{ position: 'absolute', left: -4, top: 10, bottom: 0, width: 8, background: '#fff', zIndex: 6 }}>
+      {/* Poles — white, overlapping the board border so no line is visible */}
+      <div style={{ position: 'absolute', left: -3, top: 10, bottom: 0, width: 8, background: '#fff', zIndex: 10 }}>
         <div style={{ position: 'absolute', top: -8, left: '50%', transform: 'translateX(-50%)', width: 14, height: 14, borderRadius: '50%', background: '#fff', boxShadow: '0 1px 3px rgba(0,0,0,.2)' }} />
       </div>
-      <div style={{ position: 'absolute', right: -4, top: 10, bottom: 0, width: 8, background: '#fff', zIndex: 6 }}>
+      <div style={{ position: 'absolute', right: -3, top: 10, bottom: 0, width: 8, background: '#fff', zIndex: 10 }}>
         <div style={{ position: 'absolute', top: -8, left: '50%', transform: 'translateX(-50%)', width: 14, height: 14, borderRadius: '50%', background: '#fff', boxShadow: '0 1px 3px rgba(0,0,0,.2)' }} />
       </div>
 
@@ -151,7 +151,7 @@ export function MastersLeaderboard({
           <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 640, fontFamily: F }}>
             <colgroup>
               <col style={{ width: 36 }} />
-              <col style={{ width: 140 }} />
+              <col style={{ width: 160 }} />
               {Array.from({ length: 18 }, (_, i) => <col key={i} />)}
             </colgroup>
             <thead>
@@ -162,7 +162,7 @@ export function MastersLeaderboard({
                     <div key={i} style={{ fontSize: 10, fontWeight: 700, color: '#1a1a1a', lineHeight: 1.2 }}>{ch}</div>
                   ))}
                 </th>
-                <th style={{ width: 140, borderRight: bdr2, borderBottom: bdr, textAlign: 'center', verticalAlign: 'middle', padding: '6px 4px' }}>
+                <th style={{ width: 160, borderRight: bdr2, borderBottom: bdr, textAlign: 'center', verticalAlign: 'middle', padding: '6px 4px' }}>
                   <span style={{ fontSize: 15, fontWeight: 700, color: '#1a1a1a', letterSpacing: '.12em' }}>HOLE</span>
                 </th>
                 {PARS.map((_, i) => (
