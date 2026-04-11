@@ -437,8 +437,6 @@ export function PoolDetailClient({
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div>
             <div className="flex items-center gap-2 mb-1">
-              {/* Masters: trophy next to pool name */}
-              {isMasters && <MastersTrophy className="w-8 h-12 shrink-0" />}
               <h1 className="brand-h2 text-xl sm:text-2xl text-text-primary">{pool.name}</h1>
               <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${
                 pool.status === 'open' ? 'bg-success/20 text-success-text' :
@@ -450,6 +448,8 @@ export function PoolDetailClient({
               {isCreator && (
                 <span className="text-xs px-1.5 py-0.5 rounded bg-warning/20 text-warning-text">Creator</span>
               )}
+              {/* Masters: trophy in the open space after badges */}
+              {isMasters && <MastersTrophy className="w-16 h-24 shrink-0 ml-2 hidden sm:block" />}
             </div>
             <p className="text-text-muted text-sm">
               {tournament.name} &middot; {uniqueMembers.length} member{uniqueMembers.length !== 1 ? 's' : ''}
