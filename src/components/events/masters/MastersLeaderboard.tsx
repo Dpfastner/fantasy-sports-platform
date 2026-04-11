@@ -54,21 +54,22 @@ export function MastersLeaderboard({
     return map
   }, [allRosterPicks, members])
 
+  // Find the latest round that has actual hole-by-hole data to display.
+  // If current round has no holes yet (between rounds), show last completed round.
   const currentRound = useMemo(() => {
-    let maxRound = 0
+    let maxRoundWithHoles = 0
+    let maxRoundOverall = 0
     for (const p of participants) {
       const meta = (p.metadata || {}) as Record<string, unknown>
       const cr = meta.current_round as number | undefined
-      if (cr && cr > maxRound) maxRound = cr
-      for (const rk of ['r1', 'r2', 'r3', 'r4']) {
-        const rv = meta[rk]
-        if (typeof rv === 'number' && rv >= 60) {
-          const rn = parseInt(rk.slice(1))
-          if (rn > maxRound) maxRound = rn
-        }
+      if (cr && cr > maxRoundOverall) maxRoundOverall = cr
+      const holeData = (meta.holes as GolfHole[] | undefined) || []
+      for (const h of holeData) {
+        if (h.round > maxRoundWithHoles) maxRoundWithHoles = h.round
       }
     }
-    return maxRound || 1
+    // Prefer the latest round with actual holes; fall back to overall
+    return maxRoundWithHoles || maxRoundOverall || 1
   }, [participants])
 
   const sorted = useMemo(() => {

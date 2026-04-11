@@ -922,7 +922,10 @@ export function PoolDetailClient({
                         <div className="flex items-center gap-2 px-3 py-1">
                           <div className="flex-1 border-t border-dashed border-danger/50" />
                           <span className="text-[10px] font-semibold text-danger-text uppercase tracking-wider">
-                            {liveParticipants.some(p => (p.metadata as Record<string, unknown>)?.status === 'cut') ? 'The Cut' : 'Projected Cut'}
+                            {liveParticipants.some(p => {
+                              const m = (p.metadata || {}) as Record<string, unknown>
+                              return (m.current_round as number) >= 3
+                            }) ? 'The Cut' : 'Projected Cut'}
                           </span>
                           <div className="flex-1 border-t border-dashed border-danger/50" />
                         </div>
