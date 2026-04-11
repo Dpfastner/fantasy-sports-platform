@@ -40,6 +40,16 @@ export function golferRoundToPar(
   const completed = round === 1 ? r1 : round === 2 ? r2 : round === 3 ? r3 : r4
   if (completed != null) return completed
 
+  // Don't derive future rounds — only show the current in-progress
+  // round and completed rounds. Without this, R4 shows "E" as soon
+  // as R3 completes because total − r1 − r2 − r3 = 0.
+  const currentRound = typeof meta.current_round === 'number' ? meta.current_round as number : null
+  if (currentRound != null && round > currentRound) {
+    // Exception: cut golfers' missed rounds still get the penalty
+    if (isCutStatus(status)) return MISSED_ROUND_PENALTY
+    return null
+  }
+
   // Cut/WD/DQ golfers: missed rounds (R3/R4) get flat penalty
   if (isCutStatus(status) && (round === 3 || round === 4)) {
     return MISSED_ROUND_PENALTY
