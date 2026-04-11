@@ -79,7 +79,7 @@ export function CrowsNestBadge({ rounds, entryName, className }: CrowsNestBadgeP
           </svg>
         </button>
         {isConsecutive && (
-          <span className="text-[9px] italic text-[#8B7355]">Back in the attic</span>
+          <span className="text-[9px] italic text-[#8B7355] ml-0.5">Back in the attic</span>
         )}
       </span>
 

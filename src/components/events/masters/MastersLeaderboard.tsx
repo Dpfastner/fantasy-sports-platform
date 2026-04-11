@@ -126,22 +126,22 @@ export function MastersLeaderboard({
   // Build a single table — no CSS Grid issues
   return (
     <div style={{ position: 'relative', padding: '0 5px' }}>
-      {/* Poles — white, attached to board (no border between pole and box) */}
-      <div style={{ position: 'absolute', left: -3, top: 14, bottom: 0, width: 7, background: '#fff', borderRadius: '3px 0 0 3px', zIndex: 5 }}>
-        <div style={{ position: 'absolute', top: -8, left: '50%', transform: 'translateX(-50%)', width: 14, height: 14, borderRadius: '50%', background: '#fff', boxShadow: '0 0 0 1px #bbb' }} />
+      {/* Poles — white, directly attached (share border with board) */}
+      <div style={{ position: 'absolute', left: -4, top: 10, bottom: 0, width: 8, background: '#fff', zIndex: 6 }}>
+        <div style={{ position: 'absolute', top: -8, left: '50%', transform: 'translateX(-50%)', width: 14, height: 14, borderRadius: '50%', background: '#fff', boxShadow: '0 1px 3px rgba(0,0,0,.2)' }} />
       </div>
-      <div style={{ position: 'absolute', right: -3, top: 14, bottom: 0, width: 7, background: '#fff', borderRadius: '0 3px 3px 0', zIndex: 5 }}>
-        <div style={{ position: 'absolute', top: -8, left: '50%', transform: 'translateX(-50%)', width: 14, height: 14, borderRadius: '50%', background: '#fff', boxShadow: '0 0 0 1px #bbb' }} />
+      <div style={{ position: 'absolute', right: -4, top: 10, bottom: 0, width: 8, background: '#fff', zIndex: 6 }}>
+        <div style={{ position: 'absolute', top: -8, left: '50%', transform: 'translateX(-50%)', width: 14, height: 14, borderRadius: '50%', background: '#fff', boxShadow: '0 1px 3px rgba(0,0,0,.2)' }} />
       </div>
 
       <div style={{ position: 'relative', zIndex: 1 }}>
-        {/* Arch */}
+        {/* Arch — tighter padding, responsive LEADERS text */}
         <div style={{
           background: '#fff', borderRadius: '50% 50% 0 0 / 100% 100% 0 0',
           border: '2px solid #444', borderBottom: 'none',
-          padding: '28px 0 12px', textAlign: 'center',
+          padding: '16px 0 8px', textAlign: 'center',
         }}>
-          <span style={{ fontSize: 42, fontWeight: 700, letterSpacing: '.35em', color: '#1a1a1a', fontFamily: F }}>
+          <span className="text-2xl sm:text-4xl" style={{ fontWeight: 700, letterSpacing: '.3em', color: '#1a1a1a', fontFamily: F }}>
             LEADERS
           </span>
         </div>
@@ -151,7 +151,7 @@ export function MastersLeaderboard({
           <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 640, fontFamily: F }}>
             <colgroup>
               <col style={{ width: 36 }} />
-              <col style={{ width: 120 }} />
+              <col style={{ width: 140 }} />
               {Array.from({ length: 18 }, (_, i) => <col key={i} />)}
             </colgroup>
             <thead>
@@ -162,7 +162,7 @@ export function MastersLeaderboard({
                     <div key={i} style={{ fontSize: 10, fontWeight: 700, color: '#1a1a1a', lineHeight: 1.2 }}>{ch}</div>
                   ))}
                 </th>
-                <th style={{ width: 120, borderRight: bdr2, borderBottom: bdr, textAlign: 'center', verticalAlign: 'middle', padding: '6px 4px' }}>
+                <th style={{ width: 140, borderRight: bdr2, borderBottom: bdr, textAlign: 'center', verticalAlign: 'middle', padding: '6px 4px' }}>
                   <span style={{ fontSize: 15, fontWeight: 700, color: '#1a1a1a', letterSpacing: '.12em' }}>HOLE</span>
                 </th>
                 {PARS.map((_, i) => (

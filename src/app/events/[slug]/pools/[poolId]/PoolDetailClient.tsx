@@ -735,7 +735,7 @@ export function PoolDetailClient({
             <BiggestMovers participants={liveParticipants} />
           )}
 
-          {/* Projected Cut Tracker — stays on overview for all golf pools */}
+          {/* Projected Cut Tracker — golf roster pools with cut_rule config */}
           {effectiveFormat === 'roster' && tournament.sport === 'golf' && cutRule && (
             <ProjectedCutTracker participants={liveParticipants} cutRule={cutRule} />
           )}
