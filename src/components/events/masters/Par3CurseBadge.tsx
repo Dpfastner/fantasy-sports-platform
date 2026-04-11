@@ -75,27 +75,17 @@ export function Par3CurseBadge({ className }: Par3CurseBadgeProps) {
             transform: 'translate(-50%, -100%)',
             zIndex: 9999,
           }}
-          className="w-64 p-3 bg-surface border border-border rounded-lg shadow-xl text-xs text-text-secondary leading-relaxed"
         >
-          <p className="font-semibold text-amber-400 mb-1">The Par 3 Curse</p>
-          <p>
-            Aaron Rai won the 2026 Par 3 Contest at −6. No Par 3 Contest winner
-            has <span className="italic">ever</span> won The Masters in the same year.
-          </p>
-          <p className="mt-1.5 text-text-muted">
-            The curse: 0 for 64 years and counting.
-          </p>
-          <div
-            style={{
-              position: 'absolute',
-              left: '50%',
-              bottom: -5,
-              transform: 'translateX(-50%) rotate(45deg)',
-              width: 10,
-              height: 10,
-            }}
-            className="bg-surface border-r border-b border-border"
-          />
+          <div style={{ background: '#FAF6EE', border: '1px solid rgba(201,168,76,.3)', borderRadius: 8, padding: 12, boxShadow: '0 4px 20px rgba(0,0,0,.15)', width: 260 }}>
+            <p style={{ fontWeight: 700, color: '#1a5c38', marginBottom: 4, fontSize: 12 }}>The Par 3 Curse</p>
+            <p style={{ color: '#4a4a4a', fontSize: 11, lineHeight: 1.5 }}>
+              Aaron Rai won the 2026 Par 3 Contest at −6. No Par 3 Contest winner
+              has <span style={{ fontStyle: 'italic' }}>ever</span> won The Masters in the same year.
+            </p>
+            <p style={{ color: '#8B7355', fontSize: 11, fontStyle: 'italic', marginTop: 6 }}>
+              The curse: 0 for 64 years and counting.
+            </p>
+          </div>
         </div>
       )}
     </>

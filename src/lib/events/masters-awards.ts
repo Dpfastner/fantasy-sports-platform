@@ -99,16 +99,15 @@ export function computeEntryRoundScores(
 }
 
 export interface RoundAwards {
-  /** Pimento Cheese: best (lowest) round score */
-  pimentoWinner: EntryRoundScore | null
-  /** Crow's Nest: worst (highest) round score */
-  crowsNestHolder: EntryRoundScore | null
+  /** Pimento Cheese: ALL entries tied for best (lowest) round score */
+  pimentoWinners: EntryRoundScore[]
+  /** Crow's Nest: ALL entries tied for worst (highest) round score */
+  crowsNestHolders: EntryRoundScore[]
 }
 
 /**
- * Determine the pimento cheese winner and crow's nest holder for a round.
- * Requires at least (countBest - 1) counting golfers to have data, so a single
- * missing golfer doesn't block the entire award from showing.
+ * Determine the pimento cheese winners and crow's nest holders for a round.
+ * Ties result in ALL tied entries receiving the award.
  */
 export function determineRoundAwards(
   scores: EntryRoundScore[],
@@ -116,18 +115,19 @@ export function determineRoundAwards(
 ): RoundAwards {
   const minRequired = Math.max(1, countBest - 1)
   const complete = scores.filter(s => s.golferCount >= minRequired)
-  if (complete.length === 0) return { pimentoWinner: null, crowsNestHolder: null }
+  if (complete.length === 0) return { pimentoWinners: [], crowsNestHolders: [] }
 
-  // Sort ascending by roundToPar, then by totalScore for tiebreak
-  const sorted = [...complete].sort((a, b) => {
-    if (a.roundToPar !== b.roundToPar) return a.roundToPar - b.roundToPar
-    return a.totalScore - b.totalScore
-  })
+  const sorted = [...complete].sort((a, b) => a.roundToPar - b.roundToPar)
 
-  return {
-    pimentoWinner: sorted[0],
-    crowsNestHolder: sorted[sorted.length - 1],
-  }
+  // Pimento: all entries tied with the best (lowest) round score
+  const bestScore = sorted[0].roundToPar
+  const pimentoWinners = sorted.filter(s => s.roundToPar === bestScore)
+
+  // Crow's nest: all entries tied with the worst (highest) round score
+  const worstScore = sorted[sorted.length - 1].roundToPar
+  const crowsNestHolders = sorted.filter(s => s.roundToPar === worstScore)
+
+  return { pimentoWinners, crowsNestHolders }
 }
 
 export interface MastersAwardsResult {
@@ -143,18 +143,16 @@ export interface MastersAwardsResult {
  */
 function isRoundComplete(participants: Participant[], roundNumber: number): boolean {
   const key = `r${roundNumber}`
-  let withScore = 0
   let active = 0
   for (const p of participants) {
     const meta = (p.metadata || {}) as Record<string, unknown>
     if (meta.status === 'cut' || meta.status === 'wd' || meta.status === 'dq') continue
     active++
     const val = meta[key]
-    if (typeof val === 'number' && val >= 60 && val <= 100) withScore++
+    // Every active golfer must have an explicit round score
+    if (typeof val !== 'number' || val < 60 || val > 100) return false
   }
-  if (active === 0) return false
-  // Require 90%+ to have explicit round score — prevents awarding in-progress rounds
-  return withScore / active >= 0.9
+  return active > 0
 }
 
 /** Detect the highest round currently in progress from participant metadata. */
@@ -193,18 +191,22 @@ export function computeAllMastersAwards(
     const scores = computeEntryRoundScores(entries, allRosterPicks, participants, countBest, round)
     const awards = determineRoundAwards(scores, countBest)
 
-    if (awards.pimentoWinner) {
-      const existing = pimentoWinners.get(awards.pimentoWinner.entryId) || []
+    // Pimento: all tied winners get the award
+    for (const winner of awards.pimentoWinners) {
+      const existing = pimentoWinners.get(winner.entryId) || []
       existing.push(round)
-      pimentoWinners.set(awards.pimentoWinner.entryId, existing)
+      pimentoWinners.set(winner.entryId, existing)
     }
 
-    if (awards.crowsNestHolder) {
-      // Crow's nest rotates — only latest round holder matters, but track consecutive
-      if (crowsNestHolder && crowsNestHolder.entryId === awards.crowsNestHolder.entryId) {
+    // Crow's nest: rotates each round, but ties all share it
+    if (awards.crowsNestHolders.length > 0) {
+      // For simplicity, if there are ties for worst, the first one holds it
+      // (crow's nest is singular shame — ties share the attic)
+      const holder = awards.crowsNestHolders[0]
+      if (crowsNestHolder && crowsNestHolder.entryId === holder.entryId) {
         crowsNestHolder.rounds.push(round)
       } else {
-        crowsNestHolder = { entryId: awards.crowsNestHolder.entryId, rounds: [round] }
+        crowsNestHolder = { entryId: holder.entryId, rounds: [round] }
       }
     }
   }

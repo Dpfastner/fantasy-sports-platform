@@ -345,107 +345,77 @@ export function RosterLeaderboard({
 
                 {/* Expanded roster breakdown */}
                 {isExpanded && breakdown && (
-                  <div className="px-4 py-3 bg-surface-inset/20 border-b border-border-subtle">
-                    <div className="overflow-x-auto">
-                      <div className="min-w-[62rem]">
-                        <div className="grid grid-cols-[14rem_minmax(28rem,1fr)_2.5rem_2.25rem_2.25rem_2.25rem_2.25rem_3.5rem] gap-x-4 px-2 py-1.5 text-xs text-text-muted uppercase tracking-wide border-b border-border">
-                          <span>
-                            Golfer
-                            {hasScores && (
-                              <span className="ml-2 normal-case text-[10px] text-text-muted/70">
-                                Best {countBest} of {rosterSize} · {breakdown.counting.length} counting · {breakdown.dropped.length} dropped
-                              </span>
-                            )}
-                          </span>
-                          <span className="text-center">Holes</span>
-                          <span className="text-right">Tier</span>
-                          <span className="text-right">R1</span>
-                          <span className="text-right">R2</span>
-                          <span className="text-right">R3</span>
-                          <span className="text-right">R4</span>
-                          <span className="text-right">Total</span>
-                        </div>
-                        {breakdown.counting.map(p => (
-                          <div key={p.id} className="grid grid-cols-[14rem_minmax(28rem,1fr)_2.5rem_2.25rem_2.25rem_2.25rem_2.25rem_3.5rem] gap-x-4 px-2 py-1.5 items-center border-b border-border-subtle">
-                            <div className="flex items-center gap-1.5 min-w-0 text-sm text-text-primary">
-                              {p.countryCode && (
-                                <img
-                                  src={`https://flagcdn.com/24x18/${p.countryCode}.png`}
-                                  alt={p.country || ''}
-                                  width={18} height={14}
-                                  className="inline-block shrink-0 rounded-[2px]"
-                                  loading="lazy"
-                                />
-                              )}
-                              <span className="truncate">{p.name}</span>
-                            </div>
-                            <div className="flex justify-center">
-                              {p.holes && p.holes.length > 0 ? (
-                                <GolfHoleGrid
-                                  holes={p.holes}
-                                  currentHole={p.currentHole ?? null}
-                                  thru={p.thru ?? null}
-                                  currentRound={p.currentRound ?? null}
-                                  hideLabel
-                                />
-                              ) : (
-                                <span className="text-xs text-text-muted italic">No hole data yet</span>
-                              )}
-                            </div>
-                            <div className="text-right">
-                              <span className={`text-xs px-1.5 py-0.5 rounded ${TIER_COLORS[p.tier]?.bg || 'bg-surface-inset'} ${TIER_COLORS[p.tier]?.text || 'text-text-muted'}`}>
-                                {p.tier}
-                              </span>
-                            </div>
-                            <span className={`text-right text-sm ${p.r1ToPar != null && p.r1ToPar < 0 ? 'text-success-text' : p.r1ToPar != null && p.r1ToPar > 0 ? 'text-danger-text' : 'text-text-secondary'}`}>{p.r1ToPar != null ? formatGolfScore(p.r1ToPar) : '—'}</span>
-                            <span className={`text-right text-sm ${p.r2ToPar != null && p.r2ToPar < 0 ? 'text-success-text' : p.r2ToPar != null && p.r2ToPar > 0 ? 'text-danger-text' : 'text-text-secondary'}`}>{p.r2ToPar != null ? formatGolfScore(p.r2ToPar) : '—'}</span>
-                            <span className={`text-right text-sm ${p.r3ToPar != null && p.r3ToPar < 0 ? 'text-success-text' : p.r3ToPar != null && p.r3ToPar > 0 ? 'text-danger-text' : 'text-text-secondary'}`}>{p.r3ToPar != null ? formatGolfScore(p.r3ToPar) : '—'}</span>
-                            <span className={`text-right text-sm ${p.r4ToPar != null && p.r4ToPar < 0 ? 'text-success-text' : p.r4ToPar != null && p.r4ToPar > 0 ? 'text-danger-text' : 'text-text-secondary'}`}>{p.r4ToPar != null ? formatGolfScore(p.r4ToPar) : '—'}</span>
-                            <span className="text-right text-sm font-medium text-text-primary">{formatGolfScore(p.scoreToPar)}</span>
-                          </div>
-                        ))}
-                        {breakdown.dropped.map(p => (
-                          <div key={p.id} className="grid grid-cols-[14rem_minmax(28rem,1fr)_2.5rem_2.25rem_2.25rem_2.25rem_2.25rem_3.5rem] gap-x-4 px-2 py-1.5 items-center border-b border-border-subtle opacity-50">
-                            <div className="flex items-center gap-1.5 min-w-0 text-sm text-text-muted">
-                              {p.countryCode && (
-                                <img
-                                  src={`https://flagcdn.com/24x18/${p.countryCode}.png`}
-                                  alt={p.country || ''}
-                                  width={18} height={14}
-                                  className="inline-block shrink-0 rounded-[2px]"
-                                  loading="lazy"
-                                />
-                              )}
-                              <span className="truncate">{p.name}</span>
-                              <span className="text-[10px] italic">dropped</span>
-                            </div>
-                            <div className="flex justify-center">
-                              {p.holes && p.holes.length > 0 ? (
-                                <GolfHoleGrid
-                                  holes={p.holes}
-                                  currentHole={p.currentHole ?? null}
-                                  thru={p.thru ?? null}
-                                  currentRound={p.currentRound ?? null}
-                                  hideLabel
-                                />
-                              ) : (
-                                <span className="text-xs text-text-muted italic">No hole data yet</span>
-                              )}
-                            </div>
-                            <div className="text-right">
-                              <span className={`text-xs px-1.5 py-0.5 rounded ${TIER_COLORS[p.tier]?.bg || 'bg-surface-inset'} ${TIER_COLORS[p.tier]?.text || 'text-text-muted'}`}>
-                                {p.tier}
-                              </span>
-                            </div>
-                            <span className="text-right text-sm text-text-muted">{p.r1 ?? '—'}</span>
-                            <span className="text-right text-sm text-text-muted">{p.r2 ?? '—'}</span>
-                            <span className="text-right text-sm text-text-muted">{p.r3 ?? '—'}</span>
-                            <span className="text-right text-sm text-text-muted">{p.r4 ?? '—'}</span>
-                            <span className="text-right text-sm text-text-muted">{formatGolfScore(p.scoreToPar)}</span>
-                          </div>
-                        ))}
+                  <div className="px-3 py-3 bg-surface-inset/20 border-b border-border-subtle">
+                    {hasScores && (
+                      <div className="text-[10px] text-text-muted mb-2">
+                        Best {countBest} of {rosterSize} · {breakdown.counting.length} counting · {breakdown.dropped.length} dropped
                       </div>
-                    </div>
+                    )}
+                    {breakdown.counting.map(p => (
+                      <div key={p.id} className="border-b border-border-subtle py-2">
+                        {/* Golfer info row: name + tier + rounds + total */}
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <div className="flex items-center gap-1.5 min-w-0 flex-1 text-sm text-text-primary">
+                            {p.countryCode && (
+                              <img
+                                src={`https://flagcdn.com/24x18/${p.countryCode}.png`}
+                                alt={p.country || ''}
+                                width={18} height={14}
+                                className="inline-block shrink-0 rounded-[2px]"
+                                loading="lazy"
+                              />
+                            )}
+                            <span className="truncate">{p.name}</span>
+                            <span className={`text-xs px-1.5 py-0.5 rounded ${TIER_COLORS[p.tier]?.bg || 'bg-surface-inset'} ${TIER_COLORS[p.tier]?.text || 'text-text-muted'}`}>
+                              {p.tier}
+                            </span>
+                            {p.status === 'cut' && <span className="text-[10px] text-danger-text">CUT</span>}
+                          </div>
+                          <div className="flex items-center gap-2 text-xs tabular-nums shrink-0">
+                            <span className={p.r1ToPar != null && p.r1ToPar < 0 ? 'text-success-text' : p.r1ToPar != null && p.r1ToPar > 0 ? 'text-danger-text' : 'text-text-muted'}>{p.r1ToPar != null ? formatGolfScore(p.r1ToPar) : '—'}</span>
+                            <span className={p.r2ToPar != null && p.r2ToPar < 0 ? 'text-success-text' : p.r2ToPar != null && p.r2ToPar > 0 ? 'text-danger-text' : 'text-text-muted'}>{p.r2ToPar != null ? formatGolfScore(p.r2ToPar) : '—'}</span>
+                            <span className={p.r3ToPar != null && p.r3ToPar < 0 ? 'text-success-text' : p.r3ToPar != null && p.r3ToPar > 0 ? 'text-danger-text' : 'text-text-muted'}>{p.r3ToPar != null ? formatGolfScore(p.r3ToPar) : '—'}</span>
+                            <span className={p.r4ToPar != null && p.r4ToPar < 0 ? 'text-success-text' : p.r4ToPar != null && p.r4ToPar > 0 ? 'text-danger-text' : 'text-text-muted'}>{p.r4ToPar != null ? formatGolfScore(p.r4ToPar) : '—'}</span>
+                            <span className="font-medium text-text-primary text-sm">{formatGolfScore(p.scoreToPar)}</span>
+                          </div>
+                        </div>
+                        {/* Hole grid below — full width, wraps naturally */}
+                        {p.holes && p.holes.length > 0 && (
+                          <div className="mt-1.5 overflow-x-auto">
+                            <GolfHoleGrid
+                              holes={p.holes}
+                              currentHole={p.currentHole ?? null}
+                              thru={p.thru ?? null}
+                              currentRound={p.currentRound ?? null}
+                              hideLabel
+                            />
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                    {breakdown.dropped.map(p => (
+                      <div key={p.id} className="border-b border-border-subtle py-2 opacity-50">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <div className="flex items-center gap-1.5 min-w-0 flex-1 text-sm text-text-muted">
+                            {p.countryCode && (
+                              <img
+                                src={`https://flagcdn.com/24x18/${p.countryCode}.png`}
+                                alt={p.country || ''}
+                                width={18} height={14}
+                                className="inline-block shrink-0 rounded-[2px]"
+                                loading="lazy"
+                              />
+                            )}
+                            <span className="truncate">{p.name}</span>
+                            <span className="text-[10px] italic">dropped</span>
+                            <span className={`text-xs px-1.5 py-0.5 rounded ${TIER_COLORS[p.tier]?.bg || 'bg-surface-inset'} ${TIER_COLORS[p.tier]?.text || 'text-text-muted'}`}>
+                              {p.tier}
+                            </span>
+                          </div>
+                          <span className="text-xs text-text-muted tabular-nums">{formatGolfScore(p.scoreToPar)}</span>
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 )}
               </div>

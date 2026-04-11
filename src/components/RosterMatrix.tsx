@@ -113,7 +113,7 @@ export function RosterMatrix({ entries, participants, allRosterPicks }: RosterMa
         }}
       >
         {/* ── Top-left corner cell ── */}
-        <div className="border-b border-r border-border-subtle p-2 bg-surface-inset/50 sticky left-0 z-10">
+        <div className="border-b border-r border-border-subtle p-2 bg-surface-inset sticky left-0 z-10">
           <div className="text-[10px] text-text-muted uppercase tracking-wider">Golfer</div>
         </div>
 
@@ -142,7 +142,7 @@ export function RosterMatrix({ entries, participants, allRosterPicks }: RosterMa
             <Fragment key={`row-${golfer.id}`}>
               {/* Golfer name cell (row header) */}
               <div
-                className="border-b border-r border-border-subtle px-2 py-1.5 bg-surface-inset/30 flex items-center justify-between gap-2 min-w-0 sticky left-0 z-10"
+                className="border-b border-r border-border-subtle px-2 py-1.5 bg-surface-inset flex items-center justify-between gap-2 min-w-0 sticky left-0 z-10"
               >
                 <span className="text-text-primary truncate">{golfer.name}</span>
                 <span className={`text-[10px] font-semibold tabular-nums shrink-0 ${

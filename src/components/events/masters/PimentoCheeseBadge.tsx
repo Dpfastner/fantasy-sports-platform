@@ -81,11 +81,9 @@ export function PimentoCheeseBadge({ round, entryName, className }: PimentoChees
             transform: pos.below ? 'translateX(-50%)' : 'translate(-50%, -100%)',
             zIndex: 9999,
           }}
-          className="w-64 p-3 rounded-lg shadow-xl text-xs leading-relaxed border border-[#C9A84C]/30"
-          style-bg="true"
         >
-          <div style={{ background: '#FAF6EE', border: '1px solid rgba(201,168,76,.3)', borderRadius: 8, padding: 12, boxShadow: '0 4px 20px rgba(0,0,0,.15)' }}>
-            <p style={{ fontWeight: 700, color: '#8B7355', marginBottom: 4, fontSize: 12 }}>Pimento Cheese — Round {round}</p>
+          <div style={{ background: '#FAF6EE', border: '1px solid rgba(201,168,76,.3)', borderRadius: 8, padding: 12, boxShadow: '0 4px 20px rgba(0,0,0,.15)', width: 260 }}>
+            <p style={{ fontWeight: 700, color: '#1a5c38', marginBottom: 4, fontSize: 12 }}>Pimento Cheese — Round {round}</p>
             <p style={{ color: '#4a4a4a', fontSize: 11, lineHeight: 1.5 }}>
               The $1.50 pimento cheese sandwich has been sold at Augusta since 1947.{' '}
               {entryName} had the best round in Round {round}.

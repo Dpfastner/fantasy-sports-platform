@@ -53,10 +53,11 @@ export function CrowsNestBadge({ rounds, entryName, className }: CrowsNestBadgeP
           ref={btnRef}
           type="button"
           onClick={(e) => { e.stopPropagation(); e.preventDefault(); setShowPopover(!showPopover) }}
-          className="inline-flex cursor-pointer hover:scale-110 transition-transform"
+          className="inline-flex items-center justify-center cursor-pointer hover:scale-110 transition-transform rounded-full"
           title="The Crow's Nest"
+          style={{ width: 24, height: 24, background: 'rgba(139,115,85,.12)', padding: 2 }}
         >
-          <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-4 h-4">
+          <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ width: 18, height: 18 }}>
             <rect x="3" y="50" width="58" height="5.5" rx="1.2" fill="#2C3E2D" />
             <polygon points="3,50 21,37 32,37" fill="#1a2b1a" />
             <polygon points="61,50 43,37 32,37" fill="#243524" />
@@ -94,7 +95,7 @@ export function CrowsNestBadge({ rounds, entryName, className }: CrowsNestBadgeP
           }}
         >
           <div style={{ background: '#FAF6EE', border: '1px solid rgba(201,168,76,.3)', borderRadius: 8, padding: 12, boxShadow: '0 4px 20px rgba(0,0,0,.15)', width: 260 }}>
-            <p style={{ fontWeight: 700, color: '#8B7355', marginBottom: 4, fontSize: 12 }}>The Crow&apos;s Nest</p>
+            <p style={{ fontWeight: 700, color: '#1a5c38', marginBottom: 4, fontSize: 12 }}>The Crow&apos;s Nest</p>
             <p style={{ color: '#4a4a4a', fontSize: 11, lineHeight: 1.5 }}>
               &ldquo;I dipped into the Añejo. Please don&apos;t bill me.&rdquo;
               <span style={{ color: '#8B7355' }}> — Stewart Hagestad, 2024</span>
@@ -104,7 +105,7 @@ export function CrowsNestBadge({ rounds, entryName, className }: CrowsNestBadgeP
               {isConsecutive ? ' Back-to-back stays. Getting comfortable up there.' : ' Sleep tight up there.'}
             </p>
             <p style={{ color: '#8B7355', fontSize: 11, fontStyle: 'italic', marginTop: 6 }}>
-              ha, Amateur.
+              ha, amateur.
             </p>
           </div>
         </div>
