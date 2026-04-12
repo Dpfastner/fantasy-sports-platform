@@ -116,11 +116,12 @@ export function useSundayRoar({ participants, allRosterPicks }: SundayRoarProps)
     const prevSnapshot = prevSnapshotRef.current
 
     // Sunday Roar is R4 only — the point is Championship Sunday
-    const fieldRound = Math.max(
-      ...participants.map(p => ((p.metadata as Record<string, unknown>)?.current_round as number) || 0),
-      0
-    )
-    if (fieldRound !== 4) return
+    // TEMP: disabled for testing on dev (uncomment for production)
+    // const fieldRound = Math.max(
+    //   ...participants.map(p => ((p.metadata as Record<string, unknown>)?.current_round as number) || 0),
+    //   0
+    // )
+    // if (fieldRound !== 4) return
 
     for (const p of participants) {
       if (!rosteredIds.has(p.id)) continue
@@ -135,7 +136,8 @@ export function useSundayRoar({ participants, allRosterPicks }: SundayRoarProps)
       const prev = prevSnapshot.get(p.id)
       const prevHoles = prev?.holes || []
 
-      if (!currentRound || currentRound !== 4 || holes.length === 0) continue
+      // TEMP: allow any round for testing (production: currentRound !== 4)
+      if (!currentRound || holes.length === 0) continue
 
       // Current round holes only
       const roundHoles = holes
