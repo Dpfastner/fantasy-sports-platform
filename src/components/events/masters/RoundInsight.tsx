@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 
 interface Participant {
   id: string
@@ -28,6 +28,8 @@ function formatScore(n: number | null): string {
  * R4: "Your Top 10" — which rostered golfers are in tournament top 10
  */
 export function RoundInsight({ participants, myRosterPickIds, cutRule }: RoundInsightProps) {
+  const [dismissed, setDismissed] = useState(false)
+
   // Detect current round from field
   const currentRound = useMemo(() => {
     let maxRound = 0
@@ -40,27 +42,33 @@ export function RoundInsight({ participants, myRosterPickIds, cutRule }: RoundIn
 
   const myPicks = useMemo(() => new Set(myRosterPickIds || []), [myRosterPickIds])
 
-  // R1: Your Contenders
+  if (dismissed) return null
+
+  let content: React.ReactNode = null
+
   if (currentRound === 1) {
-    return <Contenders participants={participants} myPicks={myPicks} />
+    content = <Contenders participants={participants} myPicks={myPicks} />
+  } else if (currentRound >= 4) {
+    content = <YourTop10 participants={participants} myPicks={myPicks} />
   }
+  // R2/R3: CutStatus handles those rounds
 
-  // R2: Projected Cut (use CutStatus which handles this)
-  if (currentRound === 2) {
-    return null // CutStatus component handles R2
-  }
+  if (!content) return null
 
-  // R3: The Cut (use CutStatus which handles this)
-  if (currentRound === 3) {
-    return null // CutStatus component handles R3
-  }
-
-  // R4: Your Top 10
-  if (currentRound >= 4) {
-    return <YourTop10 participants={participants} myPicks={myPicks} />
-  }
-
-  return null
+  return (
+    <div className="relative">
+      <button
+        onClick={() => setDismissed(true)}
+        className="absolute top-3 right-3 text-text-muted hover:text-text-primary transition-colors z-10"
+        title="Dismiss"
+      >
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      </button>
+      {content}
+    </div>
+  )
 }
 
 function Contenders({ participants, myPicks }: { participants: Participant[]; myPicks: Set<string> }) {

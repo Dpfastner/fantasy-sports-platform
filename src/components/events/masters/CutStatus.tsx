@@ -122,7 +122,11 @@ export function CutStatus({ participants, cutRule }: CutStatusProps) {
   const cutResults = useMemo(() => deriveCutResults(participants, cutRule), [participants, cutRule])
   const [showCutList, setShowCutList] = useState(false)
 
-  // POST-CUT MODE
+  // Hide during R4 — RoundInsight's "Your Top 10" replaces this
+  const maxFieldRound = Math.max(...participants.map(p => ((p.metadata || {}) as Record<string, unknown>).current_round as number || 0), 0)
+  if (maxFieldRound >= 4) return null
+
+  // POST-CUT MODE (R3 only)
   if (cutResults) {
     const { made, missed, cutLine } = cutResults
 

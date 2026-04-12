@@ -94,11 +94,11 @@ export function useSundayRoar({ participants, allRosterPicks }: SundayRoarProps)
     putt.onended = () => {
       // putt finished, crowd is already playing
       // Fade out crowd so audio ends at 7.5s total (matching overlay)
-      // Crowd starts ~0.65s in, needs ~5.85s play + 1s fade = ends at ~7.5s
+      // Crowd starts ~0.65s in. Fade starts at 4s, takes 2.5s = done at ~7.15s total
       setTimeout(() => {
         let vol = 0.5
         const fade = setInterval(() => {
-          vol -= 0.05
+          vol -= 0.02
           if (vol <= 0) {
             crowd.pause()
             crowd.volume = 0.5
@@ -106,8 +106,8 @@ export function useSundayRoar({ participants, allRosterPicks }: SundayRoarProps)
           } else {
             crowd.volume = vol
           }
-        }, 100) // 10 steps over 1 second fade
-      }, 5850)
+        }, 100) // 25 steps × 100ms = 2.5s fade
+      }, 4000)
     }
   }, [muted])
 
