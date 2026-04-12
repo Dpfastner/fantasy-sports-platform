@@ -920,6 +920,20 @@ export function PoolDetailClient({
                 const cutLineAt = hasCutGolfers ? activeGolfers.length : null
                 const COLLAPSE_LIMIT = isMasters ? 15 : sortedGolfers.length
 
+                // Compute tie-aware positions (T1, T2, etc.)
+                const positions: string[] = []
+                let pos = 1
+                for (let j = 0; j < sortedGolfers.length; j++) {
+                  if (j > 0) {
+                    const prevScore = ((sortedGolfers[j-1].metadata || {}) as Record<string, unknown>).score_to_par as number
+                    const curScore = ((sortedGolfers[j].metadata || {}) as Record<string, unknown>).score_to_par as number
+                    if (curScore !== prevScore) pos = j + 1
+                  }
+                  const isTied = sortedGolfers.some((g, k) => k !== j &&
+                    ((g.metadata || {}) as Record<string, unknown>).score_to_par === ((sortedGolfers[j].metadata || {}) as Record<string, unknown>).score_to_par)
+                  positions.push(isTied ? `T${pos}` : String(pos))
+                }
+
                 return sortedGolfers.map((p, i) => {
                   const meta = (p.metadata || {}) as Record<string, unknown>
                   const isCutGolfer = isGolferCut(p)
@@ -964,7 +978,7 @@ export function PoolDetailClient({
                         onClick={() => hasHoleData && setExpandedGolferId(isExpanded ? null : p.id)}
                         className={`w-full grid grid-cols-[2rem_minmax(10rem,1fr)_2.5rem_4.5rem_2.5rem_2.5rem_2.5rem_2.5rem_3.5rem] gap-1 px-3 py-2 border-b border-border-subtle last:border-0 text-sm text-left transition-colors ${isCutGolfer ? 'opacity-50' : ''} ${hasHoleData ? 'hover:bg-surface-inset/40 cursor-pointer' : 'cursor-default'} ${isExpanded ? 'bg-surface-inset/30' : ''}`}
                       >
-                        <span className="text-right text-text-muted">{i + 1}</span>
+                        <span className="text-right text-text-muted">{positions[i]}</span>
                         <div className="flex items-center gap-1.5 min-w-0">
                           {typeof meta.country_code === 'string' && (
                             <img

@@ -263,18 +263,20 @@ export function MastersLeaderboard({
 
           {/* Show all */}
           {total > MAX_ROWS && (
-            <button
-              type="button"
-              onClick={onShowAll}
-              style={{
-                width: '100%', padding: '10px 0', textAlign: 'center',
-                fontSize: 13, fontWeight: 700, color: '#fff', background: '#1a5c38',
-                border: 'none', borderTop: bdr2, cursor: 'pointer',
-                fontFamily: F, letterSpacing: '.06em',
-              }}
-            >
-              Show all {total} golfers →
-            </button>
+            <div style={{ minWidth: 640 }}>
+              <button
+                type="button"
+                onClick={onShowAll}
+                style={{
+                  display: 'block', width: '100%', padding: '10px 0', textAlign: 'center',
+                  fontSize: 13, fontWeight: 700, color: '#fff', background: '#1a5c38',
+                  border: 'none', borderTop: bdr2, cursor: 'pointer',
+                  fontFamily: F, letterSpacing: '.06em',
+                }}
+              >
+                Show all {total} golfers →
+              </button>
+            </div>
           )}
 
           {sorted.length === 0 && (

@@ -58,7 +58,7 @@ export function CutCountdown({
 }: CutCountdownProps) {
   const cutTarget = new Date(cutTime).getTime()
   const champTarget = new Date(championTime).getTime()
-  const [dismissed, setDismissed] = useState(false)
+  const [bannerDismissed, setBannerDismissed] = useState(false)
 
   const [cutTimeLeft, setCutTimeLeft] = useState<TimeLeft | null>(() => calculateTimeLeft(cutTarget))
   const [champTimeLeft, setChampTimeLeft] = useState<TimeLeft | null>(() => calculateTimeLeft(champTarget))
@@ -126,19 +126,8 @@ export function CutCountdown({
   const showCutCountdown = !hasCut && !cutCountdownExpired
   const showChampionCountdown = (hasCut || cutCountdownExpired) && champTimeLeft
 
-  if (dismissed) return null
-
   return (
-    <div className="space-y-3 relative">
-      <button
-        onClick={() => setDismissed(true)}
-        className="absolute top-3 right-3 text-[#8B7355] hover:text-[#1a1a1a] transition-colors z-10"
-        title="Dismiss"
-      >
-        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-        </svg>
-      </button>
+    <div className="space-y-3">
       {/* Cut Countdown (pre-cut, before Friday) */}
       {showCutCountdown && cutTimeLeft && (
         <div className="bg-[#FAF6EE] border border-[#E8C96A]/40 rounded-lg p-4">
@@ -167,8 +156,18 @@ export function CutCountdown({
       )}
 
       {/* R3: Post-cut survival banner / R4: Your golfers in the top 10 */}
-      {hasCut && currentRound && currentRound >= 3 && (
-        currentRound >= 4 ? (
+      {!bannerDismissed && hasCut && currentRound && currentRound >= 3 && (
+        <div className="relative">
+          <button
+            onClick={() => setBannerDismissed(true)}
+            className="absolute top-3 right-3 text-[#8B7355] hover:text-[#1a1a1a] transition-colors z-10"
+            title="Dismiss"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        {currentRound >= 4 ? (
           <YourTop10Banner participants={participants} rosteredIds={rosteredIds} />
         ) : cutResults ? (
           <div className="bg-[#FAF6EE] border border-[#E8C96A]/40 rounded-lg p-4">
@@ -197,7 +196,8 @@ export function CutCountdown({
               ))}
             </div>
           </div>
-        ) : null
+        ) : null}
+        </div>
       )}
 
       {/* Champion Countdown (post-cut or when cut countdown expired) */}

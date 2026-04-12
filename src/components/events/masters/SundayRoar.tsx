@@ -415,11 +415,9 @@ export function RoarFeed({ moments, muted, onToggleMute, onReplay }: {
   if (moments.length === 0) return null
 
   return (
-    <div className="space-y-2">
+    <div className="bg-surface rounded-lg border border-border p-4 space-y-2">
       <div className="flex items-center justify-between">
-        <h4 className="text-xs font-semibold uppercase tracking-wider" style={{ color: '#C9A84C' }}>
-          Sunday Roar
-        </h4>
+        <h3 className="text-sm font-semibold text-text-primary">Sunday Roar</h3>
         <button
           onClick={onToggleMute}
           className="flex items-center gap-1 text-[10px] text-text-muted hover:text-text-primary transition-colors"
