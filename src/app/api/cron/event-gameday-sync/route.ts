@@ -721,6 +721,37 @@ export async function GET(request: Request) {
             }
           }
 
+          // ── Auto-complete golf tournament when R4 is done ──
+          // If all active (non-cut) golfers have r4 scores, the tournament is over.
+          const { data: allParticipants } = await admin
+            .from('event_participants')
+            .select('metadata')
+            .eq('tournament_id', tournamentId)
+          if (allParticipants) {
+            const activeGolfers = allParticipants.filter(p => {
+              const m = (p.metadata || {}) as Record<string, unknown>
+              return m.status !== 'cut' && m.status !== 'wd' && m.status !== 'dq'
+            })
+            const allHaveR4 = activeGolfers.length > 0 && activeGolfers.every(p => {
+              const r4 = ((p.metadata || {}) as Record<string, unknown>).r4
+              return typeof r4 === 'number' && r4 >= 60 && r4 <= 100
+            })
+            if (allHaveR4) {
+              const { data: currentTournament } = await admin
+                .from('event_tournaments')
+                .select('status')
+                .eq('id', tournamentId)
+                .single()
+              if (currentTournament?.status !== 'completed') {
+                await admin
+                  .from('event_tournaments')
+                  .update({ status: 'completed' })
+                  .eq('id', tournamentId)
+                console.log(`[event-gameday-sync] Tournament ${tournamentId} auto-completed — all active golfers have R4 scores`)
+              }
+            }
+          }
+
           totalUpdated += updated
           totalCompleted += completed
 
