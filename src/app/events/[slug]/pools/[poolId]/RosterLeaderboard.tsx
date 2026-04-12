@@ -349,7 +349,7 @@ export function RosterLeaderboard({
                 {/* Expanded roster breakdown — uses SAME grid as parent row for alignment */}
                 {isExpanded && breakdown && (
                   <div className="bg-surface-inset/20 border-b border-border-subtle overflow-x-auto">
-                    <div className="min-w-[40rem] pl-2 pr-3">
+                    <div className="min-w-[40rem]" style={{ paddingRight: 16 }}>
                     {hasScores && (
                       <div className="text-[10px] text-text-muted px-3 pt-2">
                         Best {countBest} of {rosterSize} · {breakdown.counting.length} counting · {breakdown.dropped.length} dropped
