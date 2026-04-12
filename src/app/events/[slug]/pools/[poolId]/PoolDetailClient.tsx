@@ -35,6 +35,7 @@ import { Top10Leaderboard } from '@/components/events/masters/Top10Leaderboard'
 import { MastersLeaderboard } from '@/components/events/masters/MastersLeaderboard'
 import { Par3CurseBadge } from '@/components/events/masters/Par3CurseBadge'
 import { CutStatus } from '@/components/events/masters/CutStatus'
+import { useSundayRoar, RoarFeed } from '@/components/events/masters/SundayRoar'
 
 interface Participant {
   id: string
@@ -371,6 +372,12 @@ export function PoolDetailClient({
     }))
     return computeAllMastersAwards(entryInfos, allRosterPicks, liveParticipants, countBest)
   }, [isMasters, allRosterPicks, effectiveFormat, pool.scoringRules, liveMembers, liveParticipants])
+
+  // Masters: Sunday Roar — detect eagles, birdie runs, big moves
+  const sundayRoar = useSundayRoar({
+    participants: isMasters ? liveParticipants : [],
+    allRosterPicks,
+  })
 
   // Masters: detect pool winner for Green Jacket ceremony
   const mastersWinner = useMemo(() => {
@@ -737,6 +744,15 @@ export function PoolDetailClient({
           {/* Biggest Movers — golf roster pools (moves to Leaderboard tab for Masters) */}
           {effectiveFormat === 'roster' && tournament.sport === 'golf' && !isMasters && (
             <BiggestMovers participants={liveParticipants} />
+          )}
+
+          {/* Sunday Roar — live moment cards for eagles, birdie runs, big moves */}
+          {isMasters && sundayRoar.moments.length > 0 && (
+            <RoarFeed
+              moments={sundayRoar.moments}
+              muted={sundayRoar.muted}
+              onToggleMute={sundayRoar.toggleMute}
+            />
           )}
 
           {/* Cut Status: projected (R1-R2) or actual (R3+) */}
