@@ -436,7 +436,7 @@ export function PoolDetailClient({
       <div className="bg-surface rounded-lg border border-border p-5 mb-6 relative overflow-hidden">
         {/* Masters: trophy in the gap between pool info and Code/Share buttons */}
         {isMasters && (
-          <div className="absolute top-0 bottom-0 flex items-center pointer-events-none hidden sm:flex" style={{ left: '38%' }}>
+          <div className="absolute top-0 bottom-0 flex items-center pointer-events-none hidden sm:flex" style={{ left: '22rem' }}>
             <MastersTrophy className="h-full max-h-20 w-auto" />
           </div>
         )}
