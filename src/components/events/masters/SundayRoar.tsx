@@ -20,6 +20,8 @@ interface RoarMoment {
 interface SundayRoarProps {
   participants: Participant[]
   allRosterPicks?: Record<string, string[]>
+  poolId?: string
+  tournamentId?: string
 }
 
 interface GolfHole {
@@ -42,8 +44,35 @@ interface GolfHole {
  */
 const MUTE_KEY = 'rivyls-roar-muted'
 
-export function useSundayRoar({ participants, allRosterPicks }: SundayRoarProps) {
+export function useSundayRoar({ participants, allRosterPicks, poolId, tournamentId }: SundayRoarProps) {
   const [moments, setMoments] = useState<RoarMoment[]>([])
+  const loadedRef = useRef(false)
+
+  // Load persisted moments on mount
+  useEffect(() => {
+    if (!poolId || loadedRef.current) return
+    loadedRef.current = true
+    fetch(`/api/events/pools/${poolId}/activity`)
+      .then(res => res.json())
+      .then(data => {
+        const roarEvents = (data.events || [])
+          .filter((e: { action: string }) => e.action === 'masters.sunday_roar')
+          .map((e: { id: string; details: Record<string, unknown>; created_at: string }) => ({
+            id: e.id,
+            golferName: (e.details?.golfer_name as string) || '',
+            type: (e.details?.type as RoarMoment['type']) || 'eagle',
+            description: (e.details?.description as string) || '',
+            timestamp: new Date(e.created_at).getTime(),
+            holeNumber: e.details?.hole_number as number | undefined,
+          }))
+        if (roarEvents.length > 0) {
+          setMoments(roarEvents)
+          // Mark as seen so we don't duplicate
+          for (const m of roarEvents) seenMomentsRef.current.add(m.id)
+        }
+      })
+      .catch(() => {})
+  }, [poolId])
   const [rippleGolferId, setRippleGolferId] = useState<string | null>(null)
   const [muted, setMuted] = useState(() => {
     if (typeof window === 'undefined') return false
@@ -256,8 +285,27 @@ export function useSundayRoar({ participants, allRosterPicks }: SundayRoarProps)
       setTimeout(() => setRippleGolferId(null), 2000)
       // Play crowd roar sound with overlay
       playRoarWithOverlay(newMoments[0])
+      // Persist to activity log (fire-and-forget)
+      if (poolId && tournamentId) {
+        for (const m of newMoments) {
+          fetch(`/api/events/pools/${poolId}/activity`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              action: 'masters.sunday_roar',
+              details: {
+                moment_id: m.id,
+                golfer_name: m.golferName,
+                type: m.type,
+                description: m.description,
+                hole_number: m.holeNumber || null,
+              },
+            }),
+          }).catch(() => {})
+        }
+      }
     }
-  }, [participants, rosteredIds])
+  }, [participants, rosteredIds]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Run detection whenever participants change (realtime updates)
   useEffect(() => {

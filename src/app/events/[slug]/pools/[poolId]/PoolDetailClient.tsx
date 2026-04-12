@@ -377,6 +377,8 @@ export function PoolDetailClient({
   const sundayRoar = useSundayRoar({
     participants: isMasters ? liveParticipants : [],
     allRosterPicks,
+    poolId: isMasters ? pool.id : undefined,
+    tournamentId: isMasters ? tournament.id : undefined,
   })
 
   // Masters: detect pool winner for Green Jacket ceremony
