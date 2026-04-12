@@ -33,8 +33,6 @@ import { computeAllMastersAwards } from '@/lib/events/masters-awards'
 import { GreenJacketCeremony } from '@/components/events/masters/GreenJacketCeremony'
 import { Top10Leaderboard } from '@/components/events/masters/Top10Leaderboard'
 import { MastersLeaderboard } from '@/components/events/masters/MastersLeaderboard'
-import { GnomeEasterEgg } from '@/components/events/masters/MastersGnome'
-import { MastersTrophy } from '@/components/events/masters/MastersTrophy'
 import { Par3CurseBadge } from '@/components/events/masters/Par3CurseBadge'
 import { CutStatus } from '@/components/events/masters/CutStatus'
 
@@ -435,28 +433,24 @@ export function PoolDetailClient({
       {/* Pool Header */}
       <div className="bg-surface rounded-lg border border-border p-5 mb-6">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-          <div className="flex items-start gap-3">
-            <div>
-              <div className="flex items-center gap-2 mb-1">
-                <h1 className="brand-h2 text-xl sm:text-2xl text-text-primary">{pool.name}</h1>
-                <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${
-                  pool.status === 'open' ? 'bg-success/20 text-success-text' :
-                  pool.status === 'locked' ? 'bg-warning/20 text-warning-text' :
-                  'bg-surface-inset text-text-muted'
-                }`}>
-                  {pool.status}
-                </span>
-                {isCreator && (
-                  <span className="text-xs px-1.5 py-0.5 rounded bg-warning/20 text-warning-text">Creator</span>
-                )}
-              </div>
+          <div>
+            <div className="flex items-center gap-2 mb-1">
+              <h1 className="brand-h2 text-xl sm:text-2xl text-text-primary">{pool.name}</h1>
+              <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${
+                pool.status === 'open' ? 'bg-success/20 text-success-text' :
+                pool.status === 'locked' ? 'bg-warning/20 text-warning-text' :
+                'bg-surface-inset text-text-muted'
+              }`}>
+                {pool.status}
+              </span>
+              {isCreator && (
+                <span className="text-xs px-1.5 py-0.5 rounded bg-warning/20 text-warning-text">Creator</span>
+              )}
+            </div>
             <p className="text-text-muted text-sm">
               {tournament.name} &middot; {uniqueMembers.length} member{uniqueMembers.length !== 1 ? 's' : ''}
               {pool.maxEntries && ` / ${pool.maxEntries} max`}
             </p>
-            </div>
-            {/* Masters: trophy spanning all 3 text rows, right after the info */}
-            {isMasters && <MastersTrophy className="w-12 h-[4.5rem] shrink-0 hidden sm:block" />}
           </div>
 
           {/* Invite Code + Share */}
@@ -706,15 +700,12 @@ export function PoolDetailClient({
 
           {/* Masters: Physical Augusta scoreboard on overview (top 10) */}
           {isMasters && effectiveFormat === 'roster' && (
-            <div style={{ position: 'relative' }}>
-              <MastersLeaderboard
-                participants={liveParticipants}
-                allRosterPicks={allRosterPicks}
-                members={liveMembers}
-                onShowAll={() => setActiveTab('schedule')}
-              />
-              <GnomeEasterEgg />
-            </div>
+            <MastersLeaderboard
+              participants={liveParticipants}
+              allRosterPicks={allRosterPicks}
+              members={liveMembers}
+              onShowAll={() => setActiveTab('schedule')}
+            />
           )}
 
           {/* Rivalry Board — user standings */}
