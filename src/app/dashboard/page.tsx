@@ -246,10 +246,12 @@ export default async function DashboardPage() {
 
   // Upcoming/active events for featured section
   const joinedTournamentIds = new Set(eventPools.map(p => p.tournamentId))
+  // Show upcoming, active, and recently completed (within 3 days) tournaments
+  const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString()
   const { data: allTournaments } = await admin
     .from('event_tournaments')
-    .select('id, name, slug, sport, format, status, description, starts_at, ends_at')
-    .in('status', ['upcoming', 'active'])
+    .select('id, name, slug, sport, format, status, description, starts_at, ends_at, updated_at')
+    .or(`status.in.(upcoming,active),and(status.eq.completed,updated_at.gte.${threeDaysAgo})`)
     .order('starts_at', { ascending: true })
 
   // Pool counts for featured tournaments
