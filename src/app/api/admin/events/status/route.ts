@@ -33,7 +33,7 @@ export async function POST(request: Request) {
 
     const { error } = await admin
       .from('event_tournaments')
-      .update({ status })
+      .update({ status, updated_at: new Date().toISOString() })
       .eq('id', id)
 
     if (error) {
