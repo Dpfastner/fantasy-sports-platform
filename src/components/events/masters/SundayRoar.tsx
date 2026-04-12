@@ -115,6 +115,13 @@ export function useSundayRoar({ participants, allRosterPicks }: SundayRoarProps)
     const newMoments: RoarMoment[] = []
     const prevSnapshot = prevSnapshotRef.current
 
+    // Sunday Roar is R4 only — the point is Championship Sunday
+    const fieldRound = Math.max(
+      ...participants.map(p => ((p.metadata as Record<string, unknown>)?.current_round as number) || 0),
+      0
+    )
+    if (fieldRound !== 4) return
+
     for (const p of participants) {
       if (!rosteredIds.has(p.id)) continue
       const meta = (p.metadata || {}) as Record<string, unknown>
@@ -128,7 +135,7 @@ export function useSundayRoar({ participants, allRosterPicks }: SundayRoarProps)
       const prev = prevSnapshot.get(p.id)
       const prevHoles = prev?.holes || []
 
-      if (!currentRound || holes.length === 0) continue
+      if (!currentRound || currentRound !== 4 || holes.length === 0) continue
 
       // Current round holes only
       const roundHoles = holes
@@ -164,16 +171,18 @@ export function useSundayRoar({ participants, allRosterPicks }: SundayRoarProps)
           }
         }
 
-        // Check for 2+ consecutive birdies (or better)
-        if (diff <= -1 && hole.hole >= 2) {
-          const prevHole = roundHoles.find(h => h.hole === hole.hole - 1)
-          if (prevHole && (prevHole.strokes - prevHole.par) <= -1) {
+        // Check for 3+ consecutive birdies (or better)
+        if (diff <= -1 && hole.hole >= 3) {
+          const prev1 = roundHoles.find(h => h.hole === hole.hole - 1)
+          const prev2 = roundHoles.find(h => h.hole === hole.hole - 2)
+          if (prev1 && (prev1.strokes - prev1.par) <= -1 &&
+              prev2 && (prev2.strokes - prev2.par) <= -1) {
             const momentId = `${p.id}-birdie_run-${currentRound}-${hole.hole}`
             if (!seenMomentsRef.current.has(momentId)) {
               seenMomentsRef.current.add(momentId)
               // Count the full run length
-              let runLength = 2
-              for (let h = hole.hole - 2; h >= 1; h--) {
+              let runLength = 3
+              for (let h = hole.hole - 3; h >= 1; h--) {
                 const earlier = roundHoles.find(rh => rh.hole === h)
                 if (earlier && (earlier.strokes - earlier.par) <= -1) runLength++
                 else break
