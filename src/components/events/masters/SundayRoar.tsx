@@ -119,12 +119,11 @@ export function useSundayRoar({ participants, allRosterPicks }: SundayRoarProps)
     const prevSnapshot = prevSnapshotRef.current
 
     // Sunday Roar is R4 only — the point is Championship Sunday
-    // TEMP: disabled for testing on dev (uncomment for production)
-    // const fieldRound = Math.max(
-    //   ...participants.map(p => ((p.metadata as Record<string, unknown>)?.current_round as number) || 0),
-    //   0
-    // )
-    // if (fieldRound !== 4) return
+    const fieldRound = Math.max(
+      ...participants.map(p => ((p.metadata as Record<string, unknown>)?.current_round as number) || 0),
+      0
+    )
+    if (fieldRound !== 4) return
 
     for (const p of participants) {
       if (!rosteredIds.has(p.id)) continue
@@ -139,8 +138,7 @@ export function useSundayRoar({ participants, allRosterPicks }: SundayRoarProps)
       const prev = prevSnapshot.get(p.id)
       const prevHoles = prev?.holes || []
 
-      // TEMP: allow any round for testing (production: currentRound !== 4)
-      if (!currentRound || holes.length === 0) continue
+      if (!currentRound || currentRound !== 4 || holes.length === 0) continue
 
       // Current round holes only
       const roundHoles = holes
@@ -279,23 +277,6 @@ export function useSundayRoar({ participants, allRosterPicks }: SundayRoarProps)
     }
     detectRoars()
   }, [participants, detectRoars])
-
-  // TEMP TEST: fire a test roar 3 seconds after page load
-  useEffect(() => {
-    const testMoment: RoarMoment = {
-      id: 'test-eagle-1',
-      golferName: 'Rory McIlroy',
-      type: 'eagle',
-      description: 'Rory McIlroy eagles hole 13 (Azalea). The roar was heard from the 8th tee.',
-      timestamp: Date.now(),
-      holeNumber: 13,
-    }
-    const timer = setTimeout(() => {
-      setMoments(prev => [testMoment, ...prev])
-      playRoarWithOverlay(testMoment)
-    }, 3000)
-    return () => clearTimeout(timer)
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   const [overlayMoment, setOverlayMoment] = useState<RoarMoment | null>(null)
 
