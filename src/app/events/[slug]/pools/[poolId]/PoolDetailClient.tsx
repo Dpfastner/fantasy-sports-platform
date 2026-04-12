@@ -36,6 +36,7 @@ import { MastersLeaderboard } from '@/components/events/masters/MastersLeaderboa
 import { Par3CurseBadge } from '@/components/events/masters/Par3CurseBadge'
 import { CutStatus } from '@/components/events/masters/CutStatus'
 import { useSundayRoar, RoarFeed, RoarOverlay } from '@/components/events/masters/SundayRoar'
+import { RoundInsight } from '@/components/events/masters/RoundInsight'
 
 interface Participant {
   id: string
@@ -755,11 +756,18 @@ export function PoolDetailClient({
                 onToggleMute={sundayRoar.toggleMute}
                 onReplay={sundayRoar.playRoar}
               />
-              <RoarOverlay moment={sundayRoar.overlayMoment} onDismiss={sundayRoar.dismissOverlay} />
             </>
           )}
 
-          {/* Cut Status: projected (R1-R2) or actual (R3+) */}
+          {/* Round Insight: R1 contenders, R2 projected cut, R3 the cut, R4 your top 10 */}
+          {isMasters && effectiveFormat === 'roster' && (
+            <RoundInsight
+              participants={liveParticipants}
+              myRosterPickIds={myRosterPickIds}
+              cutRule={cutRule}
+            />
+          )}
+          {/* Cut Status: R2 projected cut + R3 actual cut (RoundInsight returns null for R2/R3, CutStatus handles them) */}
           {effectiveFormat === 'roster' && tournament.sport === 'golf' && cutRule && (
             isMasters
               ? <CutStatus participants={liveParticipants} cutRule={cutRule} />
@@ -1140,7 +1148,9 @@ export function PoolDetailClient({
         />
       )}
 
-      {/* Masters: Green Jacket Ceremony for pool winner */}
+      {/* Masters: Sunday Roar overlay (root level so fixed positioning works) */}
+      {isMasters && <RoarOverlay moment={sundayRoar.overlayMoment} onDismiss={sundayRoar.dismissOverlay} />}
+
       {/* Masters: Green Jacket Ceremony for pool winner */}
       {mastersWinner && (
         <GreenJacketCeremony winnerName={mastersWinner.entryName || mastersWinner.displayName} />
