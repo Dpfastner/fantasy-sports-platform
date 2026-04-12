@@ -1121,6 +1121,7 @@ export function PoolDetailClient({
       )}
 
       {/* Masters: Green Jacket Ceremony for pool winner */}
+      {/* Masters: Green Jacket Ceremony for pool winner */}
       {mastersWinner && (
         <GreenJacketCeremony winnerName={mastersWinner.entryName || mastersWinner.displayName} />
       )}
