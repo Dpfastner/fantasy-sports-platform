@@ -277,6 +277,23 @@ export function useSundayRoar({ participants, allRosterPicks }: SundayRoarProps)
     detectRoars()
   }, [participants, detectRoars])
 
+  // TEMP TEST: fire a test roar 3 seconds after page load
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      const testMoment: RoarMoment = {
+        id: 'test-eagle-1',
+        golferName: 'Rory McIlroy',
+        type: 'eagle',
+        description: 'Rory McIlroy eagles hole 13 (Azalea). The roar was heard from the 8th tee.',
+        timestamp: Date.now(),
+        holeNumber: 13,
+      }
+      setMoments(prev => [testMoment, ...prev])
+      playRoar()
+    }, 3000)
+    return () => clearTimeout(timer)
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
   return { moments, rippleGolferId, muted, toggleMute }
 }
 
