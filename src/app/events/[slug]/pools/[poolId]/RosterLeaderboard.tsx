@@ -39,8 +39,8 @@ interface Participant {
 interface MastersAwards {
   /** Map of entryId → array of round numbers they won pimento cheese for */
   pimentoWinners: Map<string, number[]>
-  /** Current crow's nest holder (rotates each round) */
-  crowsNestHolder: { entryId: string; rounds: number[] } | null
+  /** Current crow's nest holders — ties share the attic */
+  crowsNestHolders: Array<{ entryId: string; rounds: number[] }>
 }
 
 interface RosterLeaderboardProps {
@@ -299,9 +299,9 @@ export function RosterLeaderboard({
                             <PimentoCheeseBadge key={`pc-${round}`} round={round} entryName={member.entryName || member.displayName} />
                           ))
                         )}
-                        {mastersAwards?.crowsNestHolder?.entryId === member.id && (
+                        {mastersAwards?.crowsNestHolders?.find(h => h.entryId === member.id) && (
                           <CrowsNestBadge
-                            rounds={mastersAwards.crowsNestHolder.rounds}
+                            rounds={mastersAwards.crowsNestHolders.find(h => h.entryId === member.id)!.rounds}
                             entryName={member.entryName || member.displayName}
                           />
                         )}

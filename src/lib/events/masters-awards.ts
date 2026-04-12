@@ -148,8 +148,8 @@ export function determineRoundAwards(
 export interface MastersAwardsResult {
   /** Map of entryId → array of round numbers they won pimento cheese for */
   pimentoWinners: Map<string, number[]>
-  /** Current crow's nest holder (most recent round only, but tracks consecutive) */
-  crowsNestHolder: { entryId: string; rounds: number[] } | null
+  /** Current crow's nest holders — ties share the attic, rotates each round */
+  crowsNestHolders: Array<{ entryId: string; rounds: number[] }>
 }
 
 /**
@@ -192,7 +192,7 @@ export function computeAllMastersAwards(
   countBest: number,
 ): MastersAwardsResult {
   const pimentoWinners = new Map<string, number[]>()
-  let crowsNestHolder: { entryId: string; rounds: number[] } | null = null
+  let crowsNestHolders: Array<{ entryId: string; rounds: number[] }> = []
 
   const currentRound = detectCurrentRound(participants)
 
@@ -213,18 +213,22 @@ export function computeAllMastersAwards(
       pimentoWinners.set(winner.entryId, existing)
     }
 
-    // Crow's nest: rotates each round, but ties all share it
+    // Crow's nest: rotates each round, ties share the attic
     if (awards.crowsNestHolders.length > 0) {
-      // For simplicity, if there are ties for worst, the first one holds it
-      // (crow's nest is singular shame — ties share the attic)
-      const holder = awards.crowsNestHolders[0]
-      if (crowsNestHolder && crowsNestHolder.entryId === holder.entryId) {
-        crowsNestHolder.rounds.push(round)
-      } else {
-        crowsNestHolder = { entryId: holder.entryId, rounds: [round] }
+      // Build new holders list for this round
+      const newHolders: Array<{ entryId: string; rounds: number[] }> = []
+      for (const h of awards.crowsNestHolders) {
+        // Check if this entry held it in the previous round too (consecutive)
+        const prev = crowsNestHolders.find(ch => ch.entryId === h.entryId)
+        if (prev) {
+          newHolders.push({ entryId: h.entryId, rounds: [...prev.rounds, round] })
+        } else {
+          newHolders.push({ entryId: h.entryId, rounds: [round] })
+        }
       }
+      crowsNestHolders = newHolders
     }
   }
 
-  return { pimentoWinners, crowsNestHolder }
+  return { pimentoWinners, crowsNestHolders }
 }
