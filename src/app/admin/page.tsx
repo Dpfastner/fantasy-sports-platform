@@ -169,6 +169,13 @@ export default async function AdminPage() {
       stat: `${allCompetitions.length} competitions`,
     },
     {
+      href: '/admin/events',
+      title: 'Events',
+      emoji: '⛳',
+      description: 'Manage tournament and pool statuses. Complete, cancel, or reactivate events.',
+      stat: `${activeEvents} active`,
+    },
+    {
       href: '/admin/monitoring',
       title: 'Monitoring',
       emoji: '📡',
