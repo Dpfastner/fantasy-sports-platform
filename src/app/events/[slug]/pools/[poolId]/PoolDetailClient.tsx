@@ -1121,8 +1121,9 @@ export function PoolDetailClient({
       )}
 
       {/* Masters: Green Jacket Ceremony for pool winner */}
-      {mastersWinner && (
-        <GreenJacketCeremony winnerName={mastersWinner.entryName || mastersWinner.displayName} />
+      {/* TEMP PREVIEW — remove after review */}
+      {isMasters && (
+        <GreenJacketCeremony winnerName="Ben" />
       )}
     </div>
   )
