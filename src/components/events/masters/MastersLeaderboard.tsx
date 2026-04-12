@@ -151,6 +151,7 @@ export function MastersLeaderboard({
               <col style={{ width: 36 }} />
               <col style={{ width: 160 }} />
               {Array.from({ length: 18 }, (_, i) => <col key={i} />)}
+              <col style={{ width: 36 }} />
             </colgroup>
             <thead>
               {/* HOLE row + PRIOR spanning */}
@@ -165,7 +166,7 @@ export function MastersLeaderboard({
                 </th>
                 {PARS.map((_, i) => (
                   <th key={i} style={{
-                    borderRight: i === 8 ? bdr2 : i === 17 ? 'none' : bdr,
+                    borderRight: i === 8 ? bdr2 : i === 17 ? bdr2 : bdr,
                     borderBottom: bdr,
                     textAlign: 'center', verticalAlign: 'middle',
                     padding: '6px 0', minWidth: 28,
@@ -174,6 +175,11 @@ export function MastersLeaderboard({
                     <span style={{ fontSize: 14, fontWeight: 700, color: '#1a1a1a' }}>{i + 1}</span>
                   </th>
                 ))}
+                <th rowSpan={2} style={{ width: 36, borderLeft: bdr2, borderBottom: bdr2, verticalAlign: 'middle', textAlign: 'center', padding: 4 }}>
+                  {'TOTAL'.split('').map((ch, i) => (
+                    <div key={i} style={{ fontSize: 10, fontWeight: 700, color: '#1a1a1a', lineHeight: 1.2 }}>{ch}</div>
+                  ))}
+                </th>
               </tr>
               {/* PAR row */}
               <tr>
@@ -231,7 +237,7 @@ export function MastersLeaderboard({
                       const under = score != null && score < PARS[hi]
                       return (
                         <td key={hi} style={{
-                          borderRight: hi === 8 ? bdr2 : hi === 17 ? 'none' : bdr,
+                          borderRight: hi === 8 ? bdr2 : hi === 17 ? bdr2 : bdr,
                           borderBottom: bdr,
                           textAlign: 'center', verticalAlign: 'middle',
                           padding: '5px 0',
@@ -243,6 +249,12 @@ export function MastersLeaderboard({
                         </td>
                       )
                     })}
+                    {/* TOTAL — current tournament score */}
+                    <td style={{ borderLeft: bdr2, borderBottom: bdr, textAlign: 'center', verticalAlign: 'middle', padding: '5px 2px' }}>
+                      <span style={{ fontSize: 16, fontWeight: 700, fontFamily: F, color: (meta.score_to_par as number) < 0 ? '#CC0000' : '#1a1a1a' }}>
+                        {fp(meta.score_to_par as number | null)}
+                      </span>
+                    </td>
                   </tr>
                 )
               })}
