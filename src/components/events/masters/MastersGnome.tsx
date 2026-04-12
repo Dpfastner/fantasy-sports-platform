@@ -203,14 +203,15 @@ export function GnomeEasterEgg() {
         onClick={(e) => { e.stopPropagation(); setShowPopover(!showPopover) }}
         style={{
           position: 'absolute',
-          bottom: 0,
-          right: -8,
-          width: 38,
-          height: 64,
+          bottom: -28,
+          right: -6,
+          width: 40,
+          height: 66,
           cursor: 'pointer',
-          zIndex: -1,
+          zIndex: 5,
           transition: 'transform 0.2s',
           transform: 'rotate(35deg)',
+          clipPath: 'inset(0 0 45% 0)',
         }}
         className="hover:scale-105"
         title="What's this?"
