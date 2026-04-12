@@ -331,8 +331,9 @@ export function RoarOverlay({ moment, onDismiss }: {
       }`}
       style={{ background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(2px)' }}
       onClick={onDismiss}
+      onTouchEnd={(e) => { e.preventDefault(); onDismiss() }}
     >
-      <div className="text-center px-6 max-w-lg">
+      <div className="text-center px-6 max-w-lg pointer-events-none">
         {/* Golden pulse ring */}
         <div className="mx-auto mb-6 relative w-20 h-20">
           <div
