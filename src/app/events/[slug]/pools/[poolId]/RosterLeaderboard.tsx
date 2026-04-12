@@ -373,8 +373,8 @@ export function RosterLeaderboard({
                           <span className="truncate">{p.name}</span>
                           {p.status === 'cut' && <span className="text-[10px] text-danger-text shrink-0">CUT</span>}
                         </div>
-                        {/* Holes */}
-                        <div className="overflow-x-auto">
+                        {/* Holes — no inner scroll, outer container handles it */}
+                        <div>
                           {p.holes && p.holes.length > 0 ? (
                             <GolfHoleGrid
                               holes={p.holes}

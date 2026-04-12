@@ -119,7 +119,7 @@ export function GolfHoleGrid({ holes, currentHole, thru, currentRound, label, hi
           </span>
         </div>
       )}
-      <div className="overflow-x-auto pb-1">
+      <div className="pb-1">
         {/* Hole number header row */}
         <div className="flex gap-0.5 mb-1">
           {Array.from({ length: 9 }, (_, i) => i + 1).map(renderHoleLabel)}
