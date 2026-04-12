@@ -280,6 +280,21 @@ function YourTop10Banner({ participants, rosteredIds }: { participants: Particip
           const meta = (p.metadata || {}) as Record<string, unknown>
           const score = meta.score_to_par as number
           const isMine = rosteredIds.has(p.id)
+          // Tie-aware position
+          let pos = i + 1
+          if (i > 0) {
+            const prevScore = ((top10[i-1].metadata || {}) as Record<string, unknown>).score_to_par as number
+            if (score === prevScore) {
+              // Find the first golfer with this score
+              let j = i - 1
+              while (j > 0 && ((top10[j-1].metadata || {}) as Record<string, unknown>).score_to_par === score) j--
+              pos = j + 1
+            }
+          }
+          const isTied = top10.some((g, k) => k !== i &&
+            ((g.metadata || {}) as Record<string, unknown>).score_to_par === score)
+          const posLabel = isTied ? `T${pos}.` : `${pos}.`
+
           return (
             <span
               key={p.id}
@@ -289,7 +304,7 @@ function YourTop10Banner({ participants, rosteredIds }: { participants: Particip
                 : { background: 'rgba(0,0,0,0.05)', color: '#8B7355' }
               }
             >
-              <span className="text-[10px]">{i + 1}.</span>
+              <span className="text-[10px]">{posLabel}</span>
               {p.name}
               <span className="font-bold">{formatScore(score)}</span>
               {isMine && <span className="text-[9px] font-bold">★</span>}
