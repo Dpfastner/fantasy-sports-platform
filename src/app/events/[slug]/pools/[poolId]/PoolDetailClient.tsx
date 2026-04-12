@@ -306,13 +306,16 @@ export function PoolDetailClient({
     return () => { supabase.removeChannel(channel) }
   }, [tournament.id])
 
-  // One-time stale check on page load: if games are live and data is old, trigger single refresh
+  // One-time stale check on page load: trigger refresh for live data.
+  // For bracket/pickem: fires when games are live/upcoming.
+  // For roster (golf): fires when tournament is active (no games to check).
   useEffect(() => {
     const hasLive = liveGames.some(g => g.status === 'live')
     const hasUpcoming = liveGames.some(g =>
       g.status === 'scheduled' && new Date(g.startsAt).getTime() - Date.now() < 15 * 60 * 1000
     )
-    if (!hasLive && !hasUpcoming) return
+    const isActiveRoster = effectiveFormat === 'roster' && tournament.status === 'active'
+    if (!hasLive && !hasUpcoming && !isActiveRoster) return
 
     fetch(`/api/events/live-scores?tournamentId=${tournament.id}`).catch(() => {})
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
