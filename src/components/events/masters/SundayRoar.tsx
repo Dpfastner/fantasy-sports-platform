@@ -68,14 +68,31 @@ export function useSundayRoar({ participants, allRosterPicks }: SundayRoarProps)
     const crowd = crowdRef.current
     if (!putt || !crowd) return
 
-    // Play putt, then immediately start crowd when putt ends
+    // Play putt, start crowd slightly before putt ends so they overlap
     putt.currentTime = 0
     crowd.currentTime = 0
-    crowd.volume = 0.5
+    crowd.volume = 0
 
     putt.play().catch(() => {})
-    putt.onended = () => {
+    // Start crowd 60% through the putt with a volume fade-in
+    const puttDuration = putt.duration || 1
+    setTimeout(() => {
       crowd.play().catch(() => {})
+      // Fade crowd in over 500ms
+      let fadeInVol = 0
+      const fadeIn = setInterval(() => {
+        fadeInVol += 0.1
+        if (fadeInVol >= 0.5) {
+          crowd.volume = 0.5
+          clearInterval(fadeIn)
+        } else {
+          crowd.volume = fadeInVol
+        }
+      }, 50)
+    }, puttDuration * 600) // start at 60% of putt duration
+
+    putt.onended = () => {
+      // putt finished, crowd is already playing
       // Fade out crowd after 4.5 seconds
       setTimeout(() => {
         let vol = 0.5
