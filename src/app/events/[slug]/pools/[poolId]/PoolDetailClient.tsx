@@ -35,7 +35,7 @@ import { Top10Leaderboard } from '@/components/events/masters/Top10Leaderboard'
 import { MastersLeaderboard } from '@/components/events/masters/MastersLeaderboard'
 import { Par3CurseBadge } from '@/components/events/masters/Par3CurseBadge'
 import { CutStatus } from '@/components/events/masters/CutStatus'
-import { useSundayRoar, RoarFeed } from '@/components/events/masters/SundayRoar'
+import { useSundayRoar, RoarFeed, RoarOverlay } from '@/components/events/masters/SundayRoar'
 
 interface Participant {
   id: string
@@ -748,12 +748,15 @@ export function PoolDetailClient({
 
           {/* Sunday Roar — live moment cards for eagles, birdie runs, big moves */}
           {isMasters && sundayRoar.moments.length > 0 && (
-            <RoarFeed
-              moments={sundayRoar.moments}
-              muted={sundayRoar.muted}
-              onToggleMute={sundayRoar.toggleMute}
-              onReplay={sundayRoar.playRoar}
-            />
+            <>
+              <RoarFeed
+                moments={sundayRoar.moments}
+                muted={sundayRoar.muted}
+                onToggleMute={sundayRoar.toggleMute}
+                onReplay={sundayRoar.playRoar}
+              />
+              <RoarOverlay moment={sundayRoar.overlayMoment} onDismiss={sundayRoar.dismissOverlay} />
+            </>
           )}
 
           {/* Cut Status: projected (R1-R2) or actual (R3+) */}

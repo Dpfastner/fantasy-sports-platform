@@ -89,11 +89,11 @@ export function useSundayRoar({ participants, allRosterPicks }: SundayRoarProps)
           crowd.volume = fadeInVol
         }
       }, 50)
-    }, puttDuration * 600) // start at 60% of putt duration
+    }, puttDuration * 650) // start at 65% of putt duration
 
     putt.onended = () => {
       // putt finished, crowd is already playing
-      // Fade out crowd after 4.5 seconds
+      // Fade out crowd after 6.5 seconds
       setTimeout(() => {
         let vol = 0.5
         const fade = setInterval(() => {
@@ -106,7 +106,7 @@ export function useSundayRoar({ participants, allRosterPicks }: SundayRoarProps)
             crowd.volume = vol
           }
         }, 100) // 10 steps over 1 second fade
-      }, 4500)
+      }, 6500)
     }
   }, [muted])
 
@@ -270,8 +270,8 @@ export function useSundayRoar({ participants, allRosterPicks }: SundayRoarProps)
       // Trigger ripple for the first moment's golfer
       setRippleGolferId(newMoments[0].golferName)
       setTimeout(() => setRippleGolferId(null), 2000)
-      // Play crowd roar sound
-      playRoar()
+      // Play crowd roar sound with overlay
+      playRoarWithOverlay(newMoments[0])
     }
   }, [participants, rosteredIds])
 
@@ -296,32 +296,128 @@ export function useSundayRoar({ participants, allRosterPicks }: SundayRoarProps)
 
   // TEMP TEST: fire a test roar 3 seconds after page load
   useEffect(() => {
+    const testMoment: RoarMoment = {
+      id: 'test-eagle-1',
+      golferName: 'Rory McIlroy',
+      type: 'eagle',
+      description: 'Rory McIlroy eagles hole 13 (Azalea). The roar was heard from the 8th tee.',
+      timestamp: Date.now(),
+      holeNumber: 13,
+    }
     const timer = setTimeout(() => {
-      const testMoment: RoarMoment = {
-        id: 'test-eagle-1',
-        golferName: 'Rory McIlroy',
-        type: 'eagle',
-        description: 'Rory McIlroy eagles hole 13 (Azalea). The roar was heard from the 8th tee.',
-        timestamp: Date.now(),
-        holeNumber: 13,
-      }
       setMoments(prev => [testMoment, ...prev])
-      playRoar()
+      playRoarWithOverlay(testMoment)
     }, 3000)
     return () => clearTimeout(timer)
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
-  return { moments, rippleGolferId, muted, toggleMute, playRoar }
+  const [overlayMoment, setOverlayMoment] = useState<RoarMoment | null>(null)
+
+  const playRoarWithOverlay = useCallback((moment?: RoarMoment) => {
+    if (moment) setOverlayMoment(moment)
+    playRoar()
+    // Auto-dismiss overlay when crowd fades (~7.5s total: putt + crowd + fade)
+    setTimeout(() => setOverlayMoment(null), 7500)
+  }, [playRoar])
+
+  const dismissOverlay = useCallback(() => {
+    setOverlayMoment(null)
+  }, [])
+
+  return { moments, rippleGolferId, muted, toggleMute, playRoar: playRoarWithOverlay, overlayMoment, dismissOverlay }
 }
 
 /**
  * Renders roar moments in the activity feed style.
  */
+/**
+ * Full-screen overlay that appears with the roar sound.
+ * Semi-transparent so the page is visible behind it.
+ */
+export function RoarOverlay({ moment, onDismiss }: {
+  moment: RoarMoment | null
+  onDismiss: () => void
+}) {
+  const [visible, setVisible] = useState(false)
+
+  useEffect(() => {
+    if (moment) {
+      requestAnimationFrame(() => setVisible(true))
+    } else {
+      setVisible(false)
+    }
+  }, [moment])
+
+  if (!moment) return null
+
+  return (
+    <div
+      className={`fixed inset-0 z-[90] flex items-center justify-center transition-opacity duration-500 ${
+        visible ? 'opacity-100' : 'opacity-0'
+      }`}
+      style={{ background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(2px)' }}
+      onClick={onDismiss}
+    >
+      <div className="text-center px-6 max-w-lg">
+        {/* Golden pulse ring */}
+        <div className="mx-auto mb-6 relative w-20 h-20">
+          <div
+            className="absolute inset-0 rounded-full"
+            style={{
+              background: 'radial-gradient(circle, rgba(201,168,76,0.3) 0%, transparent 70%)',
+              animation: 'roarPulse 1.5s ease-out infinite',
+            }}
+          />
+          <div className="absolute inset-2 rounded-full flex items-center justify-center" style={{ background: 'rgba(201,168,76,0.15)' }}>
+            <RoarIcon type={moment.type} />
+          </div>
+        </div>
+
+        <p
+          className="text-xl sm:text-2xl font-bold mb-2"
+          style={{
+            color: '#F5F0E8',
+            fontFamily: 'Georgia, serif',
+            textShadow: '0 0 30px rgba(201,168,76,.5)',
+          }}
+        >
+          {moment.description}
+        </p>
+
+        <div
+          className="text-[10px] uppercase tracking-[.2em] mt-4"
+          style={{ color: '#C9A84C', opacity: 0.8 }}
+        >
+          Sunday Roar
+          {moment.holeNumber && ` · Hole ${moment.holeNumber}`}
+        </div>
+
+        <div
+          className="mx-auto mt-4"
+          style={{
+            width: 60,
+            height: 1,
+            background: 'linear-gradient(to right, transparent, #C9A84C, transparent)',
+            opacity: 0.5,
+          }}
+        />
+      </div>
+
+      <style>{`
+        @keyframes roarPulse {
+          0% { transform: scale(1); opacity: 1; }
+          100% { transform: scale(2.5); opacity: 0; }
+        }
+      `}</style>
+    </div>
+  )
+}
+
 export function RoarFeed({ moments, muted, onToggleMute, onReplay }: {
   moments: RoarMoment[]
   muted: boolean
   onToggleMute: () => void
-  onReplay: () => void
+  onReplay: (moment: RoarMoment) => void
 }) {
   if (moments.length === 0) return null
 
@@ -350,7 +446,7 @@ export function RoarFeed({ moments, muted, onToggleMute, onReplay }: {
         <button
           key={m.id}
           type="button"
-          onClick={onReplay}
+          onClick={() => onReplay(m)}
           className="w-full flex items-start gap-3 px-4 py-3 rounded-lg border text-left cursor-pointer hover:brightness-110 transition-all"
           style={{
             background: 'rgba(201,168,76,0.08)',
