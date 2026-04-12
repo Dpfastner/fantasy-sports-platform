@@ -220,7 +220,7 @@ export function RosterLeaderboard({
         <div className="bg-surface rounded-lg border border-border sm:overflow-x-auto">
           <div className="sm:min-w-[42rem] w-full">
           {/* Header — mobile: rank + player + total only; desktop: full row */}
-          <div className="grid grid-cols-[2rem_1fr_3.5rem] sm:grid-cols-[2rem_minmax(12rem,18rem)_1fr_2.25rem_2.25rem_2.25rem_2.25rem_3rem_4rem] gap-2 px-3 py-2 bg-surface-inset border-b border-border text-xs text-text-muted uppercase tracking-wide">
+          <div className="grid grid-cols-[2rem_1fr_3.5rem] sm:grid-cols-[2rem_minmax(9rem,14rem)_1fr_2.25rem_2.25rem_2.25rem_2.25rem_3rem_4rem] gap-2 px-3 py-2 bg-surface-inset border-b border-border text-xs text-text-muted uppercase tracking-wide">
             <span className="text-right">#</span>
             <span>Player</span>
             <span className="hidden sm:block" aria-hidden />
@@ -251,7 +251,7 @@ export function RosterLeaderboard({
                 <button
                   type="button"
                   onClick={() => canExpand && setExpandedId(isExpanded ? null : member.id)}
-                  className={`w-full grid grid-cols-[2rem_1fr_3.5rem] sm:grid-cols-[2rem_minmax(12rem,18rem)_1fr_2.25rem_2.25rem_2.25rem_2.25rem_3rem_4rem] gap-2 px-3 py-2.5 border-b border-border-subtle text-left transition-colors ${
+                  className={`w-full grid grid-cols-[2rem_1fr_3.5rem] sm:grid-cols-[2rem_minmax(9rem,14rem)_1fr_2.25rem_2.25rem_2.25rem_2.25rem_3rem_4rem] gap-2 px-3 py-2.5 border-b border-border-subtle text-left transition-colors ${
                     canExpand ? 'hover:bg-surface-inset/50 cursor-pointer' : 'cursor-default'
                   } ${isExpanded ? 'bg-surface-inset/30' : ''}`}
                 >
@@ -344,63 +344,62 @@ export function RosterLeaderboard({
 
                 {/* Expanded roster breakdown — uses SAME grid as parent row for alignment */}
                 {isExpanded && breakdown && (
-                  <div className="bg-surface-inset/20 border-b border-border-subtle">
+                  <div className="bg-surface-inset/20 border-b border-border-subtle overflow-x-auto">
+                    <div className="min-w-[40rem]">
                     {hasScores && (
                       <div className="text-[10px] text-text-muted px-3 pt-2">
                         Best {countBest} of {rosterSize} · {breakdown.counting.length} counting · {breakdown.dropped.length} dropped
                       </div>
                     )}
                     {breakdown.counting.map(p => (
-                      <div key={p.id}>
-                        <div className="grid grid-cols-[2rem_minmax(12rem,18rem)_1fr_2.25rem_2.25rem_2.25rem_2.25rem_3rem_4rem] gap-2 px-3 py-1.5 items-center border-b border-border-subtle">
-                          {/* Tier (aligned with # column) */}
-                          <div className="text-center">
-                            <span className={`text-[10px] px-1 py-0.5 rounded ${TIER_COLORS[p.tier]?.bg || 'bg-surface-inset'} ${TIER_COLORS[p.tier]?.text || 'text-text-muted'}`}>
-                              {p.tier}
-                            </span>
-                          </div>
-                          {/* Name (aligned with player column) */}
-                          <div className="flex items-center gap-1.5 min-w-0 text-sm text-text-primary">
-                            {p.countryCode && (
-                              <img
-                                src={`https://flagcdn.com/24x18/${p.countryCode}.png`}
-                                alt={p.country || ''}
-                                width={18} height={14}
-                                className="inline-block shrink-0 rounded-[2px]"
-                                loading="lazy"
-                              />
-                            )}
-                            <span className="truncate">{p.name}</span>
-                            {p.status === 'cut' && <span className="text-[10px] text-danger-text shrink-0">CUT</span>}
-                          </div>
-                          {/* Holes (aligned with spacer/1fr column) */}
-                          <div className="overflow-x-auto">
-                            {p.holes && p.holes.length > 0 ? (
-                              <GolfHoleGrid
-                                holes={p.holes}
-                                currentHole={p.currentHole ?? null}
-                                thru={p.thru ?? null}
-                                currentRound={p.currentRound ?? null}
-                                hideLabel
-                              />
-                            ) : (
-                              <span className="text-xs text-text-muted italic">No hole data</span>
-                            )}
-                          </div>
-                          {/* R1-R4 (aligned with parent R1-R4 columns) */}
-                          <span className={`text-right text-xs tabular-nums ${p.r1ToPar != null && p.r1ToPar < 0 ? 'text-success-text' : p.r1ToPar != null && p.r1ToPar > 0 ? 'text-danger-text' : 'text-text-muted'}`}>{p.r1ToPar != null ? formatGolfScore(p.r1ToPar) : '—'}</span>
-                          <span className={`text-right text-xs tabular-nums ${p.r2ToPar != null && p.r2ToPar < 0 ? 'text-success-text' : p.r2ToPar != null && p.r2ToPar > 0 ? 'text-danger-text' : 'text-text-muted'}`}>{p.r2ToPar != null ? formatGolfScore(p.r2ToPar) : '—'}</span>
-                          <span className={`text-right text-xs tabular-nums ${p.status === 'cut' ? 'text-danger-text' : p.r3ToPar != null && p.r3ToPar < 0 ? 'text-success-text' : p.r3ToPar != null && p.r3ToPar > 0 ? 'text-danger-text' : 'text-text-muted'}`}>{p.status === 'cut' ? 'CUT' : p.r3ToPar != null ? formatGolfScore(p.r3ToPar) : '—'}</span>
-                          <span className={`text-right text-xs tabular-nums ${p.status === 'cut' ? 'text-danger-text' : p.r4ToPar != null && p.r4ToPar < 0 ? 'text-success-text' : p.r4ToPar != null && p.r4ToPar > 0 ? 'text-danger-text' : 'text-text-muted'}`}>{p.status === 'cut' ? 'CUT' : p.r4ToPar != null ? formatGolfScore(p.r4ToPar) : '—'}</span>
-                          {/* Total (aligned with parent Total column) */}
-                          <span className="text-right text-sm font-medium text-text-primary">{formatGolfScore(p.scoreToPar)}</span>
-                          {/* Empty (aligned with Submitted column) */}
-                          <span />
+                      <div key={p.id} className="grid grid-cols-[2rem_minmax(9rem,14rem)_1fr_2.25rem_2.25rem_2.25rem_2.25rem_3rem_4rem] gap-2 px-3 py-1.5 items-center border-b border-border-subtle">
+                        {/* Tier */}
+                        <div className="text-center">
+                          <span className={`text-[10px] px-1 py-0.5 rounded ${TIER_COLORS[p.tier]?.bg || 'bg-surface-inset'} ${TIER_COLORS[p.tier]?.text || 'text-text-muted'}`}>
+                            {p.tier}
+                          </span>
                         </div>
+                        {/* Name */}
+                        <div className="flex items-center gap-1.5 min-w-0 text-sm text-text-primary">
+                          {p.countryCode && (
+                            <img
+                              src={`https://flagcdn.com/24x18/${p.countryCode}.png`}
+                              alt={p.country || ''}
+                              width={18} height={14}
+                              className="inline-block shrink-0 rounded-[2px]"
+                              loading="lazy"
+                            />
+                          )}
+                          <span className="truncate">{p.name}</span>
+                          {p.status === 'cut' && <span className="text-[10px] text-danger-text shrink-0">CUT</span>}
+                        </div>
+                        {/* Holes — no inner scroll, outer container handles it */}
+                        <div>
+                          {p.holes && p.holes.length > 0 ? (
+                            <GolfHoleGrid
+                              holes={p.holes}
+                              currentHole={p.currentHole ?? null}
+                              thru={p.thru ?? null}
+                              currentRound={p.currentRound ?? null}
+                              hideLabel
+                            />
+                          ) : (
+                            <span className="text-xs text-text-muted italic">No hole data</span>
+                          )}
+                        </div>
+                        {/* R1-R4 */}
+                        <span className={`text-right text-xs tabular-nums ${p.r1ToPar != null && p.r1ToPar < 0 ? 'text-success-text' : p.r1ToPar != null && p.r1ToPar > 0 ? 'text-danger-text' : 'text-text-muted'}`}>{p.r1ToPar != null ? formatGolfScore(p.r1ToPar) : '—'}</span>
+                        <span className={`text-right text-xs tabular-nums ${p.r2ToPar != null && p.r2ToPar < 0 ? 'text-success-text' : p.r2ToPar != null && p.r2ToPar > 0 ? 'text-danger-text' : 'text-text-muted'}`}>{p.r2ToPar != null ? formatGolfScore(p.r2ToPar) : '—'}</span>
+                        <span className={`text-right text-xs tabular-nums ${p.status === 'cut' ? 'text-danger-text' : p.r3ToPar != null && p.r3ToPar < 0 ? 'text-success-text' : p.r3ToPar != null && p.r3ToPar > 0 ? 'text-danger-text' : 'text-text-muted'}`}>{p.status === 'cut' ? 'CUT' : p.r3ToPar != null ? formatGolfScore(p.r3ToPar) : '—'}</span>
+                        <span className={`text-right text-xs tabular-nums ${p.status === 'cut' ? 'text-danger-text' : p.r4ToPar != null && p.r4ToPar < 0 ? 'text-success-text' : p.r4ToPar != null && p.r4ToPar > 0 ? 'text-danger-text' : 'text-text-muted'}`}>{p.status === 'cut' ? 'CUT' : p.r4ToPar != null ? formatGolfScore(p.r4ToPar) : '—'}</span>
+                        {/* Total */}
+                        <span className="text-right text-sm font-medium text-text-primary">{formatGolfScore(p.scoreToPar)}</span>
+                        {/* Submitted placeholder */}
+                        <span />
                       </div>
                     ))}
                     {breakdown.dropped.map(p => (
-                      <div key={p.id} className="grid grid-cols-[2rem_minmax(12rem,18rem)_1fr_2.25rem_2.25rem_2.25rem_2.25rem_3rem_4rem] gap-2 px-3 py-1 items-center border-b border-border-subtle opacity-50">
+                      <div key={p.id} className="grid grid-cols-[2rem_minmax(9rem,14rem)_1fr_2.25rem_2.25rem_2.25rem_2.25rem_3rem_4rem] gap-2 px-3 py-1 items-center border-b border-border-subtle opacity-50">
                         <div className="text-center">
                           <span className={`text-[10px] px-1 py-0.5 rounded ${TIER_COLORS[p.tier]?.bg || 'bg-surface-inset'} ${TIER_COLORS[p.tier]?.text || 'text-text-muted'}`}>
                             {p.tier}
@@ -422,6 +421,7 @@ export function RosterLeaderboard({
                         <span />
                       </div>
                     ))}
+                    </div>
                   </div>
                 )}
               </div>
