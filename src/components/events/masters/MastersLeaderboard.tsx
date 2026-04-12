@@ -267,7 +267,7 @@ export function MastersLeaderboard({
               type="button"
               onClick={onShowAll}
               style={{
-                width: '100%', minWidth: 640, padding: '10px 0', textAlign: 'center',
+                width: '100%', padding: '10px 0', textAlign: 'center',
                 fontSize: 13, fontWeight: 700, color: '#fff', background: '#1a5c38',
                 border: 'none', borderTop: bdr2, cursor: 'pointer',
                 fontFamily: F, letterSpacing: '.06em',

@@ -92,22 +92,7 @@ export function useSundayRoar({ participants, allRosterPicks }: SundayRoarProps)
     }, puttDuration * 650) // start at 65% of putt duration
 
     putt.onended = () => {
-      // putt finished, crowd is already playing
-      // Fade out crowd so audio ends at 7.5s total (matching overlay)
-      // Crowd starts ~0.65s in. Fade starts at 4s, takes 2.5s = done at ~7.15s total
-      setTimeout(() => {
-        let vol = 0.5
-        const fade = setInterval(() => {
-          vol -= 0.02
-          if (vol <= 0) {
-            crowd.pause()
-            crowd.volume = 0.5
-            clearInterval(fade)
-          } else {
-            crowd.volume = vol
-          }
-        }, 100) // 25 steps × 100ms = 2.5s fade
-      }, 4000)
+      // putt finished, crowd is already playing — overlay auto-dismiss stops it
     }
   }, [muted])
 
@@ -317,12 +302,19 @@ export function useSundayRoar({ participants, allRosterPicks }: SundayRoarProps)
   const playRoarWithOverlay = useCallback((moment?: RoarMoment) => {
     if (moment) setOverlayMoment(moment)
     playRoar()
-    // Auto-dismiss overlay (~7.5s total)
-    setTimeout(() => setOverlayMoment(null), 7500)
+    // Auto-dismiss overlay (~7.5s total) — also stops audio
+    setTimeout(() => {
+      setOverlayMoment(null)
+      if (puttRef.current) { puttRef.current.pause(); puttRef.current.currentTime = 0 }
+      if (crowdRef.current) { crowdRef.current.pause(); crowdRef.current.currentTime = 0; crowdRef.current.volume = 0.5 }
+    }, 7500)
   }, [playRoar])
 
   const dismissOverlay = useCallback(() => {
     setOverlayMoment(null)
+    // Stop audio when overlay is dismissed
+    if (puttRef.current) { puttRef.current.pause(); puttRef.current.currentTime = 0 }
+    if (crowdRef.current) { crowdRef.current.pause(); crowdRef.current.currentTime = 0; crowdRef.current.volume = 0.5 }
   }, [])
 
   return { moments, rippleGolferId, muted, toggleMute, playRoar: playRoarWithOverlay, overlayMoment, dismissOverlay }

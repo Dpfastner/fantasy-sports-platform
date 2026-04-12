@@ -58,6 +58,7 @@ export function CutCountdown({
 }: CutCountdownProps) {
   const cutTarget = new Date(cutTime).getTime()
   const champTarget = new Date(championTime).getTime()
+  const [dismissed, setDismissed] = useState(false)
 
   const [cutTimeLeft, setCutTimeLeft] = useState<TimeLeft | null>(() => calculateTimeLeft(cutTarget))
   const [champTimeLeft, setChampTimeLeft] = useState<TimeLeft | null>(() => calculateTimeLeft(champTarget))
@@ -125,8 +126,19 @@ export function CutCountdown({
   const showCutCountdown = !hasCut && !cutCountdownExpired
   const showChampionCountdown = (hasCut || cutCountdownExpired) && champTimeLeft
 
+  if (dismissed) return null
+
   return (
-    <div className="space-y-3">
+    <div className="space-y-3 relative">
+      <button
+        onClick={() => setDismissed(true)}
+        className="absolute top-3 right-3 text-[#8B7355] hover:text-[#1a1a1a] transition-colors z-10"
+        title="Dismiss"
+      >
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      </button>
       {/* Cut Countdown (pre-cut, before Friday) */}
       {showCutCountdown && cutTimeLeft && (
         <div className="bg-[#FAF6EE] border border-[#E8C96A]/40 rounded-lg p-4">
@@ -154,34 +166,38 @@ export function CutCountdown({
         </div>
       )}
 
-      {/* Post-cut survival banner */}
-      {hasCut && cutResults && (
-        <div className="bg-[#FAF6EE] border border-[#E8C96A]/40 rounded-lg p-4">
-          <div className="text-[10px] uppercase tracking-[.2em] text-[#8B7355] mb-2">
-            The Cut Has Been Made
+      {/* R3: Post-cut survival banner / R4: Your golfers in the top 10 */}
+      {hasCut && currentRound && currentRound >= 3 && (
+        currentRound >= 4 ? (
+          <YourTop10Banner participants={participants} rosteredIds={rosteredIds} />
+        ) : cutResults ? (
+          <div className="bg-[#FAF6EE] border border-[#E8C96A]/40 rounded-lg p-4">
+            <div className="text-[10px] uppercase tracking-[.2em] text-[#8B7355] mb-2">
+              The Cut Has Been Made
+            </div>
+            <div className="text-base font-bold text-[#1a1a1a] mb-2">
+              {cutResults.survived.length} of {cutResults.total} rostered picks survived
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {cutResults.survived.map(g => (
+                <span key={g.id} className="inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-full" style={{ background: 'rgba(22,101,52,0.12)', color: '#166534' }}>
+                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                  </svg>
+                  {g.name}
+                </span>
+              ))}
+              {cutResults.cut.map(g => (
+                <span key={g.id} className="inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-full" style={{ background: 'rgba(185,28,28,0.1)', color: '#991B1B' }}>
+                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                  {g.name}
+                </span>
+              ))}
+            </div>
           </div>
-          <div className="text-base font-bold text-[#1a1a1a] mb-2">
-            {cutResults.survived.length} of {cutResults.total} rostered picks survived
-          </div>
-          <div className="flex flex-wrap gap-2">
-            {cutResults.survived.map(g => (
-              <span key={g.id} className="inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-full" style={{ background: 'rgba(22,101,52,0.12)', color: '#166534' }}>
-                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
-                </svg>
-                {g.name}
-              </span>
-            ))}
-            {cutResults.cut.map(g => (
-              <span key={g.id} className="inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-full" style={{ background: 'rgba(185,28,28,0.1)', color: '#991B1B' }}>
-                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-                {g.name}
-              </span>
-            ))}
-          </div>
-        </div>
+        ) : null
       )}
 
       {/* Champion Countdown (post-cut or when cut countdown expired) */}
@@ -229,4 +245,58 @@ function TimeUnit({ value, label }: { value: number; label: string }) {
 
 function TimeDivider() {
   return <span className="text-xl sm:text-2xl font-bold text-[#C9A84C]/50">:</span>
+}
+
+function formatScore(n: number): string {
+  if (n === 0) return 'E'
+  return n > 0 ? `+${n}` : String(n)
+}
+
+function YourTop10Banner({ participants, rosteredIds }: { participants: Participant[]; rosteredIds: Set<string> }) {
+  const top10 = useMemo(() => {
+    return participants
+      .filter(p => {
+        const meta = (p.metadata || {}) as Record<string, unknown>
+        return meta.status !== 'cut' && meta.status !== 'wd' && meta.status !== 'dq' && meta.score_to_par != null
+      })
+      .sort((a, b) => ((a.metadata as Record<string, unknown>)?.score_to_par as number) - ((b.metadata as Record<string, unknown>)?.score_to_par as number))
+      .slice(0, 10)
+  }, [participants])
+
+  const myInTop10 = top10.filter(p => rosteredIds.has(p.id))
+
+  return (
+    <div className="bg-[#FAF6EE] border border-[#E8C96A]/40 rounded-lg p-4">
+      <div className="text-[10px] uppercase tracking-[.2em] text-[#8B7355] mb-2">
+        Championship Sunday
+      </div>
+      <div className="text-base font-bold text-[#1a1a1a] mb-3">
+        {myInTop10.length > 0
+          ? `You have ${myInTop10.length} golfer${myInTop10.length !== 1 ? 's' : ''} in the top 10`
+          : 'None of your golfers are in the top 10 yet'}
+      </div>
+      <div className="flex flex-wrap gap-2">
+        {top10.map((p, i) => {
+          const meta = (p.metadata || {}) as Record<string, unknown>
+          const score = meta.score_to_par as number
+          const isMine = rosteredIds.has(p.id)
+          return (
+            <span
+              key={p.id}
+              className="inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-full"
+              style={isMine
+                ? { background: 'rgba(22,101,52,0.12)', color: '#166534' }
+                : { background: 'rgba(0,0,0,0.05)', color: '#8B7355' }
+              }
+            >
+              <span className="text-[10px]">{i + 1}.</span>
+              {p.name}
+              <span className="font-bold">{formatScore(score)}</span>
+              {isMine && <span className="text-[9px] font-bold">★</span>}
+            </span>
+          )
+        })}
+      </div>
+    </div>
+  )
 }

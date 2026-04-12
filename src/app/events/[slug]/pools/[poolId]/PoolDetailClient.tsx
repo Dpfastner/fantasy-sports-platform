@@ -36,7 +36,6 @@ import { MastersLeaderboard } from '@/components/events/masters/MastersLeaderboa
 import { Par3CurseBadge } from '@/components/events/masters/Par3CurseBadge'
 import { CutStatus } from '@/components/events/masters/CutStatus'
 import { useSundayRoar, RoarFeed, RoarOverlay } from '@/components/events/masters/SundayRoar'
-import { RoundInsight } from '@/components/events/masters/RoundInsight'
 
 interface Participant {
   id: string
@@ -717,9 +716,6 @@ export function PoolDetailClient({
           )}
 
           {/* Rivalry Board — user standings */}
-          <div>
-            <h3 className="text-sm font-semibold text-text-primary mb-2">Rivalry Board</h3>
-          </div>
           <ErrorBoundary sectionName="Rivalry Board">
           {effectiveFormat === 'roster' ? (
             <RosterLeaderboard
@@ -759,15 +755,7 @@ export function PoolDetailClient({
             </>
           )}
 
-          {/* Round Insight: R1 contenders, R2 projected cut, R3 the cut, R4 your top 10 */}
-          {isMasters && effectiveFormat === 'roster' && (
-            <RoundInsight
-              participants={liveParticipants}
-              myRosterPickIds={myRosterPickIds}
-              cutRule={cutRule}
-            />
-          )}
-          {/* Cut Status: R2 projected cut + R3 actual cut (RoundInsight returns null for R2/R3, CutStatus handles them) */}
+          {/* Cut Status: R2 projected cut, R3 the cut, R4 hidden (CutCountdown handles top 10) */}
           {effectiveFormat === 'roster' && tournament.sport === 'golf' && cutRule && (
             isMasters
               ? <CutStatus participants={liveParticipants} cutRule={cutRule} />

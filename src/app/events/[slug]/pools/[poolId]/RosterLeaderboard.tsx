@@ -219,6 +219,10 @@ export function RosterLeaderboard({
       ) : (
         <div className="bg-surface rounded-lg border border-border sm:overflow-x-auto">
           <div className="sm:min-w-[42rem] w-full">
+          {/* Section title */}
+          <div className="px-3 pt-3 pb-1">
+            <h3 className="text-sm font-semibold text-text-primary">Rivalry Board</h3>
+          </div>
           {/* Header — mobile: rank + player + total only; desktop: full row */}
           <div className="grid grid-cols-[2rem_1fr_3.5rem] sm:grid-cols-[2rem_minmax(9rem,14rem)_1fr_2.25rem_2.25rem_2.25rem_2.25rem_3rem_4rem] gap-2 px-3 py-2 bg-surface-inset border-b border-border text-xs text-text-muted uppercase tracking-wide">
             <span className="text-right">#</span>
