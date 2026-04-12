@@ -16,6 +16,14 @@ interface CutCountdownProps {
   cutTime?: string
   /** ISO timestamp of the champion (end of Round 4). */
   championTime?: string
+  /** Tournament status — when 'completed', show champion banner */
+  tournamentStatus?: string
+  /** Winner name for champion banner */
+  winnerName?: string | null
+  /** Winner score for champion banner */
+  winnerScore?: number | null
+  /** Callback to replay the Green Jacket ceremony */
+  onReplayCeremony?: () => void
 }
 
 interface TimeLeft {
@@ -55,6 +63,10 @@ export function CutCountdown({
   myRosterPickIds,
   cutTime = MASTERS_2026_CUT_TIME,
   championTime = MASTERS_2026_CHAMPION_TIME,
+  tournamentStatus,
+  winnerName,
+  winnerScore,
+  onReplayCeremony,
 }: CutCountdownProps) {
   const cutTarget = new Date(cutTime).getTime()
   const champTarget = new Date(championTime).getTime()
@@ -125,6 +137,41 @@ export function CutCountdown({
   // Decide which countdown to show
   const showCutCountdown = !hasCut && !cutCountdownExpired
   const showChampionCountdown = (hasCut || cutCountdownExpired) && champTimeLeft
+
+  // Tournament completed — show champion banner instead of countdowns
+  if (tournamentStatus === 'completed' && winnerName) {
+    return (
+      <div className="bg-[#FAF6EE] border border-[#E8C96A]/40 rounded-lg p-5">
+        <div className="flex items-center justify-between gap-4">
+          <div>
+            <div className="text-[10px] uppercase tracking-[.2em] text-[#8B7355] mb-1">
+              Masters 2026 Champion
+            </div>
+            <div className="text-xl font-bold text-[#1a1a1a]" style={{ fontFamily: 'Georgia, serif' }}>
+              {winnerName}
+            </div>
+            {winnerScore != null && (
+              <div className="text-sm text-[#1a5c38] font-semibold mt-0.5">
+                {winnerScore === 0 ? 'E' : winnerScore > 0 ? `+${winnerScore}` : String(winnerScore)}
+              </div>
+            )}
+          </div>
+          {onReplayCeremony && (
+            <button
+              onClick={onReplayCeremony}
+              className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-colors"
+              style={{ background: '#1a5c38', color: '#fff' }}
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.348a1.125 1.125 0 010 1.971l-11.54 6.347a1.125 1.125 0 01-1.667-.985V5.653z" />
+              </svg>
+              Replay Ceremony
+            </button>
+          )}
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-3">

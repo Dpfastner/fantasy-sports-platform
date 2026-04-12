@@ -695,6 +695,13 @@ export function PoolDetailClient({
               participants={liveParticipants}
               allRosterPicks={allRosterPicks}
               myRosterPickIds={myRosterPickIds}
+              tournamentStatus={tournament.status}
+              winnerName={mastersWinner?.entryName || mastersWinner?.displayName || null}
+              winnerScore={mastersWinner?.score ?? null}
+              onReplayCeremony={() => {
+                if (typeof window !== 'undefined') sessionStorage.removeItem('rivyls-green-jacket-shown')
+                window.location.reload()
+              }}
             />
           )}
 
