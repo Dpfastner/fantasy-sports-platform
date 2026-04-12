@@ -111,16 +111,20 @@ export async function autoGrantSupporter(userId: string) {
 export async function autoGrantChampionBadges(tournamentId: string) {
   const admin = createAdminClient()
 
-  // Verify ALL games in tournament are completed
+  // Verify tournament is ready for champion badges.
+  // For bracket/pickem: all games must be completed.
+  // For roster (golf): no games exist — check tournament status instead.
   const { data: games } = await admin
     .from('event_games')
     .select('id, status, winner_id, round')
     .eq('tournament_id', tournamentId)
 
-  if (!games?.length) return
-
-  const allCompleted = games.every(g => g.status === 'completed')
-  if (!allCompleted) return
+  if (games && games.length > 0) {
+    // Bracket/pickem: all games must be completed
+    const allCompleted = games.every(g => g.status === 'completed')
+    if (!allCompleted) return
+  }
+  // Roster pools with no games proceed — tournament status check happens via caller
 
   // Get tournament info
   const { data: tournament } = await admin
@@ -134,18 +138,22 @@ export async function autoGrantChampionBadges(tournamentId: string) {
   // Get all pools for this tournament
   const { data: pools } = await admin
     .from('event_pools')
-    .select('id, name')
+    .select('id, name, game_type')
     .eq('tournament_id', tournamentId)
 
   if (!pools?.length) return
 
-  // For each pool, find the winner (highest total_points)
+  // For each pool, find the winner
   for (const pool of pools) {
+    // Roster (golf): lowest score wins. Bracket/pickem: highest score wins.
+    const isRoster = pool.game_type === 'roster'
+    const sortAsc = isRoster // true = ascending (lowest first for golf)
+
     const { data: topEntry } = await admin
       .from('event_entries')
       .select('id, user_id, total_points, display_name')
       .eq('pool_id', pool.id)
-      .order('total_points', { ascending: false })
+      .order('total_points', { ascending: sortAsc })
       .limit(1)
       .single()
 
@@ -156,7 +164,7 @@ export async function autoGrantChampionBadges(tournamentId: string) {
       .from('event_entries')
       .select('total_points')
       .eq('pool_id', pool.id)
-      .order('total_points', { ascending: false })
+      .order('total_points', { ascending: sortAsc })
       .limit(2)
 
     if (entries && entries.length >= 2 && entries[0].total_points === entries[1].total_points) {

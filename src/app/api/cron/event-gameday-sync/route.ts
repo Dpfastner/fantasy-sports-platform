@@ -797,7 +797,15 @@ export async function GET(request: Request) {
           .eq('tournament_id', tournamentId)
           .eq('status', 'completed')
 
-        if (totalGames && completedGames && totalGames === completedGames) {
+        // Trigger champion badges when all games completed OR for roster pools
+        // (which have no games) when tournament status is 'completed'
+        const allGamesCompleted = totalGames && completedGames && totalGames === completedGames
+        const { data: tournamentStatus } = await admin.from('event_tournaments')
+          .select('status').eq('id', tournamentId).single()
+        const isCompletedRosterPool = (!totalGames || totalGames === 0) &&
+          tournamentStatus?.status === 'completed'
+
+        if (allGamesCompleted || isCompletedRosterPool) {
           try {
             const { autoGrantChampionBadges } = await import('@/lib/badges-auto')
             await autoGrantChampionBadges(tournamentId)
