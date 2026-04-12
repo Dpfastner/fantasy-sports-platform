@@ -442,8 +442,6 @@ export function RoarFeed({ moments, muted, onToggleMute, onReplay }: {
   onToggleMute: () => void
   onReplay: (moment: RoarMoment) => void
 }) {
-  if (moments.length === 0) return null
-
   return (
     <div className="bg-surface rounded-lg border border-border p-4 space-y-2">
       <div className="flex items-center justify-between">
@@ -463,6 +461,11 @@ export function RoarFeed({ moments, muted, onToggleMute, onReplay }: {
           {muted ? 'Muted' : 'Sound on'}
         </button>
       </div>
+      {moments.length === 0 && (
+        <p className="text-xs text-text-muted italic py-2">
+          Listening for eagles, birdie runs, and big moves on Championship Sunday...
+        </p>
+      )}
       {moments.map(m => (
         <button
           key={m.id}

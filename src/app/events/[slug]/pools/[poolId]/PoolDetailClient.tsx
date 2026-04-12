@@ -745,16 +745,14 @@ export function PoolDetailClient({
             <BiggestMovers participants={liveParticipants} />
           )}
 
-          {/* Sunday Roar — live moment cards for eagles, birdie runs, big moves */}
-          {isMasters && sundayRoar.moments.length > 0 && (
-            <>
-              <RoarFeed
-                moments={sundayRoar.moments}
-                muted={sundayRoar.muted}
-                onToggleMute={sundayRoar.toggleMute}
-                onReplay={sundayRoar.playRoar}
-              />
-            </>
+          {/* Sunday Roar — always visible during R4 */}
+          {isMasters && (
+            <RoarFeed
+              moments={sundayRoar.moments}
+              muted={sundayRoar.muted}
+              onToggleMute={sundayRoar.toggleMute}
+              onReplay={sundayRoar.playRoar}
+            />
           )}
 
           {/* Cut Status: R2 projected cut, R3 the cut, R4 hidden (CutCountdown handles top 10) */}
