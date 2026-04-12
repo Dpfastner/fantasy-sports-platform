@@ -752,6 +752,7 @@ export function PoolDetailClient({
               moments={sundayRoar.moments}
               muted={sundayRoar.muted}
               onToggleMute={sundayRoar.toggleMute}
+              onReplay={sundayRoar.playRoar}
             />
           )}
 

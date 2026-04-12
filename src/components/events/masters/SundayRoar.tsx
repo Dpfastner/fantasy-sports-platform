@@ -294,16 +294,17 @@ export function useSundayRoar({ participants, allRosterPicks }: SundayRoarProps)
     return () => clearTimeout(timer)
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
-  return { moments, rippleGolferId, muted, toggleMute }
+  return { moments, rippleGolferId, muted, toggleMute, playRoar }
 }
 
 /**
  * Renders roar moments in the activity feed style.
  */
-export function RoarFeed({ moments, muted, onToggleMute }: {
+export function RoarFeed({ moments, muted, onToggleMute, onReplay }: {
   moments: RoarMoment[]
   muted: boolean
   onToggleMute: () => void
+  onReplay: () => void
 }) {
   if (moments.length === 0) return null
 
@@ -329,14 +330,17 @@ export function RoarFeed({ moments, muted, onToggleMute }: {
         </button>
       </div>
       {moments.map(m => (
-        <div
+        <button
           key={m.id}
-          className="flex items-start gap-3 px-4 py-3 rounded-lg border"
+          type="button"
+          onClick={onReplay}
+          className="w-full flex items-start gap-3 px-4 py-3 rounded-lg border text-left cursor-pointer hover:brightness-110 transition-all"
           style={{
             background: 'rgba(201,168,76,0.08)',
             borderColor: 'rgba(201,168,76,0.25)',
             animation: 'fadeIn 0.5s ease-out',
           }}
+          title="Click to replay the roar"
         >
           <div className="shrink-0 mt-0.5">
             <RoarIcon type={m.type} />
@@ -346,9 +350,11 @@ export function RoarFeed({ moments, muted, onToggleMute }: {
             <p className="text-[10px] text-text-muted mt-1">
               {formatTimeAgo(m.timestamp)}
               {m.holeNumber && ` · Hole ${m.holeNumber}`}
+              {' · '}
+              <span className="text-[#C9A84C]">tap to replay</span>
             </p>
           </div>
-        </div>
+        </button>
       ))}
       <style>{`@keyframes fadeIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }`}</style>
     </div>
