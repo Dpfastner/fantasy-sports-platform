@@ -125,7 +125,7 @@ export async function uploadBadgeIcon(
   const auth = await verifyAdmin()
   if ('error' in auth) return { error: auth.error }
 
-  const file = formData.get('icon') as File
+  const file = formData.get('file') as File
   if (!file) return { error: 'No file provided' }
 
   // Validate file type
