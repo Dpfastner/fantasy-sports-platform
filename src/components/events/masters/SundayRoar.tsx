@@ -251,7 +251,7 @@ export function useSundayRoar({ participants, allRosterPicks, poolId, tournament
       if (scoreToPar != null && prev?.scoreToPar != null) {
         const improvement = prev.scoreToPar - scoreToPar
         if (improvement >= 3) {
-          const momentId = `${p.id}-swing-${currentRound}-${improvement}`
+          const momentId = `${p.id}-swing-${currentRound}`
           if (!seenMomentsRef.current.has(momentId)) {
             seenMomentsRef.current.add(momentId)
             newMoments.push({
