@@ -284,8 +284,7 @@ function ChampionBanner({ winner, participants, allRosterPicks, onReplayCeremony
 
   const fmtRound = (r: number | null) => {
     if (r == null) return '—'
-    const toPar = r - 72
-    return toPar === 0 ? 'E' : toPar > 0 ? `+${toPar}` : String(toPar)
+    return r === 0 ? 'E' : r > 0 ? `+${r}` : String(r)
   }
 
   const fmtTotal = (n: number) => n === 0 ? 'E' : n > 0 ? `+${n}` : String(n)
@@ -355,13 +354,13 @@ function ChampionBanner({ winner, participants, allRosterPicks, onReplayCeremony
         <div className="flex items-center gap-4 mt-3 text-sm">
           <div className="flex items-center gap-3 tabular-nums">
             <span className="text-text-muted text-xs">R1</span>
-            <span className={`font-medium ${(winner.r1 || 72) < 72 ? 'text-[#1a5c38]' : (winner.r1 || 72) > 72 ? 'text-[#CC0000]' : 'text-[#1a1a1a]'}`}>{fmtRound(winner.r1)}</span>
+            <span className={`font-medium ${(winner.r1 ?? 0) < 0 ? 'text-[#1a5c38]' : (winner.r1 ?? 0) > 0 ? 'text-[#CC0000]' : 'text-[#1a1a1a]'}`}>{fmtRound(winner.r1)}</span>
             <span className="text-text-muted text-xs">R2</span>
-            <span className={`font-medium ${(winner.r2 || 72) < 72 ? 'text-[#1a5c38]' : (winner.r2 || 72) > 72 ? 'text-[#CC0000]' : 'text-[#1a1a1a]'}`}>{fmtRound(winner.r2)}</span>
+            <span className={`font-medium ${(winner.r2 ?? 0) < 0 ? 'text-[#1a5c38]' : (winner.r2 ?? 0) > 0 ? 'text-[#CC0000]' : 'text-[#1a1a1a]'}`}>{fmtRound(winner.r2)}</span>
             <span className="text-text-muted text-xs">R3</span>
-            <span className={`font-medium ${(winner.r3 || 72) < 72 ? 'text-[#1a5c38]' : (winner.r3 || 72) > 72 ? 'text-[#CC0000]' : 'text-[#1a1a1a]'}`}>{fmtRound(winner.r3)}</span>
+            <span className={`font-medium ${(winner.r3 ?? 0) < 0 ? 'text-[#1a5c38]' : (winner.r3 ?? 0) > 0 ? 'text-[#CC0000]' : 'text-[#1a1a1a]'}`}>{fmtRound(winner.r3)}</span>
             <span className="text-text-muted text-xs">R4</span>
-            <span className={`font-medium ${(winner.r4 || 72) < 72 ? 'text-[#1a5c38]' : (winner.r4 || 72) > 72 ? 'text-[#CC0000]' : 'text-[#1a1a1a]'}`}>{fmtRound(winner.r4)}</span>
+            <span className={`font-medium ${(winner.r4 ?? 0) < 0 ? 'text-[#1a5c38]' : (winner.r4 ?? 0) > 0 ? 'text-[#CC0000]' : 'text-[#1a1a1a]'}`}>{fmtRound(winner.r4)}</span>
           </div>
         </div>
 
@@ -394,10 +393,12 @@ function ChampionBanner({ winner, participants, allRosterPicks, onReplayCeremony
       {/* Expanded roster */}
       {expanded && (
         <div className="border-t border-[#E8C96A]/30 px-5 py-3">
-          <div className="text-[10px] uppercase tracking-wider text-[#8B7355] mb-2">Winning Roster</div>
+          <div className="text-[10px] uppercase tracking-wider text-[#8B7355] mb-2">Winning Roster · Best 5 of 7</div>
           <div className="space-y-1.5">
-            {rosterGolfers.map(g => (
-              <div key={g.id} className={`flex items-center justify-between gap-2 text-sm py-1 ${g.status === 'cut' ? 'opacity-40' : ''}`}>
+            {rosterGolfers.map((g, i) => {
+              const isDropped = i >= 5
+              return (
+              <div key={g.id} className={`flex items-center justify-between gap-2 text-sm py-1 ${g.status === 'cut' || isDropped ? 'opacity-40' : ''}`}>
                 <div className="flex items-center gap-1.5 min-w-0 flex-1">
                   {g.countryCode && (
                     <img src={`https://flagcdn.com/24x18/${g.countryCode}.png`} alt="" width={18} height={14} className="shrink-0 rounded-[2px]" loading="lazy" />
@@ -413,7 +414,8 @@ function ChampionBanner({ winner, participants, allRosterPicks, onReplayCeremony
                   <span className="font-medium text-[#1a1a1a] w-8 text-right">{g.scoreToPar != null ? fmtTotal(g.scoreToPar) : '—'}</span>
                 </div>
               </div>
-            ))}
+              )
+            })}
           </div>
         </div>
       )}
