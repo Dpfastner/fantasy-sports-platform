@@ -29,6 +29,8 @@ interface CutCountdownProps {
     r3: number | null
     r4: number | null
   } | null
+  /** Badge icon URL for the champion badge */
+  badgeIconUrl?: string | null
   /** Callback to replay the Green Jacket ceremony */
   onReplayCeremony?: () => void
 }
@@ -72,6 +74,7 @@ export function CutCountdown({
   championTime = MASTERS_2026_CHAMPION_TIME,
   tournamentStatus,
   winner,
+  badgeIconUrl,
   onReplayCeremony,
 }: CutCountdownProps) {
   const cutTarget = new Date(cutTime).getTime()
@@ -146,7 +149,7 @@ export function CutCountdown({
 
   // Tournament completed — show champion banner
   if (tournamentStatus === 'completed' && winner) {
-    return <ChampionBanner winner={winner} participants={participants} allRosterPicks={allRosterPicks} onReplayCeremony={onReplayCeremony} />
+    return <ChampionBanner winner={winner} participants={participants} allRosterPicks={allRosterPicks} onReplayCeremony={onReplayCeremony} badgeIconUrl={badgeIconUrl} />
   }
 
   return (
@@ -270,11 +273,12 @@ function TimeDivider() {
   return <span className="text-xl sm:text-2xl font-bold text-[#C9A84C]/50">:</span>
 }
 
-function ChampionBanner({ winner, participants, allRosterPicks, onReplayCeremony }: {
+function ChampionBanner({ winner, participants, allRosterPicks, onReplayCeremony, badgeIconUrl }: {
   winner: { name: string; userId: string | null; score: number; entryId: string; r1: number | null; r2: number | null; r3: number | null; r4: number | null }
   participants: Participant[]
   allRosterPicks?: Record<string, string[]>
   onReplayCeremony?: () => void
+  badgeIconUrl?: string | null
 }) {
   const [expanded, setExpanded] = useState(false)
 
@@ -315,11 +319,15 @@ function ChampionBanner({ winner, participants, allRosterPicks, onReplayCeremony
         <div className="flex items-start justify-between gap-4">
           <div className="flex items-center gap-3">
             {/* Green Jacket badge icon */}
-            <div className="w-10 h-10 rounded-full flex items-center justify-center shrink-0" style={{ background: '#1a5c38' }}>
-              <svg viewBox="0 0 24 24" fill="#C9A84C" className="w-5 h-5">
-                <path d="M12 2L9 9H2l6 4.5L5.5 22 12 17l6.5 5L16 13.5 22 9h-7z" />
-              </svg>
-            </div>
+            {badgeIconUrl ? (
+              <img src={badgeIconUrl} alt="Green Jacket" className="w-10 h-10 rounded-full object-cover shrink-0" />
+            ) : (
+              <div className="w-10 h-10 rounded-full flex items-center justify-center shrink-0" style={{ background: '#1a5c38' }}>
+                <svg viewBox="0 0 24 24" fill="#C9A84C" className="w-5 h-5">
+                  <path d="M12 2L9 9H2l6 4.5L5.5 22 12 17l6.5 5L16 13.5 22 9h-7z" />
+                </svg>
+              </div>
+            )}
             <div>
               <div className="text-[10px] uppercase tracking-[.2em] text-[#8B7355] mb-0.5">
                 Masters 2026 Champion

@@ -696,13 +696,29 @@ export function PoolDetailClient({
               allRosterPicks={allRosterPicks}
               myRosterPickIds={myRosterPickIds}
               tournamentStatus={tournament.status}
-              winner={mastersWinner ? {
-                name: mastersWinner.entryName || mastersWinner.displayName,
-                userId: mastersWinner.userId,
-                score: mastersWinner.score,
-                entryId: mastersWinner.id,
-                r1: null, r2: null, r3: null, r4: null,
-              } : null}
+              winner={mastersWinner ? (() => {
+                const countBest = (pool.scoringRules?.count_best as number) || 5
+                const picks = allRosterPicks?.[mastersWinner.id] || []
+                const golfers = picks.map(pid => liveParticipants.find(p => p.id === pid)).filter(Boolean) as typeof liveParticipants
+                const sorted = [...golfers].sort((a, b) => ((a.metadata?.score_to_par as number) ?? 999) - ((b.metadata?.score_to_par as number) ?? 999))
+                const counting = sorted.slice(0, countBest)
+                const roundScore = (round: 1|2|3|4) => {
+                  let sum = 0, count = 0
+                  for (const g of counting) {
+                    const rtp = golferRoundToPar((g.metadata || {}) as Record<string, unknown>, round)
+                    if (rtp != null) { sum += rtp; count++ }
+                  }
+                  return count > 0 ? sum : null
+                }
+                return {
+                  name: mastersWinner.entryName || mastersWinner.displayName,
+                  userId: mastersWinner.userId,
+                  score: mastersWinner.score,
+                  entryId: mastersWinner.id,
+                  r1: roundScore(1), r2: roundScore(2), r3: roundScore(3), r4: roundScore(4),
+                }
+              })() : null}
+              badgeIconUrl="/badges/green-jacket.svg"
               onReplayCeremony={() => {
                 if (typeof window !== 'undefined') sessionStorage.removeItem('rivyls-green-jacket-shown')
                 window.location.reload()
