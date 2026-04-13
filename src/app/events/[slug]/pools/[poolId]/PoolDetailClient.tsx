@@ -696,8 +696,13 @@ export function PoolDetailClient({
               allRosterPicks={allRosterPicks}
               myRosterPickIds={myRosterPickIds}
               tournamentStatus={tournament.status}
-              winnerName={mastersWinner?.entryName || mastersWinner?.displayName || null}
-              winnerScore={mastersWinner?.score ?? null}
+              winner={mastersWinner ? {
+                name: mastersWinner.entryName || mastersWinner.displayName,
+                userId: mastersWinner.userId,
+                score: mastersWinner.score,
+                entryId: mastersWinner.id,
+                r1: null, r2: null, r3: null, r4: null,
+              } : null}
               onReplayCeremony={() => {
                 if (typeof window !== 'undefined') sessionStorage.removeItem('rivyls-green-jacket-shown')
                 window.location.reload()

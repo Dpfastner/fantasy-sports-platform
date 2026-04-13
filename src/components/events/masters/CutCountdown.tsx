@@ -18,10 +18,17 @@ interface CutCountdownProps {
   championTime?: string
   /** Tournament status — when 'completed', show champion banner */
   tournamentStatus?: string
-  /** Winner name for champion banner */
-  winnerName?: string | null
-  /** Winner score for champion banner */
-  winnerScore?: number | null
+  /** Winner info for champion banner */
+  winner?: {
+    name: string
+    userId: string | null
+    score: number
+    entryId: string
+    r1: number | null
+    r2: number | null
+    r3: number | null
+    r4: number | null
+  } | null
   /** Callback to replay the Green Jacket ceremony */
   onReplayCeremony?: () => void
 }
@@ -64,8 +71,7 @@ export function CutCountdown({
   cutTime = MASTERS_2026_CUT_TIME,
   championTime = MASTERS_2026_CHAMPION_TIME,
   tournamentStatus,
-  winnerName,
-  winnerScore,
+  winner,
   onReplayCeremony,
 }: CutCountdownProps) {
   const cutTarget = new Date(cutTime).getTime()
@@ -138,39 +144,9 @@ export function CutCountdown({
   const showCutCountdown = !hasCut && !cutCountdownExpired
   const showChampionCountdown = (hasCut || cutCountdownExpired) && champTimeLeft
 
-  // Tournament completed — show champion banner instead of countdowns
-  if (tournamentStatus === 'completed' && winnerName) {
-    return (
-      <div className="bg-[#FAF6EE] border border-[#E8C96A]/40 rounded-lg p-5">
-        <div className="flex items-center justify-between gap-4">
-          <div>
-            <div className="text-[10px] uppercase tracking-[.2em] text-[#8B7355] mb-1">
-              Masters 2026 Champion
-            </div>
-            <div className="text-xl font-bold text-[#1a1a1a]" style={{ fontFamily: 'Georgia, serif' }}>
-              {winnerName}
-            </div>
-            {winnerScore != null && (
-              <div className="text-sm text-[#1a5c38] font-semibold mt-0.5">
-                {winnerScore === 0 ? 'E' : winnerScore > 0 ? `+${winnerScore}` : String(winnerScore)}
-              </div>
-            )}
-          </div>
-          {onReplayCeremony && (
-            <button
-              onClick={onReplayCeremony}
-              className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-colors"
-              style={{ background: '#1a5c38', color: '#fff' }}
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.348a1.125 1.125 0 010 1.971l-11.54 6.347a1.125 1.125 0 01-1.667-.985V5.653z" />
-              </svg>
-              Replay Ceremony
-            </button>
-          )}
-        </div>
-      </div>
-    )
+  // Tournament completed — show champion banner
+  if (tournamentStatus === 'completed' && winner) {
+    return <ChampionBanner winner={winner} participants={participants} allRosterPicks={allRosterPicks} onReplayCeremony={onReplayCeremony} />
   }
 
   return (
@@ -292,6 +268,149 @@ function TimeUnit({ value, label }: { value: number; label: string }) {
 
 function TimeDivider() {
   return <span className="text-xl sm:text-2xl font-bold text-[#C9A84C]/50">:</span>
+}
+
+function ChampionBanner({ winner, participants, allRosterPicks, onReplayCeremony }: {
+  winner: { name: string; userId: string | null; score: number; entryId: string; r1: number | null; r2: number | null; r3: number | null; r4: number | null }
+  participants: Participant[]
+  allRosterPicks?: Record<string, string[]>
+  onReplayCeremony?: () => void
+}) {
+  const [expanded, setExpanded] = useState(false)
+
+  const fmtRound = (r: number | null) => {
+    if (r == null) return '—'
+    const toPar = r - 72
+    return toPar === 0 ? 'E' : toPar > 0 ? `+${toPar}` : String(toPar)
+  }
+
+  const fmtTotal = (n: number) => n === 0 ? 'E' : n > 0 ? `+${n}` : String(n)
+
+  // Get winner's roster golfers
+  const rosterPicks = allRosterPicks?.[winner.entryId] || []
+  const rosterGolfers = useMemo(() => {
+    return rosterPicks
+      .map(pid => participants.find(p => p.id === pid))
+      .filter((p): p is Participant => !!p)
+      .map(p => {
+        const m = (p.metadata || {}) as Record<string, unknown>
+        return {
+          id: p.id,
+          name: p.name,
+          r1: m.r1 as number | null,
+          r2: m.r2 as number | null,
+          r3: m.r3 as number | null,
+          r4: m.r4 as number | null,
+          scoreToPar: m.score_to_par as number | null,
+          status: m.status as string | undefined,
+          countryCode: m.country_code as string | undefined,
+        }
+      })
+      .sort((a, b) => (a.scoreToPar ?? 999) - (b.scoreToPar ?? 999))
+  }, [rosterPicks, participants])
+
+  return (
+    <div className="bg-[#FAF6EE] border border-[#E8C96A]/40 rounded-lg overflow-hidden">
+      <div className="p-5">
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex items-center gap-3">
+            {/* Green Jacket badge icon */}
+            <div className="w-10 h-10 rounded-full flex items-center justify-center shrink-0" style={{ background: '#1a5c38' }}>
+              <svg viewBox="0 0 24 24" fill="#C9A84C" className="w-5 h-5">
+                <path d="M12 2L9 9H2l6 4.5L5.5 22 12 17l6.5 5L16 13.5 22 9h-7z" />
+              </svg>
+            </div>
+            <div>
+              <div className="text-[10px] uppercase tracking-[.2em] text-[#8B7355] mb-0.5">
+                Masters 2026 Champion
+              </div>
+              {winner.userId ? (
+                <a href={`/profile/${winner.userId}`} className="text-xl font-bold text-[#1a1a1a] hover:underline" style={{ fontFamily: 'Georgia, serif' }}>
+                  {winner.name}
+                </a>
+              ) : (
+                <div className="text-xl font-bold text-[#1a1a1a]" style={{ fontFamily: 'Georgia, serif' }}>
+                  {winner.name}
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="text-right shrink-0">
+            <div className="text-2xl font-bold text-[#1a5c38]" style={{ fontFamily: 'Georgia, serif' }}>
+              {fmtTotal(winner.score)}
+            </div>
+          </div>
+        </div>
+
+        {/* Round scores */}
+        <div className="flex items-center gap-4 mt-3 text-sm">
+          <div className="flex items-center gap-3 tabular-nums">
+            <span className="text-text-muted text-xs">R1</span>
+            <span className={`font-medium ${(winner.r1 || 72) < 72 ? 'text-[#1a5c38]' : (winner.r1 || 72) > 72 ? 'text-[#CC0000]' : 'text-[#1a1a1a]'}`}>{fmtRound(winner.r1)}</span>
+            <span className="text-text-muted text-xs">R2</span>
+            <span className={`font-medium ${(winner.r2 || 72) < 72 ? 'text-[#1a5c38]' : (winner.r2 || 72) > 72 ? 'text-[#CC0000]' : 'text-[#1a1a1a]'}`}>{fmtRound(winner.r2)}</span>
+            <span className="text-text-muted text-xs">R3</span>
+            <span className={`font-medium ${(winner.r3 || 72) < 72 ? 'text-[#1a5c38]' : (winner.r3 || 72) > 72 ? 'text-[#CC0000]' : 'text-[#1a1a1a]'}`}>{fmtRound(winner.r3)}</span>
+            <span className="text-text-muted text-xs">R4</span>
+            <span className={`font-medium ${(winner.r4 || 72) < 72 ? 'text-[#1a5c38]' : (winner.r4 || 72) > 72 ? 'text-[#CC0000]' : 'text-[#1a1a1a]'}`}>{fmtRound(winner.r4)}</span>
+          </div>
+        </div>
+
+        {/* Actions */}
+        <div className="flex items-center gap-3 mt-4">
+          <button
+            onClick={() => setExpanded(!expanded)}
+            className="flex items-center gap-1 text-xs text-[#8B7355] hover:text-[#1a1a1a] transition-colors"
+          >
+            <svg className={`w-3 h-3 transition-transform ${expanded ? 'rotate-90' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+            </svg>
+            {expanded ? 'Hide roster' : 'View winning roster'}
+          </button>
+          {onReplayCeremony && (
+            <button
+              onClick={onReplayCeremony}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-semibold transition-colors"
+              style={{ background: '#1a5c38', color: '#fff' }}
+            >
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.348a1.125 1.125 0 010 1.971l-11.54 6.347a1.125 1.125 0 01-1.667-.985V5.653z" />
+              </svg>
+              Replay Ceremony
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Expanded roster */}
+      {expanded && (
+        <div className="border-t border-[#E8C96A]/30 px-5 py-3">
+          <div className="text-[10px] uppercase tracking-wider text-[#8B7355] mb-2">Winning Roster</div>
+          <div className="space-y-1.5">
+            {rosterGolfers.map(g => (
+              <div key={g.id} className={`flex items-center justify-between gap-2 text-sm py-1 ${g.status === 'cut' ? 'opacity-40' : ''}`}>
+                <div className="flex items-center gap-1.5 min-w-0 flex-1">
+                  {g.countryCode && (
+                    <img src={`https://flagcdn.com/24x18/${g.countryCode}.png`} alt="" width={18} height={14} className="shrink-0 rounded-[2px]" loading="lazy" />
+                  )}
+                  <span className="text-[#1a1a1a] truncate">{g.name}</span>
+                  {g.status === 'cut' && <span className="text-[9px] text-[#CC0000] font-semibold">CUT</span>}
+                </div>
+                <div className="flex items-center gap-2 tabular-nums text-xs shrink-0">
+                  <span className={`${(g.r1 || 72) < 72 ? 'text-[#1a5c38]' : (g.r1 || 72) > 72 ? 'text-[#CC0000]' : 'text-[#8B7355]'}`}>{g.r1 ?? '—'}</span>
+                  <span className={`${(g.r2 || 72) < 72 ? 'text-[#1a5c38]' : (g.r2 || 72) > 72 ? 'text-[#CC0000]' : 'text-[#8B7355]'}`}>{g.r2 ?? '—'}</span>
+                  <span className={`${g.status === 'cut' ? 'text-[#CC0000]' : (g.r3 || 72) < 72 ? 'text-[#1a5c38]' : (g.r3 || 72) > 72 ? 'text-[#CC0000]' : 'text-[#8B7355]'}`}>{g.status === 'cut' ? 'C' : g.r3 ?? '—'}</span>
+                  <span className={`${g.status === 'cut' ? 'text-[#CC0000]' : (g.r4 || 72) < 72 ? 'text-[#1a5c38]' : (g.r4 || 72) > 72 ? 'text-[#CC0000]' : 'text-[#8B7355]'}`}>{g.status === 'cut' ? 'C' : g.r4 ?? '—'}</span>
+                  <span className="font-medium text-[#1a1a1a] w-8 text-right">{g.scoreToPar != null ? fmtTotal(g.scoreToPar) : '—'}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  )
 }
 
 function formatScore(n: number): string {

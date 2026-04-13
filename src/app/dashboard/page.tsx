@@ -180,6 +180,7 @@ export default async function DashboardPage() {
       sport: string
       format: string
       status: string
+      updated_at?: string
     }
     entryCount: number
     userScore: number
@@ -194,7 +195,7 @@ export default async function DashboardPage() {
     const poolIds = userEventEntries.map(e => e.pool_id)
     const { data: pools } = await admin
       .from('event_pools')
-      .select('id, name, status, tournament_id, event_tournaments(name, slug, sport, format, status)')
+      .select('id, name, status, tournament_id, event_tournaments(name, slug, sport, format, status, updated_at)')
       .in('id', poolIds)
 
     // Get unique member counts per pool (not entry counts)
@@ -227,7 +228,7 @@ export default async function DashboardPage() {
     }
 
     eventPools = (pools || []).map(p => {
-      const t = p.event_tournaments as unknown as { name: string; slug: string; sport: string; format: string; status: string }
+      const t = p.event_tournaments as unknown as { name: string; slug: string; sport: string; format: string; status: string; updated_at: string }
       const entry = userEventEntries.find(e => e.pool_id === p.id)
       return {
         id: p.id,
@@ -246,12 +247,10 @@ export default async function DashboardPage() {
 
   // Upcoming/active events for featured section
   const joinedTournamentIds = new Set(eventPools.map(p => p.tournamentId))
-  // Show upcoming, active, and recently completed (within 3 days) tournaments
-  const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString()
   const { data: allTournaments } = await admin
     .from('event_tournaments')
-    .select('id, name, slug, sport, format, status, description, starts_at, ends_at, updated_at')
-    .or(`status.in.(upcoming,active),and(status.eq.completed,updated_at.gte.${threeDaysAgo})`)
+    .select('id, name, slug, sport, format, status, description, starts_at, ends_at')
+    .in('status', ['upcoming', 'active'])
     .order('starts_at', { ascending: true })
 
   // Pool counts for featured tournaments
@@ -345,9 +344,14 @@ export default async function DashboardPage() {
     }
   })
 
-  // Convert event pools to dashboard items
+  // Recently completed = within 3 days of updated_at
+  const threeDaysMs = 3 * 24 * 60 * 60 * 1000
+  const isRecentlyCompleted = (t: { status: string; updated_at?: string }) =>
+    t.status === 'completed' && t.updated_at && (Date.now() - new Date(t.updated_at).getTime()) < threeDaysMs
+
+  // Active items include recently completed events (stay visible for 3 days)
   const eventItems: DashboardItem[] = eventPools
-    .filter(p => p.tournament.status !== 'completed' && p.status !== 'completed')
+    .filter(p => (p.tournament.status !== 'completed' && p.status !== 'completed') || isRecentlyCompleted(p.tournament))
     .map(pool => {
       const isLive = (liveGameCounts[pool.tournamentId] || 0) > 0
       const needsAction = !pool.submittedAt && pool.status === 'open'
@@ -377,9 +381,9 @@ export default async function DashboardPage() {
       }
     })
 
-  // Completed event pools
+  // Completed event pools (only those older than 3 days — recent ones stay in active)
   const completedEventItems: DashboardItem[] = eventPools
-    .filter(p => p.tournament.status === 'completed' || p.status === 'completed')
+    .filter(p => (p.tournament.status === 'completed' || p.status === 'completed') && !isRecentlyCompleted(p.tournament))
     .map(pool => {
       const sm = sportMeta[pool.tournament.sport] || defaultSportMeta
       return {
